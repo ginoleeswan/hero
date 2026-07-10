@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { renderPng } from '../lib.mjs';
 import { adShell } from './shell.mjs';
 import { assertNoPortrait } from './safe-assert.mjs';
-import { silhouette } from './silhouettes.mjs';
+import { silhouette, pickSilhouettePair } from './silhouettes.mjs';
 import { relationPhrase } from './data.mjs';
 const relForCopy = (r) => relationPhrase(r); // "the parent of" etc.
 
@@ -80,9 +80,12 @@ const SLIDES = {
   },
   lore: (e, w, h) => {
     const d = e.data;
-    const twoBusts = (an, bn) => `<div style="display:flex;align-items:flex-end;justify-content:center;gap:${Math.round(w * 0.06)}px;margin-bottom:${Math.round(h * 0.04)}px">
-      <div style="text-align:center">${silhouette('cowl', { size: Math.round(w * 0.24), rim: ORANGE })}<div class="pop" style="font-size:${Math.round(h * 0.036)}px;color:${ORANGE};margin-top:8px">${an}</div></div>
-      <div style="text-align:center">${silhouette('spikes', { size: Math.round(w * 0.24), rim: TEAL })}<div class="pop" style="font-size:${Math.round(h * 0.036)}px;color:${TEAL};margin-top:8px">${bn}</div></div></div>`;
+    const twoBusts = (an, bn) => {
+      const [ka, kb] = pickSilhouettePair(an, d.aHint, bn, d.bHint);
+      return `<div style="display:flex;align-items:flex-end;justify-content:center;gap:${Math.round(w * 0.06)}px;margin-bottom:${Math.round(h * 0.04)}px">
+      <div style="text-align:center">${silhouette(ka, { size: Math.round(w * 0.24), rim: ORANGE })}<div class="pop" style="font-size:${Math.round(h * 0.036)}px;color:${ORANGE};margin-top:8px">${an}</div></div>
+      <div style="text-align:center">${silhouette(kb, { size: Math.round(w * 0.24), rim: TEAL })}<div class="pop" style="font-size:${Math.round(h * 0.036)}px;color:${TEAL};margin-top:8px">${bn}</div></div></div>`;
+    };
     if (d.sub === 'family') return [
       stage(w, h, `${eyebrow(h, 'SAME BLOOD')}${head(h, 'Opposite<br>sides.', 0.085)}${sub(h, 'Swipe for the twist →')}`),
       stage(w, h, `${twoBusts(d.a, d.b)}${head(h, `${d.a} is<br>${relForCopy(d.relation)} ${d.b}.`, 0.055)}`),

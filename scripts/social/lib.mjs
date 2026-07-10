@@ -24,7 +24,7 @@ export const RIVALRIES = [
 const MIN_VOTES = 40; // people actually engaged with it
 const MAX_SPREAD = 18; // |pct - 50| <= this => close/controversial => gets talking
 const FAME_POOL = 160; // sample random pairs from the top-N most famous
-const HERO_SELECT = 'id,name,publisher,portrait_url,image_url,image_md_url,fame_score,' + STAT_KEYS.join(',');
+const HERO_SELECT = 'id,name,publisher,portrait_url,image_url,image_md_url,fame_score,gender,alignment,' + STAT_KEYS.join(',');
 const q = (s) => encodeURIComponent(s);
 
 export function loadEnv() {

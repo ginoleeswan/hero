@@ -7,7 +7,7 @@ import { tierOf } from '../safety.mjs';
 export function toSafeHero(row) {
   const stats = {};
   for (const k of STAT_KEYS) stats[k] = row[k] ?? 0;
-  return { name: row.name, fame_score: row.fame_score ?? 0, stats, tier: tierOf(row) };
+  return { name: row.name, fame_score: row.fame_score ?? 0, stats, tier: tierOf(row), gender: row.gender ?? null, alignment: row.alignment ?? null };
 }
 
 export const distinctive = (h) => {
@@ -79,27 +79,27 @@ export async function fetchLore(sb, rand, { excludeTierS = false } = {}) {
   const out = [];
   // FAMILY: relatives whose related_hero_id is a hero AND an enemy edge exists.
   const fam = await sb.rest(
-    `hero_relatives?select=relation,heroes!hero_id(name,fame_score),related:heroes!related_hero_id(name,fame_score)` +
+    `hero_relatives?select=relation,heroes!hero_id(name,fame_score,gender,alignment),related:heroes!related_hero_id(name,fame_score,gender,alignment)` +
     `&related_hero_id=not.is.null&limit=600`,
   ).catch(() => []);
   for (const r of fam) {
     const a = r.heroes, b = r.related;
     if (!a || !b || (a.fame_score ?? 0) < 30) continue;
-    out.push({ sub: 'family', a: a.name, b: b.name, relation: r.relation });
+    out.push({ sub: 'family', a: a.name, b: b.name, relation: r.relation, aHint: { gender: a.gender, alignment: a.alignment }, bHint: { gender: b.gender, alignment: b.alignment } });
   }
   // RIVALRY: famous enemy pairs, best-effort year from first_appearance.
   const riv = await sb.rest(
-    `hero_relationships?select=kind,a:heroes!hero_id(name,fame_score,first_appearance),b:heroes!related_id(name,fame_score,first_appearance)` +
+    `hero_relationships?select=kind,a:heroes!hero_id(name,fame_score,first_appearance,gender,alignment),b:heroes!related_id(name,fame_score,first_appearance,gender,alignment)` +
     `&kind=eq.enemy&limit=800`,
   ).catch(() => []);
   const rivPairs = [];
   for (const r of riv) {
     const a = r.a, b = r.b;
     if (!a || !b || (a.fame_score ?? 0) < 30 || (b.fame_score ?? 0) < 30) continue;
-    rivPairs.push({ sub: 'rivalry', a: a.name, b: b.name, year: yearOf(a.first_appearance) || yearOf(b.first_appearance) });
+    rivPairs.push({ sub: 'rivalry', a: a.name, b: b.name, year: yearOf(a.first_appearance) || yearOf(b.first_appearance), aHint: { gender: a.gender, alignment: a.alignment }, bHint: { gender: b.gender, alignment: b.alignment } });
   }
   // CONNECTED: degree leaderboard, top famous heroes, both edge directions.
-  const famousIds = await sb.rest(`heroes?select=id,name,fame_score&order=fame_score.desc.nullslast&limit=60`).catch(() => []);
+  const famousIds = await sb.rest(`heroes?select=id,name,fame_score,gender,alignment&order=fame_score.desc.nullslast&limit=60`).catch(() => []);
   const connected = [];
   for (const h of famousIds.slice(0, 15)) {
     if ((h.fame_score ?? 0) < 40) continue;
@@ -109,7 +109,7 @@ export async function fetchLore(sb, rand, { excludeTierS = false } = {}) {
     ]);
     const m = { ally: 0, enemy: 0, teammate: 0 };
     for (const r of [...asHero, ...asRelated]) m[r.kind] = (m[r.kind] ?? 0) + 1;
-    connected.push({ sub: 'connected', a: h.name, allies: m.ally, enemies: m.enemy, teams: m.teammate });
+    connected.push({ sub: 'connected', a: h.name, allies: m.ally, enemies: m.enemy, teams: m.teammate, aHint: { gender: h.gender, alignment: h.alignment } });
     if (connected.length >= 4) break;
   }
   // interleave: family (all, priority) then a capped shuffled rivalry set then connected.

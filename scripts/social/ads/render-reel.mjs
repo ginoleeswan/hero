@@ -15,7 +15,7 @@ import { renderVideo, renderPng, COLORS, grainUri, fontFace, ROOT } from '../lib
 import { DISCLAIMER } from '../safety.mjs';
 import { assertNoPortrait } from './safe-assert.mjs';
 import { rng } from './plan.mjs';
-import { silhouette, SILHOUETTE_KINDS } from './silhouettes.mjs';
+import { silhouette, SILHOUETTE_KINDS, pickSilhouette, pickSilhouettePair } from './silhouettes.mjs';
 
 const { O, T, GOLD, CREAM, NAVY } = COLORS;
 const MUT = '#9db4c4';
@@ -83,24 +83,40 @@ function radarSvg(stats, width = 660) {
 // RIGHT of the frame with the copy block sitting in his gaze line on the left.
 // The bust gets a slow push-in + a soft visor-glow pulse so it reads as video,
 // never as a pasted still.
-const hookLayout = (title, sub, { mascotH = 900 } = {}) => `
+const hookLayout = (title, sub, { mascotH = 900 } = {}) => {
+  // Tier the title down (and keep the copy box clear of the mascot's face)
+  // when the copy runs long — a wide word at 108px walked across the bust.
+  const plain = String(title)
+    .replace(/<span class="eyebrow"[\s\S]*?<\/span>/g, '')
+    .replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const longest = Math.max(0, ...plain.split(' ').map((w) => w.length));
+  const size = longest >= 10 || plain.length > 34 ? 82 : plain.length > 24 ? 94 : 108;
+  return `
   <div class="hook">
     <div class="mwrap" style="height:${mascotH}px">
       <div class="mglow"></div>
       <img class="mascot" src="${BRAND.mascot}" style="height:${mascotH}px">
       <div class="visor"></div>
     </div>
-    <div class="hcopy">
-      <div class="in1">${title}</div>
+    <div class="hcopy" style="right:470px">
+      <div class="in1" style="font-size:${size}px">${title}</div>
       ${sub ? `<div class="mut in2" style="margin-top:22px">${sub}</div>` : ''}
     </div>
   </div>`;
-const plates = (aName, bName, glow = null) => `
+};
+// a/b: { name, gender?, alignment? } — safe heroes or lore-entry hints. The
+// coin carries the pairing's meaning: 'vs' for fights, 'link' (chain emblem)
+// for family/connection scenes where a fight glyph reads wrong.
+const plates = (a, b, { glow = null, coin = 'vs' } = {}) => {
+  const [ka, kb] = pickSilhouettePair(a.name, a, b.name, b);
+  const coinHtml = coin === 'link' ? silhouette('linkmark', { size: 74, ink: GOLD, rim: null }) : 'VS';
+  return `
   <div class="plates">
-    <div class="pcol"><div class="plate po ${glow === 'a' ? 'lit' : ''}">${silhouette('spikes', { size: 230, rim: O })}</div><div class="pname" style="color:${O}">${aName}</div></div>
-    <div class="vscoin">VS</div>
-    <div class="pcol"><div class="plate pt ${glow === 'b' ? 'lit' : ''}">${silhouette('cowl', { size: 230, rim: T })}</div><div class="pname" style="color:${T}">${bName}</div></div>
+    <div class="pcol"><div class="plate po ${glow === 'a' ? 'lit' : ''}">${silhouette(ka, { size: 230, rim: O })}</div><div class="pname" style="color:${O}">${a.name}</div></div>
+    <div class="vscoin">${coinHtml}</div>
+    <div class="pcol"><div class="plate pt ${glow === 'b' ? 'lit' : ''}">${silhouette(kb, { size: 230, rim: T })}</div><div class="pname" style="color:${T}">${b.name}</div></div>
   </div>`;
+};
 const pips = (total, lit) => `<div class="pips">${Array.from({ length: total }, (_, i) => `<span class="pip ${i < lit ? 'lit' : ''}"></span>`).join('')}</div>`;
 // Family-reel reveal wants a short middle-line form of the relation.
 const relLabel = (r) => ({ parent: 'the parent of', child: 'the child of', sibling: 'the sibling of', aunt_uncle: 'the aunt/uncle of', other: 'family to' }[r] ?? 'family to');
@@ -265,7 +281,7 @@ const SCENES = {
       const last = i === n - 1;
       return { id: `r${i}`, ms: beats(5), html: `
       <div class="esc${i + 1}">
-      ${plates(a.name, b.name, aw ? 'a' : 'b')}
+      ${plates(a, b, { glow: aw ? 'a' : 'b' })}
       <div class="sideglow ${aw ? 'a' : 'b'}"></div>
       ${pips(n, i + 1)}
       <div class="eyebrow in1">ROUND ${i + 1} — ${r[0]}</div>
@@ -277,7 +293,7 @@ const SCENES = {
     return [
       { id: 'hook', ms: beats(4), html: hookLayout(`${a.name}<br><span class="gold">vs</span> ${b.name}`, `${n} rounds. Real stats.<br>You decide.`) },
       ...rounds.slice(0, n).map(round),
-      { id: 'cta', ms: beats(8), bloom: true, html: `${plates(a.name, b.name)}<div class="big rise" style="font-size:108px">Who’s right?</div><div class="mut in3">The stats say one thing.<br>The fans say another.</div><div class="mut in4 gold" style="font-size:46px;margin-top:40px">Vote · mythique.app</div>` },
+      { id: 'cta', ms: beats(8), bloom: true, html: `${plates(a, b)}<div class="big rise" style="font-size:108px">Who’s right?</div><div class="mut in3">The stats say one thing.<br>The fans say another.</div><div class="mut in4 gold" style="font-size:46px;margin-top:40px">Vote · mythique.app</div>` },
     ];
   },
   // Countdown with momentum: lit pips track progress; each rank keeps the same
@@ -319,7 +335,7 @@ const SCENES = {
       { id: 'c3', ms: beats(2), html: ring(3) },
       { id: 'c2', ms: beats(2), html: ring(2) },
       { id: 'c1', ms: beats(2), html: ring(1) },
-      { id: 'reveal', ms: beats(8), bloom: true, html: `<div class="rise" style="margin-bottom:8px">${silhouette('cowl', { size: 300, rim: GOLD })}</div><div class="eyebrow in1">IT’S</div><div class="big in2" style="font-size:140px;color:${GOLD};-webkit-text-stroke:9px ${NAVY}">${g.name}</div><div class="mut in3">Fame ${g.fame_score}/100 · did you get it?</div><div class="mut in4 gold" style="font-size:44px;margin-top:36px">mythique.app</div>` },
+      { id: 'reveal', ms: beats(8), bloom: true, html: `<div class="rise" style="margin-bottom:8px">${silhouette(pickSilhouette(g.name, g), { size: 300, rim: GOLD })}</div><div class="eyebrow in1">IT’S</div><div class="big in2" style="font-size:140px;color:${GOLD};-webkit-text-stroke:9px ${NAVY}">${g.name}</div><div class="mut in3">Fame ${g.fame_score}/100 · did you get it?</div><div class="mut in4 gold" style="font-size:44px;margin-top:36px">mythique.app</div>` },
     ];
   },
   // Mascot delivers the hook; big odometer stat under rays; dossier close.
@@ -346,15 +362,15 @@ const SCENES = {
     if (d.sub === 'family') {
       return [
         { id: 'hook', ms: beats(4), html: `<div class="eyebrow in1">SAME BLOOD</div><div class="big rise" style="font-size:120px">Opposite<br>sides.</div>` },
-        { id: 'pair', ms: beats(5), html: `${plates(d.a, d.b)}<div class="mut in3" style="margin-top:8px">They’re connected.</div>` },
-        { id: 'reveal', ms: beats(7), bloom: true, html: `${plates(d.a, d.b)}<div class="big rise" style="font-size:72px;margin-top:20px">${d.a} is<br>${relLabel(d.relation)}<br><span class="gold">${d.b}</span>.</div>` },
+        { id: 'pair', ms: beats(5), html: `${plates({ name: d.a, ...d.aHint }, { name: d.b, ...d.bHint }, { coin: 'link' })}<div class="mut in3" style="margin-top:8px">They’re connected.</div>` },
+        { id: 'reveal', ms: beats(7), bloom: true, html: `${plates({ name: d.a, ...d.aHint }, { name: d.b, ...d.bHint }, { coin: 'link' })}<div class="big rise" style="font-size:72px;margin-top:20px">${d.a} is<br>${relLabel(d.relation)}<br><span class="gold">${d.b}</span>.</div>` },
         { id: 'cta', ms: beats(6), html: `<div class="big rise" style="font-size:104px">Nature or<br>nurture?</div><div class="mut in2 gold" style="font-size:46px;margin-top:40px">The family tree · mythique.app</div>` },
       ];
     }
     if (d.sub === 'rivalry') {
       return [
         { id: 'hook', ms: beats(4), html: hookLayout(`Some fights<br><span class="gold">never end.</span>`, d.year ? `Since ${d.year}.` : null) },
-        { id: 'pair', ms: beats(6), bloom: true, html: `${plates(d.a, d.b)}<div class="big rise" style="font-size:88px;margin-top:16px">${d.a} <span class="gold">vs</span> ${d.b}</div>${d.year ? `<div class="mut in3">Enemies since ${d.year}.</div>` : ''}` },
+        { id: 'pair', ms: beats(6), bloom: true, html: `${plates({ name: d.a, ...d.aHint }, { name: d.b, ...d.bHint })}<div class="big rise" style="font-size:88px;margin-top:16px">${d.a} <span class="gold">vs</span> ${d.b}</div>${d.year ? `<div class="mut in3">Enemies since ${d.year}.</div>` : ''}` },
         { id: 'cta', ms: beats(6), html: `<div class="big rise" style="font-size:92px">Best rivalry<br>in comics?</div><div class="mut in2">Fight about it 👇</div><div class="mut in3 gold" style="font-size:46px;margin-top:36px">mythique.app</div>` },
       ];
     }
@@ -388,4 +404,18 @@ export async function renderReel(entry, { outDir, F }) {
   await renderPng(posterHtml, poster, 1080, 1920);
   writeFileSync(join(dir, 'caption.txt'), `${entry.caption}\n\n♪ ${entry.music}`);
   return { dir, mp4, poster };
+}
+
+/** Design-QA helper: every scene of an entry as a still PNG (no video). */
+export async function renderReelStills(entry, { outDir, F }) {
+  mkdirSync(outDir, { recursive: true });
+  const scenes = SCENES[entry.angle](entry);
+  const files = [];
+  for (const scene of scenes) {
+    const html = reelShell(F, [scene], { still: true, seed: 11 + (entry.ord ?? 0) });
+    const file = join(outDir, `${entry.angle}-${scene.id}.png`);
+    await renderPng(html, file, 1080, 1920);
+    files.push(file);
+  }
+  return files;
 }
