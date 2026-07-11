@@ -250,11 +250,14 @@ function rankingSlides(theme, rows) {
     <div style="position:absolute;left:0;right:0;top:150px;text-align:center">${eyebrow('THE RANKINGS')}</div>
     <div style="position:absolute;left:0;right:0;top:230px;text-align:center">${headline(theme.title, 84)}</div>
     <div style="position:absolute;left:0;right:0;top:430px;display:flex;align-items:flex-end;justify-content:center">
-      ${[top3[1], top3[0], top3[2]].map((r, i) => {
-        const big = i === 1;
-        const w2 = big ? 380 : 300, h2 = big ? 470 : 370;
-        return `<div style="text-align:center;position:relative;z-index:${big ? 3 : 2};margin:0 ${big ? '-30px' : '0'}"><div style="width:${w2}px;height:${h2}px;border-radius:34px;overflow:hidden;border:${big ? 5 : 3}px solid ${big ? GOLD : 'rgba(224,168,62,.45)'};box-shadow:0 40px 80px -30px rgba(0,0,0,.85)"><img src="${r.art}" style="width:100%;height:100%;object-fit:cover;object-position:center top"></div><div class="pop" style="font-size:${big ? 44 : 34}px;color:${big ? GOLD : CREAM};margin-top:14px">#${big ? 1 : i === 0 ? 2 : 3}${big ? ' · ' + r.name : ''}</div></div>`;
-      }).join('')}
+      ${[top3[1], top3[0], top3[2]]
+        .map((r, i) => {
+          const big = i === 1;
+          const w2 = big ? 380 : 300,
+            h2 = big ? 470 : 370;
+          return `<div style="text-align:center;position:relative;z-index:${big ? 3 : 2};margin:0 ${big ? '-30px' : '0'}"><div style="width:${w2}px;height:${h2}px;border-radius:34px;overflow:hidden;border:${big ? 5 : 3}px solid ${big ? GOLD : 'rgba(224,168,62,.45)'};box-shadow:0 40px 80px -30px rgba(0,0,0,.85)"><img src="${r.art}" style="width:100%;height:100%;object-fit:cover;object-position:center top"></div><div class="pop" style="font-size:${big ? 44 : 34}px;color:${big ? GOLD : CREAM};margin-top:14px">#${big ? 1 : i === 0 ? 2 : 3}${big ? ' · ' + r.name : ''}</div></div>`;
+        })
+        .join('')}
     </div>
     <div class="pop" style="position:absolute;left:0;right:0;bottom:130px;text-align:center;font-size:32px;color:${CREAM}">Do you agree? <span style="color:${GOLD}">Swipe the full 10 &rarr;</span></div>`;
   const cta = stack(`
@@ -292,8 +295,15 @@ function thisOrThatSlides(a, b, question) {
 
 // The Gauntlet — a flex-challenge. One portrait, a stat, an invitation to argue.
 function gauntletSlides(h, statKey) {
-  const label = { strength: 'strength', combat: 'combat', power: 'power', speed: 'speed', intelligence: 'intelligence' }[statKey];
-  return [`
+  const label = {
+    strength: 'strength',
+    combat: 'combat',
+    power: 'power',
+    speed: 'speed',
+    intelligence: 'intelligence',
+  }[statKey];
+  return [
+    `
     ${glowBehind(290, 90, 500, 620, GOLD)}
     <div style="position:absolute;left:50%;top:90px;transform:translateX(-50%);width:640px;height:760px;overflow:hidden">
       <img src="${h.art}" style="width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:38px;-webkit-mask-image:linear-gradient(180deg,#000 66%,transparent 98%)">
@@ -303,7 +313,8 @@ function gauntletSlides(h, statKey) {
       <div class="pop" style="font-size:78px;line-height:1.08;color:${CREAM};margin-top:22px;padding:0 70px">Name ONE who<br>beats ${h.name}.</div>
       <div style="font-family:'S';font-size:30px;color:${MUT};margin-top:22px">I&rsquo;ll wait &#128064;</div>
     </div>
-  `];
+  `,
+  ];
 }
 
 // ── data ──────────────────────────────────────────────────────────────────────
@@ -313,11 +324,23 @@ async function pool(sb) {
   );
   return rows.map(shape);
 }
-const TOT_QUESTIONS = ['Who runs the city?', 'Who wins a fair fight?', 'Who do you want on your team?', 'Who&rsquo;s the bigger legend?', 'Who takes it, no prep?'];
+const TOT_QUESTIONS = [
+  'Who runs the city?',
+  'Who wins a fair fight?',
+  'Who do you want on your team?',
+  'Who&rsquo;s the bigger legend?',
+  'Who takes it, no prep?',
+];
 const GAUNTLET_STATS = ['strength', 'combat', 'power'];
 // Debatable ranking themes with portraits. Each returns 10 ordered rows.
 const RANK_THEMES = [
-  { key: 'strongest-villains', title: 'Top 10 Strongest Villains', stat: 'strength', color: '#B5302B', villain: true },
+  {
+    key: 'strongest-villains',
+    title: 'Top 10 Strongest Villains',
+    stat: 'strength',
+    color: '#B5302B',
+    villain: true,
+  },
   { key: 'smartest', title: 'Top 10 Smartest Characters', stat: 'intelligence', color: '#15A1AB' },
   { key: 'fastest', title: 'Top 10 Fastest Characters', stat: 'speed', color: '#F9B222' },
   { key: 'best-fighters', title: 'Top 10 Best Fighters', stat: 'combat', color: '#8a4a2b' },
@@ -325,10 +348,17 @@ const RANK_THEMES = [
 ];
 async function rankingRows(sb, theme) {
   const align = theme.villain ? '&alignment=eq.bad' : '';
-  const rows = await sb.rest(
-    `heroes?select=name,publisher,portrait_url,${theme.stat}&portrait_url=not.is.null&fame_score=gte.20${align}&order=${theme.stat}.desc.nullslast,fame_score.desc.nullslast&limit=10`,
-  ).catch(() => []);
-  return rows.map((r) => ({ name: r.name, publisher: r.publisher, value: r[theme.stat] ?? 0, portrait_url: r.portrait_url }));
+  const rows = await sb
+    .rest(
+      `heroes?select=name,publisher,portrait_url,${theme.stat}&portrait_url=not.is.null&fame_score=gte.20${align}&order=${theme.stat}.desc.nullslast,fame_score.desc.nullslast&limit=10`,
+    )
+    .catch(() => []);
+  return rows.map((r) => ({
+    name: r.name,
+    publisher: r.publisher,
+    value: r[theme.stat] ?? 0,
+    portrait_url: r.portrait_url,
+  }));
 }
 // Showdown pairs that MEAN something: the curated rivalry list first, then the
 // enemy graph (famous, both with portraits). Never random.
@@ -470,14 +500,26 @@ async function main() {
   const rankThemes = shuffle([...RANK_THEMES]);
   // gauntlet targets: the biggest names by a heavy stat (debate-worthy).
   const gauntletPool = shuffle(
-    heroes.filter((h) => h.fame_score >= 55 && Math.max(h.stats.strength, h.stats.combat, h.stats.power) >= 80),
+    heroes.filter(
+      (h) => h.fame_score >= 55 && Math.max(h.stats.strength, h.stats.combat, h.stats.power) >= 80,
+    ),
   );
 
   const out = join(OUT_DIR, `organic-${month}`);
   if (existsSync(out)) rmSync(out, { recursive: true });
   mkdirSync(out, { recursive: true });
 
-  const FORMATS = ['thisorthat', 'ranking', 'showdown', 'gauntlet', 'covers', 'didyouknow', 'bloodline', 'onscreen', 'legend'];
+  const FORMATS = [
+    'thisorthat',
+    'ranking',
+    'showdown',
+    'gauntlet',
+    'covers',
+    'didyouknow',
+    'bloodline',
+    'onscreen',
+    'legend',
+  ];
   const used = new Set();
   const pick = () => {
     for (let i = 0; i < 100; i++) {
@@ -563,7 +605,10 @@ async function main() {
       } else if (format === 'gauntlet') {
         const h = gauntletPool[cursor.gauntlet++];
         if (!h) continue;
-        const statKey = GAUNTLET_STATS.reduce((best, k) => (h.stats[k] > h.stats[best] ? k : best), GAUNTLET_STATS[0]);
+        const statKey = GAUNTLET_STATS.reduce(
+          (best, k) => (h.stats[k] > h.stats[best] ? k : best),
+          GAUNTLET_STATS[0],
+        );
         slides = gauntletSlides({ ...h, art: await art(h.portrait_url) }, statKey);
         meta = { a: h.name, title: `Gauntlet — ${h.name}` };
       } else {
