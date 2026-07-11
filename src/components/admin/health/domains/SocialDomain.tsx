@@ -41,12 +41,19 @@ type Filter =
   | 'reel'
   | 'carousel';
 
-type Lane = 'all' | 'ad_safe' | 'organic';
-const LANE_OPTIONS: { label: string; value: Lane }[] = [
-  { label: 'Everything', value: 'all' },
-  { label: 'Boost-safe', value: 'ad_safe' },
-  { label: 'Organic only', value: 'organic' },
+// The tab is organized by JOB, not by batch: Queue = what do I post now,
+// Boost = what can I put money behind, Library = browse everything.
+type PubView = 'queue' | 'boost' | 'library';
+const VIEW_OPTIONS: { label: string; value: PubView }[] = [
+  { label: 'Post today', value: 'queue' },
+  { label: 'Boost', value: 'boost' },
+  { label: 'Everything', value: 'library' },
 ];
+const VIEW_HINT: Record<PubView, string> = {
+  queue: 'Your daily loop — save, post, mark done. The queue advances itself.',
+  boost: 'Only content that is safe to put ad money behind.',
+  library: 'Every published batch — browse and filter.',
+};
 
 // Workflow order: this month's library (the daily queue) leads, then the
 // set-once brand kit, evergreen toolkit, and finally the older packs.
@@ -220,7 +227,7 @@ export function SocialDomain() {
   // (the actual work) leads the lane.
   const [rulesOpen, setRulesOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>('all');
-  const [lane, setLane] = useState<Lane>('all');
+  const [view, setView] = useState<PubView>('queue');
   // Per-batch collapse; fully-posted batches start collapsed (see render).
   const [openBatches, setOpenBatches] = useState<Record<string, boolean>>({});
 
@@ -230,14 +237,13 @@ export function SocialDomain() {
   };
 
   const matches = (p: SocialPost) =>
-    (lane === 'all' || p.ad_safety === lane) &&
-    (filter === 'all'
+    filter === 'all'
       ? true
       : filter === 'reel'
         ? p.media_type === 'video'
         : filter === 'carousel'
           ? p.media_type !== 'video'
-          : p.angle === filter);
+          : p.angle === filter;
 
   const allPosts = postsQ.data ?? [];
   const posts = allPosts.filter(matches);
@@ -245,14 +251,25 @@ export function SocialDomain() {
     (a, b) => batchPriority(a) - batchPriority(b) || b.localeCompare(a),
   );
 
-  // The one thing to do next: the first unposted piece of the newest monthly
-  // library (falls back to any unposted post). Marking it posted advances the
-  // card automatically.
-  const libraryPosts = allPosts
-    .filter((p) => p.batch.startsWith('ad-library-') || p.batch.startsWith('organic-'))
-    .sort((a, b) => b.batch.localeCompare(a.batch) || a.ord - b.ord);
-  const upNext = libraryPosts.find((p) => !p.posted_at) ?? allPosts.find((p) => !p.posted_at);
-  const libraryLeft = libraryPosts.filter((p) => !p.posted_at).length;
+  // The daily queue: this month's organic pack + ad library, INTERLEAVED so
+  // consecutive days vary (organic, ad, organic, ad …). Marking one posted
+  // advances the queue automatically.
+  const monthly = (prefix: string) =>
+    allPosts
+      .filter((p) => p.batch.startsWith(prefix) && !p.posted_at)
+      .sort((a, b) => b.batch.localeCompare(a.batch) || a.ord - b.ord);
+  const organicQ = monthly('organic-');
+  const adsQ = monthly('ad-library-');
+  const dailyQueue: SocialPost[] = [];
+  for (let i = 0; i < Math.max(organicQ.length, adsQ.length); i++) {
+    if (organicQ[i]) dailyQueue.push(organicQ[i]);
+    if (adsQ[i]) dailyQueue.push(adsQ[i]);
+  }
+  const monthlyAll = allPosts.filter(
+    (p) => p.batch.startsWith('organic-') || p.batch.startsWith('ad-library-'),
+  );
+  const monthlyDone = monthlyAll.filter((p) => p.posted_at).length;
+  const upNext = dailyQueue[0] ?? allPosts.find((p) => !p.posted_at);
 
   const rulesPanel = (
     <Panel
@@ -303,6 +320,137 @@ export function SocialDomain() {
     </Panel>
   );
 
+  const batchPanel = (batch: string, group: SocialPost[], title?: string) => {
+    const sorted = [...group].sort(
+      (a, b) => Number(!!a.posted_at) - Number(!!b.posted_at) || a.ord - b.ord,
+    );
+    const done = sorted.filter((p) => p.posted_at).length;
+    const allDone = done === sorted.length;
+    const open = openBatches[batch] ?? !allDone;
+    return (
+      <Panel
+        key={batch}
+        title={title ?? batchLabel(batch)}
+        hint={`${done}/${sorted.length} posted`}
+        style={styles.panel}
+        action={
+          <Pressable
+            onPress={() => setOpenBatches((v) => ({ ...v, [batch]: !open }))}
+            hitSlop={8}
+            style={styles.rulesToggle}
+          >
+            <Text style={styles.rulesToggleText}>{open ? 'Hide' : 'Show'}</Text>
+            <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={13} color={COLORS.navy} />
+          </Pressable>
+        }
+      >
+        <View style={styles.progTrack}>
+          <View style={[styles.progFill, { width: `${(done / sorted.length) * 100}%` }]} />
+        </View>
+        {open ? (
+          <CardGrid min={340}>
+            {sorted.map((p) => (
+              <PostRow key={p.id} post={p} onToggle={onToggle} />
+            ))}
+          </CardGrid>
+        ) : null}
+      </Panel>
+    );
+  };
+
+  const queueView = (
+    <>
+      {upNext ? (
+        <Panel
+          title="Post today"
+          hint={`${monthlyDone}/${monthlyAll.length} posted this month`}
+          style={styles.panel}
+        >
+          <View style={styles.progTrack}>
+            <View
+              style={[
+                styles.progFill,
+                { width: `${monthlyAll.length ? (monthlyDone / monthlyAll.length) * 100 : 0}%` },
+              ]}
+            />
+          </View>
+          <CardGrid min={340}>
+            <PostRow post={upNext} onToggle={onToggle} />
+          </CardGrid>
+        </Panel>
+      ) : (
+        <Panel title="Post today" hint="Everything is posted 🎉">
+          <Text style={styles.empty}>
+            Generate next month's packs: organic-pack.mjs + batch-month.mjs
+          </Text>
+        </Panel>
+      )}
+      {dailyQueue.length > 1 ? (
+        <Panel
+          title="Up next"
+          hint={`${dailyQueue.length - 1} more in the queue — organic and ads alternate`}
+          style={styles.panel}
+        >
+          <CardGrid min={340}>
+            {dailyQueue.slice(1, 4).map((p) => (
+              <PostRow key={p.id} post={p} onToggle={onToggle} />
+            ))}
+          </CardGrid>
+        </Panel>
+      ) : null}
+    </>
+  );
+
+  const boostPosts = allPosts.filter((p) => p.ad_safety === 'ad_safe');
+  const boostGroup = (prefix: string) => boostPosts.filter((p) => p.batch.startsWith(prefix));
+  const boostView = (
+    <>
+      {rulesPanel}
+      {boostGroup('ad-toolkit').length
+        ? batchPanel(
+            'ad-toolkit',
+            boostGroup('ad-toolkit'),
+            'Evergreen ads — start your first 3 here',
+          )
+        : null}
+      {boostGroup('brand-kit').length
+        ? batchPanel('brand-kit', boostGroup('brand-kit'), 'Brand moments — launch & announcements')
+        : null}
+      {[...new Set(boostGroup('ad-library-').map((p) => p.batch))]
+        .sort((a, b) => b.localeCompare(a))
+        .map((batch) =>
+          batchPanel(
+            batch,
+            boostPosts.filter((p) => p.batch === batch),
+          ),
+        )}
+    </>
+  );
+
+  const libraryView = (
+    <>
+      <PillGroup
+        options={FILTER_OPTIONS}
+        value={filter}
+        onChange={setFilter}
+        variant="solid"
+        style={styles.filterRow}
+      />
+      {posts.length === 0 ? (
+        <Panel title="Library" hint="No posts match this filter">
+          <Text style={styles.empty}>Try a different chip above.</Text>
+        </Panel>
+      ) : (
+        batches.map((batch) =>
+          batchPanel(
+            batch,
+            posts.filter((p) => p.batch === batch),
+          ),
+        )
+      )}
+    </>
+  );
+
   return (
     <View style={styles.wrap}>
       {postsQ.isLoading ? (
@@ -321,89 +469,15 @@ export function SocialDomain() {
         </Panel>
       ) : (
         <>
-          {upNext ? (
-            <Panel
-              title="Post today"
-              hint={
-                libraryLeft
-                  ? `${libraryLeft} left in this month's library`
-                  : 'Library done — pick from the packs below'
-              }
-              style={styles.panel}
-            >
-              <CardGrid min={340}>
-                <PostRow post={upNext} onToggle={onToggle} />
-              </CardGrid>
-            </Panel>
-          ) : (
-            <Panel title="Post today" hint="Everything is posted 🎉">
-              <Text style={styles.empty}>
-                Generate next month's library: node scripts/social/ads/batch-month.mjs
-              </Text>
-            </Panel>
-          )}
           <PillGroup
-            options={LANE_OPTIONS}
-            value={lane}
-            onChange={setLane}
+            options={VIEW_OPTIONS}
+            value={view}
+            onChange={setView}
             variant="solid"
-            style={styles.laneRow}
+            style={styles.viewRow}
           />
-          <PillGroup
-            options={FILTER_OPTIONS}
-            value={filter}
-            onChange={setFilter}
-            variant="solid"
-            style={styles.filterRow}
-          />
-          {posts.length === 0 ? (
-            <Panel title="Social queue" hint="No posts match this filter">
-              <Text style={styles.empty}>Try a different lane, angle or format chip above.</Text>
-            </Panel>
-          ) : (
-            batches.map((batch) => {
-              const group = posts
-                .filter((p) => p.batch === batch)
-                .sort((a, b) => Number(!!a.posted_at) - Number(!!b.posted_at) || a.ord - b.ord);
-              const done = group.filter((p) => p.posted_at).length;
-              const allDone = done === group.length;
-              const open = openBatches[batch] ?? !allDone;
-              return (
-                <Panel
-                  key={batch}
-                  title={batchLabel(batch)}
-                  hint={`${done}/${group.length} posted`}
-                  style={styles.panel}
-                  action={
-                    <Pressable
-                      onPress={() => setOpenBatches((v) => ({ ...v, [batch]: !open }))}
-                      hitSlop={8}
-                      style={styles.rulesToggle}
-                    >
-                      <Text style={styles.rulesToggleText}>{open ? 'Hide' : 'Show'}</Text>
-                      <Ionicons
-                        name={open ? 'chevron-up' : 'chevron-down'}
-                        size={13}
-                        color={COLORS.navy}
-                      />
-                    </Pressable>
-                  }
-                >
-                  <View style={styles.progTrack}>
-                    <View style={[styles.progFill, { width: `${(done / group.length) * 100}%` }]} />
-                  </View>
-                  {open ? (
-                    <CardGrid min={340}>
-                      {group.map((p) => (
-                        <PostRow key={p.id} post={p} onToggle={onToggle} />
-                      ))}
-                    </CardGrid>
-                  ) : null}
-                </Panel>
-              );
-            })
-          )}
-          {rulesPanel}
+          <Text style={styles.viewHint}>{VIEW_HINT[view]}</Text>
+          {view === 'queue' ? queueView : view === 'boost' ? boostView : libraryView}
         </>
       )}
     </View>
@@ -415,8 +489,15 @@ const styles = StyleSheet.create({
   // single stranded column.
   wrap: { gap: 12, width: '100%' },
   panel: { marginBottom: 12 },
-  laneRow: {
-    marginBottom: 2,
+  viewRow: {
+    marginBottom: 0,
+  },
+  viewHint: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 12.5,
+    color: 'rgba(41,60,67,0.62)',
+    marginBottom: 10,
+    marginLeft: 2,
   },
   progTrack: {
     height: 4,
