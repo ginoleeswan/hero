@@ -42,14 +42,38 @@ const FILTER_OPTIONS: { label: string; value: Filter }[] = [
   { label: 'Carousels', value: 'carousel' },
 ];
 
+// Cloudinary's fl_attachment flag turns a delivery URL into a download
+// (Content-Disposition: attachment) — lets "Save all" fetch every slide/reel
+// to the device without blob plumbing, incl. iOS Safari's download sheet.
+const asDownload = (url: string, name: string) =>
+  url.replace(/\/(image|video)\/upload\//, (_m, kind) => `/${kind}/upload/fl_attachment:${name}/`);
+
 function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPost) => void }) {
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
   // Carousel slides expand inline (multi-tab window.open is popup-blocked after
   // the first — only one slide ever opened, esp. on iOS Safari). Each thumbnail
   // opens its own tab from its own tap, which blockers allow.
   const [slidesOpen, setSlidesOpen] = useState(false);
   const posted = !!post.posted_at;
   const isVideo = post.media_type === 'video' && !!post.video_url;
+
+  const saveAll = () => {
+    const files = isVideo && post.video_url ? [post.video_url] : post.slide_urls.length ? post.slide_urls : [post.image_url];
+    setSaving(true);
+    files.forEach((u, i) => {
+      // one anchor per file, staggered — browsers throttle burst downloads
+      setTimeout(() => {
+        const a = document.createElement('a');
+        a.href = asDownload(u, `${post.batch}-${post.ord}-${i + 1}`);
+        a.download = '';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }, i * 600);
+    });
+    setTimeout(() => setSaving(false), files.length * 600 + 600);
+  };
 
   const copyCaption = async () => {
     try {
@@ -108,6 +132,17 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
       <View style={styles.actions}>
         <Pressable style={styles.miniBtn} onPress={copyCaption} disabled={!post.caption}>
           <Text style={styles.miniBtnText}>{copied ? 'Copied ✓' : 'Copy caption'}</Text>
+        </Pressable>
+        <Pressable style={styles.miniBtn} onPress={saveAll} disabled={saving}>
+          <Text style={styles.miniBtnText}>
+            {saving
+              ? 'Saving…'
+              : isVideo
+                ? 'Save reel'
+                : post.slide_urls.length > 1
+                  ? `Save all (${post.slide_urls.length})`
+                  : 'Save'}
+          </Text>
         </Pressable>
         {isVideo ? (
           <Pressable style={styles.miniBtn} onPress={() => window.open(post.video_url!, '_blank')}>
