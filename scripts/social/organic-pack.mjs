@@ -67,6 +67,19 @@ const stack = (inner, top = 0.06) =>
 const glowBehind = (x, y, w, h, color) =>
   `<div style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:radial-gradient(50% 50% at 50% 50%, ${color}4d, transparent 70%);filter:blur(30px)"></div>`;
 
+// Single-hero hook treatment: no card box, no label — the portrait fades
+// into the venue (mask + wash) and the headline carries the name.
+// Same calibration as the did-you-know hook (user-approved): rounded card,
+// bottom-only dissolve into the venue — never a full vignette.
+const blendedBust = (uri, { w = 460, h = 560, wash = GOLD } = {}) => {
+  const mask = '-webkit-mask-image:linear-gradient(180deg,#000 68%,transparent 98%)';
+  return `
+  <div style="position:relative;width:${w}px;height:${h}px;overflow:hidden">
+    <img src="${uri}" style="width:100%;height:100%;object-fit:cover;border-radius:38px;${mask}">
+    <div style="position:absolute;inset:0;border-radius:38px;background:linear-gradient(200deg, ${wash}2e, rgba(11,24,32,.2) 62%);mix-blend-mode:soft-light;${mask}"></div>
+  </div>`;
+};
+
 const portraitCard = (uri, name, sub, color, { w = 400, h = 500, flip = false } = {}) => `
   <div style="position:relative;width:${w}px;height:${h}px;border-radius:34px;border:5px solid ${color};overflow:hidden;box-shadow:0 40px 80px -30px rgba(0,0,0,.8), 0 0 60px -18px ${color}66">
     <img src="${uri}" style="width:100%;height:100%;object-fit:cover;${flip ? 'transform:scaleX(-1)' : ''}">
@@ -110,12 +123,12 @@ function showdownSlides(a, b) {
 
 function coversSlides(h, covers) {
   const hook = stack(`
-    ${eyebrow('FROM THE ARCHIVE')}
-    <div style="position:relative">${glowBehind(-40, -20, 460, 520, GOLD)}${portraitCard(h.art, h.name, h.publisher?.toUpperCase() ?? '', GOLD, { w: 380, h: 470 })}</div>
+    ${eyebrow(`FROM THE ARCHIVE${h.publisher ? ' · ' + h.publisher.toUpperCase() : ''}`, 21)}
+    <div style="position:relative;margin-bottom:-44px">${glowBehind(-30, 0, 480, 480, GOLD)}${blendedBust(h.art, { w: 420, h: 500 })}</div>
     ${headline(`The many faces<br>of ${h.name}.`, 76)}
     <div style="font-family:'S';font-size:26px;color:${MUT}">Swipe through the covers &rarr;</div>`);
   const coverSlide = (c, i) => `
-    <img src="${c.art}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+    <img src="${c.art}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top">
     <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(6,18,26,.55), transparent 24%, transparent 64%, rgba(6,18,26,.92) 90%)"></div>
     <div style="position:absolute;top:64px;left:84px;right:84px;display:flex;justify-content:space-between">
       ${eyebrow(h.name.toUpperCase(), 20)}<div style="font-family:'S';font-size:20px;letter-spacing:.3em;color:${CREAM};text-shadow:0 2px 10px rgba(5,12,17,.9)">${String(i + 1).padStart(2, '0')} / ${String(covers.length).padStart(2, '0')}</div>
@@ -174,8 +187,8 @@ function bloodlineSlides(rel, hero, relationText) {
 
 function onscreenSlides(h, films) {
   const hook = stack(`
-    ${eyebrow('ON SCREEN')}
-    <div style="position:relative">${glowBehind(-40, -20, 460, 520, GOLD)}${portraitCard(h.art, h.name, `${h.movie_count} SCREEN APPEARANCES`, GOLD, { w: 380, h: 470 })}</div>
+    ${eyebrow(`ON SCREEN · ${h.movie_count} APPEARANCES`, 21)}
+    <div style="position:relative;margin-bottom:-44px">${glowBehind(-30, 0, 480, 480, GOLD)}${blendedBust(h.art, { w: 420, h: 500 })}</div>
     ${headline(`${h.name},<br>on screen.`, 78)}
     <div style="font-family:'S';font-size:26px;color:${MUT}">The films that built the legend &rarr;</div>`);
   const posterSlide = (f) => `
