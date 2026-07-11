@@ -97,7 +97,7 @@ async function overview() {
       ${stage('vault', 1080, 1350, { pos: 0.35, dim: 0.12 })}
       ${masthead(1080, 'VOL. I')}
       <div style="position:absolute;left:0;right:0;top:790px;text-align:center;z-index:5">
-        <div class="s" style="font-size:23px;letter-spacing:.4em;color:${GOLD};margin-bottom:30px;text-shadow:0 3px 26px rgba(5,12,17,.9)">MEET MYTHIQUE</div>
+        <div class="s" style="font-size:23px;letter-spacing:.4em;color:${GOLD};margin-bottom:30px;text-shadow:0 2px 8px rgba(5,12,17,.95), 0 4px 34px rgba(5,12,17,.9)">MEET MYTHIQUE</div>
         <div style="font-size:96px;line-height:1.06;text-shadow:0 6px 40px rgba(5,12,17,.75)">Every hero.<br>Every villain.<br>One archive.</div>
       </div>
       ${footer('mythique.app')}
@@ -126,7 +126,7 @@ async function overview() {
       <div style="position:absolute;left:50%;top:500px;transform:translate(-50%,-50%) rotate(45deg);width:110px;height:110px;background:${INK};border:5px solid ${GOLD};border-radius:16px;box-shadow:0 0 70px rgba(224,168,62,.6);z-index:5"></div>
       <div style="position:absolute;left:50%;top:500px;transform:translate(-50%,-50%);font-size:44px;color:${GOLD};z-index:6">VS</div>
       <div style="position:absolute;left:0;right:0;top:770px;text-align:center;z-index:5">
-        <div class="s" style="font-size:23px;letter-spacing:.4em;color:${GOLD};margin-bottom:28px;text-shadow:0 3px 26px rgba(5,12,17,.9)">★ DAILY SHOWDOWNS ★</div>
+        <div class="s" style="font-size:23px;letter-spacing:.4em;color:${GOLD};margin-bottom:28px;text-shadow:0 2px 8px rgba(5,12,17,.95), 0 4px 34px rgba(5,12,17,.9)">★ DAILY SHOWDOWNS ★</div>
         <div style="font-size:96px;line-height:1.06;text-shadow:0 6px 40px rgba(5,12,17,.75)">Settle the<br>debates.</div>
       </div>
       ${footer('mythique.app', 'REAL STATS · YOUR VOTE DECIDES')}
@@ -139,7 +139,7 @@ async function overview() {
       ${stage('throne', 1080, 1350, { pos: 0.35, dim: 0.1 })}
       ${masthead(1080, 'THE LORE')}
       <div style="position:absolute;left:0;right:0;top:750px;text-align:center;z-index:5">
-        <div class="s" style="font-size:23px;letter-spacing:.4em;color:${GOLD};margin-bottom:28px;text-shadow:0 3px 26px rgba(5,12,17,.9)">646,000 CONNECTIONS, MAPPED</div>
+        <div class="s" style="font-size:23px;letter-spacing:.4em;color:${GOLD};margin-bottom:28px;text-shadow:0 2px 8px rgba(5,12,17,.95), 0 4px 34px rgba(5,12,17,.9)">646,000 CONNECTIONS, MAPPED</div>
         <div style="font-size:92px;line-height:1.08;text-shadow:0 6px 40px rgba(5,12,17,.75)">Bloodlines.<br>Rivalries.<br>Alliances.</div>
       </div>
       ${footer('mythique.app')}
@@ -149,10 +149,10 @@ async function overview() {
   // 5 · the invitation — dawn, paper-warm CTA
   await render(`${css(1080, 1350)}
     <div style="position:relative;width:1080px;height:1350px;background:${INK};color:${CREAM};overflow:hidden">
-      ${stage('dawn', 1080, 1350, { pos: 0.45, dim: 0.22, topScrim: 0.7, bottomScrim: 0.9 })}
+      ${stage('dawn', 1080, 1350, { pos: 0.45, dim: 0.3, topScrim: 0.7, bottomScrim: 0.9 })}
       ${masthead(1080, 'FREE · ON THE WEB')}
       <div style="position:absolute;left:0;right:0;top:770px;text-align:center;z-index:5">
-        <div class="s" style="font-size:23px;letter-spacing:.4em;color:${GOLD};margin-bottom:28px;text-shadow:0 3px 26px rgba(5,12,17,.9)">START EXPLORING</div>
+        <div class="s" style="font-size:23px;letter-spacing:.4em;color:${GOLD};margin-bottom:28px;text-shadow:0 2px 8px rgba(5,12,17,.95), 0 4px 34px rgba(5,12,17,.9)">START EXPLORING</div>
         <div style="font-size:104px;line-height:1.05;text-shadow:0 6px 40px rgba(5,12,17,.75)">The archive<br>is open.</div>
       </div>
       ${footer('mythique.app', 'NO INSTALL · NO PAYWALL')}
@@ -176,8 +176,9 @@ async function overview() {
     <div style="position:relative;width:1080px;height:1920px;background:${INK};color:${CREAM};overflow:hidden">
       ${stage('vault', 1080, 1920, { pos: 0.5, dim: 0.1, bottomScrim: 0.94 })}
       <div style="position:absolute;left:0;right:0;top:150px;display:flex;justify-content:center;align-items:center;gap:22px"><img src="${BRAND.logo}" style="height:40px"><img src="${BRAND.wordmark}" style="height:42px"></div>
+      <div style="position:absolute;left:50%;top:1330px;width:1100px;height:760px;transform:translate(-50%,-50%);background:radial-gradient(50% 50% at 50% 50%, rgba(6,18,26,.72), rgba(6,18,26,.25) 62%, transparent 78%);z-index:4"></div>
       <div style="position:absolute;left:0;right:0;top:1180px;text-align:center;z-index:5">
-        <div class="s" style="font-size:26px;letter-spacing:.4em;color:${GOLD};margin-bottom:34px">MEET MYTHIQUE</div>
+        <div class="s" style="font-size:26px;letter-spacing:.4em;color:${GOLD};margin-bottom:34px;text-shadow:0 2px 8px rgba(5,12,17,.95), 0 4px 34px rgba(5,12,17,.9)">MEET MYTHIQUE</div>
         <div style="font-size:108px;line-height:1.06">Every hero.<br>Every villain.<br>One archive.</div>
         <div class="s" style="font-size:34px;color:${INKMUT};margin-top:38px;line-height:1.5">35,000 legends — rated, ranked,<br>battled &amp; mapped.</div>
       </div>
@@ -195,13 +196,13 @@ async function announce() {
       ${stage(plateKey, 1080, 1350, { pos: opts.pos ?? 0.4, dim: opts.dim ?? 0 })}
       ${masthead(1080, folioText)}
       <div style="position:absolute;left:0;right:0;top:${opts.top ?? 770}px;text-align:center;z-index:5">
-        <div class="s" style="font-size:24px;letter-spacing:.42em;color:${GOLD};margin-bottom:30px;text-shadow:0 3px 26px rgba(5,12,17,.9)">${eyebrow}</div>
+        <div class="s" style="font-size:24px;letter-spacing:.42em;color:${GOLD};margin-bottom:30px;text-shadow:0 2px 8px rgba(5,12,17,.95), 0 4px 34px rgba(5,12,17,.9)">${eyebrow}</div>
         <div style="font-size:104px;line-height:1.05;text-shadow:0 6px 40px rgba(5,12,17,.75)">${head}</div>
       </div>
       ${footer('mythique.app', sub)}
       ${grain()}
     </div>`, join(dir, file), 1080, 1350);
-  await moment('launch-4x5.png', 'dawn', 'BULLETIN · №1', 'NOW LIVE', 'The archive<br>is open.', '35,000 LEGENDS · FREE ON THE WEB', { dim: 0.22 });
+  await moment('launch-4x5.png', 'dawn', 'BULLETIN · №1', 'NOW LIVE', 'The archive<br>is open.', '35,000 LEGENDS · FREE ON THE WEB', { dim: 0.3 });
   await moment('milestone-4x5.png', 'sky', 'MILESTONE', 'THE ARCHIVE REACHES', '35,000<br>legends.', 'AND COUNTING', { pos: 0.35 });
   await moment('feature-4x5.png', 'throne', 'BULLETIN · №2', 'NEW ON MYTHIQUE', 'Family trees<br>just landed.', 'TRACE THE BLOODLINES', { dim: 0.1 });
   console.log(' ✓ 03-announce/');
