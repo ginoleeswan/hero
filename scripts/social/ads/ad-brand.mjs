@@ -149,10 +149,12 @@ const STYLES = {
     const field = (k, v) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:${Math.round(h * 0.017)}px 0;border-bottom:1px solid rgba(224,168,62,.14)">
       <span style="font-family:'S';font-size:${Math.round(h * 0.018)}px;letter-spacing:.14em;color:${MUTED}">${k}</span><span>${v}</span></div>`;
     const meter = `<div style="display:inline-flex;gap:5px;vertical-align:middle">${[1, 1, 1, 1, 0].map((on) => `<span style="width:${Math.round(w * 0.028)}px;height:${Math.round(h * 0.016)}px;border-radius:3px;background:${on ? GOLD : 'rgba(255,255,255,.12)'}"></span>`).join('')}</div>`;
-    return stageLeft(w, h,
+    // Centered over the throne plate's own symmetry — a left column left a
+    // dead right third and fought the backdrop.
+    return stage(w, h,
       `<div style="font-size:${Math.round(h * 0.025)}px;letter-spacing:.2em;color:${GOLD};margin-bottom:${Math.round(h * 0.02)}px">MYTHIQUE · CLASSIFIED FILE</div>
-       <div class="pop" style="font-size:${Math.round(h * 0.058)}px;line-height:1;color:${CREAM};margin-bottom:${Math.round(h * 0.036)}px">The file on every<br>hero &amp; villain.</div>
-       <div style="width:100%;background:rgba(13,30,42,.92);border:1px solid rgba(224,168,62,.28);border-radius:${Math.round(h * 0.018)}px;padding:${Math.round(h * 0.03)}px ${Math.round(w * 0.04)}px;box-shadow:0 24px 60px -28px rgba(0,0,0,.8)">
+       <div class="pop" style="font-size:${Math.round(h * 0.058)}px;line-height:1.05;color:${CREAM};margin-bottom:${Math.round(h * 0.04)}px">The file on every<br>hero &amp; villain.</div>
+       <div style="width:${Math.round(w * 0.64)}px;text-align:left;background:rgba(13,30,42,.92);border:1px solid rgba(224,168,62,.28);border-radius:${Math.round(h * 0.018)}px;padding:${Math.round(h * 0.03)}px ${Math.round(w * 0.04)}px;box-shadow:0 24px 60px -28px rgba(0,0,0,.8)">
          <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:${Math.round(h * 0.017)}px;border-bottom:1px solid rgba(224,168,62,.14)">
            <span style="font-family:'S';font-size:${Math.round(h * 0.019)}px;letter-spacing:.1em;color:${MUTED}">FILE No.</span><span>${red(Math.round(w * 0.1))}</span></div>
          ${field('ALIGNMENT', red(Math.round(w * 0.15)))}
@@ -161,7 +163,7 @@ const STYLES = {
          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:${Math.round(h * 0.017)}px">
            <span style="font-family:'S';font-size:${Math.round(h * 0.018)}px;letter-spacing:.14em;color:${MUTED}">POWERS</span><span>${red(Math.round(w * 0.26))}</span></div>
        </div>
-       <div style="font-size:${Math.round(h * 0.03)}px;margin-top:${Math.round(h * 0.036)}px"><span style="color:${MUTED}">One of ${nice(d.count)} files · </span><span class="g pop" style="letter-spacing:.5px">mythique.app&thinsp;→</span></div>`, 0.72);
+       <div style="font-size:${Math.round(h * 0.03)}px;margin-top:${Math.round(h * 0.044)}px"><span style="color:${MUTED}">One of ${nice(d.count)} files · </span><span class="g pop" style="letter-spacing:.5px">mythique.app&thinsp;→</span></div>`);
   },
 };
 
