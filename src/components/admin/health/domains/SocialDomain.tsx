@@ -4,7 +4,7 @@
 // its caption, tick it off. Posted-state lives in social_posts (admin RLS),
 // so it syncs across devices. Web-only, like the rest of the command center.
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -84,14 +84,9 @@ const FILTER_OPTIONS: { label: string; value: Filter }[] = [
 const asDownload = (url: string, name: string) =>
   url.replace(/\/(image|video)\/upload\//, (_m, kind) => `/${kind}/upload/fl_attachment:${name}/`);
 
-function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPost) => void }) {
+function usePostActions(post: SocialPost) {
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
-  // Carousel slides expand inline (multi-tab window.open is popup-blocked after
-  // the first — only one slide ever opened, esp. on iOS Safari). Each thumbnail
-  // opens its own tab from its own tap, which blockers allow.
-  const [slidesOpen, setSlidesOpen] = useState(false);
-  const posted = !!post.posted_at;
   const isVideo = post.media_type === 'video' && !!post.video_url;
 
   const saveAll = () => {
@@ -125,6 +120,117 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
       /* clipboard unavailable */
     }
   };
+
+  return { copied, saving, isVideo, saveAll, copyCaption };
+}
+
+// The hero of the Queue view — media-first, like the top schedulers: the
+// creative dominates (real 4:5 preview), the plan rides beside it, ONE
+// primary action. Everything else is secondary.
+function TodayCard({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPost) => void }) {
+  const { copied, saving, isVideo, saveAll, copyCaption } = usePostActions(post);
+  const fileCount = isVideo ? 1 : post.slide_urls.length || 1;
+  return (
+    <View style={styles.todayCard}>
+      <Pressable
+        style={styles.todayMedia}
+        onPress={() => window.open(isVideo ? post.video_url! : post.image_url, '_blank')}
+      >
+        <Image source={{ uri: post.image_url }} style={styles.todayMediaImg} contentFit="cover" />
+        {isVideo ? (
+          <View style={styles.playBadge}>
+            <Text style={styles.playBadgeText}>▶</Text>
+          </View>
+        ) : null}
+        {!isVideo && post.slide_urls.length > 1 ? (
+          <View style={styles.todaySlideCount}>
+            <Text style={styles.todaySlideCountText}>1 / {post.slide_urls.length}</Text>
+          </View>
+        ) : null}
+      </Pressable>
+      <View style={styles.todayMeta}>
+        <View style={styles.titleRow}>
+          <Text style={post.ad_safety === 'ad_safe' ? styles.badgeSafe : styles.badgeOrganic}>
+            {post.ad_safety === 'ad_safe' ? 'BOOST OK' : 'ORGANIC ONLY'}
+          </Text>
+          {isVideo ? <Text style={styles.badgeReel}>REEL</Text> : null}
+        </View>
+        <Text style={styles.todayTitle}>{post.title}</Text>
+        {post.guide_where ? <Text style={styles.todayWhere}>→ {post.guide_where}</Text> : null}
+        {post.guide_music ? (
+          <Text style={styles.music} numberOfLines={2}>
+            ♪ {post.guide_music}
+          </Text>
+        ) : null}
+        {post.caption ? (
+          <Text style={styles.todayCaption} numberOfLines={3}>
+            {post.caption}
+          </Text>
+        ) : null}
+        <View style={styles.todaySteps}>
+          <Pressable style={styles.stepBtn} onPress={saveAll} disabled={saving}>
+            <Ionicons name="download-outline" size={15} color={COLORS.navy} />
+            <Text style={styles.stepBtnText}>
+              {saving
+                ? 'Saving…'
+                : fileCount > 1
+                  ? `Save all (${fileCount})`
+                  : isVideo
+                    ? 'Save reel'
+                    : 'Save'}
+            </Text>
+          </Pressable>
+          <Pressable style={styles.stepBtn} onPress={copyCaption} disabled={!post.caption}>
+            <Ionicons name="copy-outline" size={15} color={COLORS.navy} />
+            <Text style={styles.stepBtnText}>{copied ? 'Copied ✓' : 'Copy caption'}</Text>
+          </Pressable>
+          <Pressable style={styles.primaryBtn} onPress={() => onToggle(post)}>
+            <Ionicons name="checkmark" size={16} color="#fff" />
+            <Text style={styles.primaryBtnText}>Mark posted</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// One slot in the coming-days strip: big thumb, day label, one-line title.
+function DayCard({ post, day }: { post: SocialPost; day: string }) {
+  const isVideo = post.media_type === 'video' && !!post.video_url;
+  return (
+    <Pressable
+      style={styles.dayCard}
+      onPress={() => window.open(isVideo ? post.video_url! : post.image_url, '_blank')}
+    >
+      <View style={styles.dayThumbWrap}>
+        <Image source={{ uri: post.image_url }} style={styles.dayThumb} contentFit="cover" />
+        {isVideo ? (
+          <View style={styles.playBadgeSm}>
+            <Text style={styles.playBadgeTextSm}>▶</Text>
+          </View>
+        ) : null}
+        <View
+          style={[
+            styles.dayLaneDot,
+            { backgroundColor: post.ad_safety === 'ad_safe' ? '#63A936' : COLORS.orange },
+          ]}
+        />
+      </View>
+      <Text style={styles.dayLabel}>{day}</Text>
+      <Text style={styles.dayTitle} numberOfLines={1}>
+        {post.title}
+      </Text>
+    </Pressable>
+  );
+}
+
+function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPost) => void }) {
+  const { copied, saving, isVideo, saveAll, copyCaption } = usePostActions(post);
+  // Carousel slides expand inline (multi-tab window.open is popup-blocked after
+  // the first — only one slide ever opened, esp. on iOS Safari). Each thumbnail
+  // opens its own tab from its own tap, which blockers allow.
+  const [slidesOpen, setSlidesOpen] = useState(false);
+  const posted = !!post.posted_at;
 
   return (
     <View style={[styles.card, posted && styles.cardDone]}>
@@ -358,11 +464,21 @@ export function SocialDomain() {
     );
   };
 
+  const dayLabel = (offset: number) => {
+    if (offset === 0) return 'Tomorrow';
+    const d = new Date(Date.now() + (offset + 1) * 86400000);
+    return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+  };
+  const todayStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
   const queueView = (
     <>
       {upNext ? (
         <Panel
-          title="Post today"
+          title={`Today · ${todayStr}`}
           hint={`${monthlyDone}/${monthlyAll.length} posted this month`}
           style={styles.panel}
         >
@@ -374,9 +490,7 @@ export function SocialDomain() {
               ]}
             />
           </View>
-          <CardGrid min={340}>
-            <PostRow post={upNext} onToggle={onToggle} />
-          </CardGrid>
+          <TodayCard post={upNext} onToggle={onToggle} />
         </Panel>
       ) : (
         <Panel title="Post today" hint="Everything is posted 🎉">
@@ -387,15 +501,17 @@ export function SocialDomain() {
       )}
       {dailyQueue.length > 1 ? (
         <Panel
-          title="Up next"
-          hint={`${dailyQueue.length - 1} more in the queue — organic and ads alternate`}
+          title="Coming up"
+          hint={`${dailyQueue.length - 1} queued — organic and ads alternate`}
           style={styles.panel}
         >
-          <CardGrid min={340}>
-            {dailyQueue.slice(1, 4).map((p) => (
-              <PostRow key={p.id} post={p} onToggle={onToggle} />
-            ))}
-          </CardGrid>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.dayStrip}>
+              {dailyQueue.slice(1, 9).map((p, i) => (
+                <DayCard key={p.id} post={p} day={dayLabel(i)} />
+              ))}
+            </View>
+          </ScrollView>
         </Panel>
       ) : null}
     </>
@@ -495,10 +611,110 @@ const styles = StyleSheet.create({
   viewHint: {
     fontFamily: 'Nunito_600SemiBold',
     fontSize: 12.5,
-    color: 'rgba(41,60,67,0.62)',
+    color: 'rgba(245,235,220,0.6)',
     marginBottom: 10,
     marginLeft: 2,
   },
+  todayCard: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 22,
+    alignItems: 'flex-start',
+  },
+  todayMedia: {
+    width: 300,
+    aspectRatio: 4 / 5,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(41,60,67,0.08)',
+    flexGrow: 0,
+  },
+  todayMediaImg: { width: '100%', height: '100%' },
+  todaySlideCount: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(6,18,26,0.72)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  todaySlideCountText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#f5ebdc' },
+  todayMeta: { flex: 1, minWidth: 280, gap: 9, paddingTop: 2 },
+  todayTitle: { fontFamily: 'Nunito_800ExtraBold', fontSize: 21, color: COLORS.navy },
+  todayWhere: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(41,60,67,0.75)' },
+  todayCaption: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 13,
+    lineHeight: 19,
+    color: 'rgba(41,60,67,0.62)',
+    backgroundColor: 'rgba(41,60,67,0.05)',
+    borderRadius: 10,
+    padding: 10,
+  },
+  todaySteps: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  stepBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.22)',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  stepBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
+  primaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    backgroundColor: COLORS.orange,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+  },
+  primaryBtnText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 13, color: '#fff' },
+  dayStrip: { flexDirection: 'row', gap: 14, paddingVertical: 2 },
+  dayCard: { width: 148 },
+  dayThumbWrap: {
+    width: 148,
+    aspectRatio: 4 / 5,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(41,60,67,0.08)',
+  },
+  dayThumb: { width: '100%', height: '100%' },
+  dayLaneDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.85)',
+  },
+  dayLabel: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 11,
+    letterSpacing: 0.6,
+    color: 'rgba(41,60,67,0.55)',
+    textTransform: 'uppercase',
+    marginTop: 8,
+  },
+  dayTitle: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy, marginTop: 1 },
+  playBadgeSm: {
+    position: 'absolute',
+    left: 8,
+    bottom: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(6,18,26,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playBadgeTextSm: { color: '#f5ebdc', fontSize: 9 },
   progTrack: {
     height: 4,
     borderRadius: 999,
