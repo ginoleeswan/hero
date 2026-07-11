@@ -177,12 +177,12 @@ async function overview() {
       ${stage('vault', 1080, 1920, { pos: 0.5, dim: 0.1, bottomScrim: 0.94 })}
       <div style="position:absolute;left:0;right:0;top:150px;display:flex;justify-content:center;align-items:center;gap:22px"><img src="${BRAND.logo}" style="height:40px"><img src="${BRAND.wordmark}" style="height:42px"></div>
       <div style="position:absolute;left:50%;top:1330px;width:1100px;height:760px;transform:translate(-50%,-50%);background:radial-gradient(50% 50% at 50% 50%, rgba(6,18,26,.72), rgba(6,18,26,.25) 62%, transparent 78%);z-index:4"></div>
-      <div style="position:absolute;left:0;right:0;top:1180px;text-align:center;z-index:5">
+      <div style="position:absolute;left:0;right:0;top:1108px;text-align:center;z-index:5">
         <div class="s" style="font-size:26px;letter-spacing:.4em;color:${GOLD};margin-bottom:34px;text-shadow:0 2px 8px rgba(5,12,17,.95), 0 4px 34px rgba(5,12,17,.9)">MEET MYTHIQUE</div>
-        <div style="font-size:108px;line-height:1.06">Every hero.<br>Every villain.<br>One archive.</div>
-        <div class="s" style="font-size:34px;color:${INKMUT};margin-top:38px;line-height:1.5">35,000 legends — rated, ranked,<br>battled &amp; mapped.</div>
+        <div style="font-size:104px;line-height:1.06">Every hero.<br>Every villain.<br>One archive.</div>
+        <div class="s" style="font-size:34px;color:${INKMUT};margin-top:40px;line-height:1.5">35,000 legends — rated, ranked,<br>battled &amp; mapped.</div>
+        <div style="font-size:54px;color:${GOLD};margin-top:52px">mythique.app</div>
       </div>
-      <div style="position:absolute;left:0;right:0;bottom:150px;text-align:center;z-index:5"><div style="font-size:54px;color:${GOLD}">mythique.app</div></div>
       ${grain()}
     </div>`, join(dir, 'overview-story-1080x1920.png'), 1080, 1920);
   console.log(' ✓ 02-overview/');
