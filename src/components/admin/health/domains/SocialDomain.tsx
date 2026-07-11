@@ -119,16 +119,95 @@ function usePostActions(post: SocialPost) {
     }
   };
 
-  return { copied, saving, isVideo, saveAll, copyCaption };
+  // Native share sheet WITH the media attached (mobile Safari/Chrome): tap
+  // Instagram/TikTok in the sheet and the composer opens with files loaded.
+  // The closest thing to one-tap posting without platform API approval.
+  const [sharing, setSharing] = useState(false);
+  const canShareFiles =
+    typeof navigator !== 'undefined' && !!navigator.canShare && !!navigator.share;
+  const shareToApps = async () => {
+    setSharing(true);
+    try {
+      const urls =
+        isVideo && post.video_url
+          ? [post.video_url]
+          : post.slide_urls.length
+            ? post.slide_urls
+            : [post.image_url];
+      const files = await Promise.all(
+        urls.map(async (u, i) => {
+          const res = await fetch(u);
+          const blob = await res.blob();
+          const ext = isVideo ? 'mp4' : 'png';
+          return new File([blob], `${post.batch}-${post.ord}-${i + 1}.${ext}`, {
+            type: blob.type,
+          });
+        }),
+      );
+      if (navigator.canShare?.({ files })) {
+        await navigator.share({ files, text: post.caption });
+      } else {
+        await navigator.share({ text: post.caption });
+      }
+    } catch {
+      /* user dismissed the sheet, or share unsupported */
+    }
+    setSharing(false);
+  };
+
+  return { copied, saving, sharing, isVideo, canShareFiles, saveAll, copyCaption, shareToApps };
+}
+
+// The caption's trailing hashtag block — IG best practice is hashtags in the
+// FIRST COMMENT, so they copy separately from the caption body.
+function splitCaption(caption: string) {
+  const lines = caption.split('\n');
+  const tagLine =
+    lines.findLast?.((l) => l.trim().startsWith('#')) ??
+    [...lines].reverse().find((l) => l.trim().startsWith('#'));
+  if (!tagLine) return { body: caption, tags: null };
+  return {
+    body: lines
+      .filter((l) => l !== tagLine)
+      .join('\n')
+      .trim(),
+    tags: tagLine.trim(),
+  };
 }
 
 // The hero of the Queue view — media-first, like the top schedulers: the
 // creative dominates (real 4:5 preview), the plan rides beside it, ONE
 // primary action. Everything else is secondary.
-function TodayCard({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPost) => void }) {
-  const { copied, saving, isVideo, saveAll, copyCaption } = usePostActions(post);
+function TodayCard({
+  post,
+  onToggle,
+  onSkip,
+}: {
+  post: SocialPost;
+  onToggle: (p: SocialPost) => void;
+  onSkip?: () => void;
+}) {
+  const { copied, saving, sharing, isVideo, canShareFiles, saveAll, copyCaption, shareToApps } =
+    usePostActions(post);
   const [savedOnce, setSavedOnce] = useState(false);
   const [copiedOnce, setCopiedOnce] = useState(false);
+  const [tagsCopied, setTagsCopied] = useState(false);
+  const { tags } = splitCaption(post.caption ?? '');
+  const copyTags = async () => {
+    if (!tags) return;
+    try {
+      await navigator.clipboard.writeText(tags);
+      setTagsCopied(true);
+      setTimeout(() => setTagsCopied(false), 1400);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+  const intentX = () =>
+    window.open(
+      `https://twitter.com/intent/post?text=${encodeURIComponent((post.caption ?? '').slice(0, 270))}`,
+      '_blank',
+    );
   const fileCount = isVideo ? 1 : post.slide_urls.length || 1;
   const step = (
     n: string,
@@ -240,7 +319,45 @@ function TodayCard({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialP
             },
             { disabled: !post.caption },
           )}
-          {step('3', 'Posted — mark it done', false, () => onToggle(post), { primary: true })}
+          <View style={styles.platformRow}>
+            <Text style={styles.platformLabel}>3 · POST IT</Text>
+            {canShareFiles ? (
+              <Pressable style={styles.platformChip} onPress={shareToApps} disabled={sharing}>
+                <Ionicons name="share-outline" size={14} color={COLORS.navy} />
+                <Text style={styles.platformChipText}>
+                  {sharing ? 'Opening…' : 'Share to apps'}
+                </Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              style={styles.platformChip}
+              onPress={() => window.open('https://www.tiktok.com/upload', '_blank')}
+            >
+              <Text style={styles.platformChipText}>TikTok</Text>
+            </Pressable>
+            <Pressable
+              style={styles.platformChip}
+              onPress={() => window.open('https://www.instagram.com/', '_blank')}
+            >
+              <Text style={styles.platformChipText}>Instagram</Text>
+            </Pressable>
+            <Pressable style={styles.platformChip} onPress={intentX}>
+              <Text style={styles.platformChipText}>X</Text>
+            </Pressable>
+            {tags ? (
+              <Pressable style={styles.platformChip} onPress={copyTags}>
+                <Text style={styles.platformChipText}>
+                  {tagsCopied ? 'Tags ✓' : '# 1st comment'}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+          {step('4', 'Posted — mark it done', false, () => onToggle(post), { primary: true })}
+          {onSkip ? (
+            <Pressable onPress={onSkip} hitSlop={6} style={styles.skipLink}>
+              <Text style={styles.skipLinkText}>Not feeling this one? Skip to the next →</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </View>
@@ -394,6 +511,8 @@ export function SocialDomain() {
   const [view, setView] = useState<PubView>('queue');
   // Per-batch collapse; fully-posted batches start collapsed (see render).
   const [openBatches, setOpenBatches] = useState<Record<string, boolean>>({});
+  // "Skip" rotates today's pick without marking it posted (session-local).
+  const [skipCount, setSkipCount] = useState(0);
 
   const onToggle = async (p: SocialPost) => {
     await setSocialPosted(p.id, !p.posted_at);
@@ -433,7 +552,8 @@ export function SocialDomain() {
     (p) => p.batch.startsWith('organic-') || p.batch.startsWith('ad-library-'),
   );
   const monthlyDone = monthlyAll.filter((p) => p.posted_at).length;
-  const upNext = dailyQueue[0] ?? allPosts.find((p) => !p.posted_at);
+  const upNext =
+    dailyQueue[skipCount % Math.max(1, dailyQueue.length)] ?? allPosts.find((p) => !p.posted_at);
 
   const rulesPanel = (
     <Panel
@@ -596,7 +716,11 @@ export function SocialDomain() {
             <View style={styles.progTrack}>
               <View style={[styles.progFill, { width: `${monthPct}%` }]} />
             </View>
-            <TodayCard post={upNext} onToggle={onToggle} />
+            <TodayCard
+              post={upNext}
+              onToggle={onToggle}
+              onSkip={dailyQueue.length > 1 ? () => setSkipCount((c) => c + 1) : undefined}
+            />
           </Panel>
         ) : (
           <Panel title="Post today" hint="Everything is posted 🎉">
@@ -859,6 +983,39 @@ const styles = StyleSheet.create({
   stepLabel: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.navy },
   stepLabelPrimary: { color: '#fff', fontFamily: 'Nunito_800ExtraBold' },
   stepLabelDone: { color: '#4a7d2b' },
+  platformRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+  platformLabel: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 11,
+    letterSpacing: 0.8,
+    color: 'rgba(41,60,67,0.5)',
+    marginRight: 2,
+  },
+  platformChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  platformChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.navy },
+  skipLink: { alignSelf: 'center', paddingVertical: 4 },
+  skipLinkText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'rgba(41,60,67,0.5)',
+  },
   weekRow: {
     flexDirection: 'row',
     alignItems: 'center',
