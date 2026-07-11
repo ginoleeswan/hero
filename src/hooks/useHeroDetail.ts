@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery, HeroNotFoundError } from '../lib/api';
+import { fetchHeroDetails, fetchHeroGallery } from '../lib/api';
 import { heroRowToCharacterData, type RelatedHeroCard } from '../lib/db/heroes';
 import { useHeroRow, useHeroPercentile, useRelatedHeroes } from '../lib/query/heroQueries';
 import {
@@ -118,42 +118,6 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
   useEffect(() => {
     if (!id) return;
 
-    const loadFromApi = () => {
-      fetchHeroStats(id)
-        .then((stats) => {
-          setData({
-            stats,
-            details: {
-              summary: null,
-              publisher: null,
-              firstIssueId: null,
-              firstIssueData: null,
-              powers: null,
-              description: null,
-              origin: null,
-              issueCount: null,
-              creators: null,
-              enemies: null,
-              friends: null,
-              movies: null,
-              movieCount: null,
-              teams: null,
-            },
-            firstIssue: null,
-          });
-          fetchHeroDetails(stats.id, stats.name)
-            .then((details) => {
-              setData({ stats, details, firstIssue: details.firstIssueData });
-            })
-            .catch(() => {})
-            .finally(() => setComicVineLoading(false));
-        })
-        .catch((e: unknown) => {
-          if (e instanceof HeroNotFoundError) setNotFound(true);
-          else setLoadError(true);
-        });
-    };
-
     const plan = planHeroLoad({
       isPlaceholderData: heroRowQuery.isPlaceholderData,
       isError: heroRowQuery.isError,
@@ -164,12 +128,19 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
     // Still resolving (instant placeholder, or no row yet) — keep the skeleton.
     if (plan === 'wait') return;
 
-    // No usable DB row → fetch base stats from the external SuperheroAPI by id.
-    // Reached only for genuine SuperheroAPI heroes (numeric ids not in our DB, or
-    // un-enriched numeric stubs); never for `cv-` ComicVine heroes, whose id
-    // can't resolve against SuperheroAPI.
-    if (plan === 'external-api') {
-      loadFromApi();
+    // The DB is the only source of characters. An id with no row is not-found —
+    // never fetched live from the external SuperheroAPI, which still resolves
+    // ids we merged away (e.g. 70 → Batman 69) and used to fabricate a full
+    // phantom page for them.
+    if (plan === 'not-found') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setNotFound(true);
+      return;
+    }
+
+    // Transient row-query failure — retryable error screen, not a false 404.
+    if (plan === 'error') {
+      setLoadError(true);
       return;
     }
 
@@ -181,7 +152,6 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
     if (heroRow) {
       // Seed the screen from the already-loaded row so it paints instantly.
       // Effect-based detail fetch (pre-React-Query).
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setData(heroRowToCharacterData(heroRow));
 
       // Gallery images (primary art + covers, multi-source) from hero_images.

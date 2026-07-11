@@ -108,7 +108,6 @@ const config: ExpoConfig = {
     reactCompiler: true,
   },
   extra: {
-    superheroApiKey: process.env.SUPERHERO_API_KEY,
     comicvineApiKey: process.env.COMICVINE_API_KEY,
     tmdbApiKey: process.env.TMDB_API_KEY,
     eas: {

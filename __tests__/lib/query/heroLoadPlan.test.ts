@@ -1,4 +1,4 @@
-import { planHeroLoad, isSuperheroApiId } from '../../../src/lib/query/heroLoadPlan';
+import { planHeroLoad } from '../../../src/lib/query/heroLoadPlan';
 import type { Hero } from '../../../src/types';
 
 // Minimal row builder — planHeroLoad only reads id + enriched_at.
@@ -6,18 +6,6 @@ const row = (id: string, enriched_at: string | null) =>
   ({ id, enriched_at }) as Pick<Hero, 'id' | 'enriched_at'>;
 
 const ENRICHED = '2026-01-01T00:00:00.000Z';
-
-describe('isSuperheroApiId', () => {
-  it('treats purely numeric ids as SuperheroAPI ids', () => {
-    expect(isSuperheroApiId('70')).toBe(true);
-    expect(isSuperheroApiId('620')).toBe(true);
-  });
-
-  it('rejects cv- ComicVine ids (no SuperheroAPI record exists)', () => {
-    expect(isSuperheroApiId('cv-55028')).toBe(false);
-    expect(isSuperheroApiId('cv-162251')).toBe(false);
-  });
-});
 
 describe('planHeroLoad', () => {
   const settled = { isPlaceholderData: false, isError: false, isSuccess: true };
@@ -39,7 +27,7 @@ describe('planHeroLoad', () => {
     ).toBe('wait');
   });
 
-  it('renders straight from an enriched SuperheroAPI-id row', () => {
+  it('renders straight from an enriched numeric-id row', () => {
     expect(planHeroLoad({ ...settled, row: row('70', ENRICHED) })).toBe('render-row');
   });
 
@@ -47,25 +35,28 @@ describe('planHeroLoad', () => {
     expect(planHeroLoad({ ...settled, row: row('cv-1442', ENRICHED) })).toBe('render-row');
   });
 
-  // The bug: a franchise hero (cv- id) is never `enriched_at` because the
-  // ComicVine pipeline only sets `comicvine_enriched_at`. It must render from the
-  // row and enrich via ComicVine — NOT be routed to the SuperheroAPI fetch, which
-  // 404s on a non-numeric id and flips the screen to "not found".
-  it('renders from the row for an un-enriched cv- hero (no SuperheroAPI fetch)', () => {
+  it('renders from the row for an un-enriched cv- hero', () => {
     expect(planHeroLoad({ ...settled, row: row('cv-55028', null) })).toBe('render-row');
   });
 
-  it('falls back to the SuperheroAPI for an un-enriched numeric-id stub', () => {
-    expect(planHeroLoad({ ...settled, row: row('620', null) })).toBe('external-api');
+  // Every numeric row in the DB is enriched with real stats — an un-enriched
+  // numeric row still renders from what it has rather than reaching out to the
+  // external SuperheroAPI (that fallback fabricated pages; see below).
+  it('renders from the row even for an un-enriched numeric-id row', () => {
+    expect(planHeroLoad({ ...settled, row: row('620', null) })).toBe('render-row');
   });
 
-  it('falls back to the SuperheroAPI when the hero is not in the DB at all', () => {
-    expect(planHeroLoad({ ...settled, row: null })).toBe('external-api');
+  // The phantom-page bug: ids absent from the DB (e.g. 70, merged into 69) used
+  // to fall through to a live SuperheroAPI fetch that fabricated a full character
+  // page — wrong art, wrong stats, no publisher. Absent must mean not-found.
+  it('reports not-found when the hero is not in the DB at all', () => {
+    expect(planHeroLoad({ ...settled, row: null })).toBe('not-found');
   });
 
-  it('falls back to the SuperheroAPI when the row query errors', () => {
+  // A transient query failure is not a 404 — surface the retryable error screen.
+  it('reports error when the row query errors', () => {
     expect(
       planHeroLoad({ isPlaceholderData: false, isError: true, isSuccess: false, row: null }),
-    ).toBe('external-api');
+    ).toBe('error');
   });
 });

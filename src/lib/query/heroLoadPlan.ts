@@ -1,15 +1,6 @@
 import type { Hero } from '../../types';
 
-// SuperheroAPI / akabab-CDN character ids are purely numeric — only those can be
-// resolved by `fetchHeroStats`. Every other id scheme in the DB is a
-// `cv-<comicvineId>` ComicVine hero, which has no SuperheroAPI record at all.
-const SUPERHERO_API_ID = /^\d+$/;
-
-export function isSuperheroApiId(id: string): boolean {
-  return SUPERHERO_API_ID.test(id);
-}
-
-export type HeroLoadPlan = 'wait' | 'render-row' | 'external-api';
+export type HeroLoadPlan = 'wait' | 'render-row' | 'not-found' | 'error';
 
 export interface HeroLoadQueryState {
   isPlaceholderData: boolean;
@@ -20,15 +11,19 @@ export interface HeroLoadQueryState {
 
 /**
  * Decide how the character screen should source its data from the hero-row query
- * state. Extracted as a pure function because the branching is subtle and was the
- * source of a "content flashes then vanishes" bug: ComicVine-only heroes (`cv-`
- * ids) are never `enriched_at` — the ComicVine pipeline only sets
- * `comicvine_enriched_at` — so they were routed to the SuperheroAPI fetch, which
- * 404s on a non-numeric id and flipped the whole screen to "not found".
+ * state. The DB is the only source: a row renders, an absent id is not-found.
  *
- *   • 'wait'         — still resolving (instant placeholder, or no row yet).
- *   • 'render-row'   — a real DB row to paint from (then layer ComicVine on top).
- *   • 'external-api' — no usable row; fetch base stats from SuperheroAPI by id.
+ * There used to be an 'external-api' plan that fetched base stats live from the
+ * SuperheroAPI for numeric ids without a usable row. Once every numeric row was
+ * fully enriched it served nothing but the phantom-page bug: ids deleted in a
+ * merge (e.g. 70 → Batman 69) still resolve on SuperheroAPI, so the screen
+ * fabricated a full character page — wrong art, wrong stats, no publisher — for
+ * ~280 ids that no longer exist in the catalog.
+ *
+ *   • 'wait'       — still resolving (instant placeholder, or no row yet).
+ *   • 'render-row' — a real DB row to paint from (then layer ComicVine on top).
+ *   • 'not-found'  — query settled with no row; the id isn't in the catalog.
+ *   • 'error'      — the row query failed; show the retryable error screen.
  */
 export function planHeroLoad({
   isPlaceholderData,
@@ -38,15 +33,11 @@ export function planHeroLoad({
 }: HeroLoadQueryState): HeroLoadPlan {
   // Ignore the instant placeholder (a cached list row used only for first paint).
   if (isPlaceholderData) return 'wait';
-  // Query errored, or settled with no row → the hero isn't in our DB. The only
-  // remaining source is the external SuperheroAPI (numeric ids).
-  if (isError || (isSuccess && !row)) return 'external-api';
+  // A transient query failure is not a 404 — keep it distinct so the screen can
+  // offer a retry instead of declaring the character missing.
+  if (isError) return 'error';
+  // Settled with no row → the id isn't in the catalog.
+  if (isSuccess && !row) return 'not-found';
   if (!row) return 'wait';
-  // A real row exists. Render straight from it when it carries base data
-  // (`enriched_at` set) OR when its id isn't a SuperheroAPI id — a `cv-` hero has
-  // no SuperheroAPI record, so the row is the only base layer we'll ever get and
-  // ComicVine enrichment fills the rest. Only an un-enriched *SuperheroAPI-id*
-  // stub still needs the external base-stats fetch.
-  if (row.enriched_at != null || !isSuperheroApiId(row.id)) return 'render-row';
-  return 'external-api';
+  return 'render-row';
 }

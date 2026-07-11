@@ -228,12 +228,107 @@ function legendSlides(h) {
   ];
 }
 
+// Ranking — the format that earns comments: a debatable top-10 countdown with
+// real portraits. Whole list shown so people argue placement; CTA begs for it.
+// rows: [{ name, publisher, value, art }] already ordered #1..#10.
+function rankingSlides(theme, rows) {
+  const listRow = (r, rank) => `
+    <div style="display:flex;align-items:center;gap:26px;height:118px">
+      <div class="pop" style="width:74px;text-align:center;font-size:${rank === 1 ? 66 : 54}px;color:${GOLD}">${rank}</div>
+      <div style="width:96px;height:96px;border-radius:22px;overflow:hidden;flex:none;border:2px solid ${rank === 1 ? GOLD : 'rgba(224,168,62,.35)'}"><img src="${r.art}" style="width:100%;height:100%;object-fit:cover;object-position:center top"></div>
+      <div class="pop" style="flex:1;font-size:${rank === 1 ? 46 : 40}px;color:${rank === 1 ? GOLD : CREAM};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name}</div>
+      <div class="pop" style="font-size:44px;color:${theme.color}">${r.value}</div>
+    </div>`;
+  const listSlide = (group, from) => `
+    <div style="position:absolute;top:70px;left:84px;right:84px;text-align:center">${eyebrow(theme.title.toUpperCase(), 22)}</div>
+    <div style="position:absolute;left:96px;right:96px;top:190px;bottom:150px;display:flex;flex-direction:column;justify-content:center;gap:8px">
+      ${group.map((r, i) => listRow(r, from + i)).join('')}
+    </div>`;
+  const top3 = rows.slice(0, 3);
+  const hook = `
+    ${glowBehind(90, 210, 900, 520, theme.color)}
+    <div style="position:absolute;left:0;right:0;top:150px;text-align:center">${eyebrow('THE RANKINGS')}</div>
+    <div style="position:absolute;left:0;right:0;top:230px;text-align:center">${headline(theme.title, 84)}</div>
+    <div style="position:absolute;left:0;right:0;top:430px;display:flex;align-items:flex-end;justify-content:center">
+      ${[top3[1], top3[0], top3[2]].map((r, i) => {
+        const big = i === 1;
+        const w2 = big ? 380 : 300, h2 = big ? 470 : 370;
+        return `<div style="text-align:center;position:relative;z-index:${big ? 3 : 2};margin:0 ${big ? '-30px' : '0'}"><div style="width:${w2}px;height:${h2}px;border-radius:34px;overflow:hidden;border:${big ? 5 : 3}px solid ${big ? GOLD : 'rgba(224,168,62,.45)'};box-shadow:0 40px 80px -30px rgba(0,0,0,.85)"><img src="${r.art}" style="width:100%;height:100%;object-fit:cover;object-position:center top"></div><div class="pop" style="font-size:${big ? 44 : 34}px;color:${big ? GOLD : CREAM};margin-top:14px">#${big ? 1 : i === 0 ? 2 : 3}${big ? ' · ' + r.name : ''}</div></div>`;
+      }).join('')}
+    </div>
+    <div class="pop" style="position:absolute;left:0;right:0;bottom:130px;text-align:center;font-size:32px;color:${CREAM}">Do you agree? <span style="color:${GOLD}">Swipe the full 10 &rarr;</span></div>`;
+  const cta = stack(`
+    ${eyebrow('YOUR TURN')}
+    ${headline("Who's missing?<br>Who's too low?", 76)}
+    <div style="font-family:'S';font-size:28px;color:${MUT}">Settle it in the comments &#128071;</div>
+    <div class="pop" style="font-size:38px;color:${GOLD};margin-top:12px">Full ranking · mythique.app</div>`);
+  return [hook, listSlide(rows.slice(0, 5), 1), listSlide(rows.slice(5, 10), 6), cta];
+}
+
+// This-or-That — a binary opinion, no winner declared. Two portraits, one
+// question, one-word answer. The lowest-effort comment there is.
+function thisOrThatSlides(a, b, question) {
+  const side = (h, color, flip, left) => `
+    <div style="position:absolute;${left ? 'left:0' : 'right:0'};top:0;width:540px;height:900px;overflow:hidden">
+      <img src="${h.art}" style="width:100%;height:100%;object-fit:cover;object-position:center top;${flip ? 'transform:scaleX(-1)' : ''}">
+      <div style="position:absolute;inset:0;background:linear-gradient(${left ? '200deg' : '160deg'}, ${color}33, rgba(11,24,32,.18) 60%);mix-blend-mode:soft-light"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:220px;background:linear-gradient(180deg,transparent,rgba(5,12,17,.95))"></div>
+      <div style="position:absolute;${left ? 'left:36px' : 'right:36px'};bottom:26px;text-align:${left ? 'left' : 'right'}">
+        <div style="font-family:'S';font-size:16px;letter-spacing:.22em;color:${color}">${h.publisher?.toUpperCase() ?? ''}</div>
+        <div class="pop" style="font-size:52px;color:${CREAM}">${h.name}</div>
+      </div>
+    </div>`;
+  return [
+    `
+    ${side(a, O, false, true)}
+    ${side(b, T, true, false)}
+    <div style="position:absolute;left:538px;top:0;width:4px;height:900px;background:linear-gradient(180deg, transparent, ${GOLD} 20%, ${GOLD} 80%, transparent)"></div>
+    <div style="position:absolute;left:0;right:0;top:900px;height:80px;background:linear-gradient(180deg, rgba(5,12,17,.6), transparent)"></div>
+    <div style="position:absolute;left:50%;top:450px;transform:translate(-50%,-50%);width:104px;height:104px;border-radius:50%;background:${INK};border:5px solid ${GOLD};display:flex;align-items:center;justify-content:center;box-shadow:0 0 70px rgba(224,168,62,.7)"><div class="pop" style="font-size:32px;color:${GOLD}">OR</div></div>
+    <div style="position:absolute;left:70px;right:70px;top:960px;text-align:center">${headline(question, 76)}</div>
+    <div class="pop" style="position:absolute;left:0;right:0;bottom:118px;text-align:center;font-size:34px;color:${CREAM}">Comment your pick &#128071; <span style="color:${GOLD}">· mythique.app</span></div>`,
+  ];
+}
+
+// The Gauntlet — a flex-challenge. One portrait, a stat, an invitation to argue.
+function gauntletSlides(h, statKey) {
+  const label = { strength: 'strength', combat: 'combat', power: 'power', speed: 'speed', intelligence: 'intelligence' }[statKey];
+  return [`
+    ${glowBehind(290, 90, 500, 620, GOLD)}
+    <div style="position:absolute;left:50%;top:90px;transform:translateX(-50%);width:640px;height:760px;overflow:hidden">
+      <img src="${h.art}" style="width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:38px;-webkit-mask-image:linear-gradient(180deg,#000 66%,transparent 98%)">
+    </div>
+    <div style="position:absolute;left:0;right:0;top:820px;text-align:center">
+      ${eyebrow(`${label.toUpperCase()} ${h.stats[statKey]}/100`)}
+      <div class="pop" style="font-size:78px;line-height:1.08;color:${CREAM};margin-top:22px;padding:0 70px">Name ONE who<br>beats ${h.name}.</div>
+      <div style="font-family:'S';font-size:30px;color:${MUT};margin-top:22px">I&rsquo;ll wait &#128064;</div>
+    </div>
+  `];
+}
+
 // ── data ──────────────────────────────────────────────────────────────────────
 async function pool(sb) {
   const rows = await sb.rest(
     `heroes?select=${HERO_COLS}&portrait_url=not.is.null&order=fame_score.desc.nullslast&limit=60`,
   );
   return rows.map(shape);
+}
+const TOT_QUESTIONS = ['Who runs the city?', 'Who wins a fair fight?', 'Who do you want on your team?', 'Who&rsquo;s the bigger legend?', 'Who takes it, no prep?'];
+const GAUNTLET_STATS = ['strength', 'combat', 'power'];
+// Debatable ranking themes with portraits. Each returns 10 ordered rows.
+const RANK_THEMES = [
+  { key: 'strongest-villains', title: 'Top 10 Strongest Villains', stat: 'strength', color: '#B5302B', villain: true },
+  { key: 'smartest', title: 'Top 10 Smartest Characters', stat: 'intelligence', color: '#15A1AB' },
+  { key: 'fastest', title: 'Top 10 Fastest Characters', stat: 'speed', color: '#F9B222' },
+  { key: 'best-fighters', title: 'Top 10 Best Fighters', stat: 'combat', color: '#8a4a2b' },
+  { key: 'most-powerful', title: 'Top 10 Most Powerful', stat: 'power', color: '#E77333' },
+];
+async function rankingRows(sb, theme) {
+  const align = theme.villain ? '&alignment=eq.bad' : '';
+  const rows = await sb.rest(
+    `heroes?select=name,publisher,portrait_url,${theme.stat}&portrait_url=not.is.null&fame_score=gte.20${align}&order=${theme.stat}.desc.nullslast,fame_score.desc.nullslast&limit=10`,
+  ).catch(() => []);
+  return rows.map((r) => ({ name: r.name, publisher: r.publisher, value: r[theme.stat] ?? 0, portrait_url: r.portrait_url }));
 }
 // Showdown pairs that MEAN something: the curated rivalry list first, then the
 // enemy graph (famous, both with portraits). Never random.
@@ -327,6 +422,12 @@ const CAPTIONS = {
     `${e.a}, on screen 🎬 — the films that built the legend.\nEvery appearance is catalogued at mythique.app (link in bio).\n#${slug(e.a).replace(/-/g, '')} #movies #popculture`,
   legend: (e) =>
     `The file on ${e.a} 📇 — six stats, one legend.\nAgree with the ratings? Argue your case 👇\n#${slug(e.a).replace(/-/g, '')} #comics #powerlevels`,
+  ranking: (e) =>
+    `${e.title} 🏆 — do you agree?\nWho's missing? Who's too low? Settle it below 👇\nFull ranking at mythique.app (link in bio).\n#ranking #whowouldwin #comics #anime #powerlevels`,
+  thisorthat: (e) =>
+    `${e.a} or ${e.b}? 👀 ${e.question}\nComment your pick — no wrong answers (except the wrong one 😏).\nmythique.app (link in bio).\n#${slug(e.a).replace(/-/g, '')} #${slug(e.b).replace(/-/g, '')} #thisorthat #whowouldwin #comics`,
+  gauntlet: (e) =>
+    `Name ONE character who beats ${e.a}. I'll wait 👀\nDrop them below 👇 — bonus points if you can back it up.\nmythique.app (link in bio).\n#${slug(e.a).replace(/-/g, '')} #whowouldwin #comics #anime #debate`,
 };
 
 // ── main ──────────────────────────────────────────────────────────────────────
@@ -366,12 +467,17 @@ async function main() {
   shuffle(rivals);
   shuffle(families);
   shuffle(facts);
+  const rankThemes = shuffle([...RANK_THEMES]);
+  // gauntlet targets: the biggest names by a heavy stat (debate-worthy).
+  const gauntletPool = shuffle(
+    heroes.filter((h) => h.fame_score >= 55 && Math.max(h.stats.strength, h.stats.combat, h.stats.power) >= 80),
+  );
 
   const out = join(OUT_DIR, `organic-${month}`);
   if (existsSync(out)) rmSync(out, { recursive: true });
   mkdirSync(out, { recursive: true });
 
-  const FORMATS = ['showdown', 'covers', 'didyouknow', 'bloodline', 'onscreen', 'legend'];
+  const FORMATS = ['thisorthat', 'ranking', 'showdown', 'gauntlet', 'covers', 'didyouknow', 'bloodline', 'onscreen', 'legend'];
   const used = new Set();
   const pick = () => {
     for (let i = 0; i < 100; i++) {
@@ -386,7 +492,7 @@ async function main() {
 
   const entries = [];
   let fi = 0,
-    cursor = { showdown: 0, bloodline: 0, didyouknow: 0 };
+    cursor = { showdown: 0, bloodline: 0, didyouknow: 0, ranking: 0, thisorthat: 0, gauntlet: 0 };
   while (entries.length < n && fi < n * 4) {
     const format = FORMATS[fi % FORMATS.length];
     fi++;
@@ -439,6 +545,27 @@ async function main() {
         for (const f of films) withArt.push({ ...f, art: await art(f.poster_url) });
         slides = onscreenSlides({ ...h, art: await art(h.portrait_url) }, withArt);
         meta = { a: h.name, title: `On screen — ${h.name}` };
+      } else if (format === 'ranking') {
+        const theme = rankThemes[cursor.ranking++ % rankThemes.length];
+        const rows = await rankingRows(sb, theme);
+        if (rows.length < 10) continue;
+        for (const r of rows) r.art = await art(r.portrait_url);
+        slides = rankingSlides(theme, rows);
+        meta = { a: theme.title, title: theme.title };
+      } else if (format === 'thisorthat') {
+        const pair = rivals[cursor.thisorthat++];
+        if (!pair) continue;
+        const [a, b] = pair;
+        const q = TOT_QUESTIONS[(cursor.thisorthat - 1) % TOT_QUESTIONS.length];
+        const [aArt, bArt] = await Promise.all([art(a.portrait_url), art(b.portrait_url)]);
+        slides = thisOrThatSlides({ ...a, art: aArt }, { ...b, art: bArt }, q);
+        meta = { a: a.name, b: b.name, question: q, title: `${a.name} or ${b.name}` };
+      } else if (format === 'gauntlet') {
+        const h = gauntletPool[cursor.gauntlet++];
+        if (!h) continue;
+        const statKey = GAUNTLET_STATS.reduce((best, k) => (h.stats[k] > h.stats[best] ? k : best), GAUNTLET_STATS[0]);
+        slides = gauntletSlides({ ...h, art: await art(h.portrait_url) }, statKey);
+        meta = { a: h.name, title: `Gauntlet — ${h.name}` };
       } else {
         const h = pick();
         slides = legendSlides({ ...h, art: await art(h.portrait_url) });
@@ -451,6 +578,9 @@ async function main() {
       mkdirSync(dir, { recursive: true });
       const plate = {
         showdown: 'arena',
+        thisorthat: 'arena',
+        ranking: 'sky',
+        gauntlet: 'throne',
         covers: 'vault',
         didyouknow: 'sky',
         bloodline: 'throne',

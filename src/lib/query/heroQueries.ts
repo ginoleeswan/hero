@@ -27,7 +27,7 @@ import {
 } from '../db/heroes';
 import { getTeamById } from '../db/teams';
 import { DEFAULT_FILTERS, type CategoryFilters } from '../db/categoryFilters';
-import { fetchHeroStats, generateVerdict, type VerdictInput } from '../api';
+import { generateVerdict, HeroNotFoundError, type VerdictInput } from '../api';
 import { getCachedVerdict } from '../db/verdicts';
 import { queryKeys } from './keys';
 import { findCachedHero } from './heroCache';
@@ -188,13 +188,14 @@ export function useHeroRow(id: string | undefined) {
   });
 }
 
-/** Displayable powerstats for a hero by id — a real enriched DB row's stats, or
- *  the external SuperheroAPI stats for un-enriched numeric heroes. Used by the
- *  compare matchup (keyed per hero, so each combatant caches independently). */
+/** Displayable powerstats for a hero by id, straight from the DB row. Used by
+ *  the compare matchup (keyed per hero, so each combatant caches independently).
+ *  An absent id throws — never fall back to the external SuperheroAPI, which
+ *  still resolves merged-away ids and would fabricate phantom stats. */
 async function loadHeroStats(id: string) {
   const row = await getHeroById(id);
-  if (row?.enriched_at) return heroRowToCharacterData(row).stats;
-  return fetchHeroStats(id);
+  if (!row) throw new HeroNotFoundError(id);
+  return heroRowToCharacterData(row).stats;
 }
 
 export function useHeroStats(id: string | undefined) {
