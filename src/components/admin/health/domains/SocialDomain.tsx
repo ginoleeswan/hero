@@ -49,11 +49,6 @@ const VIEW_OPTIONS: { label: string; value: PubView }[] = [
   { label: 'Boost', value: 'boost' },
   { label: 'Everything', value: 'library' },
 ];
-const VIEW_HINT: Record<PubView, string> = {
-  queue: 'Your daily loop — save, post, mark done. The queue advances itself.',
-  boost: 'Only content that is safe to put ad money behind.',
-  library: 'Every published batch — browse and filter.',
-};
 
 // Workflow order: this month's library (the daily queue) leads, then the
 // set-once brand kit, evergreen toolkit, and finally the older packs.
@@ -81,6 +76,9 @@ const FILTER_OPTIONS: { label: string; value: Filter }[] = [
 // Cloudinary's fl_attachment flag turns a delivery URL into a download
 // (Content-Disposition: attachment) — lets "Save all" fetch every slide/reel
 // to the device without blob plumbing, incl. iOS Safari's download sheet.
+// Load-time clock for day labels — module scope keeps render pure.
+const LOADED_AT = Date.now();
+
 const asDownload = (url: string, name: string) =>
   url.replace(/\/(image|video)\/upload\//, (_m, kind) => `/${kind}/upload/fl_attachment:${name}/`);
 
@@ -129,7 +127,46 @@ function usePostActions(post: SocialPost) {
 // primary action. Everything else is secondary.
 function TodayCard({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPost) => void }) {
   const { copied, saving, isVideo, saveAll, copyCaption } = usePostActions(post);
+  const [savedOnce, setSavedOnce] = useState(false);
+  const [copiedOnce, setCopiedOnce] = useState(false);
   const fileCount = isVideo ? 1 : post.slide_urls.length || 1;
+  const step = (
+    n: string,
+    label: string,
+    done: boolean,
+    onPress: () => void,
+    opts: { primary?: boolean; disabled?: boolean } = {},
+  ) => (
+    <Pressable
+      style={[styles.stepRow, opts.primary && styles.stepRowPrimary, done && styles.stepRowDone]}
+      onPress={onPress}
+      disabled={opts.disabled}
+    >
+      <View
+        style={[styles.stepNum, opts.primary && styles.stepNumPrimary, done && styles.stepNumDone]}
+      >
+        {done ? (
+          <Ionicons name="checkmark" size={13} color="#fff" />
+        ) : (
+          <Text style={[styles.stepNumText, opts.primary && styles.stepNumTextPrimary]}>{n}</Text>
+        )}
+      </View>
+      <Text
+        style={[
+          styles.stepLabel,
+          opts.primary && styles.stepLabelPrimary,
+          done && styles.stepLabelDone,
+        ]}
+      >
+        {label}
+      </Text>
+      <Ionicons
+        name="chevron-forward"
+        size={14}
+        color={opts.primary ? 'rgba(255,255,255,0.8)' : 'rgba(41,60,67,0.35)'}
+      />
+    </Pressable>
+  );
   return (
     <View style={styles.todayCard}>
       <Pressable
@@ -163,63 +200,84 @@ function TodayCard({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialP
           </Text>
         ) : null}
         {post.caption ? (
-          <Text style={styles.todayCaption} numberOfLines={3}>
-            {post.caption}
-          </Text>
+          <Pressable
+            style={styles.todayCaption}
+            onPress={() => {
+              copyCaption();
+              setCopiedOnce(true);
+            }}
+          >
+            <Text style={styles.todayCaptionText} numberOfLines={3}>
+              {post.caption}
+            </Text>
+            <Text style={styles.todayCaptionHint}>{copied ? 'Copied ✓' : 'tap to copy'}</Text>
+          </Pressable>
         ) : null}
         <View style={styles.todaySteps}>
-          <Pressable style={styles.stepBtn} onPress={saveAll} disabled={saving}>
-            <Ionicons name="download-outline" size={15} color={COLORS.navy} />
-            <Text style={styles.stepBtnText}>
-              {saving
-                ? 'Saving…'
-                : fileCount > 1
-                  ? `Save all (${fileCount})`
-                  : isVideo
-                    ? 'Save reel'
-                    : 'Save'}
-            </Text>
-          </Pressable>
-          <Pressable style={styles.stepBtn} onPress={copyCaption} disabled={!post.caption}>
-            <Ionicons name="copy-outline" size={15} color={COLORS.navy} />
-            <Text style={styles.stepBtnText}>{copied ? 'Copied ✓' : 'Copy caption'}</Text>
-          </Pressable>
-          <Pressable style={styles.primaryBtn} onPress={() => onToggle(post)}>
-            <Ionicons name="checkmark" size={16} color="#fff" />
-            <Text style={styles.primaryBtnText}>Mark posted</Text>
-          </Pressable>
+          {step(
+            '1',
+            saving
+              ? 'Saving…'
+              : fileCount > 1
+                ? `Save the ${fileCount} files`
+                : isVideo
+                  ? 'Save the reel'
+                  : 'Save the image',
+            savedOnce && !saving,
+            () => {
+              saveAll();
+              setSavedOnce(true);
+            },
+            { disabled: saving },
+          )}
+          {step(
+            '2',
+            copied ? 'Caption copied ✓' : 'Copy the caption',
+            copiedOnce && !copied,
+            () => {
+              copyCaption();
+              setCopiedOnce(true);
+            },
+            { disabled: !post.caption },
+          )}
+          {step('3', 'Posted — mark it done', false, () => onToggle(post), { primary: true })}
         </View>
       </View>
     </View>
   );
 }
 
-// One slot in the coming-days strip: big thumb, day label, one-line title.
-function DayCard({ post, day }: { post: SocialPost; day: string }) {
+// One row of the "This week" rail: day chip, thumb, title, lane dot.
+function WeekRow({ post, day }: { post: SocialPost; day: string }) {
   const isVideo = post.media_type === 'video' && !!post.video_url;
   return (
     <Pressable
-      style={styles.dayCard}
+      style={styles.weekRow}
       onPress={() => window.open(isVideo ? post.video_url! : post.image_url, '_blank')}
     >
-      <View style={styles.dayThumbWrap}>
-        <Image source={{ uri: post.image_url }} style={styles.dayThumb} contentFit="cover" />
+      <Text style={styles.weekDay}>{day}</Text>
+      <View style={styles.weekThumbWrap}>
+        <Image source={{ uri: post.image_url }} style={styles.weekThumb} contentFit="cover" />
         {isVideo ? (
           <View style={styles.playBadgeSm}>
             <Text style={styles.playBadgeTextSm}>▶</Text>
           </View>
         ) : null}
-        <View
-          style={[
-            styles.dayLaneDot,
-            { backgroundColor: post.ad_safety === 'ad_safe' ? '#63A936' : COLORS.orange },
-          ]}
-        />
       </View>
-      <Text style={styles.dayLabel}>{day}</Text>
-      <Text style={styles.dayTitle} numberOfLines={1}>
-        {post.title}
-      </Text>
+      <View style={styles.weekMeta}>
+        <Text style={styles.weekTitle} numberOfLines={1}>
+          {post.title}
+        </Text>
+        <Text style={styles.weekWhere} numberOfLines={1}>
+          {post.guide_where ?? (isVideo ? 'Reels · TikTok' : 'IG · TikTok')}
+        </Text>
+      </View>
+      <View
+        style={[
+          styles.dayLaneDotInline,
+          { backgroundColor: post.ad_safety === 'ad_safe' ? '#63A936' : COLORS.orange },
+        ]}
+      />
     </Pressable>
   );
 }
@@ -465,56 +523,138 @@ export function SocialDomain() {
   };
 
   const dayLabel = (offset: number) => {
-    if (offset === 0) return 'Tomorrow';
-    const d = new Date(Date.now() + (offset + 1) * 86400000);
-    return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+    if (offset === 0) return 'TMRW';
+    const d = new Date(LOADED_AT + (offset + 1) * 86400000);
+    return d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
   };
-  const todayStr = new Date().toLocaleDateString('en-US', {
+  const todayStr = new Date(LOADED_AT).toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
   });
+  const monthPct = monthlyAll.length ? (monthlyDone / monthlyAll.length) * 100 : 0;
+
+  // Cadence heartbeat: the last 7 days as dots (posted that day = lit), plus
+  // the current daily streak. Uses posted_at we already record on toggle.
+  const dayKey = (t: number) => new Date(t).toISOString().slice(0, 10);
+  const postedDays = new Set(
+    allPosts.filter((p) => p.posted_at).map((p) => dayKey(new Date(p.posted_at!).getTime())),
+  );
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const t = LOADED_AT - (6 - i) * 86400000;
+    return {
+      letter: new Date(t).toLocaleDateString('en-US', { weekday: 'narrow' }),
+      lit: postedDays.has(dayKey(t)),
+      isToday: i === 6,
+    };
+  });
+  let streak = 0;
+  for (let i = postedDays.has(dayKey(LOADED_AT)) ? 0 : 1; ; i++) {
+    if (postedDays.has(dayKey(LOADED_AT - i * 86400000))) streak++;
+    else break;
+  }
+  const postedLog = allPosts
+    .filter((p) => p.posted_at)
+    .sort((a, b) => (b.posted_at! > a.posted_at! ? 1 : -1));
+  const historyOpen = openBatches['__history'] ?? false;
+
   const queueView = (
-    <>
-      {upNext ? (
-        <Panel
-          title={`Today · ${todayStr}`}
-          hint={`${monthlyDone}/${monthlyAll.length} posted this month`}
-          style={styles.panel}
-        >
-          <View style={styles.progTrack}>
-            <View
-              style={[
-                styles.progFill,
-                { width: `${monthlyAll.length ? (monthlyDone / monthlyAll.length) * 100 : 0}%` },
-              ]}
-            />
-          </View>
-          <TodayCard post={upNext} onToggle={onToggle} />
-        </Panel>
-      ) : (
-        <Panel title="Post today" hint="Everything is posted 🎉">
-          <Text style={styles.empty}>
-            Generate next month's packs: organic-pack.mjs + batch-month.mjs
-          </Text>
-        </Panel>
-      )}
-      {dailyQueue.length > 1 ? (
-        <Panel
-          title="Coming up"
-          hint={`${dailyQueue.length - 1} queued — organic and ads alternate`}
-          style={styles.panel}
-        >
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.dayStrip}>
-              {dailyQueue.slice(1, 9).map((p, i) => (
-                <DayCard key={p.id} post={p} day={dayLabel(i)} />
+    <View style={styles.queueRow}>
+      <View style={styles.queueMain}>
+        <Panel style={styles.panel}>
+          <View style={styles.streakRow}>
+            <View style={styles.weekDots}>
+              {week.map((d, i) => (
+                <View key={i} style={styles.weekDotCol}>
+                  <View
+                    style={[
+                      styles.weekDot,
+                      d.lit && styles.weekDotLit,
+                      d.isToday && styles.weekDotToday,
+                    ]}
+                  />
+                  <Text style={styles.weekDotLabel}>{d.letter}</Text>
+                </View>
               ))}
             </View>
-          </ScrollView>
+            <View style={styles.streakMeta}>
+              <Text style={styles.streakText}>
+                {streak > 0 ? `🔥 ${streak}-day streak` : 'Start your streak today'}
+              </Text>
+              <Text style={styles.streakSub}>
+                {monthlyDone}/{monthlyAll.length} this month
+              </Text>
+            </View>
+          </View>
         </Panel>
-      ) : null}
-    </>
+        {upNext ? (
+          <Panel
+            title={`Today · ${todayStr}`}
+            hint={`${monthlyDone}/${monthlyAll.length} posted this month`}
+            style={styles.panel}
+          >
+            <View style={styles.progTrack}>
+              <View style={[styles.progFill, { width: `${monthPct}%` }]} />
+            </View>
+            <TodayCard post={upNext} onToggle={onToggle} />
+          </Panel>
+        ) : (
+          <Panel title="Post today" hint="Everything is posted 🎉">
+            <Text style={styles.empty}>
+              Generate next month's packs: organic-pack.mjs + batch-month.mjs
+            </Text>
+          </Panel>
+        )}
+      </View>
+      <View style={styles.queueRail}>
+        {dailyQueue.length > 1 ? (
+          <Panel
+            title="This week"
+            hint={`${dailyQueue.length - 1} queued — organic & ads alternate`}
+            style={styles.panel}
+          >
+            {dailyQueue.slice(1, 7).map((p, i) => (
+              <WeekRow key={p.id} post={p} day={dayLabel(i)} />
+            ))}
+          </Panel>
+        ) : null}
+        {postedLog.length ? (
+          <Panel
+            title={`Posted (${postedLog.length})`}
+            hint="Your shipping log"
+            style={styles.panel}
+            action={
+              <Pressable
+                onPress={() => setOpenBatches((v) => ({ ...v, __history: !historyOpen }))}
+                hitSlop={8}
+                style={styles.rulesToggle}
+              >
+                <Text style={styles.rulesToggleText}>{historyOpen ? 'Hide' : 'Show'}</Text>
+                <Ionicons
+                  name={historyOpen ? 'chevron-up' : 'chevron-down'}
+                  size={13}
+                  color={COLORS.navy}
+                />
+              </Pressable>
+            }
+          >
+            {historyOpen
+              ? postedLog
+                  .slice(0, 14)
+                  .map((p) => (
+                    <WeekRow
+                      key={p.id}
+                      post={p}
+                      day={new Date(p.posted_at!)
+                        .toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        .toUpperCase()}
+                    />
+                  ))
+              : null}
+          </Panel>
+        ) : null}
+      </View>
+    </View>
   );
 
   const boostPosts = allPosts.filter((p) => p.ad_safety === 'ad_safe');
@@ -592,7 +732,6 @@ export function SocialDomain() {
             variant="solid"
             style={styles.viewRow}
           />
-          <Text style={styles.viewHint}>{VIEW_HINT[view]}</Text>
           {view === 'queue' ? queueView : view === 'boost' ? boostView : libraryView}
         </>
       )}
@@ -615,19 +754,48 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginLeft: 2,
   },
+  queueRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  weekDots: { flexDirection: 'row', gap: 10 },
+  weekDotCol: { alignItems: 'center', gap: 4 },
+  weekDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(41,60,67,0.12)',
+  },
+  weekDotLit: { backgroundColor: '#e0a83e' },
+  weekDotToday: { borderWidth: 2, borderColor: COLORS.orange },
+  weekDotLabel: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 10,
+    color: 'rgba(41,60,67,0.5)',
+  },
+  streakMeta: { alignItems: 'flex-end', gap: 1 },
+  streakText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 15, color: COLORS.navy },
+  streakSub: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: 'rgba(41,60,67,0.55)' },
+  queueMain: { flexGrow: 2, flexBasis: 560, minWidth: 320 },
+  queueRail: { flexGrow: 1, flexBasis: 300, minWidth: 280 },
   todayCard: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 22,
+    gap: 24,
     alignItems: 'flex-start',
   },
   todayMedia: {
-    width: 300,
+    flexGrow: 1,
+    flexBasis: 300,
+    maxWidth: 430,
     aspectRatio: 4 / 5,
     borderRadius: 18,
     overflow: 'hidden',
     backgroundColor: 'rgba(41,60,67,0.08)',
-    flexGrow: 0,
   },
   todayMediaImg: { width: '100%', height: '100%' },
   todaySlideCount: {
@@ -640,81 +808,96 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   todaySlideCountText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#f5ebdc' },
-  todayMeta: { flex: 1, minWidth: 280, gap: 9, paddingTop: 2 },
-  todayTitle: { fontFamily: 'Nunito_800ExtraBold', fontSize: 21, color: COLORS.navy },
+  todayMeta: { flexGrow: 1, flexBasis: 300, minWidth: 280, gap: 10, paddingTop: 2 },
+  todayTitle: { fontFamily: 'Nunito_800ExtraBold', fontSize: 22, color: COLORS.navy },
   todayWhere: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(41,60,67,0.75)' },
   todayCaption: {
+    backgroundColor: 'rgba(41,60,67,0.05)',
+    borderRadius: 12,
+    padding: 12,
+    gap: 6,
+  },
+  todayCaptionText: {
     fontFamily: 'Nunito_600SemiBold',
     fontSize: 13,
     lineHeight: 19,
     color: 'rgba(41,60,67,0.62)',
-    backgroundColor: 'rgba(41,60,67,0.05)',
-    borderRadius: 10,
-    padding: 10,
   },
-  todaySteps: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  stepBtn: {
+  todayCaptionHint: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 10.5,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: COLORS.orange,
+  },
+  todaySteps: { gap: 8, marginTop: 6, alignSelf: 'stretch' },
+  stepRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.22)',
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-  },
-  stepBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
-  primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 999,
-    backgroundColor: COLORS.orange,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-  },
-  primaryBtnText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 13, color: '#fff' },
-  dayStrip: { flexDirection: 'row', gap: 14, paddingVertical: 2 },
-  dayCard: { width: 148 },
-  dayThumbWrap: {
-    width: 148,
-    aspectRatio: 4 / 5,
+    gap: 12,
     borderRadius: 14,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(41,60,67,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.16)',
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  dayThumb: { width: '100%', height: '100%' },
-  dayLaneDot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.85)',
+  stepRowPrimary: { backgroundColor: COLORS.orange, borderColor: COLORS.orange },
+  stepRowDone: { borderColor: 'rgba(99,169,54,0.5)', backgroundColor: 'rgba(99,169,54,0.08)' },
+  stepNum: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(41,60,67,0.1)',
   },
-  dayLabel: {
+  stepNumPrimary: { backgroundColor: 'rgba(255,255,255,0.25)' },
+  stepNumDone: { backgroundColor: '#63A936' },
+  stepNumText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 12, color: COLORS.navy },
+  stepNumTextPrimary: { color: '#fff' },
+  stepLabel: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.navy },
+  stepLabelPrimary: { color: '#fff', fontFamily: 'Nunito_800ExtraBold' },
+  stepLabelDone: { color: '#4a7d2b' },
+  weekRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(41,60,67,0.08)',
+  },
+  weekDay: {
+    width: 46,
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 11,
     letterSpacing: 0.6,
-    color: 'rgba(41,60,67,0.55)',
-    textTransform: 'uppercase',
-    marginTop: 8,
+    color: 'rgba(41,60,67,0.5)',
   },
-  dayTitle: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy, marginTop: 1 },
+  weekThumbWrap: {
+    width: 52,
+    height: 65,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(41,60,67,0.08)',
+  },
+  weekThumb: { width: '100%', height: '100%' },
+  weekMeta: { flex: 1, gap: 1 },
+  weekTitle: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.navy },
+  weekWhere: { fontFamily: 'Nunito_600SemiBold', fontSize: 11.5, color: 'rgba(41,60,67,0.5)' },
+  dayLaneDotInline: { width: 9, height: 9, borderRadius: 5 },
   playBadgeSm: {
     position: 'absolute',
-    left: 8,
-    bottom: 8,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    left: 6,
+    bottom: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: 'rgba(6,18,26,0.72)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  playBadgeTextSm: { color: '#f5ebdc', fontSize: 9 },
+  playBadgeTextSm: { color: '#f5ebdc', fontSize: 8 },
   progTrack: {
     height: 4,
     borderRadius: 999,
