@@ -39,6 +39,23 @@ type Filter =
   | 'reel'
   | 'carousel';
 
+type Lane = 'all' | 'ad_safe' | 'organic';
+const LANE_OPTIONS: { label: string; value: Lane }[] = [
+  { label: 'Everything', value: 'all' },
+  { label: 'Boost-safe', value: 'ad_safe' },
+  { label: 'Organic only', value: 'organic' },
+];
+
+// Workflow order: this month's library (the daily queue) leads, then the
+// set-once brand kit, evergreen toolkit, and finally the older packs.
+function batchPriority(b: string): number {
+  if (b.startsWith('ad-library-')) return 0;
+  if (b === 'brand-kit') return 1;
+  if (b === 'ad-toolkit') return 2;
+  if (b.startsWith('week-')) return 3;
+  return 4;
+}
+
 const FILTER_OPTIONS: { label: string; value: Filter }[] = [
   { label: 'All', value: 'all' },
   { label: 'Matchup', value: 'matchup' },
@@ -200,6 +217,9 @@ export function SocialDomain() {
   // (the actual work) leads the lane.
   const [rulesOpen, setRulesOpen] = useState(false);
   const [filter, setFilter] = useState<Filter>('all');
+  const [lane, setLane] = useState<Lane>('all');
+  // Per-batch collapse; fully-posted batches start collapsed (see render).
+  const [openBatches, setOpenBatches] = useState<Record<string, boolean>>({});
 
   const onToggle = async (p: SocialPost) => {
     await setSocialPosted(p.id, !p.posted_at);
@@ -207,69 +227,81 @@ export function SocialDomain() {
   };
 
   const matches = (p: SocialPost) =>
-    filter === 'all'
+    (lane === 'all' || p.ad_safety === lane) &&
+    (filter === 'all'
       ? true
       : filter === 'reel'
         ? p.media_type === 'video'
         : filter === 'carousel'
           ? p.media_type !== 'video'
-          : p.angle === filter;
+          : p.angle === filter);
 
   const allPosts = postsQ.data ?? [];
   const posts = allPosts.filter(matches);
-  const batches = [...new Set(posts.map((p) => p.batch))];
+  const batches = [...new Set(posts.map((p) => p.batch))].sort(
+    (a, b) => batchPriority(a) - batchPriority(b) || b.localeCompare(a),
+  );
+
+  // The one thing to do next: the first unposted piece of the newest monthly
+  // library (falls back to any unposted post). Marking it posted advances the
+  // card automatically.
+  const libraryPosts = allPosts
+    .filter((p) => p.batch.startsWith('ad-library-'))
+    .sort((a, b) => b.batch.localeCompare(a.batch) || a.ord - b.ord);
+  const upNext = libraryPosts.find((p) => !p.posted_at) ?? allPosts.find((p) => !p.posted_at);
+  const libraryLeft = libraryPosts.filter((p) => !p.posted_at).length;
+
+  const rulesPanel = (
+    <Panel
+      title="Safe to post?"
+      hint="Organic is unrestricted — boosting (paid ads) is tier-gated"
+      action={
+        <Pressable onPress={() => setRulesOpen((v) => !v)} hitSlop={8} style={styles.rulesToggle}>
+          <Text style={styles.rulesToggleText}>{rulesOpen ? 'Hide rules' : 'Rules'}</Text>
+          <Ionicons
+            name={rulesOpen ? 'chevron-up' : 'chevron-down'}
+            size={13}
+            color={COLORS.navy}
+          />
+        </Pressable>
+      }
+    >
+      {rulesOpen ? (
+        <>
+          <View style={styles.ruleRow}>
+            <Text style={styles.ruleBadgeGreen}>ORGANIC</Text>
+            <Text style={styles.ruleText}>
+              Post anything from the studio to feed/stories/TikTok — fan content, no restrictions.
+            </Text>
+          </View>
+          <View style={styles.ruleRow}>
+            <Text style={styles.ruleBadgeRed}>NEVER BOOST</Text>
+            <Text style={styles.ruleText}>
+              Tier S characters (Marvel, Disney, anime/Shueisha, Star Wars, Pokémon…) in a paid ad —
+              takedown + ad-account strike risk.
+            </Text>
+          </View>
+          <View style={styles.ruleRow}>
+            <Text style={styles.ruleBadgeAmber}>STYLIZED ONLY</Text>
+            <Text style={styles.ruleText}>
+              Tier A (DC, Image, major game studios) may appear in ads only via the stylized ads
+              pipeline (scripts/social/ads).
+            </Text>
+          </View>
+          <View style={styles.ruleRow}>
+            <Text style={styles.ruleBadgeGreen}>BOOST OK</Text>
+            <Text style={styles.ruleText}>
+              Ads-pipeline output (brand, tier-checked matchups/rankings) — safe to put money
+              behind.
+            </Text>
+          </View>
+        </>
+      ) : null}
+    </Panel>
+  );
 
   return (
     <View style={styles.wrap}>
-      {/* Boosting rules — mirrors scripts/social/safety.mjs (the tier system).
-          Organic posting is unrestricted; PAID ads are tier-gated. Collapsed
-          disclosure: one line of reference until you need it. */}
-      <Panel
-        title="Safe to post?"
-        hint="Organic is unrestricted — boosting (paid ads) is tier-gated"
-        action={
-          <Pressable onPress={() => setRulesOpen((v) => !v)} hitSlop={8} style={styles.rulesToggle}>
-            <Text style={styles.rulesToggleText}>{rulesOpen ? 'Hide rules' : 'Rules'}</Text>
-            <Ionicons
-              name={rulesOpen ? 'chevron-up' : 'chevron-down'}
-              size={13}
-              color={COLORS.navy}
-            />
-          </Pressable>
-        }
-      >
-        {rulesOpen ? (
-          <>
-            <View style={styles.ruleRow}>
-              <Text style={styles.ruleBadgeGreen}>ORGANIC</Text>
-              <Text style={styles.ruleText}>
-                Post anything from the studio to feed/stories/TikTok — fan content, no restrictions.
-              </Text>
-            </View>
-            <View style={styles.ruleRow}>
-              <Text style={styles.ruleBadgeRed}>NEVER BOOST</Text>
-              <Text style={styles.ruleText}>
-                Tier S characters (Marvel, Disney, anime/Shueisha, Star Wars, Pokémon…) in a paid ad
-                — takedown + ad-account strike risk.
-              </Text>
-            </View>
-            <View style={styles.ruleRow}>
-              <Text style={styles.ruleBadgeAmber}>STYLIZED ONLY</Text>
-              <Text style={styles.ruleText}>
-                Tier A (DC, Image, major game studios) may appear in ads only via the stylized ads
-                pipeline (scripts/social/ads).
-              </Text>
-            </View>
-            <View style={styles.ruleRow}>
-              <Text style={styles.ruleBadgeGreen}>BOOST OK</Text>
-              <Text style={styles.ruleText}>
-                Ads-pipeline output (brand, tier-checked matchups/rankings) — safe to put money
-                behind.
-              </Text>
-            </View>
-          </>
-        ) : null}
-      </Panel>
       {postsQ.isLoading ? (
         <Panel title="Social queue">
           <SkRows n={4} />
@@ -286,6 +318,34 @@ export function SocialDomain() {
         </Panel>
       ) : (
         <>
+          {upNext ? (
+            <Panel
+              title="Post today"
+              hint={
+                libraryLeft
+                  ? `${libraryLeft} left in this month's library`
+                  : 'Library done — pick from the packs below'
+              }
+              style={styles.panel}
+            >
+              <CardGrid min={340}>
+                <PostRow post={upNext} onToggle={onToggle} />
+              </CardGrid>
+            </Panel>
+          ) : (
+            <Panel title="Post today" hint="Everything is posted 🎉">
+              <Text style={styles.empty}>
+                Generate next month's library: node scripts/social/ads/batch-month.mjs
+              </Text>
+            </Panel>
+          )}
+          <PillGroup
+            options={LANE_OPTIONS}
+            value={lane}
+            onChange={setLane}
+            variant="solid"
+            style={styles.laneRow}
+          />
           <PillGroup
             options={FILTER_OPTIONS}
             value={filter}
@@ -295,28 +355,52 @@ export function SocialDomain() {
           />
           {posts.length === 0 ? (
             <Panel title="Social queue" hint="No posts match this filter">
-              <Text style={styles.empty}>Try a different angle or format chip above.</Text>
+              <Text style={styles.empty}>Try a different lane, angle or format chip above.</Text>
             </Panel>
           ) : (
             batches.map((batch) => {
-              const group = posts.filter((p) => p.batch === batch);
+              const group = posts
+                .filter((p) => p.batch === batch)
+                .sort((a, b) => Number(!!a.posted_at) - Number(!!b.posted_at) || a.ord - b.ord);
               const done = group.filter((p) => p.posted_at).length;
+              const allDone = done === group.length;
+              const open = openBatches[batch] ?? !allDone;
               return (
                 <Panel
                   key={batch}
                   title={batchLabel(batch)}
                   hint={`${done}/${group.length} posted`}
                   style={styles.panel}
+                  action={
+                    <Pressable
+                      onPress={() => setOpenBatches((v) => ({ ...v, [batch]: !open }))}
+                      hitSlop={8}
+                      style={styles.rulesToggle}
+                    >
+                      <Text style={styles.rulesToggleText}>{open ? 'Hide' : 'Show'}</Text>
+                      <Ionicons
+                        name={open ? 'chevron-up' : 'chevron-down'}
+                        size={13}
+                        color={COLORS.navy}
+                      />
+                    </Pressable>
+                  }
                 >
-                  <CardGrid min={340}>
-                    {group.map((p) => (
-                      <PostRow key={p.id} post={p} onToggle={onToggle} />
-                    ))}
-                  </CardGrid>
+                  <View style={styles.progTrack}>
+                    <View style={[styles.progFill, { width: `${(done / group.length) * 100}%` }]} />
+                  </View>
+                  {open ? (
+                    <CardGrid min={340}>
+                      {group.map((p) => (
+                        <PostRow key={p.id} post={p} onToggle={onToggle} />
+                      ))}
+                    </CardGrid>
+                  ) : null}
                 </Panel>
               );
             })
           )}
+          {rulesPanel}
         </>
       )}
     </View>
@@ -328,6 +412,21 @@ const styles = StyleSheet.create({
   // single stranded column.
   wrap: { gap: 12, width: '100%' },
   panel: { marginBottom: 12 },
+  laneRow: {
+    marginBottom: 2,
+  },
+  progTrack: {
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(41,60,67,0.12)',
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  progFill: {
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: GOLD,
+  },
   filterRow: { marginBottom: 2 },
   rulesToggle: {
     flexDirection: 'row',
