@@ -83,6 +83,13 @@ New migration(s) in `supabase/migrations/`, applied via MCP, then regenerate
 - `debate_date date pk`, `hero_a_id`, `hero_b_id` (normalized), optional
   `hook_text` (editorial one-liner), and resolution fields filled after the day
   ends: `final_votes_a`, `final_votes_b`, `top_take_id`.
+- **Unifies with the existing "Today's Battle."** `src/lib/matchup.ts`
+  currently picks the daily pair client-side (`dailySeed` over the iconic
+  pool) and renders via `TodaysMatchup` on Explore (web + native). The
+  `daily_debate` table becomes the server-side source of truth for that same
+  surface — one daily pair everywhere (Explore, Arena, landing, social post),
+  votable and takeable. The seeded client pick remains only as a fallback when
+  the table has no row for today. No parallel "second daily matchup" surface.
 - Curated from the command center; a pg_cron fallback auto-picks from high-fame
   `hero_relationships` rivals (enemy pairs, both `fame_score` high, not used in
   the last 90 days) so the surface never goes dark. Folded into the existing
@@ -115,7 +122,22 @@ views, React Query as the data layer.
   "Your side won." This is the core *return-tomorrow* mechanic.
 
 ### Explore
-- One Daily Debate row card linking to the same page.
+- The existing `TodaysMatchup` ("Today's Battle") card is upgraded in place:
+  fed by `daily_debate`, gains a "N takes — read the debate" affordance
+  linking into the matchup page. No new row is added.
+
+### Landing page (`src/components/landing/LandingPage.dom.tsx`)
+- Add a **Daily Debate teaser** section below the Summoning hero: both
+  portraits, the live split bar, today's hook line, and a single CTA
+  ("Cast your vote"). Tapping goes straight to the matchup page — the vote
+  itself happens in-app (anon-allowed), keeping the landing section a teaser,
+  not a second voting implementation.
+- Design follows the clean/minimal brand rule — one section, no leaderboard
+  noise. Data comes from the same daily-debate query hook (React Query),
+  degrading to the seeded fallback pair like every other surface, so the
+  section never renders empty.
+- Landing is a DOM component with its own layout path — verify the section on
+  the web root specifically (per the web-layout divergence rule).
 
 ### Profile — opinions persist (retention)
 - **"My takes"** section: your takes with agree counts, and a simple
@@ -167,8 +189,9 @@ No full-screen render tests (house rule).
 1. Migration: tables + RPCs + RLS + regenerate types.
 2. DB layer (`src/lib/db/takes.ts`, extend `matchupVotes.ts`) + query hooks.
 3. Matchup page vote bar + takes list/composer (web + native).
-4. Daily Debate: command-center picker + cron fallback + Arena/Explore cards +
-   resolution job.
-5. Profile "My takes" + yesterday-result personalization.
-6. OG debate card + Social Studio generator.
-7. Bot-page rendering (phase 2, separate effort).
+4. Daily Debate: command-center picker + cron fallback + resolution job;
+   rewire `TodaysMatchup`/Arena onto `daily_debate`.
+5. Landing page Daily Debate teaser section.
+6. Profile "My takes" + yesterday-result personalization.
+7. OG debate card + Social Studio generator.
+8. Bot-page rendering (phase 2, separate effort).
