@@ -23,6 +23,8 @@ function batchLabel(batch: string): string {
   if (batch === 'brand-kit') return 'Brand kit — profiles, overview & announcements';
   const week = batch.match(/^week-(\d{4}-\d{2}-\d{2})$/);
   if (week) return `Content week · ${week[1]}`;
+  const organic = batch.match(/^organic-(\d{4}-\d{2})$/);
+  if (organic) return `Organic pack · ${organic[1]} — portraits, covers & posters (never boost)`;
   const adLibrary = batch.match(/^ad-library-(\d{4}-\d{2})$/);
   if (adLibrary) return `Ad library · ${adLibrary[1]} — safe to boost`;
   return batch;
@@ -49,7 +51,8 @@ const LANE_OPTIONS: { label: string; value: Lane }[] = [
 // Workflow order: this month's library (the daily queue) leads, then the
 // set-once brand kit, evergreen toolkit, and finally the older packs.
 function batchPriority(b: string): number {
-  if (b.startsWith('ad-library-')) return 0;
+  if (b.startsWith('organic-')) return 0;
+  if (b.startsWith('ad-library-')) return 0.5;
   if (b === 'brand-kit') return 1;
   if (b === 'ad-toolkit') return 2;
   if (b.startsWith('week-')) return 3;
@@ -246,7 +249,7 @@ export function SocialDomain() {
   // library (falls back to any unposted post). Marking it posted advances the
   // card automatically.
   const libraryPosts = allPosts
-    .filter((p) => p.batch.startsWith('ad-library-'))
+    .filter((p) => p.batch.startsWith('ad-library-') || p.batch.startsWith('organic-'))
     .sort((a, b) => b.batch.localeCompare(a.batch) || a.ord - b.ord);
   const upNext = libraryPosts.find((p) => !p.posted_at) ?? allPosts.find((p) => !p.posted_at);
   const libraryLeft = libraryPosts.filter((p) => !p.posted_at).length;
