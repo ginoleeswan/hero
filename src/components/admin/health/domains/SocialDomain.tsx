@@ -28,7 +28,16 @@ function batchLabel(batch: string): string {
   return batch;
 }
 
-type Filter = 'all' | 'matchup' | 'ranking' | 'guess' | 'fact' | 'lore' | 'brand' | 'reel' | 'carousel';
+type Filter =
+  | 'all'
+  | 'matchup'
+  | 'ranking'
+  | 'guess'
+  | 'fact'
+  | 'lore'
+  | 'brand'
+  | 'reel'
+  | 'carousel';
 
 const FILTER_OPTIONS: { label: string; value: Filter }[] = [
   { label: 'All', value: 'all' },
@@ -59,7 +68,12 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
   const isVideo = post.media_type === 'video' && !!post.video_url;
 
   const saveAll = () => {
-    const files = isVideo && post.video_url ? [post.video_url] : post.slide_urls.length ? post.slide_urls : [post.image_url];
+    const files =
+      isVideo && post.video_url
+        ? [post.video_url]
+        : post.slide_urls.length
+          ? post.slide_urls
+          : [post.image_url];
     setSaving(true);
     files.forEach((u, i) => {
       // one anchor per file, staggered — browsers throttle burst downloads
