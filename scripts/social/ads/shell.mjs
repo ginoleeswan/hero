@@ -16,8 +16,8 @@ export function adShell(F, { w, h }, inner, extra = '', { plate = null } = {}) {
 html,body{width:${w}px;height:${h}px;overflow:hidden;background:${NAVY};font-family:'FR';color:${CREAM};}
 .page{position:relative;width:${w}px;height:${h}px;overflow:hidden;background:radial-gradient(100% 58% at 50% -10%, rgba(224,168,62,.07), transparent 55%), linear-gradient(#0d1f2b, ${NAVY} 62%);}
 .dots{position:absolute;inset:0;background-image:radial-gradient(circle, rgba(224,168,62,.09) 1.2px, transparent 1.8px);background-size:38px;-webkit-mask-image:radial-gradient(130% 100% at 50% 40%, transparent 52%, #000);opacity:.26;}
-.bgplate{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:${Math.max(w, Math.round(h * 9 / 16))}px;height:${Math.max(h, Math.round(w * 16 / 9))}px;object-fit:cover;}
-.veil{position:absolute;inset:0;background:linear-gradient(180deg, rgba(6,18,26,.75) 0%, rgba(6,18,26,.42) 34%, rgba(6,18,26,.48) 64%, rgba(6,18,26,.85) 88%);}
+.bgplate{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:${Math.max(w, Math.round(h * 9 / 16))}px;height:${Math.max(h, Math.round(w * 16 / 9))}px;object-fit:cover;filter:brightness(1.22) saturate(1.06);}
+.veil{position:absolute;inset:0;background:linear-gradient(180deg, rgba(6,18,26,.68) 0%, rgba(6,18,26,.3) 34%, rgba(6,18,26,.38) 64%, rgba(6,18,26,.82) 88%);}
 .grain{position:absolute;inset:0;background-image:url("${grainUri()}");background-size:340px;opacity:.05;mix-blend-mode:overlay;}
 .foot{position:absolute;bottom:${Math.round(h * 0.032)}px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:7px;opacity:.85;}
 .foot .row{display:flex;align-items:center;gap:14px;}

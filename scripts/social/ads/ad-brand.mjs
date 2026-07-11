@@ -2,9 +2,9 @@
 // Brand ads — zero character IP. Each --style derives from a different true facet
 // of the app (scale, relationship graph, powerstats, debate, rankings, dossier),
 // so the creative has range without ever leaning on a franchise character.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadEnv, makeSb, fonts, OUT_DIR, renderPng } from '../lib.mjs';
+import { loadEnv, makeSb, fonts, OUT_DIR, renderPng, ROOT } from '../lib.mjs';
 import { adShell } from './shell.mjs';
 import { rng } from './plan.mjs';
 
@@ -75,6 +75,15 @@ function radar(width) {
   }).join('');
   return `<svg width="${width}" height="${H}" viewBox="0 0 ${width} ${H}"><defs><radialGradient id="rg" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="${GOLD}" stop-opacity="0.34"/><stop offset="100%" stop-color="${ORANGE}" stop-opacity="0.14"/></radialGradient></defs>${rings}${spokes}<polygon points="${dp}" fill="rgba(224,168,62,0.13)" stroke="${GOLD}" stroke-width="${(width * 0.005).toFixed(1)}" stroke-linejoin="round"/>${dots}${labs}</svg>`;
 }
+
+// Painted venue per style (scripts/social/plates masters) — the veil in
+// adShell keeps each style's own graphics readable on top.
+const STYLE_PLATE = { scale: 'vault', constellation: 'sky', powerstats: 'sky', dossier: 'throne', leaderboard: 'sky', versus: 'arena' };
+const plateCache = new Map();
+const plateUri = (k) => {
+  if (!plateCache.has(k)) plateCache.set(k, `data:image/png;base64,${readFileSync(join(ROOT, `scripts/social/plates/${k}.png`)).toString('base64')}`);
+  return plateCache.get(k);
+};
 
 const STYLES = {
   // 1 — the sheer size of the catalogue
@@ -174,7 +183,7 @@ async function main() {
   const d = { count };
   for (const s of styles) for (const sz of sizes) {
     const [w, h] = SIZES[sz];
-    await renderPng(adShell(F, { w, h }, STYLES[s](w, h, d)), join(dir, `${s}-${sz}.png`), w, h);
+    await renderPng(adShell(F, { w, h }, STYLES[s](w, h, d), '', { plate: STYLE_PLATE[s] ? plateUri(STYLE_PLATE[s]) : null }), join(dir, `${s}-${sz}.png`), w, h);
     console.log(`  -> ${join(dir, `${s}-${sz}.png`)}`);
   }
   writeFileSync(join(dir, 'caption.txt'), [
