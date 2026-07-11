@@ -8,7 +8,7 @@
 // Output: out/social/brand-kit/ — organized by USE, with a playbook README.
 import { mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { renderPng, COLORS, grainUri, fontFace, fonts, ROOT } from './lib.mjs';
+import { renderPng, COLORS, grainUri, fontFace, fonts, ROOT, loadEnv } from './lib.mjs';
 
 const { O, T, GOLD, CREAM } = COLORS;
 const INK = '#0b1820';
