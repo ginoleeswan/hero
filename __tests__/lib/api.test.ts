@@ -1,4 +1,9 @@
-import { fetchHeroDetails, fetchFirstIssue, generateVerdict, fetchHeroGallery } from '../../src/lib/api';
+import {
+  fetchHeroDetails,
+  fetchFirstIssue,
+  generateVerdict,
+  fetchHeroGallery,
+} from '../../src/lib/api';
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
