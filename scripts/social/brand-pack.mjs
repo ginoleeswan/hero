@@ -17,6 +17,17 @@ const INKMUT = '#93a8b6';
 const PAPERMUT = '#8a7a63';
 const OUT = join(ROOT, 'out/social/brand-kit');
 const TAGLINE = 'The fan encyclopedia of heroes & villains';
+// Live catalogue size, floored to a clean marketing number (50,434 → "50,000").
+async function popLabel() {
+  try {
+    const { url, key } = loadEnv();
+    const res = await fetch(`${url}/rest/v1/heroes?select=id`, { method: 'HEAD', headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'count=exact', Range: '0-0' } });
+    const total = Number(/\/(\d+)$/.exec(res.headers.get('content-range') ?? '')?.[1]);
+    if (total > 1000) return `${(Math.floor(total / 1000) * 1000).toLocaleString('en-US')}`;
+  } catch { /* offline fallback */ }
+  return '50,000';
+}
+const POP = await popLabel();
 
 const pngUri = (p) => `data:image/png;base64,${readFileSync(p).toString('base64')}`;
 const svgUri = (s) => `data:image/svg+xml;utf8,${encodeURIComponent(s)}`;
@@ -111,7 +122,7 @@ async function overview() {
       ${masthead(1080, 'THE CATALOGUE')}
       <div style="position:absolute;left:0;right:0;top:440px;text-align:center;z-index:5">
         <div class="s" style="font-size:24px;letter-spacing:.42em;color:${GOLD}">POPULATION</div>
-        <div style="font-size:300px;line-height:1.05;color:${GOLD};text-shadow:0 30px 80px rgba(0,0,0,.6)">35,000</div>
+        <div style="font-size:252px;line-height:1.05;color:${GOLD};text-shadow:0 30px 80px rgba(0,0,0,.6)">${POP}</div>
         <div style="font-size:58px;margin-top:6px">heroes &amp; villains. Every one rated.</div>
       </div>
       ${footer('mythique.app', 'SIX POWER STATS · FAME SCORES · FULL DOSSIERS')}
@@ -167,7 +178,7 @@ async function overview() {
       <div style="position:absolute;left:90px;top:0;bottom:0;width:560px;display:flex;flex-direction:column;justify-content:center;gap:24px">
         <div style="display:flex;align-items:center;gap:18px;align-self:flex-start"><img src="${BRAND.logo}" style="height:32px"><img src="${BRAND.wordmark}" style="height:34px"></div>
         <div style="font-size:66px;line-height:1.08;margin-top:8px">Every hero.<br>Every villain.<br>One archive.</div>
-        <div class="s" style="font-size:23px;color:${INKMUT}">35,000 legends · battles · lore &nbsp;·&nbsp; <span style="color:${GOLD}">mythique.app</span></div>
+        <div class="s" style="font-size:23px;color:${INKMUT}">${POP} legends · battles · lore &nbsp;·&nbsp; <span style="color:${GOLD}">mythique.app</span></div>
       </div>
       ${grain()}
     </div>`, join(dir, 'overview-card-1200x627.png'), 1200, 627);
@@ -180,7 +191,7 @@ async function overview() {
       <div style="position:absolute;left:0;right:0;top:1108px;text-align:center;z-index:5">
         <div class="s" style="font-size:26px;letter-spacing:.4em;color:${GOLD};margin-bottom:34px;text-shadow:0 2px 8px rgba(5,12,17,.95), 0 4px 34px rgba(5,12,17,.9)">MEET MYTHIQUE</div>
         <div style="font-size:104px;line-height:1.06">Every hero.<br>Every villain.<br>One archive.</div>
-        <div class="s" style="font-size:34px;color:${INKMUT};margin-top:40px;line-height:1.5">35,000 legends — rated, ranked,<br>battled &amp; mapped.</div>
+        <div class="s" style="font-size:34px;color:${INKMUT};margin-top:40px;line-height:1.5">${POP} legends — rated, ranked,<br>battled &amp; mapped.</div>
         <div style="font-size:54px;color:${GOLD};margin-top:52px">mythique.app</div>
       </div>
       ${grain()}
@@ -202,8 +213,8 @@ async function announce() {
       ${footer('mythique.app', sub)}
       ${grain()}
     </div>`, join(dir, file), 1080, 1350);
-  await moment('launch-4x5.png', 'dawn', 'BULLETIN · №1', 'NOW LIVE', 'The archive<br>is open.', '35,000 LEGENDS · FREE ON THE WEB', { dim: 0.3 });
-  await moment('milestone-4x5.png', 'sky', 'MILESTONE', 'THE ARCHIVE REACHES', '35,000<br>legends.', 'AND COUNTING', { pos: 0.35 });
+  await moment('launch-4x5.png', 'dawn', 'BULLETIN · №1', 'NOW LIVE', 'The archive<br>is open.', '${POP} LEGENDS · FREE ON THE WEB', { dim: 0.3 });
+  await moment('milestone-4x5.png', 'sky', 'MILESTONE', 'THE ARCHIVE REACHES', `${POP}<br>legends.`, 'AND COUNTING', { pos: 0.35 });
   await moment('feature-4x5.png', 'throne', 'BULLETIN · №2', 'NEW ON MYTHIQUE', 'Family trees<br>just landed.', 'TRACE THE BLOODLINES', { dim: 0.1 });
   console.log(' ✓ 03-announce/');
 }
@@ -255,10 +266,10 @@ boilerplate, and the ad disclaimer. Copy-paste per channel.
 const CAPTIONS = `# Mythique — channel copy pack
 
 ## One-liner
-${TAGLINE} — 35,000 legends, rated, ranked, battled & mapped. mythique.app
+${TAGLINE} — ${POP} legends, rated, ranked, battled & mapped. mythique.app
 
 ## LinkedIn (personal launch post)
-I've been building something for fans: **Mythique** — a free encyclopedia of 35,000+ heroes and villains.
+I've been building something for fans: **Mythique** — a free encyclopedia of ${POP}+ heroes and villains.
 
 Every character gets a full dossier: six power stats, fame scores, first appearances, galleries. You can pit any two against each other in the Arena and vote, trace family trees and rivalries across universes, and fall down the lore rabbit hole for hours.
 
@@ -267,13 +278,13 @@ It's live on the web → mythique.app
 I'd love feedback — and your hottest "who wins" take.
 
 ## X / Threads
-35,000 heroes & villains. Every one rated. Every rivalry mapped.
+${POP} heroes & villains. Every one rated. Every rivalry mapped.
 
 The archive is open → mythique.app
 
 ## Instagram / TikTok bio
 ⚡ ${TAGLINE}
-📊 35,000+ legends · rated & ranked
+📊 ${POP}+ legends · rated & ranked
 ⚔️ Battles · lore · family trees
 👉 mythique.app
 
@@ -283,10 +294,10 @@ Swipe for what's inside — then come settle a debate at mythique.app (link in b
 #superheroes #villains #comics #anime #gaming #popculture
 
 ## Reddit (no marketing voice)
-I built a fan encyclopedia of 35,000+ heroes & villains — stats, head-to-head battles, and a mapped relationship graph (family trees, rivalries, teams). Free, on the web, no install. Happy to answer anything about the data pipeline. mythique.app
+I built a fan encyclopedia of ${POP}+ heroes & villains — stats, head-to-head battles, and a mapped relationship graph (family trees, rivalries, teams). Free, on the web, no install. Happy to answer anything about the data pipeline. mythique.app
 
 ## Press boilerplate
-Mythique is a free web encyclopedia of more than 35,000 heroes and villains across comics, film, games, and anime. Each character carries a full dossier — power ratings, fame scores, first appearances, and imagery — connected by a relationship graph of families, rivalries, and teams. Fans settle debates in the Arena, where head-to-head matchups combine real stats with community votes. Mythique is an unofficial fan work; all characters remain © their respective owners.
+Mythique is a free web encyclopedia of more than ${POP} heroes and villains across comics, film, games, and anime. Each character carries a full dossier — power ratings, fame scores, first appearances, and imagery — connected by a relationship graph of families, rivalries, and teams. Fans settle debates in the Arena, where head-to-head matchups combine real stats with community votes. Mythique is an unofficial fan work; all characters remain © their respective owners.
 
 ## Disclaimer (append to anything boosted as an ad)
 Unofficial fan encyclopedia. Characters © their respective owners.
@@ -295,9 +306,9 @@ function copyPack() {
   const dir = join(OUT, 'copy'); mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'captions.md'), CAPTIONS);
   writeFileSync(join(OUT, 'README.md'), PLAYBOOK);
-  writeFileSync(join(OUT, '01-profile', 'caption.txt'), `Profile kit — avatar + banners (X / LinkedIn / YouTube).\n\nBio: ⚡ ${TAGLINE} · 📊 35,000+ legends, rated & ranked · ⚔️ Battles, lore, family trees · 👉 mythique.app`);
+  writeFileSync(join(OUT, '01-profile', 'caption.txt'), `Profile kit — avatar + banners (X / LinkedIn / YouTube).\n\nBio: ⚡ ${TAGLINE} · 📊 ${POP}+ legends, rated & ranked · ⚔️ Battles, lore, family trees · 👉 mythique.app`);
   writeFileSync(join(OUT, '02-overview', 'caption.txt'), `Every hero. Every villain. One archive. 📖⚡\nSwipe for what's inside — then come settle a debate at mythique.app (link in bio).\n#superheroes #villains #comics #anime #gaming #popculture`);
-  writeFileSync(join(OUT, '03-announce', 'caption.txt'), `The archive is open.\n\n35,000 heroes & villains — every one rated, every rivalry mapped.\n\nmythique.app`);
+  writeFileSync(join(OUT, '03-announce', 'caption.txt'), `The archive is open.\n\n${POP} heroes & villains — every one rated, every rivalry mapped.\n\nmythique.app`);
   writeFileSync(join(OUT, '04-marks', 'caption.txt'), `Raw marks — logo SVG, cream/navy wordmarks, mascot.`);
   console.log(' ✓ copy/ + README');
 }
