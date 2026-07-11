@@ -92,72 +92,72 @@ async function overview() {
   const dir = join(OUT, '02-overview'); mkdirSync(dir, { recursive: true });
 
   // 1 · the premise — vault, one line
-  await render(`${css(1080, 1080)}
-    <div style="position:relative;width:1080px;height:1080px;background:${INK};color:${CREAM};overflow:hidden">
-      ${stage('vault', 1080, 1080, { pos: 0.35, dim: 0.12 })}
+  await render(`${css(1080, 1350)}
+    <div style="position:relative;width:1080px;height:1350px;background:${INK};color:${CREAM};overflow:hidden">
+      ${stage('vault', 1080, 1350, { pos: 0.35, dim: 0.12 })}
       ${masthead(1080, 'VOL. I')}
-      <div style="position:absolute;left:0;right:0;top:592px;text-align:center;z-index:5">
+      <div style="position:absolute;left:0;right:0;top:790px;text-align:center;z-index:5">
         <div class="s" style="font-size:23px;letter-spacing:.4em;color:${GOLD};margin-bottom:30px;text-shadow:0 3px 26px rgba(5,12,17,.9)">MEET MYTHIQUE</div>
         <div style="font-size:96px;line-height:1.06;text-shadow:0 6px 40px rgba(5,12,17,.75)">Every hero.<br>Every villain.<br>One archive.</div>
       </div>
       ${footer('mythique.app')}
       ${grain()}
-    </div>`, join(dir, 'slide-1-1080.png'), 1080, 1080);
+    </div>`, join(dir, 'slide-1-4x5.png'), 1080, 1350);
 
   // 2 · the catalogue — sky, the number
-  await render(`${css(1080, 1080)}
-    <div style="position:relative;width:1080px;height:1080px;background:${INK};color:${CREAM};overflow:hidden">
-      ${stage('sky', 1080, 1080, { pos: 0.4 })}
+  await render(`${css(1080, 1350)}
+    <div style="position:relative;width:1080px;height:1350px;background:${INK};color:${CREAM};overflow:hidden">
+      ${stage('sky', 1080, 1350, { pos: 0.4 })}
       ${masthead(1080, 'THE CATALOGUE')}
-      <div style="position:absolute;left:0;right:0;top:330px;text-align:center;z-index:5">
+      <div style="position:absolute;left:0;right:0;top:440px;text-align:center;z-index:5">
         <div class="s" style="font-size:24px;letter-spacing:.42em;color:${GOLD}">POPULATION</div>
         <div style="font-size:300px;line-height:1.05;color:${GOLD};text-shadow:0 30px 80px rgba(0,0,0,.6)">35,000</div>
         <div style="font-size:58px;margin-top:6px">heroes &amp; villains. Every one rated.</div>
       </div>
       ${footer('mythique.app', 'SIX POWER STATS · FAME SCORES · FULL DOSSIERS')}
       ${grain()}
-    </div>`, join(dir, 'slide-2-1080.png'), 1080, 1080);
+    </div>`, join(dir, 'slide-2-4x5.png'), 1080, 1350);
 
   // 3 · the arena — arena plate, one line, the coin
-  await render(`${css(1080, 1080)}
-    <div style="position:relative;width:1080px;height:1080px;background:${INK};color:${CREAM};overflow:hidden">
-      ${stage('arena', 1080, 1080, { pos: 0.3 })}
+  await render(`${css(1080, 1350)}
+    <div style="position:relative;width:1080px;height:1350px;background:${INK};color:${CREAM};overflow:hidden">
+      ${stage('arena', 1080, 1350, { pos: 0.3 })}
       ${masthead(1080, 'THE ARENA')}
-      <div style="position:absolute;left:50%;top:400px;transform:translate(-50%,-50%) rotate(45deg);width:110px;height:110px;background:${INK};border:5px solid ${GOLD};border-radius:16px;box-shadow:0 0 70px rgba(224,168,62,.6);z-index:5"></div>
-      <div style="position:absolute;left:50%;top:400px;transform:translate(-50%,-50%);font-size:44px;color:${GOLD};z-index:6">VS</div>
-      <div style="position:absolute;left:0;right:0;top:600px;text-align:center;z-index:5">
+      <div style="position:absolute;left:50%;top:500px;transform:translate(-50%,-50%) rotate(45deg);width:110px;height:110px;background:${INK};border:5px solid ${GOLD};border-radius:16px;box-shadow:0 0 70px rgba(224,168,62,.6);z-index:5"></div>
+      <div style="position:absolute;left:50%;top:500px;transform:translate(-50%,-50%);font-size:44px;color:${GOLD};z-index:6">VS</div>
+      <div style="position:absolute;left:0;right:0;top:770px;text-align:center;z-index:5">
         <div class="s" style="font-size:23px;letter-spacing:.4em;color:${GOLD};margin-bottom:28px;text-shadow:0 3px 26px rgba(5,12,17,.9)">★ DAILY SHOWDOWNS ★</div>
         <div style="font-size:96px;line-height:1.06;text-shadow:0 6px 40px rgba(5,12,17,.75)">Settle the<br>debates.</div>
       </div>
       ${footer('mythique.app', 'REAL STATS · YOUR VOTE DECIDES')}
       ${grain()}
-    </div>`, join(dir, 'slide-3-1080.png'), 1080, 1080);
+    </div>`, join(dir, 'slide-3-4x5.png'), 1080, 1350);
 
   // 4 · the lore — throne, one line
-  await render(`${css(1080, 1080)}
-    <div style="position:relative;width:1080px;height:1080px;background:${INK};color:${CREAM};overflow:hidden">
-      ${stage('throne', 1080, 1080, { pos: 0.35, dim: 0.1 })}
+  await render(`${css(1080, 1350)}
+    <div style="position:relative;width:1080px;height:1350px;background:${INK};color:${CREAM};overflow:hidden">
+      ${stage('throne', 1080, 1350, { pos: 0.35, dim: 0.1 })}
       ${masthead(1080, 'THE LORE')}
-      <div style="position:absolute;left:0;right:0;top:576px;text-align:center;z-index:5">
+      <div style="position:absolute;left:0;right:0;top:750px;text-align:center;z-index:5">
         <div class="s" style="font-size:23px;letter-spacing:.4em;color:${GOLD};margin-bottom:28px;text-shadow:0 3px 26px rgba(5,12,17,.9)">646,000 CONNECTIONS, MAPPED</div>
         <div style="font-size:92px;line-height:1.08;text-shadow:0 6px 40px rgba(5,12,17,.75)">Bloodlines.<br>Rivalries.<br>Alliances.</div>
       </div>
       ${footer('mythique.app')}
       ${grain()}
-    </div>`, join(dir, 'slide-4-1080.png'), 1080, 1080);
+    </div>`, join(dir, 'slide-4-4x5.png'), 1080, 1350);
 
   // 5 · the invitation — dawn, paper-warm CTA
-  await render(`${css(1080, 1080)}
-    <div style="position:relative;width:1080px;height:1080px;background:${INK};color:${CREAM};overflow:hidden">
-      ${stage('dawn', 1080, 1080, { pos: 0.45, dim: 0.22, topScrim: 0.7, bottomScrim: 0.9 })}
+  await render(`${css(1080, 1350)}
+    <div style="position:relative;width:1080px;height:1350px;background:${INK};color:${CREAM};overflow:hidden">
+      ${stage('dawn', 1080, 1350, { pos: 0.45, dim: 0.22, topScrim: 0.7, bottomScrim: 0.9 })}
       ${masthead(1080, 'FREE · ON THE WEB')}
-      <div style="position:absolute;left:0;right:0;top:600px;text-align:center;z-index:5">
+      <div style="position:absolute;left:0;right:0;top:770px;text-align:center;z-index:5">
         <div class="s" style="font-size:23px;letter-spacing:.4em;color:${GOLD};margin-bottom:28px;text-shadow:0 3px 26px rgba(5,12,17,.9)">START EXPLORING</div>
         <div style="font-size:104px;line-height:1.05;text-shadow:0 6px 40px rgba(5,12,17,.75)">The archive<br>is open.</div>
       </div>
       ${footer('mythique.app', 'NO INSTALL · NO PAYWALL')}
       ${grain()}
-    </div>`, join(dir, 'slide-5-1080.png'), 1080, 1080);
+    </div>`, join(dir, 'slide-5-4x5.png'), 1080, 1350);
 
   // link card + story
   await render(`${css(1200, 627)}
@@ -190,20 +190,20 @@ async function overview() {
 // ── 03-announce/ — retextable moments ─────────────────────────────────────────
 async function announce() {
   const dir = join(OUT, '03-announce'); mkdirSync(dir, { recursive: true });
-  const moment = (file, plateKey, folioText, eyebrow, head, sub, opts = {}) => render(`${css(1080, 1080)}
-    <div style="position:relative;width:1080px;height:1080px;background:${INK};color:${CREAM};overflow:hidden">
-      ${stage(plateKey, 1080, 1080, { pos: opts.pos ?? 0.4, dim: opts.dim ?? 0 })}
+  const moment = (file, plateKey, folioText, eyebrow, head, sub, opts = {}) => render(`${css(1080, 1350)}
+    <div style="position:relative;width:1080px;height:1350px;background:${INK};color:${CREAM};overflow:hidden">
+      ${stage(plateKey, 1080, 1350, { pos: opts.pos ?? 0.4, dim: opts.dim ?? 0 })}
       ${masthead(1080, folioText)}
-      <div style="position:absolute;left:0;right:0;top:${opts.top ?? 600}px;text-align:center;z-index:5">
+      <div style="position:absolute;left:0;right:0;top:${opts.top ?? 770}px;text-align:center;z-index:5">
         <div class="s" style="font-size:24px;letter-spacing:.42em;color:${GOLD};margin-bottom:30px;text-shadow:0 3px 26px rgba(5,12,17,.9)">${eyebrow}</div>
         <div style="font-size:104px;line-height:1.05;text-shadow:0 6px 40px rgba(5,12,17,.75)">${head}</div>
       </div>
       ${footer('mythique.app', sub)}
       ${grain()}
-    </div>`, join(dir, file), 1080, 1080);
-  await moment('launch-1080.png', 'dawn', 'BULLETIN · №1', 'NOW LIVE', 'The archive<br>is open.', '35,000 LEGENDS · FREE ON THE WEB', { dim: 0.22 });
-  await moment('milestone-1080.png', 'sky', 'MILESTONE', 'THE ARCHIVE REACHES', '35,000<br>legends.', 'AND COUNTING', { pos: 0.35 });
-  await moment('feature-1080.png', 'throne', 'BULLETIN · №2', 'NEW ON MYTHIQUE', 'Family trees<br>just landed.', 'TRACE THE BLOODLINES', { dim: 0.1 });
+    </div>`, join(dir, file), 1080, 1350);
+  await moment('launch-4x5.png', 'dawn', 'BULLETIN · №1', 'NOW LIVE', 'The archive<br>is open.', '35,000 LEGENDS · FREE ON THE WEB', { dim: 0.22 });
+  await moment('milestone-4x5.png', 'sky', 'MILESTONE', 'THE ARCHIVE REACHES', '35,000<br>legends.', 'AND COUNTING', { pos: 0.35 });
+  await moment('feature-4x5.png', 'throne', 'BULLETIN · №2', 'NEW ON MYTHIQUE', 'Family trees<br>just landed.', 'TRACE THE BLOODLINES', { dim: 0.1 });
   console.log(' ✓ 03-announce/');
 }
 
