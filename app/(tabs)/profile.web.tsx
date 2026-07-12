@@ -270,7 +270,7 @@ export default function WebProfileScreen() {
   // Ink chrome over a beige canvas, declared together (before the guest early-
   // return so it applies in both states). Ink — not navy — so iOS doesn't wash
   // the status bar to a light scrim; the cover banner's dark top fuses with it.
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
   const { user } = useAuth();
   const {
     profile,

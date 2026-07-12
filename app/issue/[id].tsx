@@ -344,7 +344,7 @@ export default function IssueScreen() {
     [newComics, id],
   );
 
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   if (issue === undefined) {
     return (

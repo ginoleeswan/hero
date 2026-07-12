@@ -11,10 +11,13 @@ interface ScreenChrome {
    */
   top?: string;
   /**
-   * The document canvas: the content body and the iOS Safari bottom-toolbar
-   * zone (what the frosted toolbar blurs, and what shows past the fold and on
-   * overscroll). Pass the screen's dominant body colour — `SURFACE.paper` for
-   * light screens, `SURFACE.ink` for full-dark ones.
+   * The document canvas: what iOS Safari shows behind the status-bar/toolbar
+   * chrome and on overscroll. On mobile web this should be `SURFACE.ink` —
+   * in-browser Safari tints its top chrome from the document background (the
+   * theme-color meta and the env-inset cover only help in standalone mode), so
+   * a paper canvas turns the status-bar zone beige. Light screens paint their
+   * own `SURFACE.paper` body on their root container instead of relying on the
+   * canvas.
    */
   canvas: string;
 }

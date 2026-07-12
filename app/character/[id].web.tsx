@@ -487,7 +487,7 @@ export default function WebCharacterScreen() {
   // paper so the body and both Safari toolbar zones read beige; the dark top edge
   // is handled by the status-bar cover, which paints the ink `top` colour — so
   // the canvas can be light without the status bar drifting beige.
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   const skeletonOpacity = useSkeletonAnim();
   const {

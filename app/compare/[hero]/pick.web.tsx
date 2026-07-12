@@ -140,7 +140,7 @@ export default function WebPickOpponentScreen() {
   const wide = width >= 1024;
 
   // Document scroll so content bleeds edge-to-edge under the iOS Safari toolbar.
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   const [query, setQuery] = useState('');
   const [preview, setPreview] = useState<AnchorPreview | null>(null);

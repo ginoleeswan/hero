@@ -29,7 +29,7 @@ export default function WebForgotPasswordScreen() {
   // Paint the document canvas beige so the form area (and any overscroll past the
   // 100dvh fold) reads continuous to the very bottom under the iOS Safari toolbar,
   // instead of the layout's navy shell showing through below the card.
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   const [email, setEmail] = useState(prefillEmail ?? '');
   const [loading, setLoading] = useState(false);

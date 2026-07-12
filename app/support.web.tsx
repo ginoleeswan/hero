@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS, SURFACE } from '../src/constants/colors';
 import { useScreenChrome } from '../src/hooks/useScreenChrome';
+import { StageHeader } from '../src/components/StageHeader';
 import { SectionShell } from '../src/components/profile/SectionShell';
 import { openKofi } from '../src/lib/support/kofi';
 
@@ -15,27 +16,12 @@ const TIERS = [
 
 export default function WebSupportScreen() {
   const router = useRouter();
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   return (
     <View style={styles.root}>
+      <StageHeader title="Support Mythique" onBack={() => router.back()} maxWidth={640} />
       <View style={styles.column}>
-        <View style={styles.titleRow}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) => [
-              styles.backBtn,
-              hovered && (styles.backHover as object),
-            ]}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
-            <Ionicons name="chevron-back" size={22} color={COLORS.navy} />
-          </Pressable>
-          <Text style={styles.title}>Support Mythique</Text>
-        </View>
-
         <SectionShell title="Why support?">
           <Text style={styles.body}>
             Mythique is a free, unofficial fan encyclopedia built by one person. No ads, no paywall
@@ -86,26 +72,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     paddingHorizontal: 20,
-    paddingTop: 92,
+    paddingTop: 26,
     paddingBottom: 48,
   } as object,
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 18,
-    marginLeft: -8,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-  } as object,
-  backHover: { backgroundColor: 'rgba(41,60,67,0.06)' } as object,
-  title: { fontFamily: 'Flame-Regular', fontSize: 32, lineHeight: 40, color: COLORS.navy },
   body: { fontFamily: 'Nunito_400Regular', fontSize: 14, lineHeight: 21, color: COLORS.grey },
   tierRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   tier: {

@@ -10,6 +10,7 @@ import { openKofi } from '../src/lib/support/kofi';
 import { COLORS, SURFACE } from '../src/constants/colors';
 import { Toast, useToast } from '../src/components/ui/Toast';
 import { useScreenChrome } from '../src/hooks/useScreenChrome';
+import { StageHeader } from '../src/components/StageHeader';
 import { SectionShell } from '../src/components/profile/SectionShell';
 
 type RowTone = 'navy' | 'orange' | 'danger';
@@ -83,7 +84,7 @@ function SettingRow({
 export default function WebSettingsScreen() {
   const router = useRouter();
   // Ink chrome over a beige canvas, matching the rest of the web shell.
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
   const { user, loading: authLoading, signOut, changePassword, deleteAccount } = useAuth();
   const { profile } = useProfile(user?.id);
   const [signingOut, setSigningOut] = useState(false);
@@ -139,25 +140,8 @@ export default function WebSettingsScreen() {
 
   return (
     <View style={styles.root}>
+      <StageHeader title="Settings" onBack={() => router.back()} maxWidth={640} />
       <View style={styles.column}>
-        {/* Title — sits below the persistent top nav, left-aligned with a back
-            affordance so it never collides with the nav's centred icons. */}
-        <View style={styles.titleRow}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) => [
-              styles.backBtn,
-              hovered && (styles.backBtnHover as object),
-            ]}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
-            <Ionicons name="chevron-back" size={22} color={COLORS.navy} />
-          </Pressable>
-          <Text style={styles.title}>Settings</Text>
-        </View>
-
         <SectionShell title="Account">
           <SettingRow icon="mail-outline" label="Email" value={email} />
           {!isEmailUser && (
@@ -251,32 +235,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     paddingHorizontal: 20,
-    paddingTop: 92, // clear the fixed top nav
+    paddingTop: 26,
     paddingBottom: 48,
   } as object,
-
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 18,
-    marginLeft: -8,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-  } as object,
-  backBtnHover: { backgroundColor: 'rgba(41,60,67,0.06)' } as object,
-  title: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 32,
-    lineHeight: 40, // ≥ 1.22× fontSize for Flame descenders
-    color: COLORS.navy,
-  },
 
   supportBlurb: {
     fontFamily: 'Nunito_400Regular',

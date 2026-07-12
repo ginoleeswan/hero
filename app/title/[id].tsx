@@ -64,7 +64,7 @@ export default function TitleScreen() {
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar
   // (dark backdrop header under the status bar, beige body to the very bottom).
   // No-ops on native. Called before the early returns so it applies in every state.
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   // Two-stage reveal. The HEADER paints as soon as we have any title — a seeded
   // stub OR the real row — while the BODY stays gated on ALL its data and
