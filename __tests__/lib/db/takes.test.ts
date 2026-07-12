@@ -1,4 +1,4 @@
-import { getTakes, postTake, toggleAgree } from '../../../src/lib/db/takes';
+import { getTakes, getMyTakes, postTake, toggleAgree } from '../../../src/lib/db/takes';
 
 let mockResolvers: Record<string, { data: unknown; error: unknown }> = {};
 const mockRpc = jest.fn();
@@ -96,6 +96,66 @@ describe('getTakes', () => {
   it('returns [] on error and does not filter rows client-side', async () => {
     mockResolvers['matchup_takes'] = { data: null, error: { message: 'boom' } };
     expect(await getTakes('h1', 'h2')).toEqual([]);
+  });
+});
+
+describe('getMyTakes', () => {
+  it('maps own take rows and attaches hero names via a heroes-by-ids lookup', async () => {
+    mockResolvers['matchup_takes'] = {
+      data: [
+        {
+          id: 't1',
+          hero_a_id: 'h1',
+          hero_b_id: 'h2',
+          user_id: 'u1',
+          picked_id: 'h1',
+          body: 'h1 wins easy',
+          agree_count: 3,
+          created_at: '2026-07-01T00:00:00Z',
+        },
+      ],
+      error: null,
+    };
+    mockResolvers['heroes'] = {
+      data: [
+        { id: 'h1', name: 'Batman' },
+        { id: 'h2', name: 'Superman' },
+      ],
+      error: null,
+    };
+
+    const result = await getMyTakes('u1');
+
+    expect(chains['matchup_takes'].eq).toHaveBeenCalledWith('user_id', 'u1');
+    expect(chains['matchup_takes'].order).toHaveBeenCalledWith('created_at', {
+      ascending: false,
+    });
+    expect(result).toEqual([
+      {
+        id: 't1',
+        heroAId: 'h1',
+        heroBId: 'h2',
+        userId: 'u1',
+        pickedId: 'h1',
+        body: 'h1 wins easy',
+        agreeCount: 3,
+        createdAt: '2026-07-01T00:00:00Z',
+        displayName: null,
+        heroAName: 'Batman',
+        heroBName: 'Superman',
+      },
+    ]);
+  });
+
+  it('returns [] on error', async () => {
+    mockResolvers['matchup_takes'] = { data: null, error: { message: 'boom' } };
+    expect(await getMyTakes('u1')).toEqual([]);
+  });
+
+  it('returns [] without a heroes lookup when the user has no takes', async () => {
+    mockResolvers['matchup_takes'] = { data: [], error: null };
+    expect(await getMyTakes('u1')).toEqual([]);
+    expect(chains['heroes']).toBeUndefined();
   });
 });
 

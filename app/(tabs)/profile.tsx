@@ -37,6 +37,7 @@ import { useUniverseShareImage } from '../../src/hooks/useUniverseShareImage';
 import { useDonationNudge } from '../../src/hooks/useDonationNudge';
 import { DonateNudge } from '../../src/components/support/DonateNudge';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
+import { deleteTake } from '../../src/lib/db/takes';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount, type Badge } from '../../src/lib/profile/badges';
 import { buildProfileStats } from '../../src/lib/profile/stats';
@@ -44,6 +45,7 @@ import { fanTier, tierProgress } from '../../src/lib/profile/fanTier';
 import { StatStrip } from '../../src/components/profile/StatStrip';
 import { SectionShell } from '../../src/components/profile/SectionShell';
 import { ContributionsList } from '../../src/components/profile/ContributionsList';
+import { MyTakes } from '../../src/components/profile/MyTakes';
 import { TasteMixBar } from '../../src/components/profile/TasteMixBar';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
@@ -263,8 +265,18 @@ export default function ProfileScreen() {
     removeCover,
     updateDisplayName,
   } = useProfile(user?.id);
-  const { favourites, setFavourites, battle, contributions, taste, loading, settled, refetch } =
-    useProfileData(user?.id);
+  const {
+    favourites,
+    setFavourites,
+    battle,
+    contributions,
+    taste,
+    takes,
+    setTakes,
+    loading,
+    settled,
+    refetch,
+  } = useProfileData(user?.id);
   const [refreshing, setRefreshing] = useState(false);
   const [showEditName, setShowEditName] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
@@ -438,6 +450,11 @@ export default function ProfileScreen() {
       onPress: () => setShowEditName(true),
     },
   ];
+
+  const handleDeleteTake = (id: string) => {
+    setTakes((prev) => prev.filter((t) => t.id !== id));
+    deleteTake(id).catch(() => {});
+  };
 
   const handleUnfavourite = (hero: FavouriteHero) => {
     if (!user) return;
@@ -827,6 +844,13 @@ export default function ProfileScreen() {
             style={styles.shellGutter}
           >
             <ContributionsList contributions={contributions} />
+          </SectionShell>
+        )}
+
+        {/* My takes + debate record */}
+        {(takes.length > 0 || (battle?.total ?? 0) > 0) && (
+          <SectionShell title="My takes" style={styles.shellGutter}>
+            <MyTakes battle={battle} takes={takes} onDelete={handleDeleteTake} />
           </SectionShell>
         )}
 

@@ -3,6 +3,7 @@ import { getUserFavouriteHeroes, type FavouriteHero } from '../lib/db/favourites
 import { getBattleRecord, type BattleRecord } from '../lib/db/matchupVotes';
 import { getMyContributions, type MyContribution } from '../lib/db/contributions';
 import { getTasteProfile, type TasteProfile } from '../lib/db/taste';
+import { getMyTakes, type MyTake } from '../lib/db/takes';
 
 export interface ProfileData {
   favourites: FavouriteHero[];
@@ -11,6 +12,9 @@ export interface ProfileData {
   battle: BattleRecord | null;
   contributions: MyContribution[];
   taste: TasteProfile | null;
+  takes: MyTake[];
+  /** Exposed so the views can optimistically drop a take on delete. */
+  setTakes: Dispatch<SetStateAction<MyTake[]>>;
   loading: boolean;
   /** True once ALL four sources have settled (not just favourites). Use this —
    *  not `loading` — to gate anything that reads the full picture (e.g. the fan
@@ -35,6 +39,7 @@ export function useProfileData(userId: string | undefined): ProfileData {
   const [battle, setBattle] = useState<BattleRecord | null>(null);
   const [contributions, setContributions] = useState<MyContribution[]>([]);
   const [taste, setTaste] = useState<TasteProfile | null>(null);
+  const [takes, setTakes] = useState<MyTake[]>([]);
   const [loading, setLoading] = useState(true);
   const [settled, setSettled] = useState(false);
 
@@ -49,15 +54,31 @@ export function useProfileData(userId: string | undefined): ProfileData {
     const contribP = getMyContributions()
       .then(setContributions)
       .catch(() => {});
+    const takesP = getMyTakes(userId)
+      .then(setTakes)
+      .catch(() => setTakes([]));
     const favP = getUserFavouriteHeroes(userId)
       .then(setFavourites)
       .catch(() => setFavourites([]))
       .finally(() => setLoading(false));
     // `settled` flips only once every source has resolved, so consumers can gate
     // full-picture logic (fan tier / milestone nudge) on a complete snapshot.
-    void Promise.allSettled([battleP, tasteP, contribP, favP]).then(() => setSettled(true));
+    void Promise.allSettled([battleP, tasteP, contribP, takesP, favP]).then(() =>
+      setSettled(true),
+    );
     return favP;
   }, [userId]);
 
-  return { favourites, setFavourites, battle, contributions, taste, loading, settled, refetch };
+  return {
+    favourites,
+    setFavourites,
+    battle,
+    contributions,
+    taste,
+    takes,
+    setTakes,
+    loading,
+    settled,
+    refetch,
+  };
 }

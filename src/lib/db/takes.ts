@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { getHeroesByIds } from './heroes';
 
 // Structured matchup takes: pick-a-side one-liners. Reads are plain selects
 // (public RLS on visible rows); writes go through SECURITY DEFINER RPCs.
@@ -83,6 +84,40 @@ export async function getTakes(a: string, b: string): Promise<Take[]> {
   );
 
   return rows.map((r) => toTake(r, nameById.get(r.user_id) ?? null));
+}
+
+export interface MyTake extends Take {
+  heroAName: string;
+  heroBName: string;
+}
+
+/**
+ * The caller's own takes across every pair, newest first, for the profile
+ * screen. Hero names for the pair label come from a second heroes-by-ids
+ * fetch — matchup_takes only stores ids. Empty array on error or no rows.
+ */
+export async function getMyTakes(userId: string): Promise<MyTake[]> {
+  const { data, error } = await supabase
+    .from('matchup_takes')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.warn('[getMyTakes] error:', error.message);
+    return [];
+  }
+  const rows = (data ?? []) as unknown as TakeRow[];
+  if (rows.length === 0) return [];
+
+  const heroIds = [...new Set(rows.flatMap((r) => [r.hero_a_id, r.hero_b_id]))];
+  const heroes = await getHeroesByIds(heroIds);
+  const nameById = new Map(heroes.map((h) => [h.id, h.name]));
+
+  return rows.map((r) => ({
+    ...toTake(r, null),
+    heroAName: nameById.get(r.hero_a_id) ?? 'Unknown',
+    heroBName: nameById.get(r.hero_b_id) ?? 'Unknown',
+  }));
 }
 
 /** Post (or replace) the caller's take. Auth required; null on error. */

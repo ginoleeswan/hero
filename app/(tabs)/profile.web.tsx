@@ -27,6 +27,7 @@ import { useProfile } from '../../src/hooks/useProfile';
 import { useProfileData } from '../../src/hooks/useProfileData';
 import { openKofi } from '../../src/lib/support/kofi';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
+import { deleteTake } from '../../src/lib/db/takes';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount, type Badge } from '../../src/lib/profile/badges';
 import { buildProfileStats } from '../../src/lib/profile/stats';
@@ -34,6 +35,7 @@ import { fanTier, tierProgress } from '../../src/lib/profile/fanTier';
 import { StatStrip } from '../../src/components/profile/StatStrip';
 import { SectionShell } from '../../src/components/profile/SectionShell';
 import { ContributionsList } from '../../src/components/profile/ContributionsList';
+import { MyTakes } from '../../src/components/profile/MyTakes';
 import { TasteMixBar } from '../../src/components/profile/TasteMixBar';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
@@ -284,8 +286,18 @@ export default function WebProfileScreen() {
     removeCover,
     updateDisplayName,
   } = useProfile(user?.id);
-  const { favourites, setFavourites, battle, contributions, taste, loading, settled, refetch } =
-    useProfileData(user?.id);
+  const {
+    favourites,
+    setFavourites,
+    battle,
+    contributions,
+    taste,
+    takes,
+    setTakes,
+    loading,
+    settled,
+    refetch,
+  } = useProfileData(user?.id);
   const [showEditName, setShowEditName] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const { toast, showToast } = useToast();
@@ -453,6 +465,11 @@ export default function WebProfileScreen() {
   const handleUpdateName = async (newName: string) => {
     await updateDisplayName(newName);
     showToast('Display name updated');
+  };
+
+  const handleDeleteTake = (id: string) => {
+    setTakes((prev) => prev.filter((t) => t.id !== id));
+    deleteTake(id).catch(() => {});
   };
 
   const handleUnfavourite = (hero: FavouriteHero) => {
@@ -775,6 +792,13 @@ export default function WebProfileScreen() {
               style={mob.shellGutter}
             >
               <ContributionsList contributions={contributions} />
+            </SectionShell>
+          )}
+
+          {/* ── My takes + debate record ── */}
+          {(takes.length > 0 || (battle?.total ?? 0) > 0) && (
+            <SectionShell title="My takes" style={mob.shellGutter}>
+              <MyTakes battle={battle} takes={takes} onDelete={handleDeleteTake} />
             </SectionShell>
           )}
 
@@ -1182,6 +1206,12 @@ export default function WebProfileScreen() {
             {contributions.length > 0 && (
               <SectionShell title="Contributions" count={String(contributions.length)}>
                 <ContributionsList contributions={contributions} />
+              </SectionShell>
+            )}
+
+            {(takes.length > 0 || (battle?.total ?? 0) > 0) && (
+              <SectionShell title="My takes">
+                <MyTakes battle={battle} takes={takes} onDelete={handleDeleteTake} />
               </SectionShell>
             )}
           </View>
