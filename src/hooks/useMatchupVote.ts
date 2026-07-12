@@ -1,23 +1,24 @@
 // src/hooks/useMatchupVote.ts — shared "Who would win?" vote state for the
 // daily-matchup card and the Compare arena, so the two surfaces never drift.
 //
-// Cold-launch rule: a logged-out visitor can vote with NO sign-up wall. Their
-// pick is an optimistic, on-device reveal (AsyncStorage) — it does not hit the
-// server tally. Only signed-in votes persist via cast_matchup_vote. The reveal
-// itself is always meaningful because the caller falls back to the stat-split
-// when the crowd tally is empty. If public anonymous counts ever matter, add an
-// anonymous-vote RPC keyed on a client-id — that change never touches auth.
+// Cold-launch rule: anonymous votes are real votes. A logged-out visitor can
+// vote with NO sign-up wall, and their pick persists server-side against a
+// stable per-device voter key (see lib/voterKey), same as a signed-in vote.
+// The pick is also mirrored to AsyncStorage for an instant local reveal and
+// as a fallback if the RPC is unreachable (offline, transient error) — the
+// caller falls back to the stat-split when the crowd tally is empty either way.
 import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './useAuth';
 import { matchupVoteKey, type MatchupSide } from '../lib/home/matchupVote';
-import { getMatchupTally, castMatchupVote, type MatchupTally } from '../lib/db/matchupVotes';
+import { getMatchupTallyV2, castMatchupVoteV2, type MatchupTally } from '../lib/db/matchupVotes';
+import { getVoterKey } from '../lib/voterKey';
 import { trackEvent } from '../lib/analytics';
 
 export interface MatchupVoteState {
   /** The picked hero id, or null before the user has voted. */
   pickedId: string | null;
-  /** Crowd tally (signed-in votes only), or null until loaded / when empty. */
+  /** Crowd tally (signed-in + anonymous votes), or null until loaded / when empty. */
   tally: MatchupTally | null;
   /** True once the initial tally + local-pick lookup has settled. */
   loaded: boolean;
@@ -36,7 +37,8 @@ export function useMatchupVote(heroAId: string, heroBId: string): MatchupVoteSta
 
   useEffect(() => {
     let active = true;
-    getMatchupTally(heroAId, heroBId)
+    getVoterKey()
+      .then((vk) => getMatchupTallyV2(heroAId, heroBId, vk))
       .then(async (t) => {
         if (!active) return;
         if (t) {
@@ -67,13 +69,10 @@ export function useMatchupVote(heroAId: string, heroBId: string): MatchupVoteSta
       setPickedId(picked);
       AsyncStorage.setItem(key, side).catch(() => {});
       trackEvent('matchup_vote', { authed: !!user });
-      // Persist to the crowd tally only for signed-in users (RLS-locked rows;
-      // an anonymous write would fail server-side, so we don't attempt it).
-      if (user) {
-        castMatchupVote(heroAId, heroBId, picked)
-          .then((t) => t && setTally(t))
-          .catch(() => {});
-      }
+      getVoterKey()
+        .then((vk) => castMatchupVoteV2(heroAId, heroBId, picked, vk))
+        .then((t) => t && setTally(t))
+        .catch(() => {});
     },
     [pickedId, user, key, heroAId, heroBId],
   );
