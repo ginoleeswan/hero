@@ -93,7 +93,11 @@ export function OgCardsDomain() {
       </View>
 
       <View style={s.gallery}>
-        <OgPreview label="Brand card" hint="Site-wide default · shared links with no hero" path="/api/og" />
+        <OgPreview
+          label="Brand card"
+          hint="Site-wide default · shared links with no hero"
+          path="/api/og"
+        />
 
         {heroA ? (
           <OgPreview
