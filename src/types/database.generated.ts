@@ -1401,6 +1401,30 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_credentials: {
+        Row: {
+          access_token: string
+          expires_at: string | null
+          external_id: string | null
+          platform: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          expires_at?: string | null
+          external_id?: string | null
+          platform: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          expires_at?: string | null
+          external_id?: string | null
+          platform?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           created_at: string
@@ -2430,6 +2454,10 @@ export type Database = {
       set_daily_debate: {
         Args: { p_a: string; p_b: string; p_date: string; p_hook: string }
         Returns: undefined
+      }
+      set_take_status: {
+        Args: { p_status: string; p_take_id: string }
+        Returns: Json
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
