@@ -90,3 +90,41 @@ export async function castMatchupVote(
   }
   return toTally(data);
 }
+
+/** v2: tally including anonymous votes; my_pick resolves via uid or voter key. */
+export async function getMatchupTallyV2(
+  a: string,
+  b: string,
+  voterKey: string,
+): Promise<MatchupTally | null> {
+  const { data, error } = await supabase.rpc('get_matchup_tally_v2', {
+    p_a: a,
+    p_b: b,
+    p_voter_key: voterKey,
+  });
+  if (error) {
+    console.warn('[getMatchupTallyV2] error:', error.message);
+    return null;
+  }
+  return toTally(data);
+}
+
+/** v2: cast/switch a vote, signed-in or anonymous. Returns the fresh tally. */
+export async function castMatchupVoteV2(
+  a: string,
+  b: string,
+  pickedId: string,
+  voterKey: string,
+): Promise<MatchupTally | null> {
+  const { data, error } = await supabase.rpc('cast_matchup_vote_v2', {
+    p_a: a,
+    p_b: b,
+    p_picked: pickedId,
+    p_voter_key: voterKey,
+  });
+  if (error) {
+    console.warn('[castMatchupVoteV2] error:', error.message);
+    return null;
+  }
+  return toTally(data);
+}
