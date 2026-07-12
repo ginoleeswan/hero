@@ -1,7 +1,11 @@
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMatchupVote } from '../../src/hooks/useMatchupVote';
-import { getMatchupTallyV2, castMatchupVoteV2, type MatchupTally } from '../../src/lib/db/matchupVotes';
+import {
+  getMatchupTallyV2,
+  castMatchupVoteV2,
+  type MatchupTally,
+} from '../../src/lib/db/matchupVotes';
 import { getVoterKey } from '../../src/lib/voterKey';
 import { useAuth } from '../../src/hooks/useAuth';
 

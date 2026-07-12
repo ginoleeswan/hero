@@ -234,7 +234,10 @@ export default function NativeCompareScreen() {
 
           {ready && (
             <View style={styles.takesWrap}>
-              <TakesSection heroA={{ id: hero, name: nameA }} heroB={{ id: opponent, name: nameB }} />
+              <TakesSection
+                heroA={{ id: hero, name: nameA }}
+                heroB={{ id: opponent, name: nameB }}
+              />
             </View>
           )}
         </View>

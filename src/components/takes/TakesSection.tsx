@@ -157,10 +157,7 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
   const router = useRouter();
   const { user } = useAuth();
   const { pickedId: votePickedId } = useMatchupVote(heroA.id, heroB.id);
-  const { takes, myTake, submit, remove, agree, agreedIds } = useMatchupTakes(
-    heroA.id,
-    heroB.id,
-  );
+  const { takes, myTake, submit, remove, agree, agreedIds } = useMatchupTakes(heroA.id, heroB.id);
 
   const [pick, setPick] = useState<string | null>(null);
   const [body, setBody] = useState('');
@@ -258,10 +255,7 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
                 disabled={posting || !pick || !body.trim()}
                 accessibilityRole="button"
                 accessibilityLabel="Post take"
-                style={[
-                  s.submitBtn,
-                  (posting || !pick || !body.trim()) && s.submitBtnDisabled,
-                ]}
+                style={[s.submitBtn, (posting || !pick || !body.trim()) && s.submitBtnDisabled]}
               >
                 <Text style={s.submitBtnText}>{posting ? 'Posting...' : 'Post'}</Text>
               </Pressable>

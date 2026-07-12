@@ -22,8 +22,17 @@ import { YesterdayStrip } from '../../src/components/versus/YesterdayStrip';
 export default function VersusScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { matchup, hookText, takesCount, yesterday, rivalries, iconicPool, loading, teamBattle, mostFeared } =
-    useVersusHub();
+  const {
+    matchup,
+    hookText,
+    takesCount,
+    yesterday,
+    rivalries,
+    iconicPool,
+    loading,
+    teamBattle,
+    mostFeared,
+  } = useVersusHub();
 
   const openArena = (a: FighterArt, b: FighterArt) => {
     stashFighters(a, b);
@@ -54,10 +63,7 @@ export default function VersusScreen() {
         >
           <Text style={styles.eyebrow}>{"★ Today's Debate ★"}</Text>
           {matchup ? (
-            <Text
-              style={[styles.title, hookText && styles.titleWithHook]}
-              numberOfLines={1}
-            >
+            <Text style={[styles.title, hookText && styles.titleWithHook]} numberOfLines={1}>
               {matchup.heroA.name} vs {matchup.heroB.name}
             </Text>
           ) : (

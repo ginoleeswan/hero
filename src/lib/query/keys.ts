@@ -17,8 +17,7 @@ export const queryKeys = {
     ['heroes', 'search', query, publisher, alignment] as const,
   verdict: (heroId: string, opponentId: string) =>
     ['heroes', 'verdict', heroId, opponentId] as const,
-  takes: (a: string, b: string) =>
-    ['heroes', 'takes', a <= b ? a : b, a <= b ? b : a] as const,
+  takes: (a: string, b: string) => ['heroes', 'takes', a <= b ? a : b, a <= b ? b : a] as const,
   // Character detail-screen secondary reads (see heroDetailQueries).
   heroFamily: (id: string) => ['heroes', 'family', id] as const,
   heroNarrative: (id: string) => ['heroes', 'narrative', id] as const,

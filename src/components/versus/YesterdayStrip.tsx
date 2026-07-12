@@ -14,10 +14,7 @@ export function YesterdayStrip({ yesterday }: { yesterday: YesterdayDebateStrip 
   const winnerPct = Math.max(pctA, pctB);
   const loserPct = Math.min(pctA, pctB);
 
-  const yourSideWon =
-    yourPick === null
-      ? null
-      : (yourPick === 'a') === finalVotesA >= finalVotesB;
+  const yourSideWon = yourPick === null ? null : (yourPick === 'a') === finalVotesA >= finalVotesB;
 
   return (
     <View style={s.wrap}>

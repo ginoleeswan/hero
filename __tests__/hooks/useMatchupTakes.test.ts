@@ -3,13 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { type ReactNode } from 'react';
 import { useMatchupTakes } from '../../src/hooks/useMatchupTakes';
 import { useAuth } from '../../src/hooks/useAuth';
-import {
-  getTakes,
-  postTake,
-  deleteTake,
-  toggleAgree,
-  type Take,
-} from '../../src/lib/db/takes';
+import { getTakes, postTake, deleteTake, toggleAgree, type Take } from '../../src/lib/db/takes';
 import { getVoterKey } from '../../src/lib/voterKey';
 
 jest.mock('../../src/lib/db/takes', () => ({
