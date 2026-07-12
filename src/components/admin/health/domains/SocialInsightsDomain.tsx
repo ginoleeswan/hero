@@ -192,78 +192,66 @@ export function SocialInsightsDomain() {
 
   const newest = (resultsQ.data ?? [])[0];
   const autoCount = (resultsQ.data ?? []).filter((r) => r.source === 'auto').length;
+  const best = angleRows.find((a) => a.n >= 1); // leaderboard is sorted by avg views
 
   return (
     <View style={styles.wrap}>
-      <Panel
-        title="This month's attention"
-        hint={`${measuredPosts} posts measured · ${autoCount ? `${autoCount} auto-pulled snapshots · ` : ''}latest ${newest ? new Date(newest.recorded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}`}
-        style={styles.panel}
-        action={syncBtn}
-      >
-        <View style={styles.tileRow}>
-          <StatTile label="Views / reach" value={fmt(totalViews)} tint={GOLD} />
-          <StatTile label="Likes" value={fmt(totalLikes)} />
-          <StatTile label="Comments" value={fmt(totalComments)} />
-          <StatTile label="Posts measured" value={String(measuredPosts)} />
+      {/* HERO BAND — one dominant number + the single takeaway, supporting KPIs beside it */}
+      <Panel style={styles.panel} action={syncBtn}>
+        <View style={styles.hero}>
+          <View style={styles.heroPrimary}>
+            <Text style={styles.heroValue}>{fmt(totalViews)}</Text>
+            <Text style={styles.heroLabel}>TOTAL VIEWS / REACH</Text>
+            <Text style={styles.heroSub}>
+              across {measuredPosts} post{measuredPosts === 1 ? '' : 's'}
+              {autoCount ? ' · auto-synced' : ''}
+            </Text>
+          </View>
+          <View style={styles.heroDivider} />
+          <View style={styles.heroSecondary}>
+            <View style={styles.heroMini}>
+              <Text style={styles.heroMiniValue}>{fmt(totalLikes)}</Text>
+              <Text style={styles.heroMiniLabel}>likes</Text>
+            </View>
+            <View style={styles.heroMini}>
+              <Text style={styles.heroMiniValue}>{fmt(totalComments)}</Text>
+              <Text style={styles.heroMiniLabel}>comments</Text>
+            </View>
+            {best ? (
+              <View style={[styles.heroMini, styles.heroBest]}>
+                <Text style={styles.heroBestLabel}>BEST FORMAT</Text>
+                <Text style={styles.heroBestValue}>{best.angle}</Text>
+                <Text style={styles.heroBestSub}>{fmt(Math.round(best.avgViews))} avg reach</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
       </Panel>
 
-      <Panel
-        title="What's working"
-        hint="Average views per post, by format — this steers the next batch"
-        style={styles.panel}
-      >
-        {angleRows.map((a) => (
-          <View key={a.angle} style={styles.angleRow}>
-            <View style={styles.angleHead}>
-              <Text style={styles.angleName}>{a.angle}</Text>
-              <Text style={styles.angleMeta}>
-                {a.n} post{a.n === 1 ? '' : 's'} · ❤️💬 {fmt(Math.round(a.avgEngage))} avg
-              </Text>
-              <Text style={styles.angleValue}>{fmt(Math.round(a.avgViews))}</Text>
-            </View>
-            <View style={styles.barTrack}>
-              <View style={[styles.barFill, { width: `${(a.avgViews / maxAvg) * 100}%` }]} />
-            </View>
-          </View>
-        ))}
-      </Panel>
-
+      {/* WORKSPACE — the decision tool (left) beside platform context (right rail) */}
       <View style={styles.split}>
         <Panel
-          title="Top performers"
-          hint="Make more like these"
+          title="What's working"
+          hint="Avg views per post, by format — this steers the next batch"
           style={[styles.panel, styles.splitMain]}
         >
-          {topPosts.map((t, i) => (
-            <View key={t.post.id} style={styles.topRow}>
-              <Text style={styles.topRank}>{i + 1}</Text>
-              <View style={styles.topThumbWrap}>
-                <Image
-                  source={{ uri: t.post.image_url }}
-                  style={styles.topThumb}
-                  contentFit="cover"
+          {angleRows.map((a, i) => (
+            <View key={a.angle} style={styles.angleRow}>
+              <View style={styles.angleHead}>
+                <Text style={[styles.angleName, i === 0 && styles.angleNameTop]}>{a.angle}</Text>
+                <Text style={styles.angleMeta}>
+                  {a.n} post{a.n === 1 ? '' : 's'} · ❤️💬 {fmt(Math.round(a.avgEngage))} avg
+                </Text>
+                <Text style={styles.angleValue}>{fmt(Math.round(a.avgViews))}</Text>
+              </View>
+              <View style={styles.barTrack}>
+                <View
+                  style={[
+                    styles.barFill,
+                    { width: `${Math.max(3, (a.avgViews / maxAvg) * 100)}%` },
+                    i > 0 && styles.barFillDim,
+                  ]}
                 />
-              </View>
-              <View style={styles.topMeta}>
-                <Text style={styles.topTitle} numberOfLines={1}>
-                  {t.post.title}
-                </Text>
-                <View style={styles.topChips}>
-                  <Text style={styles.topAngle}>{angleLabel(t.post)}</Text>
-                  {[...new Set(t.platforms)].map((pf) => (
-                    <Text key={pf} style={styles.topPlatform}>
-                      {pf}
-                    </Text>
-                  ))}
-                </View>
-              </View>
-              <View style={styles.topNums}>
-                <Text style={styles.topViews}>{fmt(t.views)}</Text>
-                <Text style={styles.topSub}>
-                  ❤️ {fmt(t.likes)} · 💬 {fmt(t.comments)}
-                </Text>
               </View>
             </View>
           ))}
@@ -291,6 +279,41 @@ export function SocialInsightsDomain() {
           </Text>
         </Panel>
       </View>
+
+      {/* TOP PERFORMERS — full width so thumbnails + numbers breathe */}
+      <Panel title="Top performers" hint="Make more like these" style={styles.panel}>
+        {topPosts.map((t, i) => (
+          <View key={t.post.id} style={styles.topRow}>
+            <Text style={styles.topRank}>{i + 1}</Text>
+            <View style={styles.topThumbWrap}>
+              <Image
+                source={{ uri: t.post.image_url }}
+                style={styles.topThumb}
+                contentFit="cover"
+              />
+            </View>
+            <View style={styles.topMeta}>
+              <Text style={styles.topTitle} numberOfLines={1}>
+                {t.post.title}
+              </Text>
+              <View style={styles.topChips}>
+                <Text style={styles.topAngle}>{angleLabel(t.post)}</Text>
+                {[...new Set(t.platforms)].map((pf) => (
+                  <Text key={pf} style={styles.topPlatform}>
+                    {pf}
+                  </Text>
+                ))}
+              </View>
+            </View>
+            <View style={styles.topNums}>
+              <Text style={styles.topViews}>{fmt(t.views)}</Text>
+              <Text style={styles.topSub}>
+                ❤️ {fmt(t.likes)} · 💬 {fmt(t.comments)}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </Panel>
     </View>
   );
 }
@@ -309,12 +332,66 @@ const styles = StyleSheet.create({
   },
   syncBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   panel: { marginBottom: 0 },
-  tileRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+
+  // Hero band
+  hero: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 22 },
+  heroPrimary: { minWidth: 150 },
+  heroValue: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 56,
+    lineHeight: 58,
+    color: GOLD,
+    fontVariant: ['tabular-nums'],
+  },
+  heroLabel: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 11,
+    letterSpacing: 0.8,
+    color: 'rgba(41,60,67,0.6)',
+    marginTop: 2,
+  },
+  heroSub: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 12,
+    color: 'rgba(41,60,67,0.45)',
+    marginTop: 3,
+  },
+  heroDivider: { width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(41,60,67,0.1)' },
+  heroSecondary: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 24, flex: 1 },
+  heroMini: { gap: 1 },
+  heroMiniValue: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 26,
+    color: COLORS.navy,
+    fontVariant: ['tabular-nums'],
+  },
+  heroMiniLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
+  heroBest: {
+    marginLeft: 'auto',
+    backgroundColor: 'rgba(224,168,62,0.1)',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  heroBestLabel: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 9.5,
+    letterSpacing: 0.8,
+    color: '#a8791f',
+  },
+  heroBestValue: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 17,
+    color: COLORS.navy,
+    marginTop: 1,
+  },
+  heroBestSub: { fontFamily: 'Nunito_600SemiBold', fontSize: 11, color: 'rgba(41,60,67,0.55)' },
 
   // What's working — single-hue magnitude bars, direct-labeled
   angleRow: { marginBottom: 14 },
   angleHead: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginBottom: 6 },
   angleName: { fontFamily: 'Nunito_800ExtraBold', fontSize: 14, color: COLORS.navy },
+  angleNameTop: { color: '#a8791f' },
   angleMeta: {
     flex: 1,
     fontFamily: 'Nunito_600SemiBold',
@@ -335,6 +412,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   barFill: { height: 10, borderRadius: 999, backgroundColor: GOLD },
+  barFillDim: { backgroundColor: 'rgba(224,168,62,0.55)' },
 
   split: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' },
   splitMain: { flexGrow: 2, flexBasis: 460, minWidth: 320 },
