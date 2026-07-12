@@ -2,7 +2,7 @@ import { getTodaysMatchupFromPool } from '../../src/lib/matchup';
 import type { Hero } from '../../src/lib/db/heroes';
 
 const mockGetDailyDebate = jest.fn();
-const mockGetHeroesByIds = jest.fn();
+const mockGetHeroById = jest.fn();
 const mockGetCachedVerdict = jest.fn();
 const mockGenerateVerdict = jest.fn();
 
@@ -11,7 +11,7 @@ jest.mock('../../src/lib/db/dailyDebate', () => ({
   todayIso: () => '2026-07-12',
 }));
 jest.mock('../../src/lib/db/heroes', () => ({
-  getHeroesByIds: (...a: unknown[]) => mockGetHeroesByIds(...a),
+  getHeroById: (...a: unknown[]) => mockGetHeroById(...a),
   getIconicHeroes: jest.fn(),
 }));
 jest.mock('../../src/lib/db/verdicts', () => ({
@@ -48,6 +48,7 @@ const pool: Hero[] = Array.from({ length: 24 }, (_, i) => hero(`p${i}`, `Pool ${
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetCachedVerdict.mockResolvedValue('Cached verdict');
+  mockGetHeroById.mockResolvedValue(null);
 });
 
 describe('getTodaysMatchupFromPool', () => {
@@ -60,21 +61,71 @@ describe('getTodaysMatchupFromPool', () => {
 
     expect(result?.heroA.id).toBe(a.id);
     expect(result?.heroB.id).toBe(b.id);
-    expect(mockGetHeroesByIds).not.toHaveBeenCalled();
+    expect(mockGetHeroById).not.toHaveBeenCalled();
   });
 
-  it('fetches by id when the debate pair is not in the pool', async () => {
+  it('fetches full stat rows by id when the debate pair is off-pool, so stats flow through', async () => {
     mockGetDailyDebate.mockResolvedValue({ heroAId: 'off1', heroBId: 'off2', hookText: null });
-    mockGetHeroesByIds.mockResolvedValue([
-      { id: 'off1', name: 'Off One', image_url: null, portrait_url: null, publisher: null },
-      { id: 'off2', name: 'Off Two', image_url: null, portrait_url: null, publisher: null },
-    ]);
+    const offA = hero('off1', 'Off One', {
+      intelligence: 90,
+      strength: 80,
+      speed: 70,
+      durability: 60,
+      power: 95,
+      combat: 85,
+    });
+    const offB = hero('off2', 'Off Two', {
+      intelligence: 40,
+      strength: 30,
+      speed: 20,
+      durability: 90,
+      power: 35,
+      combat: 25,
+    });
+    mockGetHeroById.mockImplementation((id: string) =>
+      Promise.resolve(id === 'off1' ? offA : id === 'off2' ? offB : null),
+    );
+    mockGetCachedVerdict.mockResolvedValue(null);
+    mockGenerateVerdict.mockResolvedValue('Generated verdict');
 
     const result = await getTodaysMatchupFromPool(pool);
 
-    expect(mockGetHeroesByIds).toHaveBeenCalledWith(['off1', 'off2']);
+    expect(mockGetHeroById).toHaveBeenCalledWith('off1');
+    expect(mockGetHeroById).toHaveBeenCalledWith('off2');
     expect(result?.heroA.id).toBe('off1');
     expect(result?.heroB.id).toBe('off2');
+    // Real stats, not zeroed lean rows: A wins 5 of 6, B wins durability only.
+    expect(result?.winsA).toBe(5);
+    expect(result?.winsB).toBe(1);
+    expect(result?.heroA.intelligence).toBe(90);
+    expect(result?.heroB.strength).toBe(30);
+    expect(mockGenerateVerdict).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statsA: expect.objectContaining({ intelligence: 90, power: 95 }),
+        statsB: expect.objectContaining({ durability: 90, combat: 25 }),
+      }),
+    );
+  });
+
+  it('resolves a partial hit — one hero from the pool, the other fetched by id with stats', async () => {
+    const inPool = pool[5];
+    mockGetDailyDebate.mockResolvedValue({
+      heroAId: inPool.id,
+      heroBId: 'off9',
+      hookText: null,
+    });
+    const offB = hero('off9', 'Off Nine', { strength: 99 });
+    mockGetHeroById.mockImplementation((id: string) =>
+      Promise.resolve(id === 'off9' ? offB : null),
+    );
+
+    const result = await getTodaysMatchupFromPool(pool);
+
+    expect(mockGetHeroById).toHaveBeenCalledTimes(1);
+    expect(mockGetHeroById).toHaveBeenCalledWith('off9');
+    expect(result?.heroA.id).toBe(inPool.id);
+    expect(result?.heroB.id).toBe('off9');
+    expect(result?.heroB.strength).toBe(99);
   });
 
   it('falls back to the seeded pool pick, byte-identical to before, when there is no server row', async () => {
@@ -93,7 +144,7 @@ describe('getTodaysMatchupFromPool', () => {
 
   it('falls back to the seeded pick when the debate pair cannot be resolved at all', async () => {
     mockGetDailyDebate.mockResolvedValue({ heroAId: 'ghost1', heroBId: 'ghost2', hookText: null });
-    mockGetHeroesByIds.mockResolvedValue([]); // both heroes gone (e.g. deleted)
+    mockGetHeroById.mockResolvedValue(null); // both heroes gone (e.g. deleted)
 
     const seed = dailySeed();
     const iA = seed % pool.length;

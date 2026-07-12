@@ -1,4 +1,4 @@
-import { getIconicHeroes, getHeroesByIds, type Hero } from './db/heroes';
+import { getIconicHeroes, getHeroById, type Hero } from './db/heroes';
 import { getCachedVerdict } from './db/verdicts';
 import { compareStats } from './compare';
 import { generateVerdict } from './api';
@@ -32,37 +32,29 @@ function dailySeed(d = new Date()): number {
 
 const STAT_KEYS = ['intelligence', 'strength', 'speed', 'durability', 'power', 'combat'] as const;
 
-// A hero-shaped source for building a matchup. Full pool rows (from
-// getIconicHeroes) always carry stats; a server-curated pair not already in
-// the pool is resolved via getHeroesByIds, whose lean row has no stat
-// columns — statsString/statsNumber default those to 0, same treatment any
-// other unenriched hero already gets.
-type MatchupSource = Pick<Hero, 'id' | 'name' | 'image_url' | 'portrait_url' | 'publisher'> &
-  Partial<Pick<Hero, (typeof STAT_KEYS)[number]>>;
-
-function statsString(h: MatchupSource): Record<string, string> {
+function statsString(h: Hero): Record<string, string> {
   const o: Record<string, string> = {};
-  for (const k of STAT_KEYS) o[k] = String((h[k] as number | null | undefined) ?? 0);
+  for (const k of STAT_KEYS) o[k] = String((h[k] as number | null) ?? 0);
   return o;
 }
-function statsNumber(h: MatchupSource): Record<string, number> {
+function statsNumber(h: Hero): Record<string, number> {
   const o: Record<string, number> = {};
-  for (const k of STAT_KEYS) o[k] = (h[k] as number | null | undefined) ?? 0;
+  for (const k of STAT_KEYS) o[k] = (h[k] as number | null) ?? 0;
   return o;
 }
 
-const toMatchupHero = (h: MatchupSource): MatchupHero => ({
+const toMatchupHero = (h: Hero): MatchupHero => ({
   id: h.id,
   name: h.name,
   image_url: h.image_url,
   portrait_url: h.portrait_url,
   publisher: h.publisher,
-  intelligence: h.intelligence ?? null,
-  strength: h.strength ?? null,
-  speed: h.speed ?? null,
+  intelligence: h.intelligence,
+  strength: h.strength,
+  speed: h.speed,
 });
 
-async function buildMatchup(a: MatchupSource, b: MatchupSource): Promise<TodaysMatchup> {
+async function buildMatchup(a: Hero, b: Hero): Promise<TodaysMatchup> {
   const cmp = compareStats(a.name, statsString(a), b.name, statsString(b));
 
   let verdict = await getCachedVerdict(a.id, b.id);
@@ -96,18 +88,15 @@ async function buildMatchup(a: MatchupSource, b: MatchupSource): Promise<TodaysM
 async function resolveDebatePair(
   pool: Hero[],
   dd: { heroAId: string; heroBId: string },
-): Promise<[MatchupSource, MatchupSource] | null> {
+): Promise<[Hero, Hero] | null> {
   const byId = new Map(pool.map((h) => [h.id, h]));
-  let a: MatchupSource | undefined = byId.get(dd.heroAId);
-  let b: MatchupSource | undefined = byId.get(dd.heroBId);
 
-  const missing = [dd.heroAId, dd.heroBId].filter((id) => !byId.has(id));
-  if (missing.length > 0) {
-    const fetched = await getHeroesByIds(missing);
-    const fetchedById = new Map(fetched.map((h) => [h.id, h]));
-    a = a ?? fetchedById.get(dd.heroAId);
-    b = b ?? fetchedById.get(dd.heroBId);
-  }
+  // Off-pool heroes are fetched with getHeroById (full `select *` rows) so a
+  // curated pair outside the top-24 auto pool still carries its real stats —
+  // the picker's whole point is pairs the pool wouldn't have chosen.
+  const resolve = async (id: string): Promise<Hero | null> =>
+    byId.get(id) ?? (await getHeroById(id));
+  const [a, b] = await Promise.all([resolve(dd.heroAId), resolve(dd.heroBId)]);
 
   if (!a || !b) return null;
   return [a, b];

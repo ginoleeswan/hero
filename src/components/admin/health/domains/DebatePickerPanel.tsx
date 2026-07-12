@@ -213,7 +213,14 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 9,
   },
-  pickedName: { flex: 1, fontFamily: 'Flame-Regular', fontSize: 14, color: COLORS.navy },
+  // Clamped Flame text needs lineHeight ≥ 1.22 × fontSize or descenders clip.
+  pickedName: {
+    flex: 1,
+    fontFamily: 'Flame-Regular',
+    fontSize: 14,
+    lineHeight: 18,
+    color: COLORS.navy,
+  },
   clearText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.orange },
   msg: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.green, marginTop: 10 },
   msgError: { color: COLORS.red } as object,
