@@ -63,9 +63,7 @@ export function useProfileData(userId: string | undefined): ProfileData {
       .finally(() => setLoading(false));
     // `settled` flips only once every source has resolved, so consumers can gate
     // full-picture logic (fan tier / milestone nudge) on a complete snapshot.
-    void Promise.allSettled([battleP, tasteP, contribP, takesP, favP]).then(() =>
-      setSettled(true),
-    );
+    void Promise.allSettled([battleP, tasteP, contribP, takesP, favP]).then(() => setSettled(true));
     return favP;
   }, [userId]);
 

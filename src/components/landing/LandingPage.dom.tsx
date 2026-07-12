@@ -2090,7 +2090,8 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
   const votesA = haveTally ? tally.votesA : winsA;
   const pctA = total > 0 ? Math.round((votesA / total) * 100) : 50;
   const pctB = 100 - pctA;
-  const line = hookText ?? firstSentence(verdict) ?? `${heroA.name} or ${heroB.name} — who actually wins?`;
+  const line =
+    hookText ?? firstSentence(verdict) ?? `${heroA.name} or ${heroB.name} — who actually wins?`;
 
   const goVote = () =>
     router.push(`/compare/${heroA.id}/${heroB.id}` as Parameters<typeof router.push>[0]);
