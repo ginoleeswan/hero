@@ -15,7 +15,7 @@ function tomorrowIso(): string {
   return d.toISOString().slice(0, 10);
 }
 
-function HeroField({
+export function HeroField({
   label,
   picked,
   onPick,

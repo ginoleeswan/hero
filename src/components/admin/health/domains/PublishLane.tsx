@@ -7,8 +7,9 @@ import { SocialDomain } from './SocialDomain';
 import { CampaignsDomain } from './CampaignsDomain';
 import { DebatePickerPanel } from './DebatePickerPanel';
 import { SocialInsightsDomain } from './SocialInsightsDomain';
+import { OgCardsDomain } from './OgCardsDomain';
 
-export type PublishSub = 'social' | 'insights' | 'campaigns' | 'debate';
+export type PublishSub = 'social' | 'insights' | 'campaigns' | 'debate' | 'og';
 
 export function PublishLane() {
   const [sub, setSub] = useState<PublishSub>('social');
@@ -20,6 +21,7 @@ export function PublishLane() {
           { key: 'insights', label: 'Insights', icon: 'stats-chart-outline' },
           { key: 'campaigns', label: 'Campaigns', icon: 'megaphone-outline' },
           { key: 'debate', label: 'Debate', icon: 'flash-outline' },
+          { key: 'og', label: 'OG Cards', icon: 'image-outline' },
         ]}
         active={sub}
         onChange={setSub}
@@ -30,8 +32,10 @@ export function PublishLane() {
         <SocialInsightsDomain />
       ) : sub === 'campaigns' ? (
         <CampaignsDomain />
-      ) : (
+      ) : sub === 'debate' ? (
         <DebatePickerPanel />
+      ) : (
+        <OgCardsDomain />
       )}
     </>
   );
