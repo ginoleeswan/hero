@@ -431,7 +431,11 @@ export default function TitleScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.beige },
+  container: {
+    backgroundColor: COLORS.beige,
+    // Web must grow with the document-scrolled content; native bounds its ScrollView.
+    ...Platform.select({ web: { minHeight: '100dvh' } as object, default: { flex: 1 } }),
+  } as object,
   // Loading shell: deepNavy so it fuses with the boot LogoLoader and the
   // skeleton's dark stage (no beige flash between them on web refresh).
   loadingShell: { flex: 1, backgroundColor: COLORS.deepNavy },

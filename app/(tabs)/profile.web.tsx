@@ -1259,7 +1259,7 @@ export default function WebProfileScreen() {
 
 // ── Mobile-only styles (native parity) ───────────────────────────────────────
 const mob = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.beige },
+  root: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
   scroll: { paddingBottom: 0 },
 
   // Cover
@@ -1748,7 +1748,7 @@ const mob = StyleSheet.create({
 
 // ── Desktop-only styles ───────────────────────────────────────────────────────
 const desk = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.beige },
+  root: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
 
   // Cover
   cover: {

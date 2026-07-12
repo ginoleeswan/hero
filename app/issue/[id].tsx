@@ -851,7 +851,11 @@ const cast = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.beige },
+  container: {
+    backgroundColor: COLORS.beige,
+    // Web must grow with the document-scrolled content; native bounds its ScrollView.
+    ...Platform.select({ web: { minHeight: '100dvh' } as object, default: { flex: 1 } }),
+  } as object,
   webPage: { width: '100%', backgroundColor: COLORS.beige },
   loading: {
     flex: 1,

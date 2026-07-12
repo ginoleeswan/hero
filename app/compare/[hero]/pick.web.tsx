@@ -413,7 +413,7 @@ const SHEET_MAX = 1180;
 const railFadeMask = 'linear-gradient(to right, #000 92%, transparent 100%)';
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.navy },
+  root: { minHeight: '100dvh', backgroundColor: COLORS.navy } as object,
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1 },
 

@@ -509,7 +509,7 @@ export default function WebBiographyScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: COLORS.beige },
+  scroll: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
   // Mobile: the scroll surface goes dark so the header fuses uninterrupted into the
   // dark status strip (no beige peeking between). The beige comes from mobileBody.
   scrollDarkMobile: { backgroundColor: COLORS.deepNavy } as object,
