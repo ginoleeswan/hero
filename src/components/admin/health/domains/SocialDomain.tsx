@@ -4,7 +4,7 @@
 // its caption, tick it off. Posted-state lives in social_posts (admin RLS),
 // so it syncs across devices. Web-only, like the rest of the command center.
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, TextInput } from 'react-native';
+import { View, Text, Pressable, StyleSheet, TextInput, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,6 +23,10 @@ import {
 } from '../../../../lib/db/socialPosts';
 
 const GOLD = '#e0a83e';
+
+// Single narrow breakpoint for the whole lane. Below it, the two-column
+// desktop layout collapses to one full-width column (see the *Narrow styles).
+const useNarrow = () => useWindowDimensions().width < 640;
 
 function batchLabel(batch: string): string {
   if (batch === 'launch') return 'Launch plan — first three posts';
@@ -200,6 +204,7 @@ function TodayCard({
   const [copiedOnce, setCopiedOnce] = useState(false);
   const [tagsCopied, setTagsCopied] = useState(false);
   const { tags } = splitCaption(post.caption ?? '');
+  const narrow = useNarrow();
   const copyTags = async () => {
     if (!tags) return;
     try {
@@ -254,9 +259,9 @@ function TodayCard({
     </Pressable>
   );
   return (
-    <View style={styles.todayCard}>
+    <View style={[styles.todayCard, narrow && styles.todayCardNarrow]}>
       <Pressable
-        style={styles.todayMedia}
+        style={[styles.todayMedia, narrow && styles.todayMediaNarrow]}
         onPress={() => window.open(isVideo ? post.video_url! : post.image_url, '_blank')}
       >
         <Image source={{ uri: post.image_url }} style={styles.todayMediaImg} contentFit="cover" />
@@ -271,7 +276,7 @@ function TodayCard({
           </View>
         ) : null}
       </Pressable>
-      <View style={styles.todayMeta}>
+      <View style={[styles.todayMeta, narrow && styles.todayMetaNarrow]}>
         <View style={styles.titleRow}>
           <Text style={post.ad_safety === 'ad_safe' ? styles.badgeSafe : styles.badgeOrganic}>
             {post.ad_safety === 'ad_safe' ? 'BOOST OK' : 'ORGANIC ONLY'}
@@ -654,6 +659,7 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
 
 export function SocialDomain() {
   const qc = useQueryClient();
+  const narrow = useNarrow();
   const postsQ = useQuery({ queryKey: ['socialPosts'], queryFn: listSocialPosts });
   const resultsQ = useQuery({ queryKey: ['socialPostResults'], queryFn: listPostResults });
   const resultsByPost = new Map<string, SocialPostResult[]>();
@@ -838,7 +844,7 @@ export function SocialDomain() {
 
   const queueView = (
     <View style={styles.queueRow}>
-      <View style={styles.queueMain}>
+      <View style={[styles.queueMain, narrow && styles.laneNarrow]}>
         <Panel style={styles.panel}>
           <View style={styles.streakRow}>
             <View style={styles.weekDots}>
@@ -888,7 +894,7 @@ export function SocialDomain() {
           </Panel>
         )}
       </View>
-      <View style={styles.queueRail}>
+      <View style={[styles.queueRail, narrow && styles.laneNarrow]}>
         {dailyQueue.length > 1 ? (
           <Panel
             title="This week"
@@ -1066,12 +1072,16 @@ const styles = StyleSheet.create({
   streakSub: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: 'rgba(41,60,67,0.55)' },
   queueMain: { flexGrow: 2, flexBasis: 560, minWidth: 320 },
   queueRail: { flexGrow: 1, flexBasis: 300, minWidth: 280 },
+  // RN defaults flexShrink to 0, so the desktop flexBasis (560/300) would refuse
+  // to shrink and overflow a phone. On narrow, each lane is one full-width column.
+  laneNarrow: { flexGrow: 0, flexBasis: 'auto', minWidth: 0, width: '100%' },
   todayCard: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 24,
     alignItems: 'flex-start',
   },
+  todayCardNarrow: { flexDirection: 'column', gap: 16 },
   todayMedia: {
     flexGrow: 1,
     flexBasis: 300,
@@ -1081,6 +1091,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: 'rgba(41,60,67,0.08)',
   },
+  // Mobile: a compact centered preview (not a full-screen image) so the
+  // Save/Copy/Post checklist sits within the first screen.
+  todayMediaNarrow: { flexGrow: 0, flexBasis: 'auto', width: 176, alignSelf: 'center' },
   todayMediaImg: { width: '100%', height: '100%' },
   todaySlideCount: {
     position: 'absolute',
@@ -1093,6 +1106,7 @@ const styles = StyleSheet.create({
   },
   todaySlideCountText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#f5ebdc' },
   todayMeta: { flexGrow: 1, flexBasis: 300, minWidth: 280, gap: 10, paddingTop: 2 },
+  todayMetaNarrow: { flexBasis: 'auto', minWidth: 0, width: '100%' },
   todayTitle: { fontFamily: 'Nunito_800ExtraBold', fontSize: 22, color: COLORS.navy },
   todayWhere: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(41,60,67,0.75)' },
   todayCaption: {

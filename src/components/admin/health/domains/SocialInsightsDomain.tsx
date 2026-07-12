@@ -5,12 +5,19 @@
 // of. Single-measure magnitude displays use one hue (gold) with direct value
 // labels; platform identity rides on text chips, never color alone.
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+  useWindowDimensions,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { Panel } from '../Panel';
-import { StatTile, EmptyState } from '../ui';
+import { EmptyState } from '../ui';
 import { SkRows } from '../skeletons';
 import { COLORS } from '../../../../constants/colors';
 import {
@@ -55,6 +62,7 @@ export function SocialInsightsDomain() {
   const qc = useQueryClient();
   const postsQ = useQuery({ queryKey: ['socialPosts'], queryFn: listSocialPosts });
   const resultsQ = useQuery({ queryKey: ['socialPostResults'], queryFn: listPostResults });
+  const narrow = useWindowDimensions().width < 640;
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
@@ -207,7 +215,7 @@ export function SocialInsightsDomain() {
               {autoCount ? ' · auto-synced' : ''}
             </Text>
           </View>
-          <View style={styles.heroDivider} />
+          {narrow ? null : <View style={styles.heroDivider} />}
           <View style={styles.heroSecondary}>
             <View style={styles.heroMini}>
               <Text style={styles.heroMiniValue}>{fmt(totalLikes)}</Text>
@@ -218,7 +226,7 @@ export function SocialInsightsDomain() {
               <Text style={styles.heroMiniLabel}>comments</Text>
             </View>
             {best ? (
-              <View style={[styles.heroMini, styles.heroBest]}>
+              <View style={[styles.heroMini, styles.heroBest, narrow && styles.heroBestNarrow]}>
                 <Text style={styles.heroBestLabel}>BEST FORMAT</Text>
                 <Text style={styles.heroBestValue}>{best.angle}</Text>
                 <Text style={styles.heroBestSub}>{fmt(Math.round(best.avgViews))} avg reach</Text>
@@ -366,6 +374,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   heroMiniLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
+  heroBestNarrow: { marginLeft: 0 },
   heroBest: {
     marginLeft: 'auto',
     backgroundColor: 'rgba(224,168,62,0.1)',
