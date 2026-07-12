@@ -8,11 +8,12 @@
 //   • debate  → /api/og?type=debate&a=<id>&b=<id>
 // Pick a hero (and an optional opponent) to preview the character/VS/debate
 // cards; the brand card always shows. Open ↗ or copy the URL for each.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Panel } from '../Panel';
 import { COLORS } from '../../../../constants/colors';
-import type { HeroSearchResult } from '../../../../lib/db/heroes';
+import { getHeroesByIds, type HeroSearchResult } from '../../../../lib/db/heroes';
+import { getDailyDebate, todayIso } from '../../../../lib/db/dailyDebate';
 import { HeroField } from './DebatePickerPanel';
 
 // Same-origin relative paths resolve against the deployed site; the absolute
@@ -82,10 +83,31 @@ export function OgCardsDomain() {
   const [heroA, setHeroA] = useState<HeroSearchResult | null>(null);
   const [heroB, setHeroB] = useState<HeroSearchResult | null>(null);
 
+  // Seed the pickers from today's daily-debate pair so every card variant
+  // (character / versus / debate) renders on open instead of only after a
+  // search. The pickers stay fully editable — this is just a live default.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const debate = await getDailyDebate(todayIso());
+      if (!debate) return;
+      const heroes = await getHeroesByIds([debate.heroAId, debate.heroBId]);
+      if (!active) return;
+      const a = heroes.find((h) => h.id === debate.heroAId) ?? null;
+      const b = heroes.find((h) => h.id === debate.heroBId) ?? null;
+      // Only seed empty slots — never clobber a pick the user already made.
+      setHeroA((prev) => prev ?? a);
+      setHeroB((prev) => prev ?? b);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <Panel
       title="OG share cards"
-      hint="Live preview of the Open Graph cards /api/og renders for every shared link. Pick a hero to preview the character card; add an opponent for the versus + daily-debate cards."
+      hint="Live preview of every Open Graph card /api/og renders for shared links — seeded with today's debate pair. Change the hero or opponent to preview any card."
     >
       <View style={s.formGrid}>
         <HeroField label="Hero" picked={heroA} onPick={setHeroA} />
