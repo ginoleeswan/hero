@@ -1,6 +1,9 @@
 // Dynamic 1200×630 Open Graph card renderer (@vercel/og / satori).
 //   /api/og?hero=<id>   — character card (portrait + name + universe)
 //   /api/og?a=<id>&b=<id> — VS card (both portraits, head to head)
+//   /api/og?type=debate&a=<id>&b=<id> — daily-debate card (portraits, live
+//                         split bar, top take, wordmark) — the asset scripts/
+//                         social/daily-debate.mjs fetches for the growth loop
 //   /api/og (no params) — site-wide brand card (snapshotted to public/og.png
 //                         by scripts/fetch-og-site.mjs)
 //
@@ -70,6 +73,66 @@ async function fetchHero(id: string): Promise<OgHero | null> {
   if (!r.ok) return null;
   const rows = (await r.json()) as OgHero[];
   return rows[0] ?? null;
+}
+
+type DebateTally = { votesA: number; votesB: number; total: number };
+type DebateTopTake = { body: string; displayName: string | null } | null;
+
+// Live split via the v2 tally RPC (anon-granted; unions authed + anon votes).
+// A voter key isn't needed here — we only read the aggregate counts, not
+// `my_pick` — so it's passed null.
+async function fetchTally(aId: string, bId: string): Promise<DebateTally> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_matchup_tally_v2`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_a: aId, p_b: bId, p_voter_key: null }),
+    });
+    if (!r.ok) return { votesA: 0, votesB: 0, total: 0 };
+    const j = (await r.json()) as { votes_a?: number; votes_b?: number; total?: number };
+    return { votesA: j.votes_a ?? 0, votesB: j.votes_b ?? 0, total: j.total ?? 0 };
+  } catch {
+    return { votesA: 0, votesB: 0, total: 0 };
+  }
+}
+
+// The current top take for the pair (live agree-count order — not the frozen
+// `daily_debate.top_take_id`, which is only set once resolve_daily_debate()
+// has run for a past date). Attribution is best-effort: user_profiles is
+// self-scoped RLS, so an anon read of display_name legitimately comes back
+// empty — the card falls back to an unattributed quote in that case.
+async function fetchTopTake(aId: string, bId: string): Promise<DebateTopTake> {
+  const lo = aId <= bId ? aId : bId;
+  const hi = aId <= bId ? bId : aId;
+  try {
+    const url =
+      `${SUPABASE_URL}/rest/v1/matchup_takes?hero_a_id=eq.${encodeURIComponent(lo)}` +
+      `&hero_b_id=eq.${encodeURIComponent(hi)}&status=eq.visible` +
+      `&order=agree_count.desc,created_at.asc&limit=1&select=body,user_id`;
+    const r = await fetch(url, { headers: { apikey: SUPABASE_KEY } });
+    if (!r.ok) return null;
+    const rows = (await r.json()) as { body: string; user_id: string }[];
+    const take = rows[0];
+    if (!take) return null;
+    let displayName: string | null = null;
+    try {
+      const pr = await fetch(
+        `${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${encodeURIComponent(
+          take.user_id,
+        )}&select=display_name`,
+        { headers: { apikey: SUPABASE_KEY } },
+      );
+      if (pr.ok) {
+        const prows = (await pr.json()) as { display_name: string | null }[];
+        displayName = prows[0]?.display_name ?? null;
+      }
+    } catch {
+      /* attribution is optional */
+    }
+    return { body: take.body, displayName };
+  } catch {
+    return null;
+  }
 }
 
 // Live catalogue size, floored to a round thousand ("34,000+"). Falls back to a
@@ -441,6 +504,193 @@ function vsCard(a: OgHero, b: OgHero, imgA: string | null, imgB: string | null) 
   );
 }
 
+const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
+
+// Live crowd split — a two-tone bar in the same sideA/sideB semantic accents
+// the in-app share card uses for "competitive data, never branding".
+function splitBar(pctA: number, pctB: number, width = 400) {
+  const wA = Math.max(0, Math.min(width, Math.round((width * pctA) / 100)));
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', width, marginTop: 24 }}>
+      <div
+        style={{
+          display: 'flex',
+          width,
+          height: 14,
+          borderRadius: 999,
+          overflow: 'hidden',
+          background: 'rgba(245,235,220,0.14)',
+        }}
+      >
+        <div style={{ display: 'flex', width: wA, height: 14, background: SHARE_CARD.sideA }} />
+        <div
+          style={{ display: 'flex', width: width - wA, height: 14, background: SHARE_CARD.sideB }}
+        />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', width, marginTop: 10 }}>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 22,
+            color: SHARE_CARD.sideA,
+          }}
+        >{`${pctA}%`}</div>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 22,
+            color: SHARE_CARD.sideB,
+          }}
+        >{`${pctB}%`}</div>
+      </div>
+    </div>
+  );
+}
+
+// The daily-debate card: both portraits bleeding in from the edges, the live
+// crowd split, and (when one exists) the current top take — the growth-loop
+// asset scripts/social/daily-debate.mjs posts once a day.
+function debateCard(
+  a: OgHero,
+  b: OgHero,
+  imgA: string | null,
+  imgB: string | null,
+  tally: DebateTally,
+  topTake: DebateTopTake,
+) {
+  const pctA = tally.total > 0 ? Math.round((tally.votesA / tally.total) * 100) : 50;
+  const pctB = 100 - pctA;
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        background: BG,
+      }}
+    >
+      {textureLayer}
+      {imgA ? portraitImg(imgA, 330, 'right') : <div style={{ display: 'flex', width: 330 }} />}
+      <div
+        style={{
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 20px',
+        }}
+      >
+        {wordmark(20)}
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 20,
+            letterSpacing: 3,
+            color: GOLD,
+            marginTop: 18,
+          }}
+        >
+          TODAY&apos;S DEBATE
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'Flame',
+            fontSize: 42,
+            color: BEIGE,
+            marginTop: 14,
+            textAlign: 'center',
+            lineHeight: 1.22,
+          }}
+        >
+          {a.name}
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'Flame',
+            fontSize: 48,
+            color: GOLD,
+            margin: '2px 0',
+          }}
+        >
+          VS
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'Flame',
+            fontSize: 42,
+            color: BEIGE,
+            textAlign: 'center',
+            lineHeight: 1.22,
+          }}
+        >
+          {b.name}
+        </div>
+        {splitBar(pctA, pctB)}
+        {topTake ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              marginTop: 24,
+              maxWidth: 440,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                fontFamily: 'FlameSans',
+                fontSize: 21,
+                color: BEIGE,
+                textAlign: 'center',
+                lineHeight: 1.3,
+              }}
+            >
+              {`"${truncate(topTake.body, 96)}"`}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                fontFamily: 'FlameSans',
+                fontSize: 17,
+                color: MUTED,
+                marginTop: 8,
+              }}
+            >
+              {`— ${topTake.displayName ?? 'a fan'}`}
+            </div>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              fontFamily: 'FlameSans',
+              fontSize: 22,
+              color: MUTED,
+              marginTop: 24,
+            }}
+          >
+            Who wins? Vote on Mythique
+          </div>
+        )}
+      </div>
+      {imgB ? (
+        portraitImg(imgB, 330, 'left', true)
+      ) : (
+        <div style={{ display: 'flex', width: 330 }} />
+      )}
+    </div>
+  );
+}
+
 const art = (h: OgHero) => h.portrait_url || h.image_url;
 
 export default async function handler(req: Request) {
@@ -450,10 +700,20 @@ export default async function handler(req: Request) {
     const heroId = searchParams.get('hero');
     const aId = searchParams.get('a');
     const bId = searchParams.get('b');
+    const isDebate = searchParams.get('type') === 'debate';
     let card;
     if (heroId) {
       const hero = await fetchHero(heroId);
       if (hero) card = characterCard(hero, art(hero));
+    } else if (isDebate && aId && bId) {
+      const [a, b] = await Promise.all([fetchHero(aId), fetchHero(bId)]);
+      if (a && b) {
+        const [tally, topTake] = await Promise.all([
+          fetchTally(a.id, b.id),
+          fetchTopTake(a.id, b.id),
+        ]);
+        card = debateCard(a, b, art(a), art(b), tally, topTake);
+      }
     } else if (aId && bId) {
       const [a, b] = await Promise.all([fetchHero(aId), fetchHero(bId)]);
       if (a && b) card = vsCard(a, b, art(a), art(b));
