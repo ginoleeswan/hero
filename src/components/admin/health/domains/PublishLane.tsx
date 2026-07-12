@@ -6,8 +6,9 @@ import { SubTabs } from '../SubTabs';
 import { SocialDomain } from './SocialDomain';
 import { CampaignsDomain } from './CampaignsDomain';
 import { DebatePickerPanel } from './DebatePickerPanel';
+import { SocialInsightsDomain } from './SocialInsightsDomain';
 
-export type PublishSub = 'social' | 'campaigns' | 'debate';
+export type PublishSub = 'social' | 'insights' | 'campaigns' | 'debate';
 
 export function PublishLane() {
   const [sub, setSub] = useState<PublishSub>('social');
@@ -16,6 +17,7 @@ export function PublishLane() {
       <SubTabs<PublishSub>
         tabs={[
           { key: 'social', label: 'Social', icon: 'share-social-outline' },
+          { key: 'insights', label: 'Insights', icon: 'stats-chart-outline' },
           { key: 'campaigns', label: 'Campaigns', icon: 'megaphone-outline' },
           { key: 'debate', label: 'Debate', icon: 'flash-outline' },
         ]}
@@ -24,6 +26,8 @@ export function PublishLane() {
       />
       {sub === 'social' ? (
         <SocialDomain />
+      ) : sub === 'insights' ? (
+        <SocialInsightsDomain />
       ) : sub === 'campaigns' ? (
         <CampaignsDomain />
       ) : (
