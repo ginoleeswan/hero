@@ -118,7 +118,9 @@ export function OgCardsDomain() {
         <OgPreview
           label="Brand card"
           hint="Site-wide default · shared links with no hero"
-          path="/api/og"
+          // The static snapshot (public/og.png) — served everywhere incl. local
+          // dev, unlike the edge-only /api/og that renders the same card live.
+          path="/og.png"
         />
 
         {heroA ? (
