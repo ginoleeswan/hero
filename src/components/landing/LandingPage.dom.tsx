@@ -4,6 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import * as THREE from 'three';
 import { LOGO_MASK_PATH as LOGO_PATH } from '../../constants/logo';
+import { getTodaysMatchup, type MatchupHero, type TodaysMatchup } from '../../lib/matchup';
+import { getDailyDebate, todayIso } from '../../lib/db/dailyDebate';
+import { useMatchupVote } from '../../hooks/useMatchupVote';
 
 const screenshotDesktop = require('../../../assets/images/screenshots/desktop-explore.png');
 const screenshotMobile = require('../../../assets/images/screenshots/mobile-spiderman.png');
@@ -1729,6 +1732,59 @@ const CSS = `
   .tott-card.in .tott-row:nth-child(5) .tott-fill { transition-delay:.33s; }
   .tott-card.in .tott-row:nth-child(6) .tott-fill { transition-delay:.40s; }
 
+  /* Daily debate teaser — live pair below the Summoning hero. Renders only
+     once the server-curated (or seeded-fallback) pair has resolved, so it
+     fades in on mount rather than riding the scroll-reveal IO (that observer
+     only queries .reveal elements present at first paint). */
+  .debate-teaser { padding:72px 40px 96px; background:var(--bg); position:relative; }
+  .debate-inner {
+    max-width:640px; margin:0 auto; text-align:center;
+    animation:debateIn .7s var(--ease) both;
+  }
+  @keyframes debateIn {
+    from { opacity:0; transform:translateY(18px); }
+    to { opacity:1; transform:none; }
+  }
+  .debate-inner .section-sub { margin:0 auto; }
+  .debate-card {
+    margin-top:40px; background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:32px 28px 28px;
+    box-shadow:0 24px 70px rgba(0,0,0,0.4);
+  }
+  .debate-portraits {
+    display:flex; align-items:center; justify-content:center; gap:20px;
+  }
+  .debate-portrait {
+    width:96px; height:96px; border-radius:50%; overflow:hidden; flex-shrink:0;
+    background:var(--surface); border:2px solid var(--border);
+  }
+  .debate-portrait.l { border-color:rgba(231,115,51,0.55); }
+  .debate-portrait.r { border-color:rgba(21,161,171,0.55); }
+  .debate-portrait img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
+  .debate-portrait-fallback {
+    width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    font-family:'Righteous',sans-serif; font-size:32px; color:var(--muted);
+  }
+  .debate-vs {
+    font-family:'Righteous',sans-serif; font-size:14px; color:var(--muted);
+    letter-spacing:1px; flex-shrink:0;
+  }
+  .debate-vs-text { color:var(--muted); font-size:0.6em; vertical-align:middle; }
+  .debate-split { margin-top:26px; }
+  .debate-split-bar {
+    display:flex; height:10px; border-radius:6px; overflow:hidden; background:var(--surface);
+  }
+  .debate-split-fill { height:100%; transition:width .8s var(--ease); }
+  .debate-split-fill.l { background:linear-gradient(90deg,#c85f2a,var(--orange)); }
+  .debate-split-fill.r { background:linear-gradient(90deg,var(--teal),#0f7f88); }
+  .debate-split-labels {
+    display:flex; justify-content:space-between; margin-top:8px;
+    font-size:12px; font-weight:600; letter-spacing:0.5px; color:var(--muted);
+  }
+  .debate-split-labels .l { color:var(--orange); }
+  .debate-split-labels .r { color:var(--teal); }
+  .debate-teaser .btn-primary { margin-top:32px; }
+
   footer {
     padding:40px; border-top:1px solid var(--border);
     display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;
@@ -1806,9 +1862,14 @@ const CSS = `
     .marquee-wrapper { transform:none; width:100%; margin-left:0; }
 
     /* Sections */
-    .section,.screenshots,.showcase,.cta-section { padding:64px 20px; }
+    .section,.screenshots,.showcase,.cta-section,.debate-teaser { padding:64px 20px; }
     .section-heading { font-size:clamp(24px,6vw,34px); margin-bottom:16px; }
     .section-sub { font-size:15px; }
+
+    /* Daily debate teaser — smaller portraits, tighter card */
+    .debate-card { padding:24px 18px 20px; }
+    .debate-portrait { width:76px; height:76px; }
+    .debate-portraits { gap:14px; }
 
     /* Features — grid layout: icon left, title+desc right */
     .features-grid { grid-template-columns:1fr; gap:10px; margin-top:36px; }
@@ -1987,17 +2048,142 @@ function detect3DSupport(): boolean {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Daily debate teaser                                                 */
+/* ------------------------------------------------------------------ */
+
+// First sentence of the AI verdict, used as a hook line when the
+// server-curated `daily_debate` row has no hand-written hook text.
+function firstSentence(text: string): string | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  const match = trimmed.match(/^[^.!?]+[.!?]/);
+  return match ? match[0].trim() : trimmed;
+}
+
+function DebatePortrait({ hero, side }: { hero: MatchupHero; side: 'l' | 'r' }) {
+  const src = hero.portrait_url ?? hero.image_url ?? null;
+  return (
+    <div className={`debate-portrait ${side}`}>
+      {src ? (
+        <img src={src} alt={hero.name} loading="lazy" />
+      ) : (
+        <span className="debate-portrait-fallback" aria-hidden="true">
+          {hero.name.charAt(0)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Teaser only — no inline voting. The split bar reads the live crowd tally
+// (useMatchupVote, same hook the Compare screen uses) and falls back to the
+// stat-round split until the tally loads or if it's empty, so the bar is
+// never a flat 50/50 by default.
+function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText: string | null }) {
+  const router = useRouter();
+  const { heroA, heroB, winsA, winsB, verdict } = matchup;
+  const { tally } = useMatchupVote(heroA.id, heroB.id);
+
+  const haveTally = !!tally && tally.total > 0;
+  const total = haveTally ? tally.total : winsA + winsB;
+  const votesA = haveTally ? tally.votesA : winsA;
+  const pctA = total > 0 ? Math.round((votesA / total) * 100) : 50;
+  const pctB = 100 - pctA;
+  const line = hookText ?? firstSentence(verdict) ?? `${heroA.name} or ${heroB.name} — who actually wins?`;
+
+  const goVote = () =>
+    router.push(`/compare/${heroA.id}/${heroB.id}` as Parameters<typeof router.push>[0]);
+
+  return (
+    <section className="debate-teaser">
+      <div className="debate-inner">
+        <p className="section-eyebrow">Today&apos;s debate</p>
+        <h2 className="section-heading">
+          {heroA.name} <span className="debate-vs-text">vs</span> {heroB.name}
+        </h2>
+        <p className="section-sub">{line}</p>
+
+        <div className="debate-card">
+          <div className="debate-portraits">
+            <DebatePortrait hero={heroA} side="l" />
+            <span className="debate-vs" aria-hidden="true">
+              VS
+            </span>
+            <DebatePortrait hero={heroB} side="r" />
+          </div>
+
+          <div className="debate-split" aria-hidden="true">
+            <div className="debate-split-bar">
+              <div className="debate-split-fill l" style={{ width: `${pctA}%` }} />
+              <div className="debate-split-fill r" style={{ width: `${pctB}%` }} />
+            </div>
+            <div className="debate-split-labels">
+              <span className="l">{pctA}%</span>
+              <span className="r">{pctB}%</span>
+            </div>
+          </div>
+        </div>
+
+        <button className="btn-primary" onClick={goVote}>
+          <svg
+            className="btn-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
+            <path d="m13 19 6-6" />
+            <path d="m16 16 4 4" />
+            <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
+            <path d="m5 14 4 4" />
+          </svg>
+          Cast your vote
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DOMProps }) {
   const router = useRouter();
   const [fontsReady, setFontsReady] = useState(false);
   const [mode, setMode] = useState<'3d' | 'static'>(() => (detect3DSupport() ? '3d' : 'static'));
   const [summoned, setSummoned] = useState<Summon | null>(null);
+  const [debateMatchup, setDebateMatchup] = useState<TodaysMatchup | null>(null);
+  const [debateHook, setDebateHook] = useState<string | null>(null);
   const heroRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<SummonEngine | null>(null);
 
   const fallBack = useCallback(() => setMode('static'), []);
+
+  // Daily debate teaser data — getTodaysMatchup already resolves the
+  // server-curated pair with a seeded-pool fallback baked in, so this only
+  // comes back null if the pool itself fails (offline, DB down); the teaser
+  // section simply doesn't render rather than showing an empty shell.
+  useEffect(() => {
+    let active = true;
+    Promise.all([getTodaysMatchup(), getDailyDebate(todayIso())])
+      .then(([matchup, dd]) => {
+        if (!active || !matchup) return;
+        setDebateMatchup(matchup);
+        const pairMatches =
+          dd &&
+          new Set([dd.heroAId, dd.heroBId]).size === 2 &&
+          new Set([dd.heroAId, dd.heroBId, matchup.heroA.id, matchup.heroB.id]).size === 2;
+        if (pairMatches) setDebateHook(dd.hookText);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let done = false;
@@ -2349,6 +2535,9 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           <span>Scroll</span>
         </div>
       </section>
+
+      {/* DAILY DEBATE TEASER */}
+      {debateMatchup && <DebateTeaser matchup={debateMatchup} hookText={debateHook} />}
 
       {/* STATS */}
       <div className="stats hairline">
