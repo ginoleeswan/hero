@@ -4,9 +4,11 @@
 // FORMAT wins (the rebiasing signal), and which individual posts to make more
 // of. Single-measure magnitude displays use one hue (gold) with direct value
 // labels; platform identity rides on text chips, never color alone.
-import { View, Text, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { Panel } from '../Panel';
 import { StatTile, EmptyState } from '../ui';
 import { SkRows } from '../skeletons';
@@ -14,6 +16,7 @@ import { COLORS } from '../../../../constants/colors';
 import {
   listSocialPosts,
   listPostResults,
+  syncInstagram,
   type SocialPost,
   type SocialPostResult,
 } from '../../../../lib/db/socialPosts';
@@ -49,8 +52,35 @@ const angleLabel = (p: SocialPost) => {
 };
 
 export function SocialInsightsDomain() {
+  const qc = useQueryClient();
   const postsQ = useQuery({ queryKey: ['socialPosts'], queryFn: listSocialPosts });
   const resultsQ = useQuery({ queryKey: ['socialPostResults'], queryFn: listPostResults });
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+
+  const runSync = async () => {
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const r = await syncInstagram();
+      setSyncMsg(`Synced ${r.matched} Instagram post${r.matched === 1 ? '' : 's'}`);
+      qc.invalidateQueries({ queryKey: ['socialPostResults'] });
+    } catch (e) {
+      setSyncMsg(e instanceof Error ? e.message : 'Sync failed');
+    }
+    setSyncing(false);
+    setTimeout(() => setSyncMsg(null), 4000);
+  };
+  const syncBtn = (
+    <Pressable style={styles.syncBtn} onPress={runSync} disabled={syncing} hitSlop={6}>
+      {syncing ? (
+        <ActivityIndicator size="small" color={GOLD} />
+      ) : (
+        <Ionicons name="logo-instagram" size={14} color={COLORS.navy} />
+      )}
+      <Text style={styles.syncBtnText}>{syncing ? 'Syncing…' : (syncMsg ?? 'Sync Instagram')}</Text>
+    </Pressable>
+  );
 
   if (postsQ.isLoading || resultsQ.isLoading) {
     return (
@@ -66,8 +96,8 @@ export function SocialInsightsDomain() {
 
   if (latest.length === 0) {
     return (
-      <Panel title="Insights" hint="Numbers appear here as results come in">
-        <EmptyState text="No results yet — log a post's numbers from Post today › Posted, or paste its link (reddit and instagram links update themselves nightly)." />
+      <Panel title="Insights" hint="Numbers appear here as results come in" action={syncBtn}>
+        <EmptyState text="No results yet — hit Sync Instagram to pull your posts, or log numbers from Post today › Posted (reddit & instagram refresh nightly)." />
       </Panel>
     );
   }
@@ -169,6 +199,7 @@ export function SocialInsightsDomain() {
         title="This month's attention"
         hint={`${measuredPosts} posts measured · ${autoCount ? `${autoCount} auto-pulled snapshots · ` : ''}latest ${newest ? new Date(newest.recorded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}`}
         style={styles.panel}
+        action={syncBtn}
       >
         <View style={styles.tileRow}>
           <StatTile label="Views / reach" value={fmt(totalViews)} tint={GOLD} />
@@ -266,6 +297,17 @@ export function SocialInsightsDomain() {
 
 const styles = StyleSheet.create({
   wrap: { gap: 12, width: '100%' },
+  syncBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.22)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  syncBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   panel: { marginBottom: 0 },
   tileRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 

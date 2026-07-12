@@ -52,3 +52,19 @@ export async function logPostResult(input: {
   const { error } = await supabase.from('social_post_results').insert(input);
   if (error) throw new Error(error.message);
 }
+
+/** Trigger the Instagram sync edge function — matches recent IG media to queue
+ *  posts by caption and writes fresh result snapshots. Returns the summary. */
+export async function syncInstagram(): Promise<{
+  scanned: number;
+  matched: number;
+  unmatched: number;
+}> {
+  const { data, error } = await supabase.functions.invoke<{
+    scanned: number;
+    matched: number;
+    unmatched: number;
+  }>('ig-sync', { body: {} });
+  if (error) throw new Error(error.message);
+  return data ?? { scanned: 0, matched: 0, unmatched: 0 };
+}
