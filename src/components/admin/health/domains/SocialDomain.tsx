@@ -434,6 +434,7 @@ function HistoryRow({
   const [views, setViews] = useState('');
   const [likes, setLikes] = useState('');
   const [comments, setComments] = useState('');
+  const [postUrl, setPostUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const latestByPlatform = new Map<string, SocialPostResult>();
   for (const r of results)
@@ -450,7 +451,7 @@ function HistoryRow({
     .join('  ·  ');
   const save = async () => {
     const num = (v: string) => (v.trim() ? Number(v.replace(/[^0-9]/g, '')) : null);
-    if (!num(views) && !num(likes) && !num(comments)) return;
+    if (!num(views) && !num(likes) && !num(comments) && !postUrl.trim()) return;
     setBusy(true);
     try {
       await logPostResult({
@@ -459,6 +460,7 @@ function HistoryRow({
         views: num(views),
         likes: num(likes),
         comments: num(comments),
+        post_url: postUrl.trim() || null,
       });
       setViews('');
       setLikes('');
@@ -533,6 +535,15 @@ function HistoryRow({
               <Text style={styles.resultSaveText}>{busy ? '…' : 'Save'}</Text>
             </Pressable>
           </View>
+          <TextInput
+            style={styles.resultInput}
+            placeholder="post link (reddit links auto-update nightly)"
+            placeholderTextColor="rgba(41,60,67,0.4)"
+            value={postUrl}
+            onChangeText={setPostUrl}
+            inputMode="url"
+            autoCapitalize="none"
+          />
         </View>
       ) : null}
     </View>
