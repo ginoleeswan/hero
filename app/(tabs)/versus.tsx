@@ -14,7 +14,6 @@ import { COLORS } from '../../src/constants/colors';
 import { useVersusHub } from '../../src/hooks/useVersusHub';
 import { pickRandomPair } from '../../src/lib/versus';
 import { stashFighters, type FighterArt } from '../../src/lib/compareHandoff';
-import { statSplit } from '../../src/lib/home/matchupVote';
 import { ShowdownCards } from '../../src/components/versus/ShowdownCards';
 import { RivalriesRail } from '../../src/components/versus/RivalriesRail';
 import { HallOfInfamy } from '../../src/components/home/HallOfInfamy';
