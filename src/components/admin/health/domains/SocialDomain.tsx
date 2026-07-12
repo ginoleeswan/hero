@@ -4,7 +4,7 @@
 // its caption, tick it off. Posted-state lives in social_posts (admin RLS),
 // so it syncs across devices. Web-only, like the rest of the command center.
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,7 +13,14 @@ import { CardGrid, PillGroup } from '../ui';
 import { CC } from '../format';
 import { SkRows } from '../skeletons';
 import { COLORS } from '../../../../constants/colors';
-import { listSocialPosts, setSocialPosted, type SocialPost } from '../../../../lib/db/socialPosts';
+import {
+  listSocialPosts,
+  setSocialPosted,
+  listPostResults,
+  logPostResult,
+  type SocialPost,
+  type SocialPostResult,
+} from '../../../../lib/db/socialPosts';
 
 const GOLD = '#e0a83e';
 
@@ -399,6 +406,139 @@ function WeekRow({ post, day }: { post: SocialPost; day: string }) {
   );
 }
 
+const PLATFORMS = ['tiktok', 'instagram', 'x', 'linkedin', 'reddit'] as const;
+const fmtCount = (n: number | null | undefined) =>
+  n == null
+    ? null
+    : n >= 1000000
+      ? `${(n / 1000000).toFixed(1)}m`
+      : n >= 1000
+        ? `${(n / 1000).toFixed(1)}k`
+        : String(n);
+
+// A shipped post in the log: latest numbers inline, tap to log a snapshot.
+// Ten-second entry: platform chip + views/likes/comments, done.
+function HistoryRow({
+  post,
+  day,
+  results,
+  onLogged,
+}: {
+  post: SocialPost;
+  day: string;
+  results: SocialPostResult[];
+  onLogged: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [platform, setPlatform] = useState<string>(PLATFORMS[0]);
+  const [views, setViews] = useState('');
+  const [likes, setLikes] = useState('');
+  const [comments, setComments] = useState('');
+  const [busy, setBusy] = useState(false);
+  const latestByPlatform = new Map<string, SocialPostResult>();
+  for (const r of results)
+    if (!latestByPlatform.has(r.platform)) latestByPlatform.set(r.platform, r);
+  const summary = [...latestByPlatform.values()]
+    .map((r) => {
+      const bits = [
+        fmtCount(r.views) && `👁 ${fmtCount(r.views)}`,
+        fmtCount(r.likes) && `❤️ ${fmtCount(r.likes)}`,
+        fmtCount(r.comments) && `💬 ${fmtCount(r.comments)}`,
+      ].filter(Boolean);
+      return `${r.platform}: ${bits.join(' ')}`;
+    })
+    .join('  ·  ');
+  const save = async () => {
+    const num = (v: string) => (v.trim() ? Number(v.replace(/[^0-9]/g, '')) : null);
+    if (!num(views) && !num(likes) && !num(comments)) return;
+    setBusy(true);
+    try {
+      await logPostResult({
+        post_id: post.id,
+        platform,
+        views: num(views),
+        likes: num(likes),
+        comments: num(comments),
+      });
+      setViews('');
+      setLikes('');
+      setComments('');
+      setOpen(false);
+      onLogged();
+    } catch {
+      /* surfaced by the unchanged inputs */
+    }
+    setBusy(false);
+  };
+  return (
+    <View>
+      <View style={styles.weekRow}>
+        <Text style={styles.weekDay}>{day}</Text>
+        <View style={styles.weekThumbWrap}>
+          <Image source={{ uri: post.image_url }} style={styles.weekThumb} contentFit="cover" />
+        </View>
+        <View style={styles.weekMeta}>
+          <Text style={styles.weekTitle} numberOfLines={1}>
+            {post.title}
+          </Text>
+          <Text style={styles.weekWhere} numberOfLines={1}>
+            {summary || 'No results logged yet'}
+          </Text>
+        </View>
+        <Pressable style={styles.resultBtn} onPress={() => setOpen((v) => !v)} hitSlop={6}>
+          <Text style={styles.resultBtnText}>{open ? '×' : summary ? '+' : 'log'}</Text>
+        </Pressable>
+      </View>
+      {open ? (
+        <View style={styles.resultForm}>
+          <View style={styles.resultPlatforms}>
+            {PLATFORMS.map((pf) => (
+              <Pressable
+                key={pf}
+                style={[styles.resultChip, platform === pf && styles.resultChipOn]}
+                onPress={() => setPlatform(pf)}
+              >
+                <Text style={[styles.resultChipText, platform === pf && styles.resultChipTextOn]}>
+                  {pf}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={styles.resultInputs}>
+            <TextInput
+              style={styles.resultInput}
+              placeholder="views"
+              placeholderTextColor="rgba(41,60,67,0.4)"
+              value={views}
+              onChangeText={setViews}
+              inputMode="numeric"
+            />
+            <TextInput
+              style={styles.resultInput}
+              placeholder="likes"
+              placeholderTextColor="rgba(41,60,67,0.4)"
+              value={likes}
+              onChangeText={setLikes}
+              inputMode="numeric"
+            />
+            <TextInput
+              style={styles.resultInput}
+              placeholder="comments"
+              placeholderTextColor="rgba(41,60,67,0.4)"
+              value={comments}
+              onChangeText={setComments}
+              inputMode="numeric"
+            />
+            <Pressable style={styles.resultSave} onPress={save} disabled={busy}>
+              <Text style={styles.resultSaveText}>{busy ? '…' : 'Save'}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPost) => void }) {
   const { copied, saving, isVideo, saveAll, copyCaption } = usePostActions(post);
   // Carousel slides expand inline (multi-tab window.open is popup-blocked after
@@ -504,6 +644,13 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
 export function SocialDomain() {
   const qc = useQueryClient();
   const postsQ = useQuery({ queryKey: ['socialPosts'], queryFn: listSocialPosts });
+  const resultsQ = useQuery({ queryKey: ['socialPostResults'], queryFn: listPostResults });
+  const resultsByPost = new Map<string, SocialPostResult[]>();
+  for (const r of resultsQ.data ?? []) {
+    const arr = resultsByPost.get(r.post_id) ?? [];
+    arr.push(r);
+    resultsByPost.set(r.post_id, arr);
+  }
   // Boosting rules are reference material — collapsed by default so the queue
   // (the actual work) leads the lane.
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -766,12 +913,14 @@ export function SocialDomain() {
               ? postedLog
                   .slice(0, 14)
                   .map((p) => (
-                    <WeekRow
+                    <HistoryRow
                       key={p.id}
                       post={p}
                       day={new Date(p.posted_at!)
                         .toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                         .toUpperCase()}
+                      results={resultsByPost.get(p.id) ?? []}
+                      onLogged={() => qc.invalidateQueries({ queryKey: ['socialPostResults'] })}
                     />
                   ))
               : null}
@@ -1043,6 +1192,55 @@ const styles = StyleSheet.create({
   weekTitle: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.navy },
   weekWhere: { fontFamily: 'Nunito_600SemiBold', fontSize: 11.5, color: 'rgba(41,60,67,0.5)' },
   dayLaneDotInline: { width: 9, height: 9, borderRadius: 5 },
+  resultBtn: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    minWidth: 34,
+    alignItems: 'center',
+  },
+  resultBtnText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 12, color: COLORS.navy },
+  resultForm: {
+    backgroundColor: 'rgba(41,60,67,0.05)',
+    borderRadius: 12,
+    padding: 10,
+    gap: 8,
+    marginBottom: 8,
+  },
+  resultPlatforms: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  resultChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  resultChipOn: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
+  resultChipText: { fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: COLORS.navy },
+  resultChipTextOn: { color: '#f5ebdc' },
+  resultInputs: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+  resultInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.18)',
+    borderRadius: 9,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.navy,
+    backgroundColor: '#fff',
+    minWidth: 0,
+  },
+  resultSave: {
+    backgroundColor: COLORS.orange,
+    borderRadius: 9,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  resultSaveText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 13, color: '#fff' },
   playBadgeSm: {
     position: 'absolute',
     left: 6,

@@ -1339,6 +1339,53 @@ export type Database = {
           },
         ]
       }
+      social_post_results: {
+        Row: {
+          comments: number | null
+          id: string
+          likes: number | null
+          note: string | null
+          platform: string
+          post_id: string
+          post_url: string | null
+          recorded_at: string
+          source: string
+          views: number | null
+        }
+        Insert: {
+          comments?: number | null
+          id?: string
+          likes?: number | null
+          note?: string | null
+          platform: string
+          post_id: string
+          post_url?: string | null
+          recorded_at?: string
+          source?: string
+          views?: number | null
+        }
+        Update: {
+          comments?: number | null
+          id?: string
+          likes?: number | null
+          note?: string | null
+          platform?: string
+          post_id?: string
+          post_url?: string | null
+          recorded_at?: string
+          source?: string
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_post_results_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_posts: {
         Row: {
           ad_safety: string

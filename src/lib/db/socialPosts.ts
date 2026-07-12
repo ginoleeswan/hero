@@ -26,3 +26,29 @@ export async function setSocialPosted(id: string, posted: boolean): Promise<void
     .eq('id', id);
   if (error) throw new Error(error.message);
 }
+
+// ── Per-post performance logging (social_post_results) ───────────────────────
+// Snapshots per (post, platform); numbers grow over time so re-logging adds a
+// new snapshot and the latest recorded_at per platform wins in rollups.
+export type SocialPostResult = Tables<'social_post_results'>;
+
+export async function listPostResults(): Promise<SocialPostResult[]> {
+  const { data, error } = await supabase
+    .from('social_post_results')
+    .select('*')
+    .order('recorded_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function logPostResult(input: {
+  post_id: string;
+  platform: string;
+  views?: number | null;
+  likes?: number | null;
+  comments?: number | null;
+  post_url?: string | null;
+}): Promise<void> {
+  const { error } = await supabase.from('social_post_results').insert(input);
+  if (error) throw new Error(error.message);
+}
