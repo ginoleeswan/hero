@@ -78,6 +78,8 @@ export async function submitReport(opts: {
   return { ok: true, id: d.id ?? 0 };
 }
 
+export type TakeStatus = 'visible' | 'hidden' | 'removed';
+
 export interface ReportRow {
   id: number;
   hero_id: string;
@@ -92,6 +94,9 @@ export interface ReportRow {
   created_at: string;
   user_id: string;
   submitter: string | null;
+  take_id: string | null;
+  take_body: string | null;
+  take_status: TakeStatus | null;
 }
 
 /** Admin: the reports queue for a status, optionally filtered by reason.
@@ -123,6 +128,19 @@ export async function resolveReport(
     p_id: id,
     p_decision: decision,
     p_note: note ?? '',
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** Admin: hide/remove (or restore) the take a report points at. */
+export async function setTakeStatus(
+  takeId: string,
+  status: TakeStatus,
+): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('set_take_status', {
+    p_take_id: takeId,
+    p_status: status,
   });
   if (error) return { ok: false, error: error.message };
   return { ok: true };

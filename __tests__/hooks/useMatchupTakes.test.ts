@@ -109,5 +109,45 @@ describe('useMatchupTakes', () => {
 
     await waitFor(() => expect(result.current.agreedIds.has('t1')).toBe(true));
     expect(result.current.takes.find((t) => t.id === 't1')?.agreeCount).toBe(4);
+    // The rollback surfaces a user-facing error.
+    expect(result.current.error).toMatch(/agreement/i);
+  });
+
+  it('surfaces an error when postTake fails, and clears it on the next write', async () => {
+    mockGetTakes.mockResolvedValue([]);
+    mockPostTake.mockResolvedValueOnce(null);
+
+    const { result } = renderHook(() => useMatchupTakes(HERO_A, HERO_B), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let ok: boolean | undefined;
+    await act(async () => {
+      ok = await result.current.submit(HERO_A, 'A takes it');
+    });
+    expect(ok).toBe(false);
+    expect(result.current.error).toMatch(/post your take/i);
+
+    // Next successful write clears the error.
+    mockPostTake.mockResolvedValueOnce(makeTake());
+    await act(async () => {
+      ok = await result.current.submit(HERO_A, 'A takes it, really');
+    });
+    expect(ok).toBe(true);
+    expect(result.current.error).toBeNull();
+  });
+
+  it('remove reports failure and surfaces an error when deleteTake fails', async () => {
+    mockGetTakes.mockResolvedValue([makeTake()]);
+    mockDeleteTake.mockResolvedValueOnce(false);
+
+    const { result } = renderHook(() => useMatchupTakes(HERO_A, HERO_B), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let ok: boolean | undefined;
+    await act(async () => {
+      ok = await result.current.remove('t1');
+    });
+    expect(ok).toBe(false);
+    expect(result.current.error).toMatch(/delete your take/i);
   });
 });

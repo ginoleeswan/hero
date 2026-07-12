@@ -157,7 +157,10 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
   const router = useRouter();
   const { user } = useAuth();
   const { pickedId: votePickedId } = useMatchupVote(heroA.id, heroB.id);
-  const { takes, myTake, submit, remove, agree, agreedIds } = useMatchupTakes(heroA.id, heroB.id);
+  const { takes, myTake, submit, remove, agree, agreedIds, error } = useMatchupTakes(
+    heroA.id,
+    heroB.id,
+  );
 
   const [pick, setPick] = useState<string | null>(null);
   const [body, setBody] = useState('');
@@ -218,6 +221,8 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
           ))}
         </View>
       )}
+
+      {!!error && <Text style={s.writeError}>{error}</Text>}
 
       <View style={s.composer}>
         <View style={s.chips}>
@@ -432,6 +437,7 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
   },
   counter: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: 'rgba(41,60,67,0.4)' },
+  writeError: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.red, marginTop: 10 },
   submitBtn: {
     paddingHorizontal: 18,
     paddingVertical: 9,

@@ -16,9 +16,11 @@ export interface UseMatchupTakesResult {
   loading: boolean;
   myTake: Take | null;
   submit: (pickedId: string, body: string) => Promise<boolean>;
-  remove: (id: string) => Promise<void>;
+  remove: (id: string) => Promise<boolean>;
   agree: (id: string) => void;
   agreedIds: Set<string>;
+  /** Last write failure, human-readable; cleared when the next write starts. */
+  error: string | null;
 }
 
 function bumpAgreeCount(takes: Take[], id: string, delta: number): Take[] {
@@ -29,6 +31,7 @@ export function useMatchupTakes(heroAId: string, heroBId: string): UseMatchupTak
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [agreedIds, setAgreedIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   const key = queryKeys.takes(heroAId, heroBId);
   const query = useQuery({
@@ -42,8 +45,14 @@ export function useMatchupTakes(heroAId: string, heroBId: string): UseMatchupTak
   const submit = useCallback(
     async (pickedId: string, body: string): Promise<boolean> => {
       if (!user) return false;
+      setError(null);
       const posted = await postTake(heroAId, heroBId, pickedId, body);
-      if (!posted) return false;
+      if (!posted) {
+        // postTake warns + nulls on any RPC error; the 20-takes/day server
+        // rate limit is the most reachable cause, so keep the message generic.
+        setError("Couldn't post your take — try again in a bit.");
+        return false;
+      }
       await queryClient.invalidateQueries({ queryKey: key });
       return true;
     },
@@ -51,9 +60,15 @@ export function useMatchupTakes(heroAId: string, heroBId: string): UseMatchupTak
   );
 
   const remove = useCallback(
-    async (id: string): Promise<void> => {
-      await deleteTake(id);
+    async (id: string): Promise<boolean> => {
+      setError(null);
+      const ok = await deleteTake(id);
+      if (!ok) {
+        setError("Couldn't delete your take — try again.");
+        return false;
+      }
       await queryClient.invalidateQueries({ queryKey: key });
+      return true;
     },
     [queryClient, key],
   );
@@ -62,6 +77,7 @@ export function useMatchupTakes(heroAId: string, heroBId: string): UseMatchupTak
     (id: string) => {
       const wasAgreed = agreedIds.has(id);
       const delta = wasAgreed ? -1 : 1;
+      setError(null);
 
       // Optimistic: flip local membership + bump the cached count.
       setAgreedIds((prev) => {
@@ -72,31 +88,27 @@ export function useMatchupTakes(heroAId: string, heroBId: string): UseMatchupTak
       });
       queryClient.setQueryData<Take[]>(key, (old) => bumpAgreeCount(old ?? [], id, delta));
 
+      // Roll back on failure — the server didn't record the toggle.
+      const rollBack = () => {
+        setAgreedIds((prev) => {
+          const next = new Set(prev);
+          if (wasAgreed) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+        queryClient.setQueryData<Take[]>(key, (old) => bumpAgreeCount(old ?? [], id, -delta));
+        setError("Couldn't save your agreement — try again.");
+      };
+
       getVoterKey()
         .then((vk) => toggleAgree(id, vk))
         .then((result) => {
-          if (result) return;
-          // Roll back on failure (null) — the server didn't record the toggle.
-          setAgreedIds((prev) => {
-            const next = new Set(prev);
-            if (wasAgreed) next.add(id);
-            else next.delete(id);
-            return next;
-          });
-          queryClient.setQueryData<Take[]>(key, (old) => bumpAgreeCount(old ?? [], id, -delta));
+          if (!result) rollBack();
         })
-        .catch(() => {
-          setAgreedIds((prev) => {
-            const next = new Set(prev);
-            if (wasAgreed) next.add(id);
-            else next.delete(id);
-            return next;
-          });
-          queryClient.setQueryData<Take[]>(key, (old) => bumpAgreeCount(old ?? [], id, -delta));
-        });
+        .catch(rollBack);
     },
     [agreedIds, queryClient, key],
   );
 
-  return { takes, loading: query.isLoading, myTake, submit, remove, agree, agreedIds };
+  return { takes, loading: query.isLoading, myTake, submit, remove, agree, agreedIds, error };
 }
