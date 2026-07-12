@@ -22,16 +22,21 @@ const TARGET_LABEL: Record<ReportTargetType, string> = {
   page: 'Page',
   image: 'Image',
   ai_portrait: 'AI portrait',
+  take: 'Take',
 };
 const TARGET_COLOR: Record<ReportTargetType, string> = {
   page: COLORS.blue,
   image: COLORS.orange,
   ai_portrait: COLORS.red,
+  take: COLORS.purple,
 };
 const STATUSES: ReportStatus[] = ['open', 'resolved', 'dismissed'];
-// Reason code → label across both contexts (for display).
+// Reason code → label across all contexts (for display).
 const REASON_LABEL: Record<string, string> = Object.fromEntries(
-  [...REPORT_REASONS.page, ...REPORT_REASONS.image].map((r) => [r.code, r.label]),
+  [...REPORT_REASONS.page, ...REPORT_REASONS.image, ...REPORT_REASONS.take].map((r) => [
+    r.code,
+    r.label,
+  ]),
 );
 
 export function ReportsDomain() {

@@ -5,8 +5,8 @@ import { supabase } from '../supabase';
 // REPORT_REASONS in sync with the _report_reason_ok guard in the reports
 // backbone migration.
 
-export type ReportContext = 'page' | 'image';
-export type ReportTargetType = 'page' | 'image' | 'ai_portrait';
+export type ReportContext = 'page' | 'image' | 'take';
+export type ReportTargetType = 'page' | 'image' | 'ai_portrait' | 'take';
 export type ReportStatus = 'open' | 'resolved' | 'dismissed';
 
 export interface ReasonOption {
@@ -15,7 +15,8 @@ export interface ReasonOption {
 }
 
 /** Reasons offered per entry-point context. The page "ai_inaccurate" reason is
- *  remapped by resolveReportTarget to the ai_portrait target. */
+ *  remapped by resolveReportTarget to the ai_portrait target. Keep the 'take'
+ *  list in sync with the `_report_reason_ok` guard for target 'take'. */
 export const REPORT_REASONS: Record<ReportContext, ReasonOption[]> = {
   page: [
     { code: 'inaccurate', label: 'Incorrect information' },
@@ -31,6 +32,11 @@ export const REPORT_REASONS: Record<ReportContext, ReasonOption[]> = {
     { code: 'low_quality', label: 'Low quality / broken image' },
     { code: 'other', label: 'Something else' },
   ],
+  take: [
+    { code: 'offensive', label: 'Offensive or inappropriate' },
+    { code: 'spam', label: 'Spam' },
+    { code: 'other', label: 'Something else' },
+  ],
 };
 
 /** Resolve the stored target_type + image_url from the sheet context and the
@@ -41,6 +47,7 @@ export function resolveReportTarget(
   refs: { imageUrl?: string | null; portraitUrl?: string | null },
 ): { targetType: ReportTargetType; imageUrl: string | null } {
   if (context === 'image') return { targetType: 'image', imageUrl: refs.imageUrl ?? null };
+  if (context === 'take') return { targetType: 'take', imageUrl: null };
   if (reasonCode === 'ai_inaccurate')
     return { targetType: 'ai_portrait', imageUrl: refs.portraitUrl ?? null };
   return { targetType: 'page', imageUrl: null };
@@ -48,13 +55,15 @@ export function resolveReportTarget(
 
 export type SubmitResult = { ok: true; id: number } | { ok: false; error: string };
 
-/** File a report. Signed-in only (RPC rejects anon). */
+/** File a report. Signed-in only (RPC rejects anon). `takeId` is required
+ *  (and only meaningful) for targetType 'take'. */
 export async function submitReport(opts: {
   heroId: string;
   targetType: ReportTargetType;
   imageUrl?: string | null;
   reason: string;
   detail?: string | null;
+  takeId?: string | null;
 }): Promise<SubmitResult> {
   const { data, error } = await supabase.rpc('submit_report', {
     p_hero_id: opts.heroId,
@@ -62,6 +71,7 @@ export async function submitReport(opts: {
     p_image_url: opts.imageUrl ?? '',
     p_reason: opts.reason,
     p_detail: opts.detail ?? '',
+    p_take_id: opts.takeId ?? undefined,
   });
   if (error) return { ok: false, error: error.message };
   const d = (data ?? {}) as { id?: number };

@@ -33,6 +33,7 @@ import { withViewTransition } from '../../../src/lib/viewTransition';
 import { useMatchupShareImage } from '../../../src/hooks/useMatchupShareImage';
 import { useMatchupVote } from '../../../src/hooks/useMatchupVote';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
+import { TakesSection } from '../../../src/components/takes/TakesSection';
 
 // Must match the picker — the locked hero (A) and chosen card (B) morph in.
 const VT_HERO = 'vt-fighter-a';
@@ -206,7 +207,7 @@ export default function WebCompareScreen() {
 
   // Document scroll so the mobile arena bleeds edge-to-edge under the iOS Safari
   // toolbar. Mobile ends on the beige sheet; desktop is a fixed navy arena.
-  useScreenChrome({ top: SURFACE.ink, canvas: isDesktop ? SURFACE.band : SURFACE.paper });
+  useScreenChrome({ top: SURFACE.ink, canvas: isDesktop ? SURFACE.band : SURFACE.ink });
 
   const { statsA, statsB, result, overallWinner, verdict, error } = useCompareMatchup(
     hero,
@@ -432,6 +433,17 @@ export default function WebCompareScreen() {
             />
           </View>
         </View>
+
+        {ready && (
+          <View style={styles.desktopTakesOuter}>
+            <View style={styles.desktopTakesInner}>
+              <TakesSection
+                heroA={{ id: hero, name: nameA }}
+                heroB={{ id: opponent, name: nameB }}
+              />
+            </View>
+          </View>
+        )}
       </View>
     );
   }
@@ -494,6 +506,9 @@ export default function WebCompareScreen() {
             <StatBattleRow key={stat.key} stat={stat} />
           ))}
         </View>
+        <View style={styles.mobileTakes}>
+          <TakesSection heroA={{ id: hero, name: nameA }} heroB={{ id: opponent, name: nameB }} />
+        </View>
       </View>
     </View>
   );
@@ -545,15 +560,26 @@ const styles = StyleSheet.create({
   controlBtnHover: { backgroundColor: 'rgba(245,235,220,0.13)' } as object,
   controlText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(245,235,220,0.75)' },
 
-  // ── Desktop arena (fixed-height, no page scroll) ───────────────
-  desktopRoot: { flex: 1, backgroundColor: COLORS.navy },
+  // ── Desktop arena — fills the viewport with no internal scroll; The
+  // Debate sits on the beige canvas below it, and the document scrolls to it.
+  desktopRoot: { backgroundColor: COLORS.navy },
   arena: {
-    flex: 1,
+    minHeight: '100vh' as unknown as number,
     backgroundColor: COLORS.navy,
     paddingVertical: 32,
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  desktopTakesOuter: {
+    backgroundColor: COLORS.beige,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+  } as object,
+  desktopTakesInner: {
+    maxWidth: 760,
+    width: '100%',
+    alignSelf: 'center',
   },
   arenaInner: {
     maxWidth: 1200,
@@ -764,6 +790,13 @@ const styles = StyleSheet.create({
   mobileStats: {
     gap: 18,
     paddingHorizontal: 20,
+  },
+  mobileTakes: {
+    marginTop: 28,
+    paddingHorizontal: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(41,60,67,0.1)',
+    paddingTop: 24,
   },
 
   // Share pill — in the navy verdict block, inline with the result reveal

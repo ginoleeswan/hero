@@ -27,6 +27,7 @@ import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
 import { MatchupBadge } from '../../../src/components/compare/MatchupBadge';
 import { useRelationship } from '../../../src/lib/query/heroQueries';
 import { relationshipBadge } from '../../../src/lib/db/heroes';
+import { TakesSection } from '../../../src/components/takes/TakesSection';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 12;
@@ -230,6 +231,12 @@ export default function NativeCompareScreen() {
               </View>
             )}
           </View>
+
+          {ready && (
+            <View style={styles.takesWrap}>
+              <TakesSection heroA={{ id: hero, name: nameA }} heroB={{ id: opponent, name: nameB }} />
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -331,5 +338,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingTop: 28,
     paddingBottom: 28,
+  },
+  takesWrap: {
+    paddingHorizontal: 22,
+    paddingBottom: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(41,60,67,0.1)',
+    paddingTop: 24,
   },
 });

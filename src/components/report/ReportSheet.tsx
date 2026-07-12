@@ -26,6 +26,8 @@ export interface ReportSheetProps {
   imageUrl?: string | null;
   /** The AI portrait url, attached when the page "ai_inaccurate" reason is picked. */
   portraitUrl?: string | null;
+  /** The take being reported (take context only). */
+  takeId?: string | null;
   user: { id: string } | null | undefined;
   onRequestSignIn: () => void;
 }
@@ -38,6 +40,7 @@ export function ReportSheet({
   context,
   imageUrl,
   portraitUrl,
+  takeId,
   user,
   onRequestSignIn,
 }: ReportSheetProps) {
@@ -82,6 +85,7 @@ export function ReportSheet({
       imageUrl: target.imageUrl,
       reason,
       detail: detail.trim() || null,
+      takeId: target.targetType === 'take' ? takeId : null,
     });
     setSubmitting(false);
     if (!res.ok) {
