@@ -258,8 +258,9 @@ const PARTICLE_VERT = `
     gl_PointSize = min(uScale * worldSize / -mv.z, 64.0);
 
     vColor = tex;
-    // Once the crisp card has revealed, the particles get out of its way
-    vAlpha = mix(0.3, 1.0, t) * (1.0 - uReveal * 0.93);
+    // Once the crisp card has revealed, the particles get fully out of its
+    // way — any residual dot veil reads as blur over the portrait
+    vAlpha = mix(0.3, 1.0, t) * (1.0 - uReveal);
   }
 `;
 
@@ -1214,8 +1215,10 @@ const CSS = `
     padding:24px 0;
   }
   .hero-panel::before {
-    content:''; position:absolute; inset:-60px -80px; pointer-events:none; z-index:-1;
-    background:radial-gradient(70% 60% at 40% 45%,rgba(11,24,32,0.72) 0%,rgba(11,24,32,0.3) 55%,transparent 78%);
+    content:''; position:absolute; inset:-90px -140px; pointer-events:none; z-index:-1;
+    /* closest-side: the fade completes exactly at the nearest box edge, so
+       the wash never hard-clips against its own bounds */
+    background:radial-gradient(closest-side at 42% 45%,rgba(11,24,32,0.72) 0%,rgba(11,24,32,0.32) 55%,transparent 100%);
   }
   .hero--3d .hero-wordmark-large {
     font-size:clamp(52px,7vw,92px); margin-bottom:28px; letter-spacing:-2px;
@@ -1924,15 +1927,6 @@ const CSS = `
     from { opacity:0; transform:translateY(26px) scale(0.96); filter:blur(12px); }
     to   { opacity:1; transform:none; filter:none; }
   }
-  .summon-hint {
-    position:absolute; top:4%; left:6%;
-    font-size:11px; font-weight:600; letter-spacing:2.5px; text-transform:uppercase;
-    color:var(--muted); display:flex; align-items:center; gap:8px;
-    opacity:0; animation:hintIn 1s var(--ease) 3.2s both; pointer-events:none;
-  }
-  .summon-hint::before { content:'✦'; color:var(--yellow); font-size:13px; }
-  @keyframes hintIn { from { opacity:0; transform:translateY(8px); } to { opacity:0.85; transform:none; } }
-
   @media (prefers-reduced-motion:reduce) {
     .hero-card,.scroll-hint,.marquee-track,.tott-vs,.plate-name { animation:none; }
     * { transition-duration:0.01ms !important; }
@@ -1998,8 +1992,6 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
   const [fontsReady, setFontsReady] = useState(false);
   const [mode, setMode] = useState<'3d' | 'static'>(() => (detect3DSupport() ? '3d' : 'static'));
   const [summoned, setSummoned] = useState<Summon | null>(null);
-  const [interacted, setInteracted] = useState(false);
-
   const heroRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -2046,9 +2038,6 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     }
     engineRef.current = engine;
 
-    const markInteracted = () => setInteracted(true);
-    canvas.addEventListener('pointerup', markInteracted, { once: true });
-
     // Pause when the hero scrolls out of view or the tab is hidden
     let inView = true;
     const applyPause = () => engine.setPaused(!inView || document.hidden);
@@ -2065,7 +2054,6 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     return () => {
       io.disconnect();
       document.removeEventListener('visibilitychange', applyPause);
-      canvas.removeEventListener('pointerup', markInteracted);
       engine.dispose();
       engineRef.current = null;
     };
@@ -2305,11 +2293,6 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             <div className="hero-grid">
               <div className="hero-panel">{heroContent}</div>
               <div className="summon-stage" ref={stageRef}>
-                {!interacted ? (
-                  <span className="summon-hint" aria-hidden="true">
-                    Tap the stars to summon
-                  </span>
-                ) : null}
                 {summoned ? (
                   <div className="summon-plate">
                     <span className="plate-name" key={summoned.id} aria-hidden="true">
@@ -2320,10 +2303,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                     </span>
                     <button
                       className="plate-summon"
-                      onClick={() => {
-                        setInteracted(true);
-                        engineRef.current?.summonNext();
-                      }}
+                      onClick={() => engineRef.current?.summonNext()}
                     >
                       Summon another legend ↻
                     </button>
