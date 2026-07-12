@@ -12,10 +12,12 @@ import { COLORS } from '../../../../constants/colors';
 import {
   fetchReportsQueue,
   resolveReport,
+  setTakeStatus,
   REPORT_REASONS,
   type ReportRow,
   type ReportStatus,
   type ReportTargetType,
+  type TakeStatus,
 } from '../../../../lib/db/reports';
 
 const TARGET_LABEL: Record<ReportTargetType, string> = {
@@ -62,6 +64,18 @@ export function ReportsDomain() {
     qc.invalidateQueries({ queryKey: ['reportsQueue'] });
   };
 
+  const takedown = async (reportId: number, takeId: string, status: TakeStatus) => {
+    setErr(null);
+    setBusyId(reportId);
+    const res = await setTakeStatus(takeId, status);
+    setBusyId(null);
+    if (!res.ok) {
+      setErr(res.error ?? 'Action failed');
+      return;
+    }
+    qc.invalidateQueries({ queryKey: ['reportsQueue'] });
+  };
+
   return (
     <View style={s.wrap}>
       <Panel title="Reports" hint={q.isLoading ? 'Loading…' : `${rows.length} ${status}`}>
@@ -84,7 +98,13 @@ export function ReportsDomain() {
         ) : (
           <View style={{ gap: 10 }}>
             {rows.map((r) => (
-              <ReportRowView key={r.id} r={r} busy={busyId === r.id} onDecide={decide} />
+              <ReportRowView
+                key={r.id}
+                r={r}
+                busy={busyId === r.id}
+                onDecide={decide}
+                onTakedown={takedown}
+              />
             ))}
           </View>
         )}
@@ -97,13 +117,17 @@ function ReportRowView({
   r,
   busy,
   onDecide,
+  onTakedown,
 }: {
   r: ReportRow;
   busy: boolean;
   onDecide: (id: number, d: 'resolve' | 'dismiss') => void;
+  onTakedown: (reportId: number, takeId: string, status: TakeStatus) => void;
 }) {
   const showReported = r.target_type !== 'page' && !!r.image_url;
   const showCompare = r.target_type === 'ai_portrait' && !!r.hero_portrait_url;
+  const isTake = r.target_type === 'take' && !!r.take_id;
+  const takeLive = r.take_status === 'visible';
   return (
     <View style={s.row}>
       <View style={s.rowHead}>
@@ -118,6 +142,14 @@ function ReportRowView({
       </View>
       <Text style={s.reason}>{REASON_LABEL[r.reason] ?? r.reason}</Text>
       {!!r.detail && <Text style={s.detail}>{r.detail}</Text>}
+      {isTake && (
+        <View style={s.takeQuote}>
+          <Text style={s.takeBody} numberOfLines={4}>
+            {r.take_body ?? '(take deleted by its author)'}
+          </Text>
+          {!takeLive && !!r.take_body && <Text style={s.takeState}>take is {r.take_status}</Text>}
+        </View>
+      )}
       {(showReported || showCompare) && (
         <View style={s.thumbs}>
           {showReported && (
@@ -153,6 +185,17 @@ function ReportRowView({
           >
             <Text style={s.dismissText}>Dismiss</Text>
           </Pressable>
+          {isTake && !!r.take_body && (
+            <Pressable
+              disabled={busy}
+              onPress={() => onTakedown(r.id, r.take_id!, takeLive ? 'removed' : 'visible')}
+              style={[s.action, takeLive ? s.takedown : s.dismiss]}
+            >
+              <Text style={takeLive ? s.takedownText : s.dismissText}>
+                {takeLive ? 'Remove take' : 'Restore take'}
+              </Text>
+            </Pressable>
+          )}
         </View>
       ) : (
         <Text style={s.resolved}>
@@ -211,6 +254,31 @@ const s = StyleSheet.create({
   resolveText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#fff' },
   dismiss: { backgroundColor: '#efe6d6' },
   dismissText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
+  takedown: { backgroundColor: COLORS.red },
+  takedownText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#fff' },
+  takeQuote: {
+    backgroundColor: '#f7f1e5',
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.purple,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 4,
+  },
+  takeBody: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: 'rgba(41,60,67,0.85)',
+    lineHeight: 18,
+  },
+  takeState: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: COLORS.grey,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   resolved: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
