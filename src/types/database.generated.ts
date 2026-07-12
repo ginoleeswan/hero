@@ -353,6 +353,61 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_debate: {
+        Row: {
+          created_at: string
+          debate_date: string
+          final_votes_a: number | null
+          final_votes_b: number | null
+          hero_a_id: string
+          hero_b_id: string
+          hook_text: string | null
+          top_take_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          debate_date: string
+          final_votes_a?: number | null
+          final_votes_b?: number | null
+          hero_a_id: string
+          hero_b_id: string
+          hook_text?: string | null
+          top_take_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          debate_date?: string
+          final_votes_a?: number | null
+          final_votes_b?: number | null
+          hero_a_id?: string
+          hero_b_id?: string
+          hook_text?: string | null
+          top_take_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_debate_hero_a_id_fkey"
+            columns: ["hero_a_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_debate_hero_b_id_fkey"
+            columns: ["hero_b_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_debate_top_take_id_fkey"
+            columns: ["top_take_id"]
+            isOneToOne: false
+            referencedRelation: "matchup_takes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_game_results: {
         Row: {
           created_at: string
@@ -1208,6 +1263,42 @@ export type Database = {
         }
         Relationships: []
       }
+      matchup_takes: {
+        Row: {
+          agree_count: number
+          body: string
+          created_at: string
+          hero_a_id: string
+          hero_b_id: string
+          id: string
+          picked_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          agree_count?: number
+          body: string
+          created_at?: string
+          hero_a_id: string
+          hero_b_id: string
+          id?: string
+          picked_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          agree_count?: number
+          body?: string
+          created_at?: string
+          hero_a_id?: string
+          hero_b_id?: string
+          id?: string
+          picked_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       matchup_vote_seeds: {
         Row: {
           hero_a_id: string
@@ -1250,6 +1341,30 @@ export type Database = {
           hero_b_id?: string
           picked_id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      matchup_votes_anon: {
+        Row: {
+          created_at: string
+          hero_a_id: string
+          hero_b_id: string
+          picked_id: string
+          voter_key: string
+        }
+        Insert: {
+          created_at?: string
+          hero_a_id: string
+          hero_b_id: string
+          picked_id: string
+          voter_key: string
+        }
+        Update: {
+          created_at?: string
+          hero_a_id?: string
+          hero_b_id?: string
+          picked_id?: string
+          voter_key?: string
         }
         Relationships: []
       }
@@ -1298,6 +1413,7 @@ export type Database = {
           resolved_at: string | null
           resolved_by: string | null
           status: string
+          take_id: string | null
           target_type: string
           user_id: string
         }
@@ -1312,6 +1428,7 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           status?: string
+          take_id?: string | null
           target_type: string
           user_id: string
         }
@@ -1326,6 +1443,7 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           status?: string
+          take_id?: string | null
           target_type?: string
           user_id?: string
         }
@@ -1335,6 +1453,13 @@ export type Database = {
             columns: ["hero_id"]
             isOneToOne: false
             referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_take_id_fkey"
+            columns: ["take_id"]
+            isOneToOne: false
+            referencedRelation: "matchup_takes"
             referencedColumns: ["id"]
           },
         ]
@@ -1448,6 +1573,32 @@ export type Database = {
           video_url?: string | null
         }
         Relationships: []
+      }
+      take_agreements: {
+        Row: {
+          created_at: string
+          take_id: string
+          voter_key: string
+        }
+        Insert: {
+          created_at?: string
+          take_id: string
+          voter_key: string
+        }
+        Update: {
+          created_at?: string
+          take_id?: string
+          voter_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "take_agreements_take_id_fkey"
+            columns: ["take_id"]
+            isOneToOne: false
+            referencedRelation: "matchup_takes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_battle_votes: {
         Row: {
@@ -1880,6 +2031,15 @@ export type Database = {
         Args: { p_a: string; p_b: string; p_picked: string }
         Returns: Json
       }
+      cast_matchup_vote_v2: {
+        Args: {
+          p_a: string
+          p_b: string
+          p_picked: string
+          p_voter_key: string
+        }
+        Returns: Json
+      }
       cast_team_battle_vote: {
         Args: { p_a: string; p_b: string; p_picked: string }
         Returns: Json
@@ -1999,6 +2159,10 @@ export type Database = {
         Returns: Json
       }
       get_matchup_tally: { Args: { p_a: string; p_b: string }; Returns: Json }
+      get_matchup_tally_v2: {
+        Args: { p_a: string; p_b: string; p_voter_key: string }
+        Returns: Json
+      }
       get_most_feared: {
         Args: { p_limit?: number }
         Returns: {
@@ -2204,6 +2368,11 @@ export type Database = {
       link_tmdb_cast: { Args: never; Returns: number }
       mark_hero_unresolved: { Args: { p_hero_id: string }; Returns: undefined }
       nightly_maintenance: { Args: never; Returns: undefined }
+      pick_daily_debate: { Args: never; Returns: undefined }
+      post_take: {
+        Args: { p_a: string; p_b: string; p_body: string; p_picked: string }
+        Returns: Json
+      }
       rebuild_hero_relationships: { Args: never; Returns: undefined }
       rebuild_teams: { Args: never; Returns: undefined }
       recompute_fame_scores: { Args: never; Returns: number }
@@ -2232,6 +2401,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      resolve_daily_debate: { Args: never; Returns: undefined }
       resolve_hero_qid: {
         Args: { p_hero_id: string; p_qid: string }
         Returns: undefined
@@ -2257,6 +2427,10 @@ export type Database = {
           publisher: string
         }[]
       }
+      set_daily_debate: {
+        Args: { p_a: string; p_b: string; p_date: string; p_hook: string }
+        Returns: undefined
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       slugify_team: { Args: { p_name: string }; Returns: string }
@@ -2277,8 +2451,13 @@ export type Database = {
           p_hero_id: string
           p_image_url: string
           p_reason: string
+          p_take_id?: string
           p_target_type: string
         }
+        Returns: Json
+      }
+      toggle_take_agreement: {
+        Args: { p_take_id: string; p_voter_key: string }
         Returns: Json
       }
       touch_last_seen: { Args: never; Returns: undefined }
