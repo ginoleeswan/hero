@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { SubTabs } from '../SubTabs';
 import { SocialDomain } from './SocialDomain';
 import { CampaignsDomain } from './CampaignsDomain';
+import { DebatePickerPanel } from './DebatePickerPanel';
 
-export type PublishSub = 'social' | 'campaigns';
+export type PublishSub = 'social' | 'campaigns' | 'debate';
 
 export function PublishLane() {
   const [sub, setSub] = useState<PublishSub>('social');
@@ -16,11 +17,18 @@ export function PublishLane() {
         tabs={[
           { key: 'social', label: 'Social', icon: 'share-social-outline' },
           { key: 'campaigns', label: 'Campaigns', icon: 'megaphone-outline' },
+          { key: 'debate', label: 'Debate', icon: 'flash-outline' },
         ]}
         active={sub}
         onChange={setSub}
       />
-      {sub === 'social' ? <SocialDomain /> : <CampaignsDomain />}
+      {sub === 'social' ? (
+        <SocialDomain />
+      ) : sub === 'campaigns' ? (
+        <CampaignsDomain />
+      ) : (
+        <DebatePickerPanel />
+      )}
     </>
   );
 }

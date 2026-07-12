@@ -14,14 +14,17 @@ import { COLORS } from '../../src/constants/colors';
 import { useVersusHub } from '../../src/hooks/useVersusHub';
 import { pickRandomPair } from '../../src/lib/versus';
 import { stashFighters, type FighterArt } from '../../src/lib/compareHandoff';
+import { statSplit } from '../../src/lib/home/matchupVote';
 import { ShowdownCards } from '../../src/components/versus/ShowdownCards';
 import { RivalriesRail } from '../../src/components/versus/RivalriesRail';
 import { HallOfInfamy } from '../../src/components/home/HallOfInfamy';
+import { YesterdayStrip } from '../../src/components/versus/YesterdayStrip';
 
 export default function VersusScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { matchup, rivalries, iconicPool, loading, teamBattle, mostFeared } = useVersusHub();
+  const { matchup, hookText, takesCount, yesterday, rivalries, iconicPool, loading, teamBattle, mostFeared } =
+    useVersusHub();
 
   const openArena = (a: FighterArt, b: FighterArt) => {
     stashFighters(a, b);
@@ -50,22 +53,41 @@ export default function VersusScreen() {
           locations={[0, 0.5, 1]}
           style={[styles.stage, { paddingTop: insets.top + 24 }]}
         >
-          <Text style={styles.eyebrow}>{"★ Today's Showdown ★"}</Text>
+          <Text style={styles.eyebrow}>{"★ Today's Debate ★"}</Text>
           {matchup ? (
-            <Text style={styles.title} numberOfLines={1}>
+            <Text
+              style={[styles.title, hookText && styles.titleWithHook]}
+              numberOfLines={1}
+            >
               {matchup.heroA.name} vs {matchup.heroB.name}
             </Text>
           ) : (
             <Text style={styles.title}>The Arena</Text>
           )}
+          {matchup && hookText ? <Text style={styles.hook}>{hookText}</Text> : null}
 
           {loading && !matchup ? (
             <View style={styles.loading}>
               <ActivityIndicator color={COLORS.orange} />
             </View>
           ) : matchup ? (
-            <ShowdownCards matchup={matchup} onOpen={openArena} />
+            <>
+              <ShowdownCards matchup={matchup} onOpen={openArena} />
+              <Pressable
+                onPress={() => openArena(matchup.heroA, matchup.heroB)}
+                accessibilityRole="button"
+                accessibilityLabel="Join the debate"
+                style={styles.takesLink}
+              >
+                <Text style={styles.takesLinkText}>
+                  {takesCount} {takesCount === 1 ? 'take' : 'takes'} — join the debate
+                </Text>
+                <Ionicons name="chevron-forward" size={13} color={COLORS.goldAccent} />
+              </Pressable>
+            </>
           ) : null}
+
+          {yesterday ? <YesterdayStrip yesterday={yesterday} /> : null}
 
           {/* ── Secondary actions ── */}
           <View style={styles.actions}>
@@ -156,7 +178,28 @@ const styles = StyleSheet.create({
     marginBottom: 22,
     textAlign: 'center',
   },
+  titleWithHook: { marginBottom: 8 },
+  hook: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13.5,
+    lineHeight: 18,
+    color: 'rgba(245,235,220,0.65)',
+    textAlign: 'center',
+    marginBottom: 18,
+    maxWidth: 320,
+  },
   loading: { paddingVertical: 70, alignItems: 'center' },
+  takesLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 14,
+  },
+  takesLinkText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    color: COLORS.goldAccent,
+  },
 
   actions: { flexDirection: 'row', gap: 12, marginTop: 26, alignSelf: 'stretch' },
   act: {

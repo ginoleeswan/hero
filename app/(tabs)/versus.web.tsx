@@ -16,6 +16,7 @@ import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { ShowdownStage } from '../../src/components/web/versus/ShowdownStage';
 import { MatchupRow } from '../../src/components/web/versus/MatchupRow';
 import { MatchupCard } from '../../src/components/web/versus/MatchupCard';
+import { YesterdayStrip } from '../../src/components/web/versus/YesterdayStrip';
 import { useDiscoveryRows } from '../../src/hooks/useDiscoveryRows';
 import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
 import { Reveal } from '../../src/components/web/Reveal';
@@ -28,7 +29,8 @@ export default function VersusHubWeb() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const contentPad = width < 640 ? 16 : 32;
-  const { matchup, iconicPool, loading, mostFeared } = useVersusHub();
+  const { matchup, hookText, takesCount, yesterday, iconicPool, loading, mostFeared } =
+    useVersusHub();
 
   const openArena = (a: FighterArt, b: FighterArt) => {
     stashFighters(a, b);
@@ -67,7 +69,7 @@ export default function VersusHubWeb() {
         <View style={s.glowA as object} />
         <View style={s.glowB as object} />
         <View style={s.stageInner}>
-          <Text style={s.eyebrow}>{"★ Today's Showdown ★"}</Text>
+          <Text style={s.eyebrow}>{"★ Today's Debate ★"}</Text>
           {matchup ? (
             <Text
               style={[s.title, !isDesktop && (s.titleMobile as object)] as object}
@@ -78,6 +80,7 @@ export default function VersusHubWeb() {
           ) : (
             <Text style={s.title}>The Arena</Text>
           )}
+          {matchup && hookText ? <Text style={s.hook}>{hookText}</Text> : null}
 
           {loading && !matchup ? (
             <View style={s.skelDeck}>
@@ -102,13 +105,30 @@ export default function VersusHubWeb() {
               />
             </View>
           ) : matchup ? (
-            <ShowdownStage
-              matchup={matchup}
-              isDesktop={isDesktop}
-              onOpen={openArena}
-              onShuffle={surprise}
-            />
+            <>
+              <ShowdownStage
+                matchup={matchup}
+                isDesktop={isDesktop}
+                onOpen={openArena}
+                onShuffle={surprise}
+              />
+              <Pressable
+                onPress={() => openArena(matchup.heroA, matchup.heroB)}
+                accessibilityRole="button"
+                accessibilityLabel="Join the debate"
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [s.takesLink, hovered && (s.takesLinkHover as object)] as object
+                }
+              >
+                <Text style={s.takesLinkText}>
+                  {takesCount} {takesCount === 1 ? 'take' : 'takes'} — join the debate
+                </Text>
+                <Ionicons name="chevron-forward" size={13} color={COLORS.goldAccent} />
+              </Pressable>
+            </>
           ) : null}
+
+          {yesterday ? <YesterdayStrip yesterday={yesterday} /> : null}
 
           {/* ── Secondary actions ── */}
           <View style={s.actions}>
@@ -311,6 +331,29 @@ const s = StyleSheet.create({
     textAlign: 'center',
   },
   titleMobile: { fontSize: 24, lineHeight: 30 } as object,
+  hook: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14.5,
+    lineHeight: 19,
+    color: 'rgba(245,235,220,0.65)',
+    textAlign: 'center',
+    marginTop: -14,
+    marginBottom: 18,
+    maxWidth: 420,
+  },
+  takesLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 16,
+    cursor: 'pointer',
+  } as object,
+  takesLinkHover: { opacity: 0.8 } as object,
+  takesLinkText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.goldAccent,
+  },
 
   // Card-deck skeleton while the matchup query resolves.
   skelDeck: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
