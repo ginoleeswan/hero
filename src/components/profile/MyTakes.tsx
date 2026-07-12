@@ -44,7 +44,7 @@ export function MyTakes({
               </Text>
               <Text style={styles.body}>{t.body}</Text>
               <Text style={styles.agree}>
-                {t.agreeCount} agree{t.agreeCount === 1 ? '' : 's'}
+                {t.agreeCount} {t.agreeCount === 1 ? 'agreement' : 'agreements'}
               </Text>
             </View>
             <Pressable

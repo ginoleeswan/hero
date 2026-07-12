@@ -130,6 +130,7 @@ describe('getMyTakes', () => {
     expect(chains['matchup_takes'].order).toHaveBeenCalledWith('created_at', {
       ascending: false,
     });
+    expect(chains['matchup_takes'].limit).toHaveBeenCalledWith(100);
     expect(result).toEqual([
       {
         id: 't1',

@@ -27,7 +27,7 @@ import { useProfile } from '../../src/hooks/useProfile';
 import { useProfileData } from '../../src/hooks/useProfileData';
 import { openKofi } from '../../src/lib/support/kofi';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
-import { deleteTake } from '../../src/lib/db/takes';
+import { deleteTake, type MyTake } from '../../src/lib/db/takes';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount, type Badge } from '../../src/lib/profile/badges';
 import { buildProfileStats } from '../../src/lib/profile/stats';
@@ -468,8 +468,29 @@ export default function WebProfileScreen() {
   };
 
   const handleDeleteTake = (id: string) => {
-    setTakes((prev) => prev.filter((t) => t.id !== id));
-    deleteTake(id).catch(() => {});
+    // Optimistic removal with rollback: deleteTake resolves false on failure,
+    // in which case the take goes back where it was (list is created_at-ordered).
+    const confirm = () => {
+      let removed: MyTake | undefined;
+      let removedAt = 0;
+      setTakes((prev) => {
+        removedAt = prev.findIndex((t) => t.id === id);
+        removed = prev[removedAt];
+        return prev.filter((t) => t.id !== id);
+      });
+      deleteTake(id)
+        .then((ok) => {
+          if (ok || !removed) return;
+          const take = removed;
+          setTakes((prev) => [...prev.slice(0, removedAt), take, ...prev.slice(removedAt)]);
+          showToast('Could not delete take');
+        })
+        .catch(() => {});
+    };
+    Alert.alert('Delete Take', 'Delete this take? This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: confirm },
+    ]);
   };
 
   const handleUnfavourite = (hero: FavouriteHero) => {

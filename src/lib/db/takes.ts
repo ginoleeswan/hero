@@ -101,7 +101,8 @@ export async function getMyTakes(userId: string): Promise<MyTake[]> {
     .from('matchup_takes')
     .select('*')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(100);
   if (error) {
     console.warn('[getMyTakes] error:', error.message);
     return [];
