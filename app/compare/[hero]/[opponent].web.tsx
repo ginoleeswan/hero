@@ -379,8 +379,12 @@ export default function WebCompareScreen() {
   );
 
   if (isDesktop) {
-    /* Desktop — chromeless full-bleed arena, no page scroll. Floating Back/Share
-       over the navy; portraits flank a centered scorecard ("Head to Head"). */
+    /* Desktop — a two-beat page. Beat one: the navy arena poster (portraits
+       flank a centered scorecard, "Head to Head"), sized just under the
+       viewport so the whole verdict is visible without scrolling. Beat two:
+       the beige debate hands off at an ink→paper seam and peeks above the
+       fold, so the take count + first take invite a motivated scroll rather
+       than a jarring spill. Floating Back/Share over the navy. */
     return (
       <View style={styles.desktopRoot}>
         {seo}
@@ -564,7 +568,10 @@ const styles = StyleSheet.create({
   // Debate sits on the beige canvas below it, and the document scrolls to it.
   desktopRoot: { backgroundColor: COLORS.navy },
   arena: {
-    minHeight: '100vh' as unknown as number,
+    // Just under a full viewport: the poster fills the first screen (verdict
+    // fully visible, no scroll to see it) but deliberately leaves ~18vh so the
+    // debate below peeks in and invites the scroll.
+    minHeight: '82vh' as unknown as number,
     backgroundColor: COLORS.navy,
     paddingVertical: 32,
     paddingHorizontal: 24,
