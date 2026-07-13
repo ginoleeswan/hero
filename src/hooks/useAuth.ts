@@ -47,18 +47,37 @@ export function useAuth(): AuthState {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let mounted = true;
+
+    // The whole app is gated on `loading` (see the boot gate in the layouts), so
+    // this flag MUST always clear or the app hangs on the splash loader forever.
+    // getSession() can reject or stall (a hung token refresh, a paused/unreachable
+    // Supabase project, a throw during web `detectSessionInUrl` parsing), so it's
+    // guarded on every path: resolve, reject, and a hard safety timeout. On any
+    // failure we fall through to the logged-out state — the catalogue browses fine
+    // without a session, and a returning user can retry sign-in.
+    const settle = (session: Session | null) => {
+      if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-    });
+    };
+
+    // Backstop: if getSession() never settles, don't wedge the app on the loader.
+    // Idempotent — setLoading(false) is a no-op once auth has already resolved.
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 8000);
+
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => settle(session))
+      .catch(() => settle(null));
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      settle(session);
       // Sync Google profile on web OAuth redirect (and any platform on first sign-in)
       if (event === 'SIGNED_IN' && session?.user) {
         const provider = session.user.app_metadata?.provider;
@@ -68,7 +87,11 @@ export function useAuth(): AuthState {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, [syncGoogleProfile]);
 
   const signIn = async (email: string, password: string) => {
