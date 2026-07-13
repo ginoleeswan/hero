@@ -73,7 +73,7 @@ export function useHeroIssues(id: string | undefined) {
 /** Whether the signed-in user is an admin (drives the contribute/edit affordances). */
 export function useIsAdmin(userId: string | undefined) {
   return useQuery({
-    queryKey: userId ? queryKeys.profile(userId) : ['profile', 'disabled'],
+    queryKey: userId ? queryKeys.isAdmin(userId) : ['profile', 'disabled', 'isAdmin'],
     enabled: !!userId,
     queryFn: async () => !!(await getProfile(userId!))?.is_admin,
     staleTime: LONG,

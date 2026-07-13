@@ -30,7 +30,10 @@ export const queryKeys = {
   pickRelations: (id: string) => ['heroes', 'pickRelations', id] as const,
   powerRange: (lo: number, hi: number, excludeId: string) =>
     ['heroes', 'powerRange', lo, hi, excludeId] as const,
-  profile: (userId: string) => ['profile', userId] as const,
+  // Boolean admin flag only — NOT the profile object. Kept on its own key so a
+  // future object-shaped profile query can't collide with it (that shape clash
+  // once bounced the admin out of catalog-health).
+  isAdmin: (userId: string) => ['profile', userId, 'isAdmin'] as const,
   team: (id: string) => ['teams', 'detail', id] as const,
   issue: (id: string) => ['comics', 'issue', id] as const,
   newComics: (limit: number) => ['comics', 'new', limit] as const,
