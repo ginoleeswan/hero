@@ -2,8 +2,11 @@
 //
 // Daily TMDB trending. Fetch /trending/all/day (films + TV), map each to a title
 // we already have by its TMDB id, and stamp trending_rank (its position in the
-// list) + trending_at. Every run first clears yesterday's marks, so a title only
-// shows while it's trending today. Mirrors enrich-tmdb-batch's shape.
+// list) + trending_at. get_trending_on_screen surfaces titles on a rolling 7-day
+// `trending_at` window, so we DON'T nuke every rank each run — that would discard
+// the window's signal and collapse the feed on a thin-match day (the original bug).
+// Instead each title keeps its last-known rank; we only clear ranks once a title
+// has aged out of the window. Mirrors enrich-tmdb-batch's shape.
 //
 // POST body: { pages?: number (1-2, default 2), triggeredBy?: string }
 
@@ -55,8 +58,14 @@ serve(async (req: Request) => {
       }
     }
 
-    // Clear yesterday's marks, then stamp the matched titles in trending order.
-    await sb.from('titles').update({ trending_rank: null }).not('trending_rank', 'is', null);
+    // Retire ranks only for titles that have dropped out of the 7-day window the
+    // reader uses — keeps the table tidy without erasing in-window signal.
+    const windowStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    await sb
+      .from('titles')
+      .update({ trending_rank: null })
+      .not('trending_rank', 'is', null)
+      .lt('trending_at', windowStart);
 
     let matched = 0;
     const now = new Date().toISOString();
