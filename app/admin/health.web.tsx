@@ -5,7 +5,7 @@ import { useCommandAlerts } from '../../src/contexts/CommandAlertsContext';
 import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../src/hooks/useAuth';
-import { getProfile } from '../../src/lib/db/profiles';
+import { useIsAdmin } from '../../src/lib/query/heroDetailQueries';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { LogoLoader } from '../../src/components/ui/LogoLoader';
 import { COLORS, SURFACE } from '../../src/constants/colors';
@@ -91,11 +91,9 @@ export default function AdminHealthScreen() {
     setDomain('pipelines');
   };
 
-  const profileQ = useQuery({
-    queryKey: ['profile', user?.id],
-    queryFn: () => getProfile(user!.id),
-    enabled: !!user,
-  });
+  // Admin gate — reuse the shared useIsAdmin query so it can't collide with the
+  // character pages on the ['profile', id] cache key (both store a boolean).
+  const adminQ = useIsAdmin(user?.id);
   const unbrandedQ = useQuery({
     queryKey: ['unbrandedHeroes'],
     queryFn: () => listUnbrandedHeroes(300),
@@ -106,8 +104,8 @@ export default function AdminHealthScreen() {
     queryFn: () => fetchReportsQueue('open'),
     enabled: !!user,
   });
-  const gateResolved = !authLoading && (!user || profileQ.isSuccess || profileQ.isError);
-  const isAdmin = !!profileQ.data?.is_admin;
+  const gateResolved = !authLoading && (!user || adminQ.isSuccess || adminQ.isError);
+  const isAdmin = adminQ.data === true;
   useEffect(() => {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
