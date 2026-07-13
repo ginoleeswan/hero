@@ -232,13 +232,20 @@ export async function getTopHeroByStat(
 }
 
 export async function getPublisherCounts(): Promise<PublisherCounts> {
+  // `estimated`, not `exact`: three exact counts run in parallel here, each a
+  // full seq-scan of ~34k rows (and the leading-wildcard ilikes can't use an
+  // index), which is exactly the pattern that timed out getPowerPercentile.
+  // These are flavour stats — the planner estimate is instant and close enough.
   const [marvelRes, dcRes, totalRes] = await Promise.all([
     supabase
       .from('heroes')
-      .select('*', { count: 'exact', head: true })
+      .select('*', { count: 'estimated', head: true })
       .ilike('publisher', '%marvel%'),
-    supabase.from('heroes').select('*', { count: 'exact', head: true }).ilike('publisher', '%dc%'),
-    supabase.from('heroes').select('*', { count: 'exact', head: true }),
+    supabase
+      .from('heroes')
+      .select('*', { count: 'estimated', head: true })
+      .ilike('publisher', '%dc%'),
+    supabase.from('heroes').select('*', { count: 'estimated', head: true }),
   ]);
   const marvel = marvelRes.count ?? 0;
   const dc = dcRes.count ?? 0;

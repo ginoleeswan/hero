@@ -171,9 +171,14 @@ export async function getSearchIdleHeroes(limit = 30): Promise<HeroSearchResult[
 }
 
 export async function getHeroCount(): Promise<number> {
+  // `estimated`, not `exact`: an exact count seq-scans all ~34k rows (~seconds
+  // under I/O pressure, enough to blow the PostgREST timeout — see the same
+  // lesson in getPowerPercentile). The planner estimate is instant and plenty
+  // for a catalogue-size stat. Keep `heroes` ANALYZEd (autovacuum does) so it
+  // stays sharp.
   const { count, error } = await supabase
     .from('heroes')
-    .select('*', { count: 'exact', head: true });
+    .select('*', { count: 'estimated', head: true });
   if (error) throw new Error(error.message);
   return count ?? 0;
 }
