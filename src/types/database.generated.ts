@@ -816,22 +816,7 @@ export type Database = {
           related_id?: string
           source?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "hero_relationships_hero_id_fkey"
-            columns: ["hero_id"]
-            isOneToOne: false
-            referencedRelation: "heroes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "hero_relationships_related_id_fkey"
-            columns: ["related_id"]
-            isOneToOne: false
-            referencedRelation: "heroes"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       hero_relatives: {
         Row: {
@@ -1017,6 +1002,7 @@ export type Database = {
           portrait_blurhash: string | null
           portrait_url: string | null
           power: number | null
+          power_rating: number | null
           powers: string[] | null
           powerstats_total: number | null
           publisher: string | null
@@ -1096,6 +1082,7 @@ export type Database = {
           portrait_blurhash?: string | null
           portrait_url?: string | null
           power?: number | null
+          power_rating?: number | null
           powers?: string[] | null
           powerstats_total?: number | null
           publisher?: string | null
@@ -1175,6 +1162,7 @@ export type Database = {
           portrait_blurhash?: string | null
           portrait_url?: string | null
           power?: number | null
+          power_rating?: number | null
           powers?: string[] | null
           powerstats_total?: number | null
           publisher?: string | null
@@ -2650,3 +2638,4 @@ export const Constants = {
     },
   },
 } as const
+
