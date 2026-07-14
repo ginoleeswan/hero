@@ -60,10 +60,11 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   // Transparent over the page's hero at the top; a frosted bar once content
   // scrolls up behind it (keeps light icons readable over the beige body).
   const [scrolled, setScrolled] = useState(false);
-  // Mobile: a hide-on-scroll-down / reveal-on-scroll-up bar. `mobAtTop` keeps it
-  // transparent over the page's hero; once scrolled, it slides away going down and
-  // slides back with a frosted material going up — so it's never transparent over
-  // arbitrary mid-page content.
+  // Mobile: a hide-on-scroll-down / reveal-on-scroll-up bar. `mobAtTop` swaps the
+  // bar's backing from the frosted reveal header to the gentle at-top ink fade
+  // (same gradient as desktop's topScrim); once scrolled, it slides away going
+  // down and slides back with the frosted material going up — so it's never
+  // transparent over arbitrary mid-page content.
   const [mobHidden, setMobHidden] = useState(false);
   const [mobAtTop, setMobAtTop] = useState(true);
   useEffect(() => {
@@ -232,27 +233,42 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   const bar = (
     <View style={[c.bar, barHideStyle] as object} pointerEvents="box-none">
       {isMobile ? (
-        // Mobile: transparent over the hero at the top; once you scroll up after
-        // scrolling down, a header reveals — a gradient scrim + graduated blur that's
-        // solid at the very top (so it fuses with the dark body strip) and fades to
-        // transparent blur by the bottom, melting into the content. Hidden (opacity 0)
-        // at the very top. Scrim follows the page's light/dark to match the glyphs.
-        <View
-          style={
-            [c.mHeader, mobAtTop ? (c.layerHidden as object) : (c.layerShown as object)] as object
-          }
-          pointerEvents="none"
-        >
-          <View style={[StyleSheet.absoluteFill, c.mHeaderBlur] as object} />
+        <>
+          {/* At the very top the bar carries the same gentle ink fade the desktop
+              bar uses, on EVERY page — status zone → scrim → page stage read as
+              one ink piece and the glyphs are always backed, so pages never need
+              their own baked-in header scrims. Crossfades out as the reveal
+              header below fades in. Dark-topped pages only: a light-topped page
+              (adaptDark) backs its glyphs with its own light surface. */}
+          {!adaptDark && (
+            <View
+              style={[c.topScrim, !mobAtTop && (c.layerHidden as object)] as object}
+              pointerEvents="none"
+            />
+          )}
+          {/* Once you scroll up after scrolling down, a header reveals — a gradient
+              scrim + graduated blur that's solid at the very top (so it fuses with
+              the navy status zone) and fades to transparent blur by the bottom,
+              melting into the content. Hidden (opacity 0) at the very top, where
+              the gentle fade above takes over. Scrim follows the page's
+              light/dark to match the glyphs. */}
           <View
             style={
-              [
-                StyleSheet.absoluteFill,
-                adaptDark ? (c.mHeaderScrimLight as object) : (c.mHeaderScrimDark as object),
-              ] as object
+              [c.mHeader, mobAtTop ? (c.layerHidden as object) : (c.layerShown as object)] as object
             }
-          />
-        </View>
+            pointerEvents="none"
+          >
+            <View style={[StyleSheet.absoluteFill, c.mHeaderBlur] as object} />
+            <View
+              style={
+                [
+                  StyleSheet.absoluteFill,
+                  adaptDark ? (c.mHeaderScrimLight as object) : (c.mHeaderScrimDark as object),
+                ] as object
+              }
+            />
+          </View>
+        </>
       ) : (
         <>
           {/* Desktop: soft dark gradient over the hero at the top… */}
