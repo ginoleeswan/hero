@@ -25,6 +25,9 @@ const MIN_VOTES = 40; // people actually engaged with it
 const MAX_SPREAD = 18; // |pct - 50| <= this => close/controversial => gets talking
 const FAME_POOL = 160; // sample random pairs from the top-N most famous
 const HERO_SELECT = 'id,name,publisher,portrait_url,image_url,image_md_url,fame_score,gender,alignment,' + STAT_KEYS.join(',');
+// Strict fame ordering: fame_score bands can tie (esp. tier plateaus), so break
+// ties by the continuous popularity signals, then id, for a stable countdown.
+const FAME_ORDER = 'fame_score.desc.nullslast,wikidata_sitelinks.desc.nullslast,powerstats_total.desc.nullslast,id.asc';
 const q = (s) => encodeURIComponent(s);
 
 export function loadEnv() {
@@ -105,7 +108,7 @@ export async function heroFullByName(sb, name) {
 }
 // Random popular characters for bio showcases.
 export async function popularHeroes(sb, n) {
-  return sb.rest(`heroes?select=${HERO_FULL}&order=fame_score.desc.nullslast&limit=${n}`);
+  return sb.rest(`heroes?select=${HERO_FULL}&order=${FAME_ORDER}&limit=${n}`);
 }
 
 // Relationship graph (enemies / allies), family, and key/value enrichment facts.
@@ -121,7 +124,7 @@ export async function getFact(sb, id, key) {
   try { const r = await sb.rest(`hero_facts?hero_id=eq.${id}&key=eq.${q(key)}&select=value&limit=1`); return r[0]?.value ?? null; }
   catch { return null; }
 }
-export const famousPool = (sb) => sb.rest(`heroes?select=${HERO_SELECT}&order=fame_score.desc.nullslast&limit=${FAME_POOL}`);
+export const famousPool = (sb) => sb.rest(`heroes?select=${HERO_SELECT}&order=${FAME_ORDER}&limit=${FAME_POOL}`);
 
 // A matchup is postable if it has a real, close-ish vote split.
 export async function evaluate(sb, a, b) {

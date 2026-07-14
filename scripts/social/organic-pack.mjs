@@ -320,7 +320,7 @@ function gauntletSlides(h, statKey) {
 // ── data ──────────────────────────────────────────────────────────────────────
 async function pool(sb) {
   const rows = await sb.rest(
-    `heroes?select=${HERO_COLS}&portrait_url=not.is.null&order=fame_score.desc.nullslast&limit=60`,
+    `heroes?select=${HERO_COLS}&portrait_url=not.is.null&order=fame_score.desc.nullslast,wikidata_sitelinks.desc.nullslast,powerstats_total.desc.nullslast,id.asc&limit=60`,
   );
   return rows.map(shape);
 }
@@ -333,30 +333,51 @@ const TOT_QUESTIONS = [
 ];
 const GAUNTLET_STATS = ['strength', 'combat', 'power'];
 // Debatable ranking themes with portraits. Each returns 10 ordered rows.
+// `composite` themes rank by the weighted power_rating (0-100, one decimal) so the
+// countdown shows distinct descending numbers instead of a wall of identical 100s
+// (154 characters tie at power=100, 92 at strength=100). Single-attribute themes
+// still show their raw stat — those repeat at the ceiling, but a continuous
+// tiebreaker chain keeps the top 10 strictly and defensibly ordered.
 const RANK_THEMES = [
   {
     key: 'strongest-villains',
     title: 'Top 10 Strongest Villains',
-    stat: 'strength',
+    stat: 'power_rating',
     color: '#B5302B',
     villain: true,
+    composite: true,
   },
   { key: 'smartest', title: 'Top 10 Smartest Characters', stat: 'intelligence', color: '#15A1AB' },
   { key: 'fastest', title: 'Top 10 Fastest Characters', stat: 'speed', color: '#F9B222' },
   { key: 'best-fighters', title: 'Top 10 Best Fighters', stat: 'combat', color: '#8a4a2b' },
-  { key: 'most-powerful', title: 'Top 10 Most Powerful', stat: 'power', color: '#E77333' },
+  {
+    key: 'most-powerful',
+    title: 'Top 10 Most Powerful',
+    stat: 'power_rating',
+    color: '#E77333',
+    composite: true,
+  },
 ];
 async function rankingRows(sb, theme) {
   const align = theme.villain ? '&alignment=eq.bad' : '';
+  // Strict order: headline metric, then the continuous composite + fame + id so no
+  // two rows tie on placement. Composite themes already sort by power_rating.
+  const order = theme.composite
+    ? `power_rating.desc.nullslast,fame_score.desc.nullslast,id.asc`
+    : `${theme.stat}.desc.nullslast,power_rating.desc.nullslast,fame_score.desc.nullslast,id.asc`;
+  const cols = theme.composite
+    ? 'name,publisher,portrait_url,id,fame_score,power_rating'
+    : `name,publisher,portrait_url,id,fame_score,power_rating,${theme.stat}`;
   const rows = await sb
     .rest(
-      `heroes?select=name,publisher,portrait_url,${theme.stat}&portrait_url=not.is.null&fame_score=gte.20${align}&order=${theme.stat}.desc.nullslast,fame_score.desc.nullslast&limit=10`,
+      `heroes?select=${cols}&portrait_url=not.is.null&fame_score=gte.20${align}&order=${order}&limit=10`,
     )
     .catch(() => []);
   return rows.map((r) => ({
     name: r.name,
     publisher: r.publisher,
-    value: r[theme.stat] ?? 0,
+    // Composite shows one decimal (distinct); raw stats stay integers.
+    value: theme.composite ? Number(r.power_rating ?? 0).toFixed(1) : (r[theme.stat] ?? 0),
     portrait_url: r.portrait_url,
   }));
 }
