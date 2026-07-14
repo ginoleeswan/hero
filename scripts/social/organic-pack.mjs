@@ -12,7 +12,7 @@
 // (movie-poster carousel) · legend (shareable dossier card).
 import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadEnv, makeSb, fonts, renderPng, COLORS, OUT_DIR, ROOT, RIVALRIES } from './lib.mjs';
+import { loadEnv, makeSb, fonts, renderPng, COLORS, OUT_DIR, ROOT, RIVALRIES, REAL_PERSON_FILTER } from './lib.mjs';
 import { adShell } from './ads/shell.mjs';
 
 const { O, T, GOLD, CREAM } = COLORS;
@@ -320,7 +320,7 @@ function gauntletSlides(h, statKey) {
 // ── data ──────────────────────────────────────────────────────────────────────
 async function pool(sb) {
   const rows = await sb.rest(
-    `heroes?select=${HERO_COLS}&portrait_url=not.is.null&order=fame_score.desc.nullslast,wikidata_sitelinks.desc.nullslast,powerstats_total.desc.nullslast,id.asc&limit=60`,
+    `heroes?select=${HERO_COLS}${REAL_PERSON_FILTER}&portrait_url=not.is.null&order=fame_score.desc.nullslast,wikidata_sitelinks.desc.nullslast,powerstats_total.desc.nullslast,id.asc&limit=60`,
   );
   return rows.map(shape);
 }
@@ -370,7 +370,7 @@ async function rankingRows(sb, theme) {
     : `name,publisher,portrait_url,id,fame_score,power_rating,${theme.stat}`;
   const rows = await sb
     .rest(
-      `heroes?select=${cols}&portrait_url=not.is.null&fame_score=gte.20${align}&order=${order}&limit=10`,
+      `heroes?select=${cols}${REAL_PERSON_FILTER}&portrait_url=not.is.null&fame_score=gte.20${align}&order=${order}&limit=10`,
     )
     .catch(() => []);
   return rows.map((r) => ({

@@ -13,7 +13,7 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadEnv, makeSb, imgDataUri, fonts, OUT_DIR, renderPng, COLORS, slide } from './lib.mjs';
+import { loadEnv, makeSb, imgDataUri, fonts, OUT_DIR, renderPng, COLORS, slide, REAL_PERSON_FILTER } from './lib.mjs';
 
 const { GOLD, CREAM } = COLORS;
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -57,7 +57,7 @@ async function fetchRanking(sb, opts) {
   // arbitrary and changes between runs (Elmer Fudd once outranked Venom).
   if (opts.by === 'fame') order = 'fame_score.desc,issue_count.desc.nullslast';
   else { filter += `&${metric}=not.is.null`; order = `${metric}.desc.nullslast,fame_score.desc,issue_count.desc.nullslast`; }
-  const rows = await sb.rest(`heroes?select=${cols.join(',')}${filter}&order=${order}&limit=${opts.count}`);
+  const rows = await sb.rest(`heroes?select=${cols.join(',')}${filter}${REAL_PERSON_FILTER}&order=${order}&limit=${opts.count}`);
   return rows.map((r, i) => ({ ...r, rank: i + 1, value: composite ? Number(r[metric] ?? 0).toFixed(1) : (r[metric] ?? 0) }));
 }
 
