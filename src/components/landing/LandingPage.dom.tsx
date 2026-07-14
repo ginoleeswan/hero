@@ -1158,16 +1158,10 @@ const CSS = `
     position: fixed; top:0; left:0; right:0; z-index:100;
     display:flex; align-items:center; justify-content:space-between;
     padding:20px 40px;
-    background:linear-gradient(to bottom,rgba(11,24,32,0.95) 0%,transparent 100%);
-    border-bottom:1px solid transparent;
-    transition:border-color .35s ease, padding .3s ease, background-color .35s ease;
-  }
-  nav.nav-solid {
-    background:rgba(11,24,32,0.78);
-    -webkit-backdrop-filter:blur(16px) saturate(1.2);
-    backdrop-filter:blur(16px) saturate(1.2);
-    border-bottom-color:rgba(37,61,80,0.7);
-    padding-top:14px; padding-bottom:14px;
+    /* One consistent gradient scrim at every scroll position — the same
+       ink fade the app TopBar carries (near-solid over the logo row, easing
+       to transparent), so the nav never restyles mid-scroll. */
+    background:linear-gradient(to bottom, rgba(11,24,32,1) 0%, rgba(11,24,32,0.85) 30%, rgba(11,24,32,0.45) 62%, rgba(11,24,32,0.14) 84%, transparent 100%);
   }
   .nav-brand { display:flex; align-items:center; gap:10px; }
   .nav-logo { height:32px; width:32px; }
@@ -2291,16 +2285,6 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       engineRef.current = null;
     };
   }, [mode, fallBack]);
-
-  // Nav turns glass once the page scrolls
-  useEffect(() => {
-    const nav = document.querySelector('nav');
-    if (!nav) return;
-    const onScroll = () => nav.classList.toggle('nav-solid', window.scrollY > 40);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   // Stats count up the first time the band scrolls into view
   useEffect(() => {
