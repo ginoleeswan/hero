@@ -28,6 +28,12 @@ const HERO_SELECT = 'id,name,publisher,portrait_url,image_url,image_md_url,fame_
 // Strict fame ordering: fame_score bands can tie (esp. tier plateaus), so break
 // ties by the continuous popularity signals, then id, for a stable countdown.
 const FAME_ORDER = 'fame_score.desc.nullslast,wikidata_sitelinks.desc.nullslast,powerstats_total.desc.nullslast,id.asc';
+// Real people (historical figures, politicians, celebrities) are catalogued as
+// 'Non-Fictional' but must NEVER surface in generated posts — assigning them
+// power stats, an alignment, or an AI-written bio is a publicity/defamation risk.
+// They sit at fame <= 13 so the fame gates exclude them in practice today, but
+// keep it explicit so a future re-rating or signal change can't leak them in.
+export const REAL_PERSON_FILTER = '&publisher=not.in.("Non-Fictional")';
 const q = (s) => encodeURIComponent(s);
 
 export function loadEnv() {
@@ -108,7 +114,7 @@ export async function heroFullByName(sb, name) {
 }
 // Random popular characters for bio showcases.
 export async function popularHeroes(sb, n) {
-  return sb.rest(`heroes?select=${HERO_FULL}&order=${FAME_ORDER}&limit=${n}`);
+  return sb.rest(`heroes?select=${HERO_FULL}${REAL_PERSON_FILTER}&order=${FAME_ORDER}&limit=${n}`);
 }
 
 // Relationship graph (enemies / allies), family, and key/value enrichment facts.
@@ -124,7 +130,7 @@ export async function getFact(sb, id, key) {
   try { const r = await sb.rest(`hero_facts?hero_id=eq.${id}&key=eq.${q(key)}&select=value&limit=1`); return r[0]?.value ?? null; }
   catch { return null; }
 }
-export const famousPool = (sb) => sb.rest(`heroes?select=${HERO_SELECT}&order=${FAME_ORDER}&limit=${FAME_POOL}`);
+export const famousPool = (sb) => sb.rest(`heroes?select=${HERO_SELECT}${REAL_PERSON_FILTER}&order=${FAME_ORDER}&limit=${FAME_POOL}`);
 
 // A matchup is postable if it has a real, close-ish vote split.
 export async function evaluate(sb, a, b) {
