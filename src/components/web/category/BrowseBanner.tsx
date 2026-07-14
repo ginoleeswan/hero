@@ -262,6 +262,13 @@ export function BrowseBanner({
             caption — so the masthead (portraits and brand wash alike) dissolves
             seamlessly into the gallery floor with no edge. */}
         <View style={styles.bottomFade as object} pointerEvents="none" />
+        {/* Top scrim — the same gradient the nav uses (TopBar.topScrim), baked
+            into the masthead so the floating logo + iOS status bar stay legible
+            over the brand colour. On mobile the nav's own scrim is hidden at the
+            top of the page (mobAtTop), so without this the status-bar zone and
+            logo would sit on the raw brand wash. Compact-only: desktop's nav
+            already carries its topScrim over the taller banner. */}
+        {compact ? <View style={styles.topScrim as object} pointerEvents="none" /> : null}
         <View style={styles.content}>
           {/* Slot reserves the headline's space; invisible when it detaches. */}
           <View ref={slotRef} style={detach ? (styles.hiddenSlot as object) : undefined}>
@@ -344,6 +351,18 @@ const styles = StyleSheet.create({
     zIndex: 20, // above every tile's z-index so it tints all of them
   } as object,
   montageScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  // Dark scrim across the status-bar inset + nav row, easing to transparent —
+  // mirrors TopBar.topScrim so the masthead's top edge fuses with the navy
+  // status-bar cover and the logo never sits on bare brand colour.
+  topScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)` as unknown as number,
+    backgroundImage:
+      'linear-gradient(to bottom, rgba(11,24,32,1) 0%, rgba(11,24,32,0.85) 30%, rgba(11,24,32,0.45) 62%, rgba(11,24,32,0.14) 84%, transparent 100%)',
+  } as object,
   // Seamless bottom edge: transparent over the top ~half, ramping to the exact
   // canvas ink at the base. Overlays the montage so portraits fade out too.
   bottomFade: {
