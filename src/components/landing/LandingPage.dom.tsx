@@ -2009,14 +2009,17 @@ const CSS = `
   /* Font-loading splash. height:100lvh (not inset:0): fixed elements pin to
      the LAYOUT viewport, which stops at the iOS toolbar — the large-viewport
      height extends the ink under the glass so the splash is edge-to-edge,
-     matching the boot LogoLoader and the page behind it. */
+     matching the boot LogoLoader and the page behind it.
+     NO opacity fade: the splash and the page behind it are the same ink, so a
+     cross-fade adds nothing — except a translucency ramp that iOS's toolbar
+     glass re-samples on its own cadence (the bottom band visibly faded
+     off-beat). The splash unmounts instantly and the hero's staggered
+     entrance animations carry the whole transition. */
   .page-loader {
     position:fixed; top:0; left:0; right:0; height:100lvh; z-index:9999;
     background:#0b1820;
     display:flex; align-items:center; justify-content:center;
-    transition:opacity 400ms ease;
   }
-  .page-loader.ready { opacity:0; pointer-events:none; }
   @keyframes loaderDraw {
     0% { stroke-dashoffset:100; }
     60%,100% { stroke-dashoffset:0; }
@@ -2163,16 +2166,6 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
 export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DOMProps }) {
   const router = useRouter();
   const [fontsReady, setFontsReady] = useState(false);
-  // Unmount the splash after its fade completes — an invisible position:fixed
-  // inset:0 layer left in the DOM keeps a full-viewport composited layer alive
-  // for the page's whole life (iOS Safari paint/compositing hazard, and dead
-  // weight regardless).
-  const [loaderGone, setLoaderGone] = useState(false);
-  useEffect(() => {
-    if (!fontsReady) return;
-    const t = setTimeout(() => setLoaderGone(true), 450); // fade is 400ms
-    return () => clearTimeout(t);
-  }, [fontsReady]);
   const [mode, setMode] = useState<'3d' | 'static'>(() => (detect3DSupport() ? '3d' : 'static'));
   const [summoned, setSummoned] = useState<Summon | null>(null);
   const [debateMatchup, setDebateMatchup] = useState<TodaysMatchup | null>(null);
@@ -2528,8 +2521,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     >
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-      {!loaderGone && (
-        <div className={`page-loader${fontsReady ? ' ready' : ''}`} aria-hidden="true">
+      {!fontsReady && (
+        <div className="page-loader" aria-hidden="true">
           <svg width={100} height={100} viewBox="0 0 1024 1024">
             <path
               className="loader-path"
