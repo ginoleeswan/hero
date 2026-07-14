@@ -1750,7 +1750,7 @@ const CSS = `
   /* Entrance choreography — component-local IO ('.in'): the global reveal
      observer only registers first-paint elements and this mounts after
      today's pair resolves. */
-  .debate-eyebrow, .debate-heading, .debate-sub, .debate-side, .debate-bubble { opacity:0; }
+  .debate-eyebrow, .debate-heading, .debate-sub, .debate-bubble { opacity:0; }
   .debate-teaser.in .debate-eyebrow { animation:debateRise .7s var(--ease) both; }
   .debate-teaser.in .debate-heading { animation:debateRise .7s var(--ease) .08s both; }
   .debate-teaser.in .debate-sub { animation:debateRise .7s var(--ease) .16s both; }
@@ -1759,6 +1759,8 @@ const CSS = `
     to { opacity:1; transform:none; }
   }
   .debate-vs-text { color:var(--muted); font-size:0.6em; vertical-align:middle; }
+  .debate-heading .camp-a { color:#f2b28c; }
+  .debate-heading .camp-b { color:#9fd8dd; }
   .debate-live {
     display:inline-flex; align-items:center; gap:7px; margin-left:12px;
     font-size:11px; letter-spacing:2px; color:#ff6b6b; vertical-align:middle;
@@ -1804,21 +1806,15 @@ const CSS = `
   .debate-side.r::before { background:var(--teal); opacity:0.9; }
   /* Gold hairline where the camps meet — the debate line. */
   .debate-faceoff-seam {
-    position:absolute; bottom:0; left:50%; width:1px; height:58%; z-index:2;
-    transform:translateX(-50%);
-    background:linear-gradient(to top, rgba(249,178,34,0.9), rgba(249,178,34,0.15) 85%, transparent);
+    position:absolute; top:0; bottom:0; left:50%; width:1px; z-index:2;
+    transform:translateX(-50%) scaleY(0); transform-origin:top;
+    background:linear-gradient(to bottom, transparent, rgba(249,178,34,0.35) 30%, rgba(249,178,34,0.9));
     box-shadow:0 0 14px rgba(249,178,34,0.5);
   }
-  .debate-teaser.in .debate-side.l { animation:debateSlideL .8s var(--ease) .2s both; }
-  .debate-teaser.in .debate-side.r { animation:debateSlideR .8s var(--ease) .2s both; }
-  @keyframes debateSlideL {
-    from { opacity:0; transform:translateX(-36px); }
-    to { opacity:1; transform:none; }
-  }
-  @keyframes debateSlideR {
-    from { opacity:0; transform:translateX(36px); }
-    to { opacity:1; transform:none; }
-  }
+  /* Busts + seam are SCROLL-DRIVEN (imperative transforms from the section's
+     viewport progress): the camps converge toward the debate line as you
+     scroll the stage in — the reader causes the confrontation. Transforms are
+     cleared once landed so no composited layer outlives the motion. */
   .debate-side img {
     position:absolute; left:0; right:0; top:9%; width:100%; height:100%;
     object-fit:cover; object-position:top;
@@ -1866,9 +1862,9 @@ const CSS = `
   .debate-bubble.slot1 { top:22px; left:16px; }
   .debate-bubble.slot2 { top:104px; right:16px; }
   .debate-bubble.slot3 { top:196px; left:50%; transform:translateX(-50%); max-width:66%; }
-  .debate-teaser.in .debate-bubble.slot1 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) .65s both; }
-  .debate-teaser.in .debate-bubble.slot2 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) 1.25s both; }
-  .debate-teaser.in .debate-bubble.slot3 { animation:debateBubbleC .5s cubic-bezier(.2,1.4,.4,1) 1.85s both; }
+  .debate-teaser.in .debate-bubble.slot1 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) .55s both; }
+  .debate-teaser.in .debate-bubble.slot2 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) 1.2s both; }
+  .debate-teaser.in .debate-bubble.slot3 { animation:debateBubbleC .5s cubic-bezier(.2,1.4,.4,1) 1.9s both; }
   @keyframes debateBubble {
     from { opacity:0; transform:translateY(14px) scale(0.86); }
     to { opacity:1; transform:none; }
@@ -1926,10 +1922,12 @@ const CSS = `
   }
   .debate-teaser .btn-primary { margin-top:30px; }
   @media (prefers-reduced-motion:reduce) {
-    .debate-eyebrow,.debate-heading,.debate-sub,.debate-side,.debate-bubble {
+    .debate-eyebrow,.debate-heading,.debate-sub,.debate-bubble {
       opacity:1 !important; animation:none !important;
     }
     .debate-bubble.slot3 { transform:translateX(-50%) !important; }
+    .debate-side { transform:none !important; opacity:1 !important; }
+    .debate-faceoff-seam { transform:translateX(-50%) scaleY(1) !important; }
     .debate-live-dot, .debate-knot-core { animation:none !important; }
   }
 
@@ -2252,21 +2250,24 @@ interface DebateBubble {
 }
 
 // Teaser only — no inline voting. This section sells the DEBATE (the "Who'd
-// actually win?" section further down owns the fight): the air between the
-// two camps is a live crossfire of real community takes, popped in on a chat
-// cadence, with the tug-of-war tally underneath. The split bar reads the live
-// crowd tally (useMatchupVote, same hook the Compare screen uses) and falls
-// back to the stat-round split until the tally loads, so it's never a flat
-// 50/50 by default.
+// actually win?" section further down owns the fight) as a scroll-told story:
+// (1) the question — camp-tinted names; (2) the camps form — the busts
+// converge toward the gold debate line, DRIVEN BY SCROLL, so the reader causes
+// the confrontation; (3) the argument erupts — real takes fire in on a chat
+// cadence; (4) the line moves — the knot slides to the live tally while the
+// percentages count up from 50/50.
 function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText: string | null }) {
   const router = useRouter();
   const { heroA, heroB, winsA, winsB, verdict } = matchup;
   const { tally } = useMatchupVote(heroA.id, heroB.id);
   const sectionRef = useRef<HTMLElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const [seen, setSeen] = useState(false);
   const [takes, setTakes] = useState<Take[]>([]);
+  // Displayed (counting) percentage — starts balanced, counts to the tally.
+  const [shownPctA, setShownPctA] = useState(50);
 
-  // Choreograph in when scrolled into view (component-local IO — the global
+  // Copy reveal + argument cadence trigger (component-local IO — the global
   // reveal observer only registers first-paint elements, and this section
   // mounts after today's pair resolves).
   useEffect(() => {
@@ -2289,6 +2290,59 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
     return () => io.disconnect();
   }, []);
 
+  // Beat 2 — the camps form. Scroll-coupled: progress of the stage through the
+  // lower half of the viewport drives the busts' convergence and the debate
+  // line drawing itself down. Transforms are cleared once landed so no
+  // composited layer outlives the motion (the iOS toolbar-band lesson).
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || typeof window === 'undefined') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const sideL = stage.querySelector<HTMLElement>('.debate-side.l');
+    const sideR = stage.querySelector<HTMLElement>('.debate-side.r');
+    const seam = stage.querySelector<HTMLElement>('.debate-faceoff-seam');
+    if (!sideL || !sideR || !seam) return;
+    let raf = 0;
+    let done = false;
+    const place = () => {
+      raf = 0;
+      if (done) return;
+      const r = stage.getBoundingClientRect();
+      const vh = window.innerHeight;
+      // 0 when the stage top crosses the viewport bottom → 1 when it reaches ~52% up.
+      const pRaw = (vh - r.top) / (vh * 0.48);
+      const p = Math.min(1, Math.max(0, pRaw));
+      const e = 1 - (1 - p) ** 3; // easeOutCubic
+      if (p >= 1) {
+        // Landed: release the transforms entirely.
+        sideL.style.transform = '';
+        sideR.style.transform = '';
+        sideL.style.opacity = '';
+        sideR.style.opacity = '';
+        seam.style.transform = 'translateX(-50%) scaleY(1)';
+        done = true;
+        window.removeEventListener('scroll', onScroll, true);
+        return;
+      }
+      const shift = (1 - e) * 34; // % of own width still away from the line
+      sideL.style.transform = `translateX(${-shift}%)`;
+      sideR.style.transform = `translateX(${shift}%)`;
+      const fade = String(Math.min(1, 0.25 + e));
+      sideL.style.opacity = fade;
+      sideR.style.opacity = fade;
+      seam.style.transform = `translateX(-50%) scaleY(${e})`;
+    };
+    const onScroll = () => {
+      if (!raf) raf = window.requestAnimationFrame(place);
+    };
+    place();
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      window.removeEventListener('scroll', onScroll, true);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, []);
+
   // Today's real hot takes power the crossfire bubbles.
   useEffect(() => {
     let active = true;
@@ -2301,6 +2355,34 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
       active = false;
     };
   }, [heroA.id, heroB.id]);
+
+  const haveTally = !!tally && tally.total > 0;
+  const total = haveTally ? tally.total : winsA + winsB;
+  const votesA = haveTally ? tally.votesA : winsA;
+  const pctA = total > 0 ? Math.round((votesA / total) * 100) : 50;
+
+  // Beat 4 — the line moves: percentages count from 50/50 to the tally in step
+  // with the knot's slide once the section has revealed.
+  useEffect(() => {
+    if (!seen) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShownPctA(pctA);
+      return;
+    }
+    const from = 50;
+    const startT = performance.now();
+    const DUR = 900; // matches the knot/fill transition
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - startT) / DUR);
+      const e = 1 - (1 - t) ** 3;
+      setShownPctA(Math.round(from + (pctA - from) * e));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seen, pctA]);
 
   // Top takes by agreement, one slot each; editorial camp slogans keep the
   // crossfire alive on days the takes haven't landed yet.
@@ -2323,11 +2405,6 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
     }
   }
 
-  const haveTally = !!tally && tally.total > 0;
-  const total = haveTally ? tally.total : winsA + winsB;
-  const votesA = haveTally ? tally.votesA : winsA;
-  const pctA = total > 0 ? Math.round((votesA / total) * 100) : 50;
-  const pctB = 100 - pctA;
   // Bar geometry: hold 50/50 until revealed (the CSS width transition then
   // animates to the real split), and never let a side collapse to nothing —
   // a 0/100 tally renders 7/93 visually while the labels stay honest.
@@ -2353,11 +2430,13 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
           </span>
         </p>
         <h2 className="section-heading debate-heading">
-          {heroA.name} <span className="debate-vs-text">vs</span> {heroB.name}
+          <span className="camp-a">{heroA.name}</span>{' '}
+          <span className="debate-vs-text">vs</span>{' '}
+          <span className="camp-b">{heroB.name}</span>
         </h2>
         <p className="section-sub debate-sub">{line}</p>
 
-        <div className="debate-stage">
+        <div className="debate-stage" ref={stageRef}>
           <DebateSide hero={heroA} side="l" />
           <DebateSide hero={heroB} side="r" />
           <div className="debate-faceoff-seam" aria-hidden="true" />
@@ -2380,11 +2459,11 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
           </div>
           <div className="debate-split-labels">
             <span className="l">
-              {heroA.name} {pctA}%
+              {heroA.name} {shownPctA}%
             </span>
             <span className="mid">{voteWord}</span>
             <span className="r">
-              {pctB}% {heroB.name}
+              {100 - shownPctA}% {heroB.name}
             </span>
           </div>
         </div>
