@@ -1788,6 +1788,8 @@ const CSS = `
   .debate-side {
     position:absolute; bottom:0; width:50%; height:58%;
     overflow:hidden;
+    mask-image:linear-gradient(to top, #000 0%, #000 74%, transparent 100%);
+    -webkit-mask-image:linear-gradient(to top, #000 0%, #000 74%, transparent 100%);
   }
   .debate-side.l { left:0; }
   .debate-side.r { right:0; }
@@ -1818,7 +1820,7 @@ const CSS = `
     to { opacity:1; transform:none; }
   }
   .debate-side img {
-    position:absolute; inset:0; width:100%; height:100%;
+    position:absolute; left:0; right:0; top:9%; width:100%; height:100%;
     object-fit:cover; object-position:top;
   }
   /* Face each other: mirror side B (portrait art overwhelmingly faces right). */
