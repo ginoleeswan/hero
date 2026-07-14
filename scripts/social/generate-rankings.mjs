@@ -36,20 +36,29 @@ function titles(opts) {
   return { title, sub };
 }
 
+// "Strongest" and "Most Powerful" are overall-might framings, so rank them by the
+// weighted power_rating composite — a single 0-100 stat ties hard at the ceiling
+// (154 characters at power=100, 92 at strength=100), giving a wall of identical
+// 100s. Single-attribute boards (smartest/fastest/toughest/deadliest) keep their
+// raw stat. Composite values display to one decimal so the countdown descends.
+const COMPOSITE_BY = new Set(['strength', 'power']);
+
 async function fetchRanking(sb, opts) {
-  const metric = opts.by === 'fame' ? 'fame_score' : opts.by;
+  const composite = COMPOSITE_BY.has(opts.by);
+  const metric = opts.by === 'fame' ? 'fame_score' : composite ? 'power_rating' : opts.by;
   const cols = ['id', 'name', 'portrait_url', 'image_url', 'image_md_url', 'publisher', 'alignment', 'fame_score'];
-  if (opts.by !== 'fame') cols.push(opts.by);
+  if (opts.by !== 'fame') cols.push(metric);
   let filter = '';
   if (opts.alignment) filter += `&alignment=eq.${opts.alignment}`;
   if (opts.publisher) filter += `&publisher=eq.${encodeURIComponent(opts.publisher)}`;
+  if (opts.minFame > 0) filter += `&fame_score=gte.${opts.minFame}`;
   let order;
   // issue_count tiebreak: many heroes tie on fame; without it the list order is
   // arbitrary and changes between runs (Elmer Fudd once outranked Venom).
   if (opts.by === 'fame') order = 'fame_score.desc,issue_count.desc.nullslast';
-  else { filter += `&${opts.by}=not.is.null`; order = `${opts.by}.desc.nullslast,fame_score.desc,issue_count.desc.nullslast`; }
+  else { filter += `&${metric}=not.is.null`; order = `${metric}.desc.nullslast,fame_score.desc,issue_count.desc.nullslast`; }
   const rows = await sb.rest(`heroes?select=${cols.join(',')}${filter}&order=${order}&limit=${opts.count}`);
-  return rows.map((r, i) => ({ ...r, rank: i + 1, value: r[metric] ?? 0 }));
+  return rows.map((r, i) => ({ ...r, rank: i + 1, value: composite ? Number(r[metric] ?? 0).toFixed(1) : (r[metric] ?? 0) }));
 }
 
 // ---- slides ----
@@ -125,6 +134,9 @@ async function main() {
     publisher: get('--publisher', null),
     count: parseInt(get('--count', '10'), 10),
     title: get('--title', null),
+    // Floor out unrecognizable characters (obscure all-100 cosmic beings otherwise
+    // top the stat boards). Overridable with --min-fame 0 for a full sweep.
+    minFame: parseInt(get('--min-fame', '20'), 10),
   };
   const dry = args.includes('--dry-run');
   if (!METRIC_WORD[opts.by]) { console.error('--by must be one of:', Object.keys(METRIC_WORD).join(', ')); process.exit(1); }
