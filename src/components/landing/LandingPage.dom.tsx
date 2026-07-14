@@ -2006,9 +2006,12 @@ const CSS = `
     .wm-l { opacity:1 !important; animation:none !important; }
   }
 
-  /* Font-loading splash */
+  /* Font-loading splash. height:100lvh (not inset:0): fixed elements pin to
+     the LAYOUT viewport, which stops at the iOS toolbar — the large-viewport
+     height extends the ink under the glass so the splash is edge-to-edge,
+     matching the boot LogoLoader and the page behind it. */
   .page-loader {
-    position:fixed; inset:0; z-index:9999;
+    position:fixed; top:0; left:0; right:0; height:100lvh; z-index:9999;
     background:#0b1820;
     display:flex; align-items:center; justify-content:center;
     transition:opacity 400ms ease;
