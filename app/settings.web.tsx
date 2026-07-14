@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Redirect } from 'expo-router';
 import { useAuth } from '../src/hooks/useAuth';
 import { useProfile } from '../src/hooks/useProfile';
+import { useCachedAdminFlag } from '../src/hooks/useCachedAdminFlag';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
 import { providerMeta } from '../src/lib/profile/provider';
 import { openKofi } from '../src/lib/support/kofi';
@@ -88,6 +89,9 @@ export default function WebSettingsScreen() {
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
   const { user, loading: authLoading, signOut, changePassword, deleteAccount } = useAuth();
   const { profile } = useProfile(user?.id);
+  // Last-known admin state so the Admin section doesn't pop in after the
+  // profile query resolves (see useCachedAdminFlag for why this is safe).
+  const isAdmin = useCachedAdminFlag(profile);
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -162,7 +166,7 @@ export default function WebSettingsScreen() {
           )}
         </SectionShell>
 
-        {profile?.is_admin && (
+        {isAdmin && (
           <SectionShell title="Admin">
             <SettingRow
               icon="stats-chart-outline"

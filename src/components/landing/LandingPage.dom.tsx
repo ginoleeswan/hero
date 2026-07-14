@@ -1129,8 +1129,12 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
 /* CSS                                                                 */
 /* ------------------------------------------------------------------ */
 
+// Loaded via an injected <link> on mount (see the fonts effect) — a CSS @import
+// here would only start fetching after this <style> mounts and applies late.
+const FONTS_CSS_URL =
+  'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap';
+
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -2190,6 +2194,13 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     };
   }, []);
 
+  // Fonts. The old CSS `@import` (inside the component's injected <style>) only
+  // started fetching after JS mounted, and `document.fonts.ready` resolved
+  // BEFORE those faces were even registered — so the loader faded while the
+  // hero was still in fallback fonts, then everything snapped ("half-baked"
+  // first paint). Instead: inject a real <link> (fetch starts immediately,
+  // preconnected), wait for its CSS to parse, then wait for the actual display
+  // faces before revealing.
   useEffect(() => {
     let done = false;
     const ready = () => {
@@ -2198,8 +2209,37 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
         setFontsReady(true);
       }
     };
-    document.fonts.ready.then(ready);
-    const fallback = setTimeout(ready, 2000); // never leave the hero hidden
+    let link = document.querySelector<HTMLLinkElement>('link[data-landing-fonts]');
+    if (!link) {
+      for (const origin of ['https://fonts.googleapis.com', 'https://fonts.gstatic.com']) {
+        const pre = document.createElement('link');
+        pre.rel = 'preconnect';
+        pre.href = origin;
+        if (origin.includes('gstatic')) pre.crossOrigin = 'anonymous';
+        document.head.appendChild(pre);
+      }
+      link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = FONTS_CSS_URL;
+      link.setAttribute('data-landing-fonts', '1');
+      document.head.appendChild(link);
+    }
+    const cssReady: Promise<unknown> = link.sheet
+      ? Promise.resolve()
+      : new Promise((res) => {
+          link!.addEventListener('load', res, { once: true });
+          link!.addEventListener('error', res, { once: true });
+        });
+    cssReady
+      .then(() =>
+        Promise.all([
+          document.fonts.load("400 24px 'Righteous'"),
+          document.fonts.load("400 16px 'Poppins'"),
+          document.fonts.load("600 16px 'Poppins'"),
+        ]),
+      )
+      .then(ready, ready);
+    const fallback = setTimeout(ready, 3000); // never leave the hero hidden
     return () => clearTimeout(fallback);
   }, []);
 
