@@ -2019,6 +2019,9 @@ const CSS = `
     position:fixed; top:0; left:0; right:0; height:100lvh; z-index:9999;
     background:#0b1820;
     display:flex; align-items:center; justify-content:center;
+    /* The root is visibility:hidden while loading (so the toolbar glass can't
+       frost the unrevealed page) — the splash itself must stay visible. */
+    visibility:visible;
   }
   @keyframes loaderDraw {
     0% { stroke-dashoffset:100; }
@@ -2517,6 +2520,14 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       style={{
         backgroundColor: '#0b1820',
         color: '#f5ebdc',
+        // While the splash is up, the page behind it must be GENUINELY
+        // invisible — iOS Safari's toolbar glass frosts the page content
+        // UNDERNEATH fixed overlays, so the summon particles showed through
+        // the toolbar band while the splash covered the rest of the screen
+        // (an unsyncable mismatch). visibility flips in the same commit the
+        // splash unmounts, so the band and the page reveal as one.
+        // (.page-loader overrides back to visible — visibility is inheritable.)
+        visibility: fontsReady ? undefined : 'hidden',
       }}
     >
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
