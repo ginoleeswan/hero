@@ -52,6 +52,7 @@ import { ComicCoverRail } from '../../src/components/home/ComicCoverRail';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
 import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import { SeoHead } from '../../src/components/web/SeoHead';
+import { PageEndCap } from '../../src/components/web/PageEndCap';
 import { SITE_URL } from '../../src/constants/site';
 import type { HeroStats } from '../../src/types';
 
@@ -483,11 +484,14 @@ export default function WebCharacterScreen() {
   const isDesktop = width >= 700;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
-  // Before the skeleton early-return so it applies in both states. Canvas stays
-  // paper so the body and both Safari toolbar zones read beige; the dark top edge
-  // is handled by the status-bar cover, which paints the ink `top` colour — so
-  // the canvas can be light without the status bar drifting beige.
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  // Before the skeleton early-return so it applies in both states. Canvas is ink
+  // and must stay ink: in a Safari tab ONE canvas colour tints BOTH the status-bar
+  // zone and the bottom toolbar (env-inset covers are 0-height there), and the
+  // tint is re-sampled across scroll/toolbar states — a paper canvas makes the
+  // status zone flash beige over the dark hero depending on scroll history.
+  // Bottom seamlessness comes from the page CLOSING on ink instead (PageEndCap
+  // after the beige sheet), so both bars read ink in every scroll state.
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   const skeletonOpacity = useSkeletonAnim();
   const {
@@ -2326,6 +2330,11 @@ export default function WebCharacterScreen() {
             ) : null}
           </View>
         </View>
+
+        {/* Close the paper sheet onto the ink floor — the page must END on ink
+            (canvas colour) so the iOS toolbar frosts dark in every scroll state.
+            See PageEndCap for the full why. */}
+        <PageEndCap />
 
         <ContributeSheet
           visible={editTarget !== null}
