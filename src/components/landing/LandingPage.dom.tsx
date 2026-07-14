@@ -1739,18 +1739,15 @@ const CSS = `
      once the server-curated (or seeded-fallback) pair has resolved, so it
      fades in on mount rather than riding the scroll-reveal IO (that observer
      only queries .reveal elements present at first paint). */
-  /* --- Today's debate — the live crossfire ---
-     The section's job is DEBATE, not the fight (the "Who'd actually win?"
-     section further down owns that): the space between the two camps is a
-     live comment war — real takes popping in as side-tinted speech bubbles
-     over the fighters squaring off below. */
+  /* --- Today's debate — the live thread ---
+     The debate rendered as what it IS: a conversation. Real takes as
+     avatar-attached chat bubbles between the two camps, in normal flow
+     directly on the page ink (no stage card behind them — seamless), popping
+     in on a chat cadence, with the tug-of-war tally underneath. */
   .debate-teaser { padding:72px 40px 96px; background:var(--bg); position:relative; }
-  .debate-inner { max-width:680px; margin:0 auto; text-align:center; }
+  .debate-inner { max-width:640px; margin:0 auto; text-align:center; }
   .debate-inner .section-sub { margin:0 auto; }
-  /* Entrance choreography — component-local IO ('.in'): the global reveal
-     observer only registers first-paint elements and this mounts after
-     today's pair resolves. */
-  .debate-eyebrow, .debate-heading, .debate-sub, .debate-bubble { opacity:0; }
+  .debate-eyebrow, .debate-heading, .debate-sub { opacity:0; }
   .debate-teaser.in .debate-eyebrow { animation:debateRise .7s var(--ease) both; }
   .debate-teaser.in .debate-heading { animation:debateRise .7s var(--ease) .08s both; }
   .debate-teaser.in .debate-sub { animation:debateRise .7s var(--ease) .16s both; }
@@ -1775,106 +1772,51 @@ const CSS = `
     50% { opacity:0.45; transform:scale(0.75); }
   }
 
-  /* The stage: fighters square off from the bottom corners (side B mirrored so
-     they FACE each other), the crossfire of takes filling the air between. */
-  .debate-stage {
-    position:relative; margin-top:44px;
-    border-radius:20px; overflow:hidden;
-    border:1px solid var(--border);
-    background:
-      radial-gradient(90% 70% at 12% 100%, rgba(231,115,51,0.13) 0%, transparent 60%),
-      radial-gradient(90% 70% at 88% 100%, rgba(21,161,171,0.13) 0%, transparent 60%),
-      var(--card);
-    box-shadow:0 30px 80px rgba(0,0,0,0.5);
+  .debate-thread { margin-top:44px; display:flex; flex-direction:column; gap:20px; }
+  .debate-row { display:flex; align-items:flex-end; gap:12px; opacity:0; }
+  .debate-row.b { flex-direction:row-reverse; }
+  .debate-teaser.in .debate-row.slot1 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) .5s both; }
+  .debate-teaser.in .debate-row.slot2 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) 1.15s both; }
+  .debate-teaser.in .debate-row.slot3 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) 1.8s both; }
+  @keyframes debateBubble {
+    from { opacity:0; transform:translateY(14px) scale(0.9); }
+    to { opacity:1; transform:none; }
   }
-  /* The air above the face-off — where the argument happens. */
-  .debate-air { position:relative; height:236px; }
-  /* The face-off row: two halves sized to the ART's aspect, so the FULL
-     portrait always renders — nothing crops, at any viewport width. */
-  .debate-faceoff { display:flex; }
-  .debate-side {
-    position:relative; width:50%; aspect-ratio:1/1;
-    overflow:hidden;
+  /* Camp avatars — the portraits live here, as chat identities. A circular
+     face crop is their natural shape: nothing reads as cut off. */
+  .debate-avatar {
+    position:relative; width:54px; height:54px; border-radius:50%; overflow:hidden;
+    flex-shrink:0; border:2px solid var(--border); background:var(--surface);
   }
-  /* Duotone: grayscale art washed in the camp colour (mix-blend color keeps
-     luminance, swaps hue — the montage "ghost gallery" trick), so any source
-     art harmonises with the section instead of shouting its own palette. */
-  .debate-side img { filter:grayscale(1) contrast(1.06); }
-  .debate-side::before {
-    content:''; position:absolute; inset:0; z-index:1; mix-blend-mode:color;
-  }
-  .debate-side.l::before { background:var(--orange); opacity:0.9; }
-  .debate-side.r::before { background:var(--teal); opacity:0.9; }
-  /* Gold hairline where the camps meet — the debate line. */
-  .debate-faceoff-seam {
-    position:absolute; top:0; bottom:0; left:50%; width:1px; z-index:2;
-    transform:translateX(-50%) scaleY(0); transform-origin:top;
-    background:linear-gradient(to bottom, transparent, rgba(249,178,34,0.35) 30%, rgba(249,178,34,0.9));
-    box-shadow:0 0 14px rgba(249,178,34,0.5);
-  }
-  /* Busts + seam are SCROLL-DRIVEN (imperative transforms from the section's
-     viewport progress): the camps converge toward the debate line as you
-     scroll the stage in — the reader causes the confrontation. Transforms are
-     cleared once landed so no composited layer outlives the motion. */
-  .debate-side img {
-    position:absolute; inset:0; width:100%; height:100%;
-    object-fit:cover; object-position:top;
-  }
-  /* Face each other: mirror side B (portrait art overwhelmingly faces right). */
-  .debate-side.r img { transform:scaleX(-1); }
-  .debate-side-fallback {
+  .debate-row.a .debate-avatar { border-color:rgba(231,115,51,0.75); box-shadow:0 0 20px rgba(231,115,51,0.25); }
+  .debate-row.b .debate-avatar { border-color:rgba(21,161,171,0.75); box-shadow:0 0 20px rgba(21,161,171,0.25); }
+  .debate-avatar img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
+  .debate-avatar-fallback {
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    font-family:'Righteous',sans-serif; font-size:56px; color:var(--muted);
-    background:var(--surface);
+    font-family:'Righteous',sans-serif; font-size:22px; color:var(--muted);
   }
-  /* Side-colour rim light from each camp's corner + a floor fade. */
-  .debate-side.l::after {
-    content:''; position:absolute; inset:0; z-index:2;
-    background:linear-gradient(115deg, rgba(231,115,51,0.22) 0%, transparent 55%),
-               linear-gradient(to top, rgba(11,24,32,0.78) 0%, transparent 40%),
-               linear-gradient(to bottom, rgba(11,24,32,0.55) 0%, transparent 30%);
+  .debate-msg {
+    max-width:min(78%, 440px); padding:12px 16px 11px; text-align:left;
+    font-size:14.5px; line-height:1.5; color:var(--beige);
+    background:var(--card); border:1px solid rgba(231,115,51,0.4);
+    border-radius:16px 16px 16px 4px;
+    box-shadow:0 14px 40px rgba(0,0,0,0.35);
   }
-  .debate-side.r::after {
-    content:''; position:absolute; inset:0; z-index:2;
-    background:linear-gradient(245deg, rgba(21,161,171,0.22) 0%, transparent 55%),
-               linear-gradient(to top, rgba(11,24,32,0.78) 0%, transparent 40%),
-               linear-gradient(to bottom, rgba(11,24,32,0.55) 0%, transparent 30%);
+  .debate-row.b .debate-msg {
+    border-color:rgba(21,161,171,0.4);
+    border-radius:16px 16px 4px 16px; text-align:right;
   }
-
-  /* The crossfire: takes as side-tinted chat bubbles, popped in on a real
-     conversation cadence, tails aimed at their camp. */
-  .debate-bubble {
-    position:absolute; z-index:3; max-width:62%;
-    text-align:left;
-    font-size:15px; line-height:1.5; color:var(--beige);
-    text-shadow:0 2px 16px rgba(0,0,0,0.85);
-  }
-  .debate-bubble .debate-bubble-author {
+  .debate-msg-author {
     display:block; margin-top:6px;
     font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
   }
-  .debate-bubble.b { text-align:right; }
-  .debate-bubble.a .debate-bubble-author { color:var(--orange); }
-  .debate-bubble.b .debate-bubble-author { color:var(--teal); }
-  .debate-bubble.slot1 { top:26px; left:20px; }
-  .debate-bubble.slot2 { top:104px; right:20px; }
-  .debate-bubble.slot3 { top:182px; left:50%; transform:translateX(-50%); max-width:70%; text-align:center; }
-  .debate-teaser.in .debate-bubble.slot1 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) .55s both; }
-  .debate-teaser.in .debate-bubble.slot2 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) 1.2s both; }
-  .debate-teaser.in .debate-bubble.slot3 { animation:debateBubbleC .5s cubic-bezier(.2,1.4,.4,1) 1.9s both; }
-  @keyframes debateBubble {
-    from { opacity:0; transform:translateY(14px) scale(0.86); }
-    to { opacity:1; transform:none; }
-  }
-  @keyframes debateBubbleC {
-    from { opacity:0; transform:translateX(-50%) translateY(14px) scale(0.86); }
-    to { opacity:1; transform:translateX(-50%); }
-  }
+  .debate-row.a .debate-msg-author { color:var(--orange); }
+  .debate-row.b .debate-msg-author { color:var(--teal); }
 
   /* Live crowd split — a tug-of-war rope that fills from 50/50 to the real
      tally once revealed, with a glowing KNOT at the contested boundary that
      strains side to side: the argument, visualised as live tension. */
-  .debate-split { margin-top:24px; }
+  .debate-split { margin-top:30px; }
   .debate-split-bar {
     position:relative; display:flex; height:14px; border-radius:999px;
     overflow:visible; background:var(--surface);
@@ -1919,12 +1861,9 @@ const CSS = `
   }
   .debate-teaser .btn-primary { margin-top:30px; }
   @media (prefers-reduced-motion:reduce) {
-    .debate-eyebrow,.debate-heading,.debate-sub,.debate-bubble {
+    .debate-eyebrow,.debate-heading,.debate-sub,.debate-row {
       opacity:1 !important; animation:none !important;
     }
-    .debate-bubble.slot3 { transform:translateX(-50%) !important; }
-    .debate-side { transform:none !important; opacity:1 !important; }
-    .debate-faceoff-seam { transform:translateX(-50%) scaleY(1) !important; }
     .debate-live-dot, .debate-knot-core { animation:none !important; }
   }
 
@@ -2010,11 +1949,8 @@ const CSS = `
 
     /* Sections */
     .section,.screenshots,.showcase,.cta-section,.debate-teaser { padding:64px 20px; }
-    .debate-air { height:212px; }
-    .debate-bubble { font-size:13.5px; max-width:74%; }
-    .debate-bubble.slot1 { top:16px; }
-    .debate-bubble.slot2 { top:88px; }
-    .debate-bubble.slot3 { top:158px; max-width:80%; }
+    .debate-msg { font-size:13.5px; max-width:82%; }
+    .debate-avatar { width:46px; height:46px; }
     .section-heading { font-size:clamp(24px,6vw,34px); margin-bottom:16px; }
     .section-sub { font-size:15px; }
 
@@ -2224,14 +2160,14 @@ function firstSentence(text: string): string | null {
   return match ? match[0].trim() : trimmed;
 }
 
-function DebateSide({ hero, side }: { hero: MatchupHero; side: 'l' | 'r' }) {
+function DebateAvatar({ hero }: { hero: MatchupHero }) {
   const src = hero.portrait_url ?? hero.image_url ?? null;
   return (
-    <div className={`debate-side ${side}`}>
+    <div className="debate-avatar">
       {src ? (
         <img src={src} alt={hero.name} loading="lazy" />
       ) : (
-        <span className="debate-side-fallback" aria-hidden="true">
+        <span className="debate-avatar-fallback" aria-hidden="true">
           {hero.name.charAt(0)}
         </span>
       )}
@@ -2246,26 +2182,24 @@ interface DebateBubble {
 }
 
 // Teaser only — no inline voting. This section sells the DEBATE (the "Who'd
-// actually win?" section further down owns the fight) as a scroll-told story:
-// (1) the question — camp-tinted names; (2) the camps form — the busts
-// converge toward the gold debate line, DRIVEN BY SCROLL, so the reader causes
-// the confrontation; (3) the argument erupts — real takes fire in on a chat
-// cadence; (4) the line moves — the knot slides to the live tally while the
-// percentages count up from 50/50.
+// actually win?" section further down owns the fight) as what it is: a live
+// conversation. Real takes render as avatar-attached chat rows between the
+// two camps, in normal document flow directly on the page ink, popping in on
+// a chat cadence; the tug-of-war tally (with its straining knot) sits under
+// the thread, and the percentages count up from 50/50 on reveal.
 function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText: string | null }) {
   const router = useRouter();
   const { heroA, heroB, winsA, winsB, verdict } = matchup;
   const { tally } = useMatchupVote(heroA.id, heroB.id);
   const sectionRef = useRef<HTMLElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
   const [seen, setSeen] = useState(false);
   const [takes, setTakes] = useState<Take[]>([]);
   // Displayed (counting) percentage — starts balanced, counts to the tally.
   const [shownPctA, setShownPctA] = useState(50);
 
-  // Copy reveal + argument cadence trigger (component-local IO — the global
-  // reveal observer only registers first-paint elements, and this section
-  // mounts after today's pair resolves).
+  // Reveal choreography trigger (component-local IO — the global reveal
+  // observer only registers first-paint elements, and this section mounts
+  // after today's pair resolves).
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -2280,66 +2214,13 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
           io.disconnect();
         }
       },
-      { threshold: 0.3 },
+      { threshold: 0.25 },
     );
     io.observe(el);
     return () => io.disconnect();
   }, []);
 
-  // Beat 2 — the camps form. Scroll-coupled: progress of the stage through the
-  // lower half of the viewport drives the busts' convergence and the debate
-  // line drawing itself down. Transforms are cleared once landed so no
-  // composited layer outlives the motion (the iOS toolbar-band lesson).
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage || typeof window === 'undefined') return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const sideL = stage.querySelector<HTMLElement>('.debate-side.l');
-    const sideR = stage.querySelector<HTMLElement>('.debate-side.r');
-    const seam = stage.querySelector<HTMLElement>('.debate-faceoff-seam');
-    if (!sideL || !sideR || !seam) return;
-    let raf = 0;
-    let done = false;
-    const place = () => {
-      raf = 0;
-      if (done) return;
-      const r = stage.getBoundingClientRect();
-      const vh = window.innerHeight;
-      // 0 when the stage top crosses the viewport bottom → 1 when it reaches ~52% up.
-      const pRaw = (vh - r.top) / (vh * 0.48);
-      const p = Math.min(1, Math.max(0, pRaw));
-      const e = 1 - (1 - p) ** 3; // easeOutCubic
-      if (p >= 1) {
-        // Landed: release the transforms entirely.
-        sideL.style.transform = '';
-        sideR.style.transform = '';
-        sideL.style.opacity = '';
-        sideR.style.opacity = '';
-        seam.style.transform = 'translateX(-50%) scaleY(1)';
-        done = true;
-        window.removeEventListener('scroll', onScroll, true);
-        return;
-      }
-      const shift = (1 - e) * 34; // % of own width still away from the line
-      sideL.style.transform = `translateX(${-shift}%)`;
-      sideR.style.transform = `translateX(${shift}%)`;
-      const fade = String(Math.min(1, 0.25 + e));
-      sideL.style.opacity = fade;
-      sideR.style.opacity = fade;
-      seam.style.transform = `translateX(-50%) scaleY(${e})`;
-    };
-    const onScroll = () => {
-      if (!raf) raf = window.requestAnimationFrame(place);
-    };
-    place();
-    window.addEventListener('scroll', onScroll, true);
-    return () => {
-      window.removeEventListener('scroll', onScroll, true);
-      if (raf) window.cancelAnimationFrame(raf);
-    };
-  }, []);
-
-  // Today's real hot takes power the crossfire bubbles.
+  // Today's real hot takes power the thread.
   useEffect(() => {
     let active = true;
     getTakes(heroA.id, heroB.id)
@@ -2357,8 +2238,8 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
   const votesA = haveTally ? tally.votesA : winsA;
   const pctA = total > 0 ? Math.round((votesA / total) * 100) : 50;
 
-  // Beat 4 — the line moves: percentages count from 50/50 to the tally in step
-  // with the knot's slide once the section has revealed.
+  // The line moves: percentages count from 50/50 to the tally in step with
+  // the knot's slide once the section has revealed.
   useEffect(() => {
     if (!seen) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -2380,8 +2261,8 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seen, pctA]);
 
-  // Top takes by agreement, one slot each; editorial camp slogans keep the
-  // crossfire alive on days the takes haven't landed yet.
+  // Top takes by agreement, one row each; editorial camp slogans keep the
+  // thread alive on days the takes haven't landed yet.
   const bubbles: DebateBubble[] = [...takes]
     .sort((x, y) => y.agreeCount - x.agreeCount)
     .slice(0, 3)
@@ -2432,20 +2313,16 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
         </h2>
         <p className="section-sub debate-sub">{line}</p>
 
-        <div className="debate-stage" ref={stageRef}>
-          <div className="debate-air">
-            {bubbles.map((bubble, idx) => (
-              <div key={idx} className={`debate-bubble ${bubble.side} slot${idx + 1}`}>
+        <div className="debate-thread">
+          {bubbles.map((bubble, idx) => (
+            <div key={idx} className={`debate-row ${bubble.side} slot${idx + 1}`}>
+              <DebateAvatar hero={bubble.side === 'a' ? heroA : heroB} />
+              <div className="debate-msg">
                 {bubble.body}
-                <span className="debate-bubble-author">{bubble.author}</span>
+                <span className="debate-msg-author">{bubble.author}</span>
               </div>
-            ))}
-          </div>
-          <div className="debate-faceoff">
-            <DebateSide hero={heroA} side="l" />
-            <DebateSide hero={heroB} side="r" />
-          </div>
-          <div className="debate-faceoff-seam" aria-hidden="true" />
+            </div>
+          ))}
         </div>
 
         <div className="debate-split">
