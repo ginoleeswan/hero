@@ -1,0 +1,20 @@
+{
+  // Nearest-tsconfig for the Vercel serverless/edge functions in this folder.
+  // Vercel's function builder type-checks api/ entrypoints with the closest
+  // tsconfig.json; without this one it falls back to CommonJS assumptions and
+  // TypeScript 6 hard-errors on `import.meta` (TS1470) in api/og.tsx — which
+  // MUST use `new URL(..., import.meta.url)` for Edge font asset tracing.
+  // The app's root tsconfig (module: "preserve") still governs editor/CI
+  // type-checking of these files as part of the main project.
+  "compilerOptions": {
+    "strict": true,
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  }
+}
