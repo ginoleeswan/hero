@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.beige,
     // Web must grow with the document-scrolled content; native bounds its ScrollView.
-    ...Platform.select({ web: { minHeight: '100dvh' } as object, default: { flex: 1 } }),
+    ...Platform.select({ web: { minHeight: '100lvh' } as object, default: { flex: 1 } }),
   } as object,
   // Loading shell: deepNavy so it fuses with the boot LogoLoader and the
   // skeleton's dark stage (no beige flash between them on web refresh).

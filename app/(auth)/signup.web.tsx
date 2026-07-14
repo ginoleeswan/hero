@@ -265,7 +265,7 @@ export default function WebSignupScreen() {
 const styles = StyleSheet.create({
   // ── Mobile ─────────────────────────────────────────────────────────────
   mobileRoot: {
-    minHeight: '100dvh',
+    minHeight: '100lvh',
     backgroundColor: COLORS.beige,
   } as object,
   mobileIllustrationWrap: {

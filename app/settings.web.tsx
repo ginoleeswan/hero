@@ -229,7 +229,7 @@ export default function WebSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
+  root: { minHeight: '100lvh', backgroundColor: COLORS.beige } as object,
   column: {
     maxWidth: 640,
     alignSelf: 'center',

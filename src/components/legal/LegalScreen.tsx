@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   // and exposing the ink canvas). Native keeps flex:1 to bound the ScrollView.
   container: {
     backgroundColor: COLORS.beige,
-    ...Platform.select({ web: { minHeight: '100dvh' } as object, default: { flex: 1 } }),
+    ...Platform.select({ web: { minHeight: '100lvh' } as object, default: { flex: 1 } }),
   } as object,
   scroll: { paddingHorizontal: 20, maxWidth: 720, width: '100%', alignSelf: 'center' },
   bodyPad: { paddingTop: 26, paddingBottom: 48 } as object,

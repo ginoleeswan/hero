@@ -533,7 +533,7 @@ const s = StyleSheet.create({
     ...Platform.select({
       web: {
         backgroundImage: SURFACE_GRADIENT.stageImmersive,
-        minHeight: '100dvh',
+        minHeight: '100lvh',
       } as object,
       default: {},
     }),

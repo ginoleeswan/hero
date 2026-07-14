@@ -2808,7 +2808,7 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
 }
 
 const sk = StyleSheet.create({
-  scroll: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
+  scroll: { minHeight: '100lvh', backgroundColor: COLORS.beige } as object,
   scrollContent: { width: '100%' },
   bodyWrap: { maxWidth: 1180, alignSelf: 'center', width: '100%', paddingBottom: 0 },
 
@@ -2924,7 +2924,7 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
   },
 
-  scroll: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
+  scroll: { minHeight: '100lvh', backgroundColor: COLORS.beige } as object,
   // Cold-load shell: deepNavy so the anti-flash `pre` window (and web refresh)
   // fuses with the boot LogoLoader and the skeleton's dark stage — no beige flash.
   loadingShell: { flex: 1, backgroundColor: COLORS.deepNavy },

@@ -236,7 +236,7 @@ export default function WebLoginScreen() {
 const styles = StyleSheet.create({
   // ── Mobile ─────────────────────────────────────────────────────────────
   mobileRoot: {
-    minHeight: '100dvh',
+    minHeight: '100lvh',
     flexDirection: 'column',
     backgroundColor: COLORS.beige,
   } as object,

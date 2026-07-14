@@ -519,7 +519,7 @@ export default function WebCompareScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
+  scroll: { minHeight: '100lvh', backgroundColor: COLORS.beige } as object,
   contentOuter: { flexGrow: 1 },
   center: {
     flex: 1,
