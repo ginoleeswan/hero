@@ -1786,11 +1786,27 @@ const CSS = `
     box-shadow:0 30px 80px rgba(0,0,0,0.5);
   }
   .debate-side {
-    position:absolute; bottom:0; width:44%; height:52%;
+    position:absolute; bottom:0; width:50%; height:58%;
     overflow:hidden;
   }
-  .debate-side.l { left:0; border-top-right-radius:18px; }
-  .debate-side.r { right:0; border-top-left-radius:18px; }
+  .debate-side.l { left:0; }
+  .debate-side.r { right:0; }
+  /* Duotone: grayscale art washed in the camp colour (mix-blend color keeps
+     luminance, swaps hue — the montage "ghost gallery" trick), so any source
+     art harmonises with the section instead of shouting its own palette. */
+  .debate-side img { filter:grayscale(1) contrast(1.06); }
+  .debate-side::before {
+    content:''; position:absolute; inset:0; z-index:1; mix-blend-mode:color;
+  }
+  .debate-side.l::before { background:var(--orange); opacity:0.9; }
+  .debate-side.r::before { background:var(--teal); opacity:0.9; }
+  /* Gold hairline where the camps meet — the debate line. */
+  .debate-faceoff-seam {
+    position:absolute; bottom:0; left:50%; width:1px; height:58%; z-index:2;
+    transform:translateX(-50%);
+    background:linear-gradient(to top, rgba(249,178,34,0.9), rgba(249,178,34,0.15) 85%, transparent);
+    box-shadow:0 0 14px rgba(249,178,34,0.5);
+  }
   .debate-teaser.in .debate-side.l { animation:debateSlideL .8s var(--ease) .2s both; }
   .debate-teaser.in .debate-side.r { animation:debateSlideR .8s var(--ease) .2s both; }
   @keyframes debateSlideL {
@@ -1814,14 +1830,16 @@ const CSS = `
   }
   /* Side-colour rim light from each camp's corner + a floor fade. */
   .debate-side.l::after {
-    content:''; position:absolute; inset:0;
-    background:linear-gradient(115deg, rgba(231,115,51,0.30) 0%, transparent 55%),
-               linear-gradient(to top, rgba(11,24,32,0.72) 0%, transparent 45%);
+    content:''; position:absolute; inset:0; z-index:2;
+    background:linear-gradient(115deg, rgba(231,115,51,0.22) 0%, transparent 55%),
+               linear-gradient(to top, rgba(11,24,32,0.78) 0%, transparent 40%),
+               linear-gradient(to bottom, rgba(11,24,32,0.55) 0%, transparent 30%);
   }
   .debate-side.r::after {
-    content:''; position:absolute; inset:0;
-    background:linear-gradient(245deg, rgba(21,161,171,0.30) 0%, transparent 55%),
-               linear-gradient(to top, rgba(11,24,32,0.72) 0%, transparent 45%);
+    content:''; position:absolute; inset:0; z-index:2;
+    background:linear-gradient(245deg, rgba(21,161,171,0.22) 0%, transparent 55%),
+               linear-gradient(to top, rgba(11,24,32,0.78) 0%, transparent 40%),
+               linear-gradient(to bottom, rgba(11,24,32,0.55) 0%, transparent 30%);
   }
 
   /* The crossfire: takes as side-tinted chat bubbles, popped in on a real
@@ -1858,32 +1876,59 @@ const CSS = `
     to { opacity:1; transform:translateX(-50%); }
   }
 
-  /* Live crowd split — a tug-of-war that fills from 50/50 to the real tally
-     once revealed; the contested boundary carries a small glow. */
-  .debate-split { margin-top:22px; }
+  /* Live crowd split — a tug-of-war rope that fills from 50/50 to the real
+     tally once revealed, with a glowing KNOT at the contested boundary that
+     strains side to side: the argument, visualised as live tension. */
+  .debate-split { margin-top:24px; }
   .debate-split-bar {
-    display:flex; height:10px; border-radius:6px; overflow:hidden; background:var(--surface);
+    position:relative; display:flex; height:14px; border-radius:999px;
+    overflow:visible; background:var(--surface);
   }
   .debate-split-fill { height:100%; transition:width .9s var(--ease); }
   .debate-split-fill.l {
     background:linear-gradient(90deg,#c85f2a,var(--orange));
-    box-shadow:6px 0 14px rgba(231,115,51,0.55);
+    border-radius:999px 0 0 999px;
   }
-  .debate-split-fill.r { background:linear-gradient(90deg,var(--teal),#0f7f88); }
+  .debate-split-fill.r {
+    background:linear-gradient(90deg,var(--teal),#0f7f88);
+    border-radius:0 999px 999px 0;
+  }
+  .debate-knot {
+    position:absolute; top:50%; z-index:2;
+    transition:left .9s var(--ease);
+    transform:translate(-50%,-50%);
+  }
+  .debate-knot-core {
+    display:block; width:26px; height:26px; border-radius:50%;
+    background:#0e1c26; border:2px solid var(--yellow);
+    box-shadow:0 0 22px rgba(249,178,34,0.55), 0 4px 14px rgba(0,0,0,0.6);
+    animation:debateTension 2.6s ease-in-out infinite;
+  }
+  .debate-knot-core::after {
+    content:''; position:absolute; inset:6px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, var(--yellow), #c98f1a);
+  }
+  @keyframes debateTension {
+    0%,100% { transform:translateX(-2.5px); }
+    50% { transform:translateX(2.5px); }
+  }
   .debate-split-labels {
-    display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-top:9px;
-    font-size:12px; font-weight:600; letter-spacing:0.5px; color:var(--muted);
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-top:12px;
+    font-size:12px; font-weight:700; letter-spacing:0.8px;
+    font-family:'Righteous',sans-serif; color:var(--muted);
   }
   .debate-split-labels .l { color:var(--orange); }
   .debate-split-labels .r { color:var(--teal); }
-  .debate-split-labels .mid { font-weight:500; letter-spacing:0.3px; }
+  .debate-split-labels .mid {
+    font-family:'Poppins',sans-serif; font-weight:500; letter-spacing:0.3px; font-size:11.5px;
+  }
   .debate-teaser .btn-primary { margin-top:30px; }
   @media (prefers-reduced-motion:reduce) {
     .debate-eyebrow,.debate-heading,.debate-sub,.debate-side,.debate-bubble {
       opacity:1 !important; animation:none !important;
     }
     .debate-bubble.slot3 { transform:translateX(-50%) !important; }
-    .debate-live-dot { animation:none !important; }
+    .debate-live-dot, .debate-knot-core { animation:none !important; }
   }
 
   footer {
@@ -1972,7 +2017,8 @@ const CSS = `
     .debate-bubble { font-size:12.5px; max-width:72%; }
     .debate-bubble.slot2 { top:96px; }
     .debate-bubble.slot3 { top:184px; max-width:76%; }
-    .debate-side { width:46%; height:46%; }
+    .debate-side { height:52%; }
+    .debate-faceoff-seam { height:52%; }
     .section-heading { font-size:clamp(24px,6vw,34px); margin-bottom:16px; }
     .section-sub { font-size:15px; }
 
@@ -2312,6 +2358,7 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
         <div className="debate-stage">
           <DebateSide hero={heroA} side="l" />
           <DebateSide hero={heroB} side="r" />
+          <div className="debate-faceoff-seam" aria-hidden="true" />
           {bubbles.map((bubble, idx) => (
             <div key={idx} className={`debate-bubble ${bubble.side} slot${idx + 1}`}>
               {bubble.body}
@@ -2324,11 +2371,19 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
           <div className="debate-split-bar" aria-hidden="true">
             <div className="debate-split-fill l" style={{ width: `${wA}%` }} />
             <div className="debate-split-fill r" style={{ width: `${100 - wA}%` }} />
+            {/* The knot: the contested boundary, straining side to side. */}
+            <span className="debate-knot" style={{ left: `${wA}%` }}>
+              <span className="debate-knot-core" />
+            </span>
           </div>
           <div className="debate-split-labels">
-            <span className="l">{pctA}%</span>
+            <span className="l">
+              {heroA.name} {pctA}%
+            </span>
             <span className="mid">{voteWord}</span>
-            <span className="r">{pctB}%</span>
+            <span className="r">
+              {pctB}% {heroB.name}
+            </span>
           </div>
         </div>
 
