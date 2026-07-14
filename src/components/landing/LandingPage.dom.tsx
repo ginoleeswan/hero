@@ -1144,7 +1144,6 @@ const CSS = `
     --ease:cubic-bezier(.16,1,.3,1); /* expo-out — the page's one easing voice */
   }
   html {
-    scroll-behavior: smooth;
     background: var(--bg); /* iOS Safari overscroll top area */
   }
   body {
@@ -1174,7 +1173,7 @@ const CSS = `
   .nav-cta:hover { background:#f2813e; transform:translateY(-1px); }
 
   .hero {
-    position:relative; min-height:100dvh;
+    position:relative; min-height:100svh;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     text-align:center; padding:120px 24px 80px; overflow:hidden;
   }
@@ -1207,7 +1206,7 @@ const CSS = `
     display:grid; grid-template-columns:minmax(380px,0.95fr) minmax(0,1.3fr);
     gap:0; align-items:center;
     width:100%; max-width:1220px; margin:0 auto;
-    min-height:calc(100dvh - 190px);
+    min-height:calc(100svh - 190px);
   }
   /* No container — the copy sits directly in the starfield; a soft local
      darkening behind it keeps the type readable without drawing a box */
@@ -1828,7 +1827,7 @@ const CSS = `
 
     /* Hero — tighter, no min-height */
     .hero { padding:88px 20px 52px; min-height:auto; }
-    .hero--3d { min-height:100dvh; padding:88px 16px 36px; }
+    .hero--3d { min-height:100svh; padding:88px 16px 36px; }
     .hc1,.hc2,.hc3,.hc4,.hc5,.hc6,.hc7,.hc8,.hc9,.hc10 { display:none; }
     .scroll-hint { display:none; }
     .plate-name { font-size:19px; }
