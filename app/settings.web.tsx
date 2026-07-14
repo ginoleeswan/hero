@@ -12,6 +12,7 @@ import { Toast, useToast } from '../src/components/ui/Toast';
 import { useScreenChrome } from '../src/hooks/useScreenChrome';
 import { StageHeader } from '../src/components/StageHeader';
 import { SectionShell } from '../src/components/profile/SectionShell';
+import { PageEndCap } from '../src/components/web/PageEndCap';
 
 type RowTone = 'navy' | 'orange' | 'danger';
 
@@ -217,6 +218,9 @@ export default function WebSettingsScreen() {
           any other publisher.
         </Text>
       </View>
+
+      {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
+      <PageEndCap />
 
       <ChangePasswordModal
         visible={showChangePassword}

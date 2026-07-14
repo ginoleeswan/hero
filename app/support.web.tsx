@@ -7,6 +7,7 @@ import { useScreenChrome } from '../src/hooks/useScreenChrome';
 import { StageHeader } from '../src/components/StageHeader';
 import { SectionShell } from '../src/components/profile/SectionShell';
 import { openKofi } from '../src/lib/support/kofi';
+import { PageEndCap } from '../src/components/web/PageEndCap';
 
 const TIERS = [
   { emoji: '☕', label: 'Coffee', amount: '$3' },
@@ -61,6 +62,9 @@ export default function WebSupportScreen() {
 
         <Text style={styles.thanks}>Thank you — it genuinely means a lot. 🧡</Text>
       </View>
+
+      {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
+      <PageEndCap />
     </View>
   );
 }

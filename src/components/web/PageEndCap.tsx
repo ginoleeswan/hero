@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 import { HeroLogo } from './HeroLogo';
@@ -18,8 +18,22 @@ import { HeroLogo } from './HeroLogo';
  * reads intentional in every scroll state. Explore does the same with its full
  * HomeFooter; this is the slim version for detail pages.
  */
-export function PageEndCap() {
+export function PageEndCap({
+  /**
+   * The rounded beige foot that closes the paper sheet into the ink band.
+   * Disable when the content directly above is ALREADY ink (e.g. the issue
+   * page's "more in this series" band) — the cap then continues the dark
+   * surface seamlessly instead of inserting a stray beige lip.
+   */
+  sheetFoot = true,
+}: {
+  sheetFoot?: boolean;
+} = {}) {
   const router = useRouter();
+  // Web-only: the ink close exists for the iOS Safari toolbar zone. Native
+  // screens (shared routes like title/issue import this too) have no document
+  // canvas and use their own safe-area treatments.
+  if (Platform.OS !== 'web') return null;
   const go = (path: string) => router.push(path as Parameters<typeof router.push>[0]);
 
   const LINKS: { label: string; path: string }[] = [
@@ -33,7 +47,7 @@ export function PageEndCap() {
     <View style={s.cap as object}>
       {/* The paper sheet's foot: beige rounding INTO the ink floor, mirroring
           the sheet's rounded-corner entrance over the hero stage up top. */}
-      <View style={s.sheetFoot as object} />
+      {sheetFoot ? <View style={s.sheetFoot as object} /> : <View style={s.darkGap as object} />}
       <View style={s.inner}>
         <HeroLogo iconSize={20} fontSize={16} color={COLORS.beige} gap={7} />
         <View style={s.links}>
@@ -74,6 +88,9 @@ const s = StyleSheet.create({
     borderBottomRightRadius: 28,
     marginBottom: 30,
   } as object,
+  // Breathing room standing in for the sheet foot when the page already ends
+  // on an ink section (sheetFoot=false) — keeps the brand line's rhythm.
+  darkGap: { height: 30 } as object,
   inner: {
     alignItems: 'center',
     gap: 14,

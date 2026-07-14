@@ -23,6 +23,7 @@ import { brandForPublisher } from '../../src/constants/publishers';
 import { COLORS, SURFACE, SEAM_COLOR } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { NotFoundView } from '../../src/components/NotFoundView';
+import { PageEndCap } from '../../src/components/web/PageEndCap';
 
 // Wide editorial layout constants — the cover straddles the dark→paper seam.
 const MAXW = 1100;
@@ -473,6 +474,9 @@ export default function IssueScreen() {
           </View>
         </View>
         {moreBand}
+        {/* Close the page onto the ink floor; the "more" band is already ink,
+            so skip the beige sheet foot when it's present. */}
+        <PageEndCap sheetFoot={more.length === 0} />
       </View>
     );
   }
@@ -545,6 +549,9 @@ export default function IssueScreen() {
       <View style={styles.webPage}>
         <Stack.Screen options={{ headerShown: false }} />
         {narrowBody}
+        {/* Close the page onto the ink floor; the "more" band is already ink,
+            so skip the beige sheet foot when it's present. */}
+        <PageEndCap sheetFoot={more.length === 0} />
       </View>
     );
   }

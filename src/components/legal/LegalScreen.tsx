@@ -8,6 +8,7 @@ import { COLORS, SURFACE } from '../../constants/colors';
 import { useScreenChrome } from '../../hooks/useScreenChrome';
 import { StageHeader } from '../StageHeader';
 import type { LegalDoc } from '../../lib/legal';
+import { PageEndCap } from '../web/PageEndCap';
 
 export function LegalScreen({ doc }: { doc: LegalDoc }) {
   const insets = useSafeAreaInsets();
@@ -53,6 +54,8 @@ export function LegalScreen({ doc }: { doc: LegalDoc }) {
       <View style={styles.container}>
         {header}
         <View style={[styles.scroll, styles.bodyPad]}>{content}</View>
+        {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
+        <PageEndCap />
       </View>
     );
   }

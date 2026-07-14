@@ -34,6 +34,7 @@ import { useMatchupShareImage } from '../../../src/hooks/useMatchupShareImage';
 import { useMatchupVote } from '../../../src/hooks/useMatchupVote';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 import { TakesSection } from '../../../src/components/takes/TakesSection';
+import { PageEndCap } from '../../../src/components/web/PageEndCap';
 
 // Must match the picker — the locked hero (A) and chosen card (B) morph in.
 const VT_HERO = 'vt-fighter-a';
@@ -514,6 +515,9 @@ export default function WebCompareScreen() {
           <TakesSection heroA={{ id: hero, name: nameA }} heroB={{ id: opponent, name: nameB }} />
         </View>
       </View>
+
+      {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
+      <PageEndCap />
     </View>
   );
 }
