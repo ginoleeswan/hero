@@ -1951,7 +1951,11 @@ const CSS = `
      text rises, headlines resolve out of blur, cards settle from scale,
      eyebrows wipe in like the ticker, mosaic art breathes to rest. */
   .reveal { opacity:0; transform:translateY(28px); transition:opacity .8s var(--ease), transform .8s var(--ease), filter .8s var(--ease); will-change:opacity,transform; }
-  .reveal.in { opacity:1; transform:none; filter:none; }
+  /* Release the compositing layer once revealed: permanent will-change keeps
+     every section on its own GPU layer, and iOS Safari clips composited layers
+     to the layout viewport while the bottom toolbar collapses — content in the
+     under-toolbar band showed the bare canvas instead (the "navy band"). */
+  .reveal.in { opacity:1; transform:none; filter:none; will-change:auto; }
   .rv-blur { filter:blur(14px); transform:translateY(14px); }
   .rv-scale { transform:translateY(30px) scale(0.94); }
   .rv-wipe {
@@ -2157,6 +2161,16 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
 export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DOMProps }) {
   const router = useRouter();
   const [fontsReady, setFontsReady] = useState(false);
+  // Unmount the splash after its fade completes — an invisible position:fixed
+  // inset:0 layer left in the DOM keeps a full-viewport composited layer alive
+  // for the page's whole life (iOS Safari paint/compositing hazard, and dead
+  // weight regardless).
+  const [loaderGone, setLoaderGone] = useState(false);
+  useEffect(() => {
+    if (!fontsReady) return;
+    const t = setTimeout(() => setLoaderGone(true), 450); // fade is 400ms
+    return () => clearTimeout(t);
+  }, [fontsReady]);
   const [mode, setMode] = useState<'3d' | 'static'>(() => (detect3DSupport() ? '3d' : 'static'));
   const [summoned, setSummoned] = useState<Summon | null>(null);
   const [debateMatchup, setDebateMatchup] = useState<TodaysMatchup | null>(null);
@@ -2480,18 +2494,20 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     >
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-      <div className={`page-loader${fontsReady ? ' ready' : ''}`} aria-hidden="true">
-        <svg width={100} height={100} viewBox="0 0 1024 1024">
-          <path
-            className="loader-path"
-            pathLength={100}
-            d={LOGO_PATH}
-            stroke="#f5ebdc"
-            strokeWidth={12}
-            fill="#f5ebdc"
-          />
-        </svg>
-      </div>
+      {!loaderGone && (
+        <div className={`page-loader${fontsReady ? ' ready' : ''}`} aria-hidden="true">
+          <svg width={100} height={100} viewBox="0 0 1024 1024">
+            <path
+              className="loader-path"
+              pathLength={100}
+              d={LOGO_PATH}
+              stroke="#f5ebdc"
+              strokeWidth={12}
+              fill="#f5ebdc"
+            />
+          </svg>
+        </div>
+      )}
 
       <nav>
         <div className="nav-brand">
