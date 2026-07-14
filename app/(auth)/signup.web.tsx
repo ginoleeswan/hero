@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
+import { PageEndCap } from '../../src/components/web/PageEndCap';
 import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { Image } from 'expo-image';
@@ -227,6 +228,9 @@ export default function WebSignupScreen() {
           <View style={styles.cardAccent} />
           {formContent}
         </View>
+        {/* Close the paper card onto the ink floor (constant-ink chrome) —
+            without this the card ends into the raw canvas at the bottom. */}
+        <PageEndCap />
       </View>
     );
   }

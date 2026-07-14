@@ -53,13 +53,16 @@ export function LogoLoader() {
 }
 
 const styles = StyleSheet.create({
-  // The document default background is deep-navy (see app/+html.tsx), so the
-  // status-bar and toolbar safe areas behind this box are already ink — the
-  // loader only needs to fill the app box.
+  // minHeight 100lvh: span the LARGE viewport so ink content physically sits
+  // under the iOS Safari bottom toolbar during the boot/lazy-chunk phase. At
+  // exactly 100dvh nothing extends into the toolbar band, so the glass frosts
+  // the flat canvas and reads as a solid navy slab — with the bleed it stays
+  // translucent edge-to-edge, exactly like a loaded page.
   container: {
     flex: 1,
+    minHeight: '100lvh' as unknown as number,
     backgroundColor: COLORS.deepNavy,
     alignItems: 'center',
     justifyContent: 'center',
-  },
+  } as object,
 });

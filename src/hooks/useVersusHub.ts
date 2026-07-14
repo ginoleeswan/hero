@@ -147,6 +147,21 @@ export function useVersusHub() {
         }
       : null;
 
+  // The discovery feed below the showdown renders from FIVE independent
+  // queries. Revealing each section as its query lands makes them pop in one
+  // after another (the stagger useProfileData had); `feedSettled` flips once
+  // every feed source has resolved so the view can reveal the whole feed as
+  // one snapshot. yesterdayHeroesQ is a dependent query — while disabled with
+  // no data it stays 'pending', so it only counts when its parent produced a
+  // result to resolve names for.
+  const feedSettled =
+    !yesterdayResultQ.isPending &&
+    (!yesterdayResult || !yesterdayHeroesQ.isPending) &&
+    !rivalriesQ.isPending &&
+    !iconicQ.isPending &&
+    !teamBattleQ.isPending &&
+    !mostFearedQ.isPending;
+
   return {
     matchup,
     hookText: debateHookQ.data ?? null,
@@ -155,6 +170,7 @@ export function useVersusHub() {
     rivalries: rivalriesQ.data ?? [],
     iconicPool: iconicQ.data ?? [],
     loading: matchupQ.isPending || rivalriesQ.isPending || iconicQ.isPending,
+    feedSettled,
     teamBattle: teamBattleQ.data ?? null,
     mostFeared: mostFearedQ.data ?? [],
   };

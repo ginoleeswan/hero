@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { LOGO_MASK_PATH as LOGO_PATH } from '../../constants/logo';
 import { getTodaysMatchup, type MatchupHero, type TodaysMatchup } from '../../lib/matchup';
 import { getDailyDebate, todayIso } from '../../lib/db/dailyDebate';
+import { getTakes, type Take } from '../../lib/db/takes';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 
 const screenshotDesktop = require('../../../assets/images/screenshots/desktop-explore.png');
@@ -1129,8 +1130,12 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
 /* CSS                                                                 */
 /* ------------------------------------------------------------------ */
 
+// Loaded via an injected <link> on mount (see the fonts effect) — a CSS @import
+// here would only start fetching after this <style> mounts and applies late.
+const FONTS_CSS_URL =
+  'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap';
+
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -1140,7 +1145,6 @@ const CSS = `
     --ease:cubic-bezier(.16,1,.3,1); /* expo-out — the page's one easing voice */
   }
   html {
-    scroll-behavior: smooth;
     background: var(--bg); /* iOS Safari overscroll top area */
   }
   body {
@@ -1154,16 +1158,10 @@ const CSS = `
     position: fixed; top:0; left:0; right:0; z-index:100;
     display:flex; align-items:center; justify-content:space-between;
     padding:20px 40px;
-    background:linear-gradient(to bottom,rgba(11,24,32,0.95) 0%,transparent 100%);
-    border-bottom:1px solid transparent;
-    transition:border-color .35s ease, padding .3s ease, background-color .35s ease;
-  }
-  nav.nav-solid {
-    background:rgba(11,24,32,0.78);
-    -webkit-backdrop-filter:blur(16px) saturate(1.2);
-    backdrop-filter:blur(16px) saturate(1.2);
-    border-bottom-color:rgba(37,61,80,0.7);
-    padding-top:14px; padding-bottom:14px;
+    /* One consistent gradient scrim at every scroll position — the same
+       ink fade the app TopBar carries (near-solid over the logo row, easing
+       to transparent), so the nav never restyles mid-scroll. */
+    background:linear-gradient(to bottom, rgba(11,24,32,1) 0%, rgba(11,24,32,0.85) 30%, rgba(11,24,32,0.45) 62%, rgba(11,24,32,0.14) 84%, transparent 100%);
   }
   .nav-brand { display:flex; align-items:center; gap:10px; }
   .nav-logo { height:32px; width:32px; }
@@ -1176,7 +1174,7 @@ const CSS = `
   .nav-cta:hover { background:#f2813e; transform:translateY(-1px); }
 
   .hero {
-    position:relative; min-height:100dvh;
+    position:relative; min-height:100svh;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     text-align:center; padding:120px 24px 80px; overflow:hidden;
   }
@@ -1194,6 +1192,11 @@ const CSS = `
     position:absolute; inset:0; width:100%; height:100%;
     opacity:0; transition:opacity 1.1s ease; z-index:1;
     touch-action:pan-y; /* orbit-free: taps summon, scroll stays native */
+    /* Dissolve the particle field into the ink before the hero's bottom edge —
+       without this the starfield ends in a hard clipped line against the next
+       section. */
+    mask-image:linear-gradient(to bottom, #000 0%, #000 72%, transparent 98%);
+    -webkit-mask-image:linear-gradient(to bottom, #000 0%, #000 72%, transparent 98%);
   }
   .summon-canvas.ready { opacity:1; }
   .hero-accent {
@@ -1209,7 +1212,7 @@ const CSS = `
     display:grid; grid-template-columns:minmax(380px,0.95fr) minmax(0,1.3fr);
     gap:0; align-items:center;
     width:100%; max-width:1220px; margin:0 auto;
-    min-height:calc(100dvh - 190px);
+    min-height:calc(100svh - 190px);
   }
   /* No container — the copy sits directly in the starfield; a soft local
      darkening behind it keeps the type readable without drawing a box */
@@ -1736,54 +1739,133 @@ const CSS = `
      once the server-curated (or seeded-fallback) pair has resolved, so it
      fades in on mount rather than riding the scroll-reveal IO (that observer
      only queries .reveal elements present at first paint). */
+  /* --- Today's debate — the live thread ---
+     The debate rendered as what it IS: a conversation. Real takes as
+     avatar-attached chat bubbles between the two camps, in normal flow
+     directly on the page ink (no stage card behind them — seamless), popping
+     in on a chat cadence, with the tug-of-war tally underneath. */
   .debate-teaser { padding:72px 40px 96px; background:var(--bg); position:relative; }
-  .debate-inner {
-    max-width:640px; margin:0 auto; text-align:center;
-    animation:debateIn .7s var(--ease) both;
-  }
-  @keyframes debateIn {
-    from { opacity:0; transform:translateY(18px); }
+  .debate-inner { max-width:640px; margin:0 auto; text-align:center; }
+  .debate-inner .section-sub { margin:0 auto; }
+  .debate-eyebrow, .debate-heading, .debate-sub { opacity:0; }
+  .debate-teaser.in .debate-eyebrow { animation:debateRise .7s var(--ease) both; }
+  .debate-teaser.in .debate-heading { animation:debateRise .7s var(--ease) .08s both; }
+  .debate-teaser.in .debate-sub { animation:debateRise .7s var(--ease) .16s both; }
+  @keyframes debateRise {
+    from { opacity:0; transform:translateY(16px); }
     to { opacity:1; transform:none; }
   }
-  .debate-inner .section-sub { margin:0 auto; }
-  .debate-card {
-    margin-top:40px; background:var(--card); border:1px solid var(--border);
-    border-radius:var(--radius); padding:32px 28px 28px;
-    box-shadow:0 24px 70px rgba(0,0,0,0.4);
-  }
-  .debate-portraits {
-    display:flex; align-items:center; justify-content:center; gap:20px;
-  }
-  .debate-portrait {
-    width:96px; height:96px; border-radius:50%; overflow:hidden; flex-shrink:0;
-    background:var(--surface); border:2px solid var(--border);
-  }
-  .debate-portrait.l { border-color:rgba(231,115,51,0.55); }
-  .debate-portrait.r { border-color:rgba(21,161,171,0.55); }
-  .debate-portrait img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
-  .debate-portrait-fallback {
-    width:100%; height:100%; display:flex; align-items:center; justify-content:center;
-    font-family:'Righteous',sans-serif; font-size:32px; color:var(--muted);
-  }
-  .debate-vs {
-    font-family:'Righteous',sans-serif; font-size:14px; color:var(--muted);
-    letter-spacing:1px; flex-shrink:0;
-  }
   .debate-vs-text { color:var(--muted); font-size:0.6em; vertical-align:middle; }
-  .debate-split { margin-top:26px; }
-  .debate-split-bar {
-    display:flex; height:10px; border-radius:6px; overflow:hidden; background:var(--surface);
+  .debate-heading .camp-a { color:#f2b28c; }
+  .debate-heading .camp-b { color:#9fd8dd; }
+  .debate-live {
+    display:inline-flex; align-items:center; gap:7px; margin-left:12px;
+    font-size:11px; letter-spacing:2px; color:#ff6b6b; vertical-align:middle;
   }
-  .debate-split-fill { height:100%; transition:width .8s var(--ease); }
-  .debate-split-fill.l { background:linear-gradient(90deg,#c85f2a,var(--orange)); }
-  .debate-split-fill.r { background:linear-gradient(90deg,var(--teal),#0f7f88); }
+  .debate-live-dot {
+    width:7px; height:7px; border-radius:50%; background:#ff5d5d;
+    box-shadow:0 0 10px rgba(255,93,93,0.8);
+    animation:debateLivePulse 1.6s ease-in-out infinite;
+  }
+  @keyframes debateLivePulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.45; transform:scale(0.75); }
+  }
+
+  .debate-thread { margin-top:44px; display:flex; flex-direction:column; gap:20px; }
+  .debate-row { display:flex; align-items:flex-end; gap:12px; opacity:0; }
+  .debate-row.b { flex-direction:row-reverse; }
+  .debate-teaser.in .debate-row.slot1 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) .5s both; }
+  .debate-teaser.in .debate-row.slot2 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) 1.15s both; }
+  .debate-teaser.in .debate-row.slot3 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) 1.8s both; }
+  @keyframes debateBubble {
+    from { opacity:0; transform:translateY(14px) scale(0.9); }
+    to { opacity:1; transform:none; }
+  }
+  /* Camp avatars — the portraits live here, as chat identities. A circular
+     face crop is their natural shape: nothing reads as cut off. */
+  .debate-avatar {
+    position:relative; width:54px; height:54px; border-radius:50%; overflow:hidden;
+    flex-shrink:0; border:2px solid var(--border); background:var(--surface);
+  }
+  .debate-row.a .debate-avatar { border-color:rgba(231,115,51,0.75); box-shadow:0 0 20px rgba(231,115,51,0.25); }
+  .debate-row.b .debate-avatar { border-color:rgba(21,161,171,0.75); box-shadow:0 0 20px rgba(21,161,171,0.25); }
+  .debate-avatar img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
+  .debate-avatar-fallback {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Righteous',sans-serif; font-size:22px; color:var(--muted);
+  }
+  .debate-msg {
+    max-width:min(78%, 440px); padding:12px 16px 11px; text-align:left;
+    font-size:14.5px; line-height:1.5; color:var(--beige);
+    background:var(--card); border:1px solid rgba(231,115,51,0.4);
+    border-radius:16px 16px 16px 4px;
+    box-shadow:0 14px 40px rgba(0,0,0,0.35);
+  }
+  .debate-row.b .debate-msg {
+    border-color:rgba(21,161,171,0.4);
+    border-radius:16px 16px 4px 16px; text-align:right;
+  }
+  .debate-msg-author {
+    display:block; margin-top:6px;
+    font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
+  }
+  .debate-row.a .debate-msg-author { color:var(--orange); }
+  .debate-row.b .debate-msg-author { color:var(--teal); }
+
+  /* Live crowd split — a tug-of-war rope that fills from 50/50 to the real
+     tally once revealed, with a glowing KNOT at the contested boundary that
+     strains side to side: the argument, visualised as live tension. */
+  .debate-split { margin-top:30px; }
+  .debate-split-bar {
+    position:relative; display:flex; height:14px; border-radius:999px;
+    overflow:visible; background:var(--surface);
+  }
+  .debate-split-fill { height:100%; transition:width .9s var(--ease); }
+  .debate-split-fill.l {
+    background:linear-gradient(90deg,#c85f2a,var(--orange));
+    border-radius:999px 0 0 999px;
+  }
+  .debate-split-fill.r {
+    background:linear-gradient(90deg,var(--teal),#0f7f88);
+    border-radius:0 999px 999px 0;
+  }
+  .debate-knot {
+    position:absolute; top:50%; z-index:2;
+    transition:left .9s var(--ease);
+    transform:translate(-50%,-50%);
+  }
+  .debate-knot-core {
+    display:block; width:26px; height:26px; border-radius:50%;
+    background:#0e1c26; border:2px solid var(--yellow);
+    box-shadow:0 0 22px rgba(249,178,34,0.55), 0 4px 14px rgba(0,0,0,0.6);
+    animation:debateTension 2.6s ease-in-out infinite;
+  }
+  .debate-knot-core::after {
+    content:''; position:absolute; inset:6px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, var(--yellow), #c98f1a);
+  }
+  @keyframes debateTension {
+    0%,100% { transform:translateX(-2.5px); }
+    50% { transform:translateX(2.5px); }
+  }
   .debate-split-labels {
-    display:flex; justify-content:space-between; margin-top:8px;
-    font-size:12px; font-weight:600; letter-spacing:0.5px; color:var(--muted);
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-top:12px;
+    font-size:12px; font-weight:700; letter-spacing:0.8px;
+    font-family:'Righteous',sans-serif; color:var(--muted);
   }
   .debate-split-labels .l { color:var(--orange); }
   .debate-split-labels .r { color:var(--teal); }
-  .debate-teaser .btn-primary { margin-top:32px; }
+  .debate-split-labels .mid {
+    font-family:'Poppins',sans-serif; font-weight:500; letter-spacing:0.3px; font-size:11.5px;
+  }
+  .debate-teaser .btn-primary { margin-top:30px; }
+  @media (prefers-reduced-motion:reduce) {
+    .debate-eyebrow,.debate-heading,.debate-sub,.debate-row {
+      opacity:1 !important; animation:none !important;
+    }
+    .debate-live-dot, .debate-knot-core { animation:none !important; }
+  }
 
   footer {
     /* Bottom clearance = the iOS toolbar/home-indicator zone, so the page closes
@@ -1830,7 +1912,7 @@ const CSS = `
 
     /* Hero — tighter, no min-height */
     .hero { padding:88px 20px 52px; min-height:auto; }
-    .hero--3d { min-height:100dvh; padding:88px 16px 36px; }
+    .hero--3d { min-height:100svh; padding:88px 16px 36px; }
     .hc1,.hc2,.hc3,.hc4,.hc5,.hc6,.hc7,.hc8,.hc9,.hc10 { display:none; }
     .scroll-hint { display:none; }
     .plate-name { font-size:19px; }
@@ -1867,13 +1949,13 @@ const CSS = `
 
     /* Sections */
     .section,.screenshots,.showcase,.cta-section,.debate-teaser { padding:64px 20px; }
+    .debate-msg { font-size:13.5px; max-width:82%; }
+    .debate-avatar { width:46px; height:46px; }
     .section-heading { font-size:clamp(24px,6vw,34px); margin-bottom:16px; }
     .section-sub { font-size:15px; }
 
     /* Daily debate teaser — smaller portraits, tighter card */
     .debate-card { padding:24px 18px 20px; }
-    .debate-portrait { width:76px; height:76px; }
-    .debate-portraits { gap:14px; }
 
     /* Features — grid layout: icon left, title+desc right */
     .features-grid { grid-template-columns:1fr; gap:10px; margin-top:36px; }
@@ -1953,7 +2035,11 @@ const CSS = `
      text rises, headlines resolve out of blur, cards settle from scale,
      eyebrows wipe in like the ticker, mosaic art breathes to rest. */
   .reveal { opacity:0; transform:translateY(28px); transition:opacity .8s var(--ease), transform .8s var(--ease), filter .8s var(--ease); will-change:opacity,transform; }
-  .reveal.in { opacity:1; transform:none; filter:none; }
+  /* Release the compositing layer once revealed: permanent will-change keeps
+     every section on its own GPU layer, and iOS Safari clips composited layers
+     to the layout viewport while the bottom toolbar collapses — content in the
+     under-toolbar band showed the bare canvas instead (the "navy band"). */
+  .reveal.in { opacity:1; transform:none; filter:none; will-change:auto; }
   .rv-blur { filter:blur(14px); transform:translateY(14px); }
   .rv-scale { transform:translateY(30px) scale(0.94); }
   .rv-wipe {
@@ -2005,14 +2091,23 @@ const CSS = `
     .wm-l { opacity:1 !important; animation:none !important; }
   }
 
-  /* Font-loading splash */
+  /* Font-loading splash. height:100lvh (not inset:0): fixed elements pin to
+     the LAYOUT viewport, which stops at the iOS toolbar — the large-viewport
+     height extends the ink under the glass so the splash is edge-to-edge,
+     matching the boot LogoLoader and the page behind it.
+     NO opacity fade: the splash and the page behind it are the same ink, so a
+     cross-fade adds nothing — except a translucency ramp that iOS's toolbar
+     glass re-samples on its own cadence (the bottom band visibly faded
+     off-beat). The splash unmounts instantly and the hero's staggered
+     entrance animations carry the whole transition. */
   .page-loader {
-    position:fixed; inset:0; z-index:9999;
+    position:fixed; top:0; left:0; right:0; height:100lvh; z-index:9999;
     background:#0b1820;
     display:flex; align-items:center; justify-content:center;
-    transition:opacity 400ms ease;
+    /* The root is visibility:hidden while loading (so the toolbar glass can't
+       frost the unrevealed page) — the splash itself must stay visible. */
+    visibility:visible;
   }
-  .page-loader.ready { opacity:0; pointer-events:none; }
   @keyframes loaderDraw {
     0% { stroke-dashoffset:100; }
     60%,100% { stroke-dashoffset:0; }
@@ -2065,14 +2160,14 @@ function firstSentence(text: string): string | null {
   return match ? match[0].trim() : trimmed;
 }
 
-function DebatePortrait({ hero, side }: { hero: MatchupHero; side: 'l' | 'r' }) {
+function DebateAvatar({ hero }: { hero: MatchupHero }) {
   const src = hero.portrait_url ?? hero.image_url ?? null;
   return (
-    <div className={`debate-portrait ${side}`}>
+    <div className="debate-avatar">
       {src ? (
         <img src={src} alt={hero.name} loading="lazy" />
       ) : (
-        <span className="debate-portrait-fallback" aria-hidden="true">
+        <span className="debate-avatar-fallback" aria-hidden="true">
           {hero.name.charAt(0)}
         </span>
       )}
@@ -2080,20 +2175,121 @@ function DebatePortrait({ hero, side }: { hero: MatchupHero; side: 'l' | 'r' }) 
   );
 }
 
-// Teaser only — no inline voting. The split bar reads the live crowd tally
-// (useMatchupVote, same hook the Compare screen uses) and falls back to the
-// stat-round split until the tally loads or if it's empty, so the bar is
-// never a flat 50/50 by default.
+interface DebateBubble {
+  body: string;
+  side: 'a' | 'b';
+  author: string;
+}
+
+// Teaser only — no inline voting. This section sells the DEBATE (the "Who'd
+// actually win?" section further down owns the fight) as what it is: a live
+// conversation. Real takes render as avatar-attached chat rows between the
+// two camps, in normal document flow directly on the page ink, popping in on
+// a chat cadence; the tug-of-war tally (with its straining knot) sits under
+// the thread, and the percentages count up from 50/50 on reveal.
 function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText: string | null }) {
   const router = useRouter();
   const { heroA, heroB, winsA, winsB, verdict } = matchup;
   const { tally } = useMatchupVote(heroA.id, heroB.id);
+  const sectionRef = useRef<HTMLElement>(null);
+  const [seen, setSeen] = useState(false);
+  const [takes, setTakes] = useState<Take[]>([]);
+  // Displayed (counting) percentage — starts balanced, counts to the tally.
+  const [shownPctA, setShownPctA] = useState(50);
+
+  // Reveal choreography trigger (component-local IO — the global reveal
+  // observer only registers first-paint elements, and this section mounts
+  // after today's pair resolves).
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    if (!('IntersectionObserver' in window)) {
+      setSeen(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setSeen(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.25 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // Today's real hot takes power the thread.
+  useEffect(() => {
+    let active = true;
+    getTakes(heroA.id, heroB.id)
+      .then((rows) => {
+        if (active) setTakes(rows);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [heroA.id, heroB.id]);
 
   const haveTally = !!tally && tally.total > 0;
   const total = haveTally ? tally.total : winsA + winsB;
   const votesA = haveTally ? tally.votesA : winsA;
   const pctA = total > 0 ? Math.round((votesA / total) * 100) : 50;
-  const pctB = 100 - pctA;
+
+  // The line moves: percentages count from 50/50 to the tally in step with
+  // the knot's slide once the section has revealed.
+  useEffect(() => {
+    if (!seen) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShownPctA(pctA);
+      return;
+    }
+    const from = 50;
+    const startT = performance.now();
+    const DUR = 900; // matches the knot/fill transition
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - startT) / DUR);
+      const e = 1 - (1 - t) ** 3;
+      setShownPctA(Math.round(from + (pctA - from) * e));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seen, pctA]);
+
+  // Top takes by agreement, one row each; editorial camp slogans keep the
+  // thread alive on days the takes haven't landed yet.
+  const bubbles: DebateBubble[] = [...takes]
+    .sort((x, y) => y.agreeCount - x.agreeCount)
+    .slice(0, 3)
+    .map((t) => ({
+      body: t.body,
+      side: t.pickedId === heroA.id ? ('a' as const) : ('b' as const),
+      author: t.displayName ?? 'a fan',
+    }));
+  if (bubbles.length < 2) {
+    const seeds: DebateBubble[] = [
+      { body: `${heroA.name} takes this — and it isn't close.`, side: 'a', author: `Team ${heroA.name}` },
+      { body: `${heroB.name} wins it nine times out of ten.`, side: 'b', author: `Team ${heroB.name}` },
+    ];
+    for (const s of seeds) {
+      if (bubbles.length >= 2) break;
+      if (!bubbles.some((o) => o.side === s.side)) bubbles.push(s);
+    }
+  }
+
+  // Bar geometry: hold 50/50 until revealed (the CSS width transition then
+  // animates to the real split), and never let a side collapse to nothing —
+  // a 0/100 tally renders 7/93 visually while the labels stay honest.
+  const clampW = (n: number) => Math.min(93, Math.max(7, n));
+  const wA = seen ? clampW(pctA) : 50;
+  const voteWord = haveTally
+    ? `${tally.total.toLocaleString()} ${tally.total === 1 ? 'vote' : 'votes'} in`
+    : 'the crowd is deciding';
   const line =
     hookText ?? firstSentence(verdict) ?? `${heroA.name} or ${heroB.name} — who actually wins?`;
 
@@ -2101,38 +2297,59 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
     router.push(`/compare/${heroA.id}/${heroB.id}` as Parameters<typeof router.push>[0]);
 
   return (
-    <section className="debate-teaser">
+    <section className={`debate-teaser${seen ? ' in' : ''}`} ref={sectionRef}>
       <div className="debate-inner">
-        <p className="section-eyebrow">Today&apos;s debate</p>
-        <h2 className="section-heading">
-          {heroA.name} <span className="debate-vs-text">vs</span> {heroB.name}
+        <p className="section-eyebrow debate-eyebrow">
+          Today&apos;s debate
+          <span className="debate-live" aria-hidden="true">
+            <span className="debate-live-dot" />
+            LIVE
+          </span>
+        </p>
+        <h2 className="section-heading debate-heading">
+          <span className="camp-a">{heroA.name}</span>{' '}
+          <span className="debate-vs-text">vs</span>{' '}
+          <span className="camp-b">{heroB.name}</span>
         </h2>
-        <p className="section-sub">{line}</p>
+        <p className="section-sub debate-sub">{line}</p>
 
-        <div className="debate-card">
-          <div className="debate-portraits">
-            <DebatePortrait hero={heroA} side="l" />
-            <span className="debate-vs" aria-hidden="true">
-              VS
+        <div className="debate-thread">
+          {bubbles.map((bubble, idx) => (
+            <div key={idx} className={`debate-row ${bubble.side} slot${idx + 1}`}>
+              <DebateAvatar hero={bubble.side === 'a' ? heroA : heroB} />
+              <div className="debate-msg">
+                {bubble.body}
+                <span className="debate-msg-author">{bubble.author}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="debate-split">
+          <div className="debate-split-bar" aria-hidden="true">
+            <div className="debate-split-fill l" style={{ width: `${wA}%` }} />
+            <div className="debate-split-fill r" style={{ width: `${100 - wA}%` }} />
+            {/* The knot: the contested boundary, straining side to side. */}
+            <span className="debate-knot" style={{ left: `${wA}%` }}>
+              <span className="debate-knot-core" />
             </span>
-            <DebatePortrait hero={heroB} side="r" />
           </div>
-
-          <div className="debate-split" aria-hidden="true">
-            <div className="debate-split-bar">
-              <div className="debate-split-fill l" style={{ width: `${pctA}%` }} />
-              <div className="debate-split-fill r" style={{ width: `${pctB}%` }} />
-            </div>
-            <div className="debate-split-labels">
-              <span className="l">{pctA}%</span>
-              <span className="r">{pctB}%</span>
-            </div>
+          <div className="debate-split-labels">
+            <span className="l">
+              {heroA.name} {shownPctA}%
+            </span>
+            <span className="mid">{voteWord}</span>
+            <span className="r">
+              {100 - shownPctA}% {heroB.name}
+            </span>
           </div>
         </div>
 
         <button className="btn-primary" onClick={goVote}>
           <svg
             className="btn-icon"
+            width={20}
+            height={20}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -2141,13 +2358,9 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
             strokeLinejoin="round"
             aria-hidden="true"
           >
-            <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
-            <path d="m13 19 6-6" />
-            <path d="m16 16 4 4" />
-            <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
-            <path d="m5 14 4 4" />
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          Cast your vote
+          Join the debate
         </button>
       </div>
     </section>
@@ -2190,6 +2403,20 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     };
   }, []);
 
+  // Fonts. The old CSS `@import` (inside the component's injected <style>) only
+  // started fetching after JS mounted, and `document.fonts.ready` resolved
+  // BEFORE those faces were even registered — so the loader faded while the
+  // hero was still in fallback fonts, then everything snapped ("half-baked"
+  // first paint). Instead: inject a real <link> (fetch starts immediately,
+  // preconnected), wait for its CSS to parse, then wait for the actual display
+  // faces before revealing.
+  //
+  // Choreography: the reveal ALSO waits for the visual viewport to settle.
+  // iOS Safari collapses its URL bar on its own clock shortly after load —
+  // fading the splash while the toolbar is mid-collapse reads as two unrelated
+  // animations fighting. The collapse fires visualViewport resize events, so
+  // hold the fade until the viewport has been still for a beat and the reveal
+  // always lands on a settled stage.
   useEffect(() => {
     let done = false;
     const ready = () => {
@@ -2198,9 +2425,63 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
         setFontsReady(true);
       }
     };
-    document.fonts.ready.then(ready);
-    const fallback = setTimeout(ready, 2000); // never leave the hero hidden
-    return () => clearTimeout(fallback);
+    let link = document.querySelector<HTMLLinkElement>('link[data-landing-fonts]');
+    if (!link) {
+      for (const origin of ['https://fonts.googleapis.com', 'https://fonts.gstatic.com']) {
+        const pre = document.createElement('link');
+        pre.rel = 'preconnect';
+        pre.href = origin;
+        if (origin.includes('gstatic')) pre.crossOrigin = 'anonymous';
+        document.head.appendChild(pre);
+      }
+      link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = FONTS_CSS_URL;
+      link.setAttribute('data-landing-fonts', '1');
+      document.head.appendChild(link);
+    }
+    const cssReady: Promise<unknown> = link.sheet
+      ? Promise.resolve()
+      : new Promise((res) => {
+          link!.addEventListener('load', res, { once: true });
+          link!.addEventListener('error', res, { once: true });
+        });
+    const fontsP = cssReady.then(() =>
+      Promise.all([
+        document.fonts.load("400 24px 'Righteous'"),
+        document.fonts.load("400 16px 'Poppins'"),
+        document.fonts.load("600 16px 'Poppins'"),
+      ]),
+    );
+
+    // Viewport-settle: resolves once visualViewport has fired no resize for
+    // 260ms (the toolbar collapse is a burst of resizes). Immediately settled
+    // where visualViewport is unsupported.
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
+    let removeSettle: (() => void) | null = null;
+    const viewportP = new Promise<void>((res) => {
+      const vv = window.visualViewport;
+      if (!vv) return res();
+      const fin = () => {
+        removeSettle?.();
+        res();
+      };
+      const arm = () => {
+        if (settleTimer) clearTimeout(settleTimer);
+        settleTimer = setTimeout(fin, 260);
+      };
+      vv.addEventListener('resize', arm);
+      removeSettle = () => vv.removeEventListener('resize', arm);
+      arm();
+    });
+
+    Promise.all([fontsP, viewportP]).then(ready, ready);
+    const fallback = setTimeout(ready, 3000); // never leave the hero hidden
+    return () => {
+      clearTimeout(fallback);
+      if (settleTimer) clearTimeout(settleTimer);
+      removeSettle?.();
+    };
   }, []);
 
   // The Summoning — three.js lifecycle
@@ -2249,16 +2530,6 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       engineRef.current = null;
     };
   }, [mode, fallBack]);
-
-  // Nav turns glass once the page scrolls
-  useEffect(() => {
-    const nav = document.querySelector('nav');
-    if (!nav) return;
-    const onScroll = () => nav.classList.toggle('nav-solid', window.scrollY > 40);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   // Stats count up the first time the band scrolls into view
   useEffect(() => {
@@ -2386,6 +2657,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     <>
       <div className="hero-badge">
         <svg
+          width={14}
+          height={14}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -2420,6 +2693,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
         <button className="btn-primary" onClick={() => router.push('/explore')}>
           <svg
             className="btn-icon"
+            width={20}
+            height={20}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -2446,26 +2721,36 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       style={{
         backgroundColor: '#0b1820',
         color: '#f5ebdc',
+        // While the splash is up, the page behind it must be GENUINELY
+        // invisible — iOS Safari's toolbar glass frosts the page content
+        // UNDERNEATH fixed overlays, so the summon particles showed through
+        // the toolbar band while the splash covered the rest of the screen
+        // (an unsyncable mismatch). visibility flips in the same commit the
+        // splash unmounts, so the band and the page reveal as one.
+        // (.page-loader overrides back to visible — visibility is inheritable.)
+        visibility: fontsReady ? undefined : 'hidden',
       }}
     >
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-      <div className={`page-loader${fontsReady ? ' ready' : ''}`} aria-hidden="true">
-        <svg width={100} height={100} viewBox="0 0 1024 1024">
-          <path
-            className="loader-path"
-            pathLength={100}
-            d={LOGO_PATH}
-            stroke="#f5ebdc"
-            strokeWidth={12}
-            fill="#f5ebdc"
-          />
-        </svg>
-      </div>
+      {!fontsReady && (
+        <div className="page-loader" aria-hidden="true">
+          <svg width={100} height={100} viewBox="0 0 1024 1024">
+            <path
+              className="loader-path"
+              pathLength={100}
+              d={LOGO_PATH}
+              stroke="#f5ebdc"
+              strokeWidth={12}
+              fill="#f5ebdc"
+            />
+          </svg>
+        </div>
+      )}
 
       <nav>
         <div className="nav-brand">
-          <svg className="nav-logo" viewBox="0 0 1024 1024" aria-hidden="true">
+          <svg className="nav-logo" width={32} height={32} viewBox="0 0 1024 1024" aria-hidden="true">
             <path fill="var(--beige)" d={LOGO_PATH} />
           </svg>
           <span className="nav-wordmark">mythique</span>
@@ -2637,7 +2922,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             <div className="feature-card fc-wide reveal rv-scale">
               <div className="fc-copy">
                 <div className="feature-icon">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <svg width={24} height={24} viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="18" cy="5" r="3" />
                     <circle cx="6" cy="12" r="3" />
                     <circle cx="18" cy="19" r="3" />
@@ -2652,7 +2937,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 </p>
               </div>
               <div className="fc-visual fc-web" aria-hidden="true">
-                <svg viewBox="0 0 200 170" preserveAspectRatio="none">
+                <svg width="100%" height="100%" viewBox="0 0 200 170" preserveAspectRatio="none">
                   <line
                     x1="84"
                     y1="65"
@@ -2714,7 +2999,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               style={{ transitionDelay: '80ms' }}
             >
               <div className="feature-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg width={24} height={24} viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
                   <path d="m13 19 6-6" />
                   <path d="m16 16 4 4" />
@@ -2752,7 +3037,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             {/* Explore the Universe */}
             <div className="feature-card reveal rv-scale" style={{ transitionDelay: '60ms' }}>
               <div className="feature-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg width={24} height={24} viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
@@ -2767,7 +3052,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             {/* Deep Profiles */}
             <div className="feature-card reveal rv-scale" style={{ transitionDelay: '120ms' }}>
               <div className="feature-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg width={24} height={24} viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                   <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                 </svg>
@@ -2786,7 +3071,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             >
               <div className="fc-copy">
                 <div className="feature-icon">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <svg width={24} height={24} viewBox="0 0 24 24" aria-hidden="true">
                     <polygon points="23 7 16 12 23 17 23 7" />
                     <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                   </svg>
@@ -2810,7 +3095,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             {/* Instant Search */}
             <div className="feature-card reveal rv-scale" style={{ transitionDelay: '160ms' }}>
               <div className="feature-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg width={24} height={24} viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
@@ -2915,6 +3200,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           >
             <svg
               className="btn-icon"
+              width={20}
+              height={20}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -2975,7 +3262,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 ].map((item, i) => (
                   <li key={i}>
                     <span className="check" aria-hidden="true">
-                      <svg viewBox="0 0 12 12">
+                      <svg width={12} height={12} viewBox="0 0 12 12">
                         <polyline points="2 6 5 9 10 3" />
                       </svg>
                     </span>
@@ -3044,6 +3331,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           >
             <svg
               className="btn-icon"
+              width={20}
+              height={20}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -3061,6 +3350,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             <button className="app-store-badge" disabled aria-label="Coming soon to the App Store">
               <svg
                 className="badge-icon"
+                width={28}
+                height={28}
                 viewBox="0 0 24 24"
                 fill="currentColor"
                 aria-hidden="true"
@@ -3075,6 +3366,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             <button className="app-store-badge" disabled aria-label="Coming soon to Google Play">
               <svg
                 className="badge-icon"
+                width={28}
+                height={28}
                 viewBox="0 0 24 24"
                 fill="currentColor"
                 aria-hidden="true"

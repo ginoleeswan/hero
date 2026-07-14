@@ -20,8 +20,9 @@ export interface ProfileData {
    *  not `loading` — to gate anything that reads the full picture (e.g. the fan
    *  tier / milestone detector), so it never runs on a partially-loaded snapshot. */
   settled: boolean;
-  /** Re-fetch all profile data. Resolves when the favourites fetch settles, so
-   *  callers can drive their own pull-to-refresh spinner off the promise. */
+  /** Re-fetch all profile data. Resolves when the full snapshot has been
+   *  applied (all five sources settled), so callers can drive their own
+   *  pull-to-refresh spinner off the promise. */
   refetch: () => Promise<void>;
 }
 
@@ -45,26 +46,33 @@ export function useProfileData(userId: string | undefined): ProfileData {
 
   const refetch = useCallback((): Promise<void> => {
     if (!userId) return Promise.resolve();
-    const battleP = getBattleRecord()
-      .then(setBattle)
-      .catch(() => {});
-    const tasteP = getTasteProfile()
-      .then(setTaste)
-      .catch(() => {});
-    const contribP = getMyContributions()
-      .then(setContributions)
-      .catch(() => {});
-    const takesP = getMyTakes(userId)
-      .then(setTakes)
-      .catch(() => setTakes([]));
-    const favP = getUserFavouriteHeroes(userId)
-      .then(setFavourites)
-      .catch(() => setFavourites([]))
-      .finally(() => setLoading(false));
-    // `settled` flips only once every source has resolved, so consumers can gate
-    // full-picture logic (fan tier / milestone nudge) on a complete snapshot.
-    void Promise.allSettled([battleP, tasteP, contribP, takesP, favP]).then(() => setSettled(true));
-    return favP;
+    // Fetch all five sources in parallel but apply them as ONE snapshot once
+    // every request has settled. Applying each as it landed made the profile
+    // sections mount one after another during the initial load (contributions
+    // popping in, then takes, …) — a visible layout stagger. One snapshot =
+    // one reveal; on refetch the previous data stays up until the new
+    // snapshot swaps in, so there's no flicker either.
+    const done: Promise<void> = Promise.allSettled([
+      getBattleRecord(),
+      getTasteProfile(),
+      getMyContributions(),
+      getMyTakes(userId),
+      getUserFavouriteHeroes(userId),
+    ]).then(([battleR, tasteR, contribR, takesR, favR]) => {
+      // React batches these into a single render. Rejected sources keep their
+      // previous value (initial load: the empty default).
+      if (battleR.status === 'fulfilled') setBattle(battleR.value);
+      if (tasteR.status === 'fulfilled') setTaste(tasteR.value);
+      if (contribR.status === 'fulfilled') setContributions(contribR.value);
+      setTakes(takesR.status === 'fulfilled' ? takesR.value : []);
+      setFavourites(favR.status === 'fulfilled' ? favR.value : []);
+      setLoading(false);
+      // `settled` flips only once every source has resolved, so consumers can
+      // gate full-picture logic (fan tier / milestone nudge) on a complete
+      // snapshot.
+      setSettled(true);
+    });
+    return done;
   }, [userId]);
 
   return {

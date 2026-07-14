@@ -29,7 +29,7 @@ export default function VersusHubWeb() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const contentPad = width < 640 ? 16 : 32;
-  const { matchup, hookText, takesCount, yesterday, iconicPool, loading, mostFeared } =
+  const { matchup, hookText, takesCount, yesterday, iconicPool, loading, feedSettled, mostFeared } =
     useVersusHub();
 
   const openArena = (a: FighterArt, b: FighterArt) => {
@@ -128,7 +128,10 @@ export default function VersusHubWeb() {
             </>
           ) : null}
 
-          {yesterday ? <YesterdayStrip yesterday={yesterday} /> : null}
+          {/* Held until the feed settles: this strip resolves via two chained
+              queries and sits ABOVE the actions, so letting it mount on its own
+              schedule shoved everything below it down mid-load. */}
+          {feedSettled && yesterday ? <YesterdayStrip yesterday={yesterday} /> : null}
 
           {/* ── Secondary actions ── */}
           <View style={s.actions}>
@@ -175,7 +178,10 @@ export default function VersusHubWeb() {
         </View>
       </View>
 
-      {/* ── Battle Discovery feed ── */}
+      {/* ── Battle Discovery feed — revealed as ONE snapshot once every feed
+          source has settled (rows.settled), so sections don't pop in one after
+          another as their individual queries land. ── */}
+      {rows.settled && (
       <View style={[s.feed, { paddingHorizontal: contentPad }] as object}>
         <View style={s.feedInner}>
           {rows.rivalries.length > 0 && (
@@ -275,6 +281,7 @@ export default function VersusHubWeb() {
           </Reveal>
         </View>
       </View>
+      )}
     </View>
   );
 }
