@@ -2137,6 +2137,8 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
         <button className="btn-primary" onClick={goVote}>
           <svg
             className="btn-icon"
+            width={20}
+            height={20}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -2426,6 +2428,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     <>
       <div className="hero-badge">
         <svg
+          width={14}
+          height={14}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -2460,6 +2464,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
         <button className="btn-primary" onClick={() => router.push('/explore')}>
           <svg
             className="btn-icon"
+            width={20}
+            height={20}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -2505,7 +2511,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
 
       <nav>
         <div className="nav-brand">
-          <svg className="nav-logo" viewBox="0 0 1024 1024" aria-hidden="true">
+          <svg className="nav-logo" width={32} height={32} viewBox="0 0 1024 1024" aria-hidden="true">
             <path fill="var(--beige)" d={LOGO_PATH} />
           </svg>
           <span className="nav-wordmark">mythique</span>
@@ -2677,7 +2683,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             <div className="feature-card fc-wide reveal rv-scale">
               <div className="fc-copy">
                 <div className="feature-icon">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <svg width={24} height={24} viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="18" cy="5" r="3" />
                     <circle cx="6" cy="12" r="3" />
                     <circle cx="18" cy="19" r="3" />
@@ -2692,7 +2698,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 </p>
               </div>
               <div className="fc-visual fc-web" aria-hidden="true">
-                <svg viewBox="0 0 200 170" preserveAspectRatio="none">
+                <svg width="100%" height="100%" viewBox="0 0 200 170" preserveAspectRatio="none">
                   <line
                     x1="84"
                     y1="65"
@@ -2754,7 +2760,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               style={{ transitionDelay: '80ms' }}
             >
               <div className="feature-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg width={24} height={24} viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
                   <path d="m13 19 6-6" />
                   <path d="m16 16 4 4" />
@@ -2792,7 +2798,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             {/* Explore the Universe */}
             <div className="feature-card reveal rv-scale" style={{ transitionDelay: '60ms' }}>
               <div className="feature-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg width={24} height={24} viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
@@ -2807,7 +2813,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             {/* Deep Profiles */}
             <div className="feature-card reveal rv-scale" style={{ transitionDelay: '120ms' }}>
               <div className="feature-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg width={24} height={24} viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                   <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                 </svg>
@@ -2826,7 +2832,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             >
               <div className="fc-copy">
                 <div className="feature-icon">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <svg width={24} height={24} viewBox="0 0 24 24" aria-hidden="true">
                     <polygon points="23 7 16 12 23 17 23 7" />
                     <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                   </svg>
@@ -2850,7 +2856,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             {/* Instant Search */}
             <div className="feature-card reveal rv-scale" style={{ transitionDelay: '160ms' }}>
               <div className="feature-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg width={24} height={24} viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
@@ -2955,6 +2961,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           >
             <svg
               className="btn-icon"
+              width={20}
+              height={20}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -3015,7 +3023,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 ].map((item, i) => (
                   <li key={i}>
                     <span className="check" aria-hidden="true">
-                      <svg viewBox="0 0 12 12">
+                      <svg width={12} height={12} viewBox="0 0 12 12">
                         <polyline points="2 6 5 9 10 3" />
                       </svg>
                     </span>
@@ -3084,6 +3092,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           >
             <svg
               className="btn-icon"
+              width={20}
+              height={20}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -3101,6 +3111,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             <button className="app-store-badge" disabled aria-label="Coming soon to the App Store">
               <svg
                 className="badge-icon"
+                width={28}
+                height={28}
                 viewBox="0 0 24 24"
                 fill="currentColor"
                 aria-hidden="true"
@@ -3115,6 +3127,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             <button className="app-store-badge" disabled aria-label="Coming soon to Google Play">
               <svg
                 className="badge-icon"
+                width={28}
+                height={28}
                 viewBox="0 0 24 24"
                 fill="currentColor"
                 aria-hidden="true"

@@ -10,15 +10,18 @@ import {
 } from '../lib/discovery';
 
 /** The Battle Discovery feed's rows, derived from data the hub already fetches
- *  (rivalries + iconic pool + featured teams). Each list degrades to []. */
+ *  (rivalries + iconic pool + featured teams). Each list degrades to [].
+ *  `settled` = every source has resolved — gate the whole feed on it so the
+ *  sections reveal as one snapshot instead of popping in one at a time. */
 export function useDiscoveryRows(): {
   rivalries: Matchup[];
   dream: Matchup[];
   goliath: Matchup[];
   teams: TeamMatchup[];
+  settled: boolean;
 } {
-  const { rivalries, iconicPool } = useVersusHub();
-  const { teams } = usePresetTeams();
+  const { rivalries, iconicPool, feedSettled } = useVersusHub();
+  const { teams, loading: teamsLoading } = usePresetTeams();
 
   return useMemo(
     () => ({
@@ -26,8 +29,9 @@ export function useDiscoveryRows(): {
       dream: uniquePairs(buildDreamMatches(iconicPool, 8)),
       goliath: uniquePairs(buildGoliathMatches(iconicPool, 8)),
       teams: uniquePairs(buildTeamMatches(teams, 6)),
+      settled: feedSettled && !teamsLoading,
     }),
-    [rivalries, iconicPool, teams],
+    [rivalries, iconicPool, teams, feedSettled, teamsLoading],
   );
 }
 
