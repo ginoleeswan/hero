@@ -34,6 +34,7 @@ import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
 import { SearchBrowse } from '../../../src/components/web/search/SearchBrowse';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
+import { SEARCH_CHIP } from '../../../src/components/web/searchChip';
 import { useScreenChrome } from '../../../src/hooks/useScreenChrome';
 import { SeoHead } from '../../../src/components/web/SeoHead';
 
@@ -351,6 +352,8 @@ export default function WebSearchScreen() {
   // band stays pinned and wastes space (and leaves a dark gap once the TopBar that
   // it pads under has itself slid away). Mirrors TopBar's mobile hide/reveal logic.
   const [headerHidden, setHeaderHidden] = useState(false);
+  // Orange focus ring on the shared search chip (parity with the browse decks).
+  const [mobSearchFocused, setMobSearchFocused] = useState(false);
   useEffect(() => {
     if (isDesktop || typeof window === 'undefined') return undefined;
     let lastY = window.scrollY;
@@ -446,14 +449,23 @@ export default function WebSearchScreen() {
             onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
           >
             <View style={styles.mobileSearchRow as object}>
-              <View style={styles.mobileSearchBar as object}>
+              <View
+                style={
+                  [
+                    styles.mobileSearchBar,
+                    mobSearchFocused && (styles.mobileSearchBarFocused as object),
+                  ] as object
+                }
+              >
                 <Ionicons name="search" size={17} color={COLORS.orange} />
                 <TextInput
                   style={styles.mobileInput as object}
                   placeholder="Search characters, teams & universes…"
-                  placeholderTextColor="rgba(245,235,220,0.4)"
+                  placeholderTextColor={SEARCH_CHIP.placeholder}
                   value={inputQuery}
                   onChangeText={setInputQuery}
+                  onFocus={() => setMobSearchFocused(true)}
+                  onBlur={() => setMobSearchFocused(false)}
                   autoFocus={!urlQ}
                   autoCorrect={false}
                   returnKeyType="search"
@@ -735,34 +747,23 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 50,
-    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)`,
+    // Clearance follows the TopBar's published dock offset: below the bar while
+    // it's shown, rising toward the top edge when the bar retires (idle or
+    // scroll-down) — otherwise the field floats over a gap where the bar was.
+    paddingTop: `calc(var(--mob-utility-top, calc(env(safe-area-inset-top) + ${TOPBAR_HEIGHT - 8}px)) + 18px)`,
     // translateZ(0) is applied inline alongside the hide/reveal translateY.
-    transition: 'transform 260ms ease',
+    transition: 'transform 260ms ease, padding-top 300ms ease',
     paddingBottom: 4,
   } as object,
   mobileSearchRow: {
     paddingHorizontal: 12,
     paddingBottom: 2,
   },
-  mobileSearchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    backgroundColor: 'rgba(245,235,220,0.10)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.20)',
-    boxShadow: 'inset 0 1px 0 rgba(245,235,220,0.10)',
-    paddingHorizontal: 12,
-    height: 46,
-  } as object,
-  mobileInput: {
-    flex: 1,
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 16,
-    color: COLORS.beige,
-    outlineStyle: 'none',
-  } as object,
+  // The shared navy glass chip (see searchChip.ts) — identical to the browse
+  // decks' search field, so search reads as one control across mobile web.
+  mobileSearchBar: { ...SEARCH_CHIP.chip } as object,
+  mobileSearchBarFocused: { ...SEARCH_CHIP.chipFocused } as object,
+  mobileInput: { ...SEARCH_CHIP.input } as object,
   clearBtn: { padding: 2, cursor: 'pointer' } as object,
 
   // "Characters" section header on the results page — label + count on one row,

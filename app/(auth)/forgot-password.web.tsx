@@ -12,7 +12,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
-import { COLORS, SURFACE } from '../../src/constants/colors';
+import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { Image } from 'expo-image';
 
@@ -216,7 +216,7 @@ export default function WebForgotPasswordScreen() {
 const styles = StyleSheet.create({
   // ── Mobile ─────────────────────────────────────────────────────────────
   mobileRoot: {
-    minHeight: '100dvh',
+    minHeight: '100lvh',
     backgroundColor: COLORS.beige,
   } as object,
   mobileIllustrationWrap: {
@@ -227,8 +227,11 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     backgroundColor: COLORS.navy,
     paddingTop: 'calc(env(safe-area-inset-top) + 12px)',
-    backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
-    backgroundSize: '24px 24px',
+    // Dots over the ink→navy stage gradient: deep ink at the very top so the
+    // hero fuses with the iOS status zone (constant-ink chrome), easing to navy
+    // where the art sits. Per-layer sizes: dots tile, stage spans.
+    backgroundImage: `radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px), ${SURFACE_GRADIENT.stage}`,
+    backgroundSize: '24px 24px, 100% 100%',
   } as object,
   mobileHeroImg: {
     flex: 1,

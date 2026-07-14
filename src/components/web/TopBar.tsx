@@ -16,6 +16,11 @@ import { SearchPalette } from './search/SearchPalette';
 
 export const TOPBAR_HEIGHT = 64;
 
+// How long the revealed mobile bar lingers after the last upward scroll before
+// sliding away on its own — long enough to reach any of its controls, short
+// enough that reading resumes edge-to-edge without a dismissal gesture.
+const MOBILE_BAR_IDLE_HIDE_MS = 2800;
+
 // Versus/Arena entry — the web Arena hub (today's showdown + rivalries + the
 // build-your-own / surprise-me actions). The two-slot matchup builder lives one
 // step deeper at /compare/pick, reached from the hub's "Build your own".
@@ -60,10 +65,11 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   // Transparent over the page's hero at the top; a frosted bar once content
   // scrolls up behind it (keeps light icons readable over the beige body).
   const [scrolled, setScrolled] = useState(false);
-  // Mobile: a hide-on-scroll-down / reveal-on-scroll-up bar. `mobAtTop` keeps it
-  // transparent over the page's hero; once scrolled, it slides away going down and
-  // slides back with a frosted material going up — so it's never transparent over
-  // arbitrary mid-page content.
+  // Mobile: a hide-on-scroll-down / reveal-on-scroll-up bar. `mobAtTop` swaps the
+  // bar's backing from the frosted reveal header to the gentle at-top ink fade
+  // (same gradient as desktop's topScrim); once scrolled, it slides away going
+  // down and slides back with the frosted material going up — so it's never
+  // transparent over arbitrary mid-page content.
   const [mobHidden, setMobHidden] = useState(false);
   const [mobAtTop, setMobAtTop] = useState(true);
   useEffect(() => {
@@ -86,8 +92,15 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
     window.addEventListener('scroll', onScroll, true);
     return () => window.removeEventListener('scroll', onScroll, true);
   }, [isMobile]);
-  // Mobile hide/reveal: track scroll direction off the document scroller. A small
-  // threshold ignores jitter; at the very top the bar is always shown + transparent.
+  // Mobile hide/reveal: the revealed bar is TRANSIENT chrome — it appears on
+  // intent (scroll up) and retires on its own when the intent passes, so the
+  // page returns to full edge-to-edge immersion without needing a deliberate
+  // downward flick. Two dismissal paths:
+  //   1. Cumulative downward travel (any pace — a slow reading scroll counts,
+  //      not just fast flicks whose per-frame delta clears a threshold).
+  //   2. Idle: stop scrolling mid-page and the bar slides away by itself.
+  // At the very top the bar is always shown (there it's page identity, backed
+  // by the at-top ink fade, not transient chrome).
   useEffect(() => {
     if (!isMobile || typeof window === 'undefined') return undefined;
     // Builder screens (e.g. /compare) carry their own sticky sub-header pinned
@@ -95,18 +108,42 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
     // above that sub-header, so keep it pinned (still frosts on scroll).
     const keepPinned = pathname.startsWith('/compare');
     let lastY = window.scrollY;
+    let downRun = 0; // cumulative downward travel since the last upward move
     let ticking = false;
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+    const clearIdle = () => {
+      if (idleTimer) {
+        clearTimeout(idleTimer);
+        idleTimer = null;
+      }
+    };
+    // (Re)arm the auto-dismiss clock — every upward move keeps the bar alive;
+    // once the user settles, it retires and the seamless view returns.
+    const armIdle = () => {
+      clearIdle();
+      idleTimer = setTimeout(() => setMobHidden(true), MOBILE_BAR_IDLE_HIDE_MS);
+    };
     const apply = () => {
       const y = window.scrollY;
       const atTop = y <= 8;
       setMobAtTop(atTop);
       if (atTop) {
         setMobHidden(false);
+        clearIdle();
+        downRun = 0;
       } else if (!keepPinned) {
         const delta = y - lastY;
-        if (delta > 6)
-          setMobHidden(true); // scrolling down → hide
-        else if (delta < -6) setMobHidden(false); // scrolling up → reveal
+        if (delta > 0) {
+          downRun += delta;
+          if (downRun > 10) {
+            setMobHidden(true); // sustained downward travel → hide
+            clearIdle();
+          }
+        } else if (delta < 0) {
+          downRun = 0;
+          if (delta < -6) setMobHidden(false); // scrolling up → reveal
+          armIdle();
+        }
       }
       lastY = y;
       ticking = false;
@@ -120,8 +157,32 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
       requestAnimationFrame(apply);
     };
     window.addEventListener('scroll', onScroll, true);
-    return () => window.removeEventListener('scroll', onScroll, true);
+    return () => {
+      window.removeEventListener('scroll', onScroll, true);
+      clearIdle();
+    };
   }, [isMobile, pathname]);
+
+  // Publish where page-level sticky utilities (the browse search deck, the
+  // /search header) should pin: tucked under the bar while it's shown, docked
+  // near the top edge when it retires — so utilities rise/yield in one motion
+  // with the bar instead of floating where it used to be. CSS var so consumers
+  // stay pure CSS (top/padding + transition) with no shared React state.
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const root = document.documentElement;
+    if (!isMobile) {
+      root.style.removeProperty('--mob-utility-top');
+      return undefined;
+    }
+    root.style.setProperty(
+      '--mob-utility-top',
+      mobHidden
+        ? 'calc(env(safe-area-inset-top) + 8px)'
+        : `calc(env(safe-area-inset-top) + ${TOPBAR_HEIGHT - 8}px)`,
+    );
+    return () => root.style.removeProperty('--mob-utility-top');
+  }, [isMobile, mobHidden]);
 
   // New routes start at the top — reset the scroll-derived bar state on
   // navigation, then the scroll listener above takes over.
@@ -232,27 +293,42 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   const bar = (
     <View style={[c.bar, barHideStyle] as object} pointerEvents="box-none">
       {isMobile ? (
-        // Mobile: transparent over the hero at the top; once you scroll up after
-        // scrolling down, a header reveals — a gradient scrim + graduated blur that's
-        // solid at the very top (so it fuses with the dark body strip) and fades to
-        // transparent blur by the bottom, melting into the content. Hidden (opacity 0)
-        // at the very top. Scrim follows the page's light/dark to match the glyphs.
-        <View
-          style={
-            [c.mHeader, mobAtTop ? (c.layerHidden as object) : (c.layerShown as object)] as object
-          }
-          pointerEvents="none"
-        >
-          <View style={[StyleSheet.absoluteFill, c.mHeaderBlur] as object} />
+        <>
+          {/* At the very top the bar carries the same gentle ink fade the desktop
+              bar uses, on EVERY page — status zone → scrim → page stage read as
+              one ink piece and the glyphs are always backed, so pages never need
+              their own baked-in header scrims. Crossfades out as the reveal
+              header below fades in. Dark-topped pages only: a light-topped page
+              (adaptDark) backs its glyphs with its own light surface. */}
+          {!adaptDark && (
+            <View
+              style={[c.topScrim, !mobAtTop && (c.layerHidden as object)] as object}
+              pointerEvents="none"
+            />
+          )}
+          {/* Once you scroll up after scrolling down, a header reveals — a gradient
+              scrim + graduated blur that's solid at the very top (so it fuses with
+              the navy status zone) and fades to transparent blur by the bottom,
+              melting into the content. Hidden (opacity 0) at the very top, where
+              the gentle fade above takes over. Scrim follows the page's
+              light/dark to match the glyphs. */}
           <View
             style={
-              [
-                StyleSheet.absoluteFill,
-                adaptDark ? (c.mHeaderScrimLight as object) : (c.mHeaderScrimDark as object),
-              ] as object
+              [c.mHeader, mobAtTop ? (c.layerHidden as object) : (c.layerShown as object)] as object
             }
-          />
-        </View>
+            pointerEvents="none"
+          >
+            <View style={[StyleSheet.absoluteFill, c.mHeaderBlur] as object} />
+            <View
+              style={
+                [
+                  StyleSheet.absoluteFill,
+                  adaptDark ? (c.mHeaderScrimLight as object) : (c.mHeaderScrimDark as object),
+                ] as object
+              }
+            />
+          </View>
+        </>
       ) : (
         <>
           {/* Desktop: soft dark gradient over the hero at the top… */}

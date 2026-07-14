@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
-import { COLORS, SURFACE } from '../../src/constants/colors';
+import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -236,7 +236,7 @@ export default function WebLoginScreen() {
 const styles = StyleSheet.create({
   // ── Mobile ─────────────────────────────────────────────────────────────
   mobileRoot: {
-    minHeight: '100dvh',
+    minHeight: '100lvh',
     flexDirection: 'column',
     backgroundColor: COLORS.beige,
   } as object,
@@ -250,8 +250,11 @@ const styles = StyleSheet.create({
     // Small top clearance; the square art carries its own headroom above the
     // head, and the floating logo bar sits over that space.
     paddingTop: 'calc(env(safe-area-inset-top) + 12px)',
-    backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
-    backgroundSize: '24px 24px',
+    // Dots over the ink→navy stage gradient: deep ink at the very top so the
+    // hero fuses with the iOS status zone (constant-ink chrome), easing to navy
+    // where the art sits. Per-layer sizes: dots tile, stage spans.
+    backgroundImage: `radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px), ${SURFACE_GRADIENT.stage}`,
+    backgroundSize: '24px 24px, 100% 100%',
   } as object,
   // Whole character shown (contain) at a large size, its lower edge fading into
   // the card via the scrim.

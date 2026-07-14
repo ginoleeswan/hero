@@ -33,6 +33,7 @@ import { HeroesInFilmRail } from '../../src/components/film/HeroesInFilmRail';
 import { RecommendationsRail } from '../../src/components/film/RecommendationsRail';
 import { SocialLinks } from '../../src/components/film/SocialLinks';
 import { ReviewsSection } from '../../src/components/film/ReviewsSection';
+import { PageEndCap } from '../../src/components/web/PageEndCap';
 
 function fmtMoney(n: number | null | undefined): string | null {
   if (!n || n <= 0) return null;
@@ -334,6 +335,8 @@ export default function TitleScreen() {
             </FadeOutSkeleton>
           ) : null}
         </View>
+        {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
+        <PageEndCap />
       </View>
     );
   }
@@ -434,7 +437,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.beige,
     // Web must grow with the document-scrolled content; native bounds its ScrollView.
-    ...Platform.select({ web: { minHeight: '100dvh' } as object, default: { flex: 1 } }),
+    ...Platform.select({ web: { minHeight: '100lvh' } as object, default: { flex: 1 } }),
   } as object,
   // Loading shell: deepNavy so it fuses with the boot LogoLoader and the
   // skeleton's dark stage (no beige flash between them on web refresh).

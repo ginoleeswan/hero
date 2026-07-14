@@ -43,7 +43,7 @@ const WebChromeContext = createContext<WebChromeValue>({
 
 // Perceived luminance (sRGB weights). Above the threshold the surface is light
 // enough that chrome sitting on it must switch to dark icons/text for contrast.
-function isLightColor(hex: string): boolean {
+export function isLightColor(hex: string): boolean {
   const rgb = hexToRgb(hex);
   if (!rgb) return false;
   return 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b > 140;

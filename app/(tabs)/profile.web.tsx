@@ -43,6 +43,7 @@ import { COLORS, SURFACE, SEAM_COLOR } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import Svg, { Path } from 'react-native-svg';
+import { PageEndCap } from '../../src/components/web/PageEndCap';
 
 const SIDEBAR_BREAKPOINT = 640;
 
@@ -152,6 +153,8 @@ function GuestWebProfileScreen() {
           </LinearGradient>
           {inner}
         </View>
+        {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
+        <PageEndCap />
       </View>
     );
   }
@@ -172,6 +175,8 @@ function GuestWebProfileScreen() {
         </View>
       </LinearGradient>
       <View style={desk.contentOuter as object}>{inner}</View>
+      {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
+      <PageEndCap />
     </View>
   );
 }
@@ -860,6 +865,9 @@ export default function WebProfileScreen() {
           </Text>
         </View>
 
+        {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
+        <PageEndCap />
+
         <EditDisplayNameModal
           visible={showEditName}
           currentName={name}
@@ -1239,6 +1247,9 @@ export default function WebProfileScreen() {
         </View>
       </View>
 
+      {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
+      <PageEndCap />
+
       <EditDisplayNameModal
         visible={showEditName}
         currentName={name}
@@ -1259,7 +1270,7 @@ export default function WebProfileScreen() {
 
 // ── Mobile-only styles (native parity) ───────────────────────────────────────
 const mob = StyleSheet.create({
-  root: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
+  root: { minHeight: '100lvh', backgroundColor: COLORS.beige } as object,
   scroll: { paddingBottom: 0 },
 
   // Cover
@@ -1748,7 +1759,7 @@ const mob = StyleSheet.create({
 
 // ── Desktop-only styles ───────────────────────────────────────────────────────
 const desk = StyleSheet.create({
-  root: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
+  root: { minHeight: '100lvh', backgroundColor: COLORS.beige } as object,
 
   // Cover
   cover: {

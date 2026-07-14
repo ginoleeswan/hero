@@ -1786,7 +1786,11 @@ const CSS = `
   .debate-teaser .btn-primary { margin-top:32px; }
 
   footer {
-    padding:40px; border-top:1px solid var(--border);
+    /* Bottom clearance = the iOS toolbar/home-indicator zone, so the page closes
+       on breathing ink and the frosted toolbar never sits on the footer text —
+       the same close every app page gets from PageEndCap. */
+    padding:40px 40px calc(40px + env(safe-area-inset-bottom, 0px) + 28px);
+    border-top:1px solid var(--border);
     display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;
     position:relative;
   }

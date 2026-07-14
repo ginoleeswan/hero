@@ -8,6 +8,7 @@ import { COLORS, SURFACE } from '../../constants/colors';
 import { useScreenChrome } from '../../hooks/useScreenChrome';
 import { StageHeader } from '../StageHeader';
 import type { LegalDoc } from '../../lib/legal';
+import { PageEndCap } from '../web/PageEndCap';
 
 export function LegalScreen({ doc }: { doc: LegalDoc }) {
   const insets = useSafeAreaInsets();
@@ -53,6 +54,8 @@ export function LegalScreen({ doc }: { doc: LegalDoc }) {
       <View style={styles.container}>
         {header}
         <View style={[styles.scroll, styles.bodyPad]}>{content}</View>
+        {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
+        <PageEndCap />
       </View>
     );
   }
@@ -73,7 +76,7 @@ const styles = StyleSheet.create({
   // and exposing the ink canvas). Native keeps flex:1 to bound the ScrollView.
   container: {
     backgroundColor: COLORS.beige,
-    ...Platform.select({ web: { minHeight: '100dvh' } as object, default: { flex: 1 } }),
+    ...Platform.select({ web: { minHeight: '100lvh' } as object, default: { flex: 1 } }),
   } as object,
   scroll: { paddingHorizontal: 20, maxWidth: 720, width: '100%', alignSelf: 'center' },
   bodyPad: { paddingTop: 26, paddingBottom: 48 } as object,

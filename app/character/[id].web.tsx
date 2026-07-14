@@ -52,6 +52,7 @@ import { ComicCoverRail } from '../../src/components/home/ComicCoverRail';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
 import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import { SeoHead } from '../../src/components/web/SeoHead';
+import { PageEndCap } from '../../src/components/web/PageEndCap';
 import { SITE_URL } from '../../src/constants/site';
 import type { HeroStats } from '../../src/types';
 
@@ -483,10 +484,13 @@ export default function WebCharacterScreen() {
   const isDesktop = width >= 700;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
-  // Before the skeleton early-return so it applies in both states. Canvas stays
-  // paper so the body and both Safari toolbar zones read beige; the dark top edge
-  // is handled by the status-bar cover, which paints the ink `top` colour — so
-  // the canvas can be light without the status bar drifting beige.
+  // Before the skeleton early-return so it applies in both states. Canvas is ink
+  // and must stay ink: in a Safari tab ONE canvas colour tints BOTH the status-bar
+  // zone and the bottom toolbar (env-inset covers are 0-height there), and the
+  // tint is re-sampled across scroll/toolbar states — a paper canvas makes the
+  // status zone flash beige over the dark hero depending on scroll history.
+  // Bottom seamlessness comes from the page CLOSING on ink instead (PageEndCap
+  // after the beige sheet), so both bars read ink in every scroll state.
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   const skeletonOpacity = useSkeletonAnim();
@@ -2327,6 +2331,11 @@ export default function WebCharacterScreen() {
           </View>
         </View>
 
+        {/* Close the paper sheet onto the ink floor — the page must END on ink
+            (canvas colour) so the iOS toolbar frosts dark in every scroll state.
+            See PageEndCap for the full why. */}
+        <PageEndCap />
+
         <ContributeSheet
           visible={editTarget !== null}
           onClose={() => setEditTarget(null)}
@@ -2808,7 +2817,7 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
 }
 
 const sk = StyleSheet.create({
-  scroll: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
+  scroll: { minHeight: '100lvh', backgroundColor: COLORS.beige } as object,
   scrollContent: { width: '100%' },
   bodyWrap: { maxWidth: 1180, alignSelf: 'center', width: '100%', paddingBottom: 0 },
 
@@ -2924,7 +2933,7 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
   },
 
-  scroll: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
+  scroll: { minHeight: '100lvh', backgroundColor: COLORS.beige } as object,
   // Cold-load shell: deepNavy so the anti-flash `pre` window (and web refresh)
   // fuses with the boot LogoLoader and the skeleton's dark stage — no beige flash.
   loadingShell: { flex: 1, backgroundColor: COLORS.deepNavy },

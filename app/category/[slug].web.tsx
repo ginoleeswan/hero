@@ -44,6 +44,7 @@ import { ActiveFilterChips } from '../../src/components/web/category/ActiveFilte
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, SURFACE, SURFACE_GRADIENT, SEAM_COLOR } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
+import { SEARCH_CHIP } from '../../src/components/web/searchChip';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { BrowseBanner } from '../../src/components/web/category/BrowseBanner';
 
@@ -803,9 +804,11 @@ const styles = StyleSheet.create({
   headerControlsOnly: {
     paddingTop: 6,
     paddingBottom: 4,
-    // Pinned position: tuck right under the nav (a touch higher than its own
-    // height) so the deck sits close to the topbar on scroll, not floating below.
-    top: TOPBAR_HEIGHT - 8,
+    // Pinned position follows the TopBar's published dock offset: tucked right
+    // under the nav while it's shown, rising to the top edge in one motion when
+    // the bar retires (transient chrome) — never floating where the bar was.
+    top: `var(--mob-utility-top, ${TOPBAR_HEIGHT - 8}px)` as unknown as number,
+    transition: 'top 300ms ease',
     // Pull the controls up so they straddle the banner's bottom edge (floating
     // control deck) and the grid shifts up with them. Negative margin only sets
     // the resting position — sticky still pins the bar at the nav on scroll.
@@ -863,36 +866,15 @@ const styles = StyleSheet.create({
     gap: 8,
   } as object,
 
-  // Mobile search bar — navy glass chip (frosted dark) with light text, so it
-  // belongs with the dark topbar while floating over the cards on scroll.
+  // Mobile search bar — the shared navy glass chip (see searchChip.ts), so
+  // search reads identical here and on /search. Only layout is added locally.
   searchBar: {
+    ...SEARCH_CHIP.chip,
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    backgroundColor: 'rgba(41,60,67,0.6)',
-    backdropFilter: 'blur(18px) saturate(140%)',
-    WebkitBackdropFilter: 'blur(18px) saturate(140%)',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.18)',
-    paddingHorizontal: 13,
-    height: 46,
-    transition: 'border-color 160ms ease, box-shadow 160ms ease',
   } as object,
   searchBarMobile: { flex: 1, minHeight: 46 } as object,
-  searchBarFocused: {
-    borderColor: 'rgba(231,115,51,0.8)',
-    boxShadow: '0 0 0 3px rgba(231,115,51,0.16)',
-  } as object,
-  searchInput: {
-    flex: 1,
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14.5,
-    color: COLORS.beige,
-    outlineStyle: 'none',
-    outlineWidth: 0,
-  } as object,
+  searchBarFocused: { ...SEARCH_CHIP.chipFocused } as object,
+  searchInput: { ...SEARCH_CHIP.input } as object,
 
   // Mobile "Filters" button (opens the bottom sheet) — matching navy glass.
   filterBtn: {

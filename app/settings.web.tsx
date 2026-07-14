@@ -12,6 +12,7 @@ import { Toast, useToast } from '../src/components/ui/Toast';
 import { useScreenChrome } from '../src/hooks/useScreenChrome';
 import { StageHeader } from '../src/components/StageHeader';
 import { SectionShell } from '../src/components/profile/SectionShell';
+import { PageEndCap } from '../src/components/web/PageEndCap';
 
 type RowTone = 'navy' | 'orange' | 'danger';
 
@@ -218,6 +219,9 @@ export default function WebSettingsScreen() {
         </Text>
       </View>
 
+      {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
+      <PageEndCap />
+
       <ChangePasswordModal
         visible={showChangePassword}
         onClose={() => setShowChangePassword(false)}
@@ -229,7 +233,7 @@ export default function WebSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
+  root: { minHeight: '100lvh', backgroundColor: COLORS.beige } as object,
   column: {
     maxWidth: 640,
     alignSelf: 'center',
