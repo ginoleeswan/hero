@@ -2213,6 +2213,13 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
   // first paint). Instead: inject a real <link> (fetch starts immediately,
   // preconnected), wait for its CSS to parse, then wait for the actual display
   // faces before revealing.
+  //
+  // Choreography: the reveal ALSO waits for the visual viewport to settle.
+  // iOS Safari collapses its URL bar on its own clock shortly after load —
+  // fading the splash while the toolbar is mid-collapse reads as two unrelated
+  // animations fighting. The collapse fires visualViewport resize events, so
+  // hold the fade until the viewport has been still for a beat and the reveal
+  // always lands on a settled stage.
   useEffect(() => {
     let done = false;
     const ready = () => {
@@ -2242,17 +2249,42 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           link!.addEventListener('load', res, { once: true });
           link!.addEventListener('error', res, { once: true });
         });
-    cssReady
-      .then(() =>
-        Promise.all([
-          document.fonts.load("400 24px 'Righteous'"),
-          document.fonts.load("400 16px 'Poppins'"),
-          document.fonts.load("600 16px 'Poppins'"),
-        ]),
-      )
-      .then(ready, ready);
+    const fontsP = cssReady.then(() =>
+      Promise.all([
+        document.fonts.load("400 24px 'Righteous'"),
+        document.fonts.load("400 16px 'Poppins'"),
+        document.fonts.load("600 16px 'Poppins'"),
+      ]),
+    );
+
+    // Viewport-settle: resolves once visualViewport has fired no resize for
+    // 260ms (the toolbar collapse is a burst of resizes). Immediately settled
+    // where visualViewport is unsupported.
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
+    let removeSettle: (() => void) | null = null;
+    const viewportP = new Promise<void>((res) => {
+      const vv = window.visualViewport;
+      if (!vv) return res();
+      const fin = () => {
+        removeSettle?.();
+        res();
+      };
+      const arm = () => {
+        if (settleTimer) clearTimeout(settleTimer);
+        settleTimer = setTimeout(fin, 260);
+      };
+      vv.addEventListener('resize', arm);
+      removeSettle = () => vv.removeEventListener('resize', arm);
+      arm();
+    });
+
+    Promise.all([fontsP, viewportP]).then(ready, ready);
     const fallback = setTimeout(ready, 3000); // never leave the hero hidden
-    return () => clearTimeout(fallback);
+    return () => {
+      clearTimeout(fallback);
+      if (settleTimer) clearTimeout(settleTimer);
+      removeSettle?.();
+    };
   }, []);
 
   // The Summoning — three.js lifecycle
