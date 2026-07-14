@@ -1191,6 +1191,11 @@ const CSS = `
     position:absolute; inset:0; width:100%; height:100%;
     opacity:0; transition:opacity 1.1s ease; z-index:1;
     touch-action:pan-y; /* orbit-free: taps summon, scroll stays native */
+    /* Dissolve the particle field into the ink before the hero's bottom edge —
+       without this the starfield ends in a hard clipped line against the next
+       section. */
+    mask-image:linear-gradient(to bottom, #000 0%, #000 72%, transparent 98%);
+    -webkit-mask-image:linear-gradient(to bottom, #000 0%, #000 72%, transparent 98%);
   }
   .summon-canvas.ready { opacity:1; }
   .hero-accent {
@@ -1733,54 +1738,117 @@ const CSS = `
      once the server-curated (or seeded-fallback) pair has resolved, so it
      fades in on mount rather than riding the scroll-reveal IO (that observer
      only queries .reveal elements present at first paint). */
+  /* --- Today's debate — the live arena teaser --- */
   .debate-teaser { padding:72px 40px 96px; background:var(--bg); position:relative; }
-  .debate-inner {
-    max-width:640px; margin:0 auto; text-align:center;
-    animation:debateIn .7s var(--ease) both;
-  }
-  @keyframes debateIn {
-    from { opacity:0; transform:translateY(18px); }
+  .debate-inner { max-width:680px; margin:0 auto; text-align:center; }
+  .debate-inner .section-sub { margin:0 auto; }
+  /* Entrance choreography. Driven by a component-local IntersectionObserver
+     ('.in' on the section) — the global reveal observer only registers
+     elements present at first paint, and this section mounts after today's
+     pair resolves. */
+  .debate-eyebrow, .debate-heading, .debate-sub, .debate-side, .debate-seam, .debate-coin { opacity:0; }
+  .debate-teaser.in .debate-eyebrow { animation:debateRise .7s var(--ease) both; }
+  .debate-teaser.in .debate-heading { animation:debateRise .7s var(--ease) .08s both; }
+  .debate-teaser.in .debate-sub { animation:debateRise .7s var(--ease) .16s both; }
+  @keyframes debateRise {
+    from { opacity:0; transform:translateY(16px); }
     to { opacity:1; transform:none; }
   }
-  .debate-inner .section-sub { margin:0 auto; }
-  .debate-card {
-    margin-top:40px; background:var(--card); border:1px solid var(--border);
-    border-radius:var(--radius); padding:32px 28px 28px;
-    box-shadow:0 24px 70px rgba(0,0,0,0.4);
-  }
-  .debate-portraits {
-    display:flex; align-items:center; justify-content:center; gap:20px;
-  }
-  .debate-portrait {
-    width:96px; height:96px; border-radius:50%; overflow:hidden; flex-shrink:0;
-    background:var(--surface); border:2px solid var(--border);
-  }
-  .debate-portrait.l { border-color:rgba(231,115,51,0.55); }
-  .debate-portrait.r { border-color:rgba(21,161,171,0.55); }
-  .debate-portrait img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
-  .debate-portrait-fallback {
-    width:100%; height:100%; display:flex; align-items:center; justify-content:center;
-    font-family:'Righteous',sans-serif; font-size:32px; color:var(--muted);
-  }
-  .debate-vs {
-    font-family:'Righteous',sans-serif; font-size:14px; color:var(--muted);
-    letter-spacing:1px; flex-shrink:0;
-  }
   .debate-vs-text { color:var(--muted); font-size:0.6em; vertical-align:middle; }
-  .debate-split { margin-top:26px; }
+
+  /* The stage: two fighters filling their halves, each lit in their side's
+     colour, split by a skewed gold seam with the VS coin on it — the arena's
+     clash-card language, not a widget. */
+  .debate-stage {
+    position:relative; margin-top:44px; height:250px;
+    border-radius:20px; overflow:hidden;
+    border:1px solid var(--border); background:var(--card);
+    box-shadow:0 30px 80px rgba(0,0,0,0.5);
+    display:flex;
+  }
+  .debate-side { position:relative; flex:1; overflow:hidden; }
+  .debate-teaser.in .debate-side.l { animation:debateSlideL .8s var(--ease) .2s both; }
+  .debate-teaser.in .debate-side.r { animation:debateSlideR .8s var(--ease) .2s both; }
+  @keyframes debateSlideL {
+    from { opacity:0; transform:translateX(-36px); }
+    to { opacity:1; transform:none; }
+  }
+  @keyframes debateSlideR {
+    from { opacity:0; transform:translateX(36px); }
+    to { opacity:1; transform:none; }
+  }
+  .debate-side img {
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover; object-position:top;
+  }
+  .debate-side-fallback {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Righteous',sans-serif; font-size:64px; color:var(--muted);
+    background:var(--surface);
+  }
+  /* Side-colour washes + a floor fade that keeps the names legible. */
+  .debate-side.l::after {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(115deg, rgba(231,115,51,0.30) 0%, transparent 55%),
+               linear-gradient(to top, rgba(11,24,32,0.88) 0%, transparent 58%);
+  }
+  .debate-side.r::after {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(245deg, rgba(21,161,171,0.30) 0%, transparent 55%),
+               linear-gradient(to top, rgba(11,24,32,0.88) 0%, transparent 58%);
+  }
+  .debate-name {
+    position:absolute; bottom:14px; z-index:2;
+    font-family:'Righteous',sans-serif; font-size:17px; color:var(--beige);
+    letter-spacing:0.3px; text-shadow:0 2px 12px rgba(0,0,0,0.8);
+  }
+  .debate-side.l .debate-name { left:16px; }
+  .debate-side.r .debate-name { right:16px; }
+  .debate-seam {
+    position:absolute; top:-10%; bottom:-10%; left:50%; width:3px; z-index:2;
+    transform:translateX(-50%) rotate(9deg); transform-origin:center;
+    background:linear-gradient(to bottom, transparent, var(--yellow) 30%, var(--orange) 70%, transparent);
+    box-shadow:0 0 18px rgba(249,178,34,0.45);
+  }
+  .debate-teaser.in .debate-seam { animation:debateSeam .6s var(--ease) .5s both; }
+  @keyframes debateSeam {
+    from { opacity:0; transform:translateX(-50%) rotate(9deg) scaleY(0.3); }
+    to { opacity:1; transform:translateX(-50%) rotate(9deg) scaleY(1); }
+  }
+  .debate-coin {
+    position:absolute; top:50%; left:50%; z-index:3;
+    width:54px; height:54px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:#0e1c26; border:2px solid var(--yellow);
+    font-family:'Righteous',sans-serif; font-size:16px; color:var(--yellow); letter-spacing:1px;
+    box-shadow:0 0 34px rgba(249,178,34,0.35), 0 10px 30px rgba(0,0,0,0.6);
+  }
+  .debate-teaser.in .debate-coin { animation:debateCoin .55s cubic-bezier(.2,1.6,.4,1) .62s both; }
+  @keyframes debateCoin {
+    from { opacity:0; transform:translate(-50%,-50%) scale(0.3) rotate(-14deg); }
+    to { opacity:1; transform:translate(-50%,-50%) scale(1) rotate(0deg); }
+  }
+
+  /* Live crowd split — fills from 50/50 to the real tally once revealed. */
+  .debate-split { margin-top:22px; }
   .debate-split-bar {
     display:flex; height:10px; border-radius:6px; overflow:hidden; background:var(--surface);
   }
-  .debate-split-fill { height:100%; transition:width .8s var(--ease); }
+  .debate-split-fill { height:100%; transition:width .9s var(--ease); }
   .debate-split-fill.l { background:linear-gradient(90deg,#c85f2a,var(--orange)); }
   .debate-split-fill.r { background:linear-gradient(90deg,var(--teal),#0f7f88); }
   .debate-split-labels {
-    display:flex; justify-content:space-between; margin-top:8px;
+    display:flex; justify-content:space-between; margin-top:9px;
     font-size:12px; font-weight:600; letter-spacing:0.5px; color:var(--muted);
   }
   .debate-split-labels .l { color:var(--orange); }
   .debate-split-labels .r { color:var(--teal); }
   .debate-teaser .btn-primary { margin-top:32px; }
+  @media (prefers-reduced-motion:reduce) {
+    .debate-eyebrow,.debate-heading,.debate-sub,.debate-side,.debate-seam,.debate-coin {
+      opacity:1 !important; animation:none !important;
+    }
+  }
 
   footer {
     /* Bottom clearance = the iOS toolbar/home-indicator zone, so the page closes
@@ -1864,13 +1932,14 @@ const CSS = `
 
     /* Sections */
     .section,.screenshots,.showcase,.cta-section,.debate-teaser { padding:64px 20px; }
+    .debate-stage { height:200px; }
+    .debate-name { font-size:14px; }
+    .debate-coin { width:46px; height:46px; font-size:14px; }
     .section-heading { font-size:clamp(24px,6vw,34px); margin-bottom:16px; }
     .section-sub { font-size:15px; }
 
     /* Daily debate teaser — smaller portraits, tighter card */
     .debate-card { padding:24px 18px 20px; }
-    .debate-portrait { width:76px; height:76px; }
-    .debate-portraits { gap:14px; }
 
     /* Features — grid layout: icon left, title+desc right */
     .features-grid { grid-template-columns:1fr; gap:10px; margin-top:36px; }
@@ -2075,17 +2144,18 @@ function firstSentence(text: string): string | null {
   return match ? match[0].trim() : trimmed;
 }
 
-function DebatePortrait({ hero, side }: { hero: MatchupHero; side: 'l' | 'r' }) {
+function DebateSide({ hero, side }: { hero: MatchupHero; side: 'l' | 'r' }) {
   const src = hero.portrait_url ?? hero.image_url ?? null;
   return (
-    <div className={`debate-portrait ${side}`}>
+    <div className={`debate-side ${side}`}>
       {src ? (
         <img src={src} alt={hero.name} loading="lazy" />
       ) : (
-        <span className="debate-portrait-fallback" aria-hidden="true">
+        <span className="debate-side-fallback" aria-hidden="true">
           {hero.name.charAt(0)}
         </span>
       )}
+      <span className="debate-name">{hero.name}</span>
     </div>
   );
 }
@@ -2093,17 +2163,48 @@ function DebatePortrait({ hero, side }: { hero: MatchupHero; side: 'l' | 'r' }) 
 // Teaser only — no inline voting. The split bar reads the live crowd tally
 // (useMatchupVote, same hook the Compare screen uses) and falls back to the
 // stat-round split until the tally loads or if it's empty, so the bar is
-// never a flat 50/50 by default.
+// never a flat 50/50 by default. The whole section choreographs in when it
+// scrolls into view (component-local IO — the global reveal observer only
+// registers first-paint elements, and this mounts after today's pair
+// resolves): copy rises, fighters slide in from their corners, the gold seam
+// strikes, the VS coin pops, and the split bar fills from 50/50 to the tally.
 function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText: string | null }) {
   const router = useRouter();
   const { heroA, heroB, winsA, winsB, verdict } = matchup;
   const { tally } = useMatchupVote(heroA.id, heroB.id);
+  const sectionRef = useRef<HTMLElement>(null);
+  const [seen, setSeen] = useState(false);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    if (!('IntersectionObserver' in window)) {
+      setSeen(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setSeen(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.3 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   const haveTally = !!tally && tally.total > 0;
   const total = haveTally ? tally.total : winsA + winsB;
   const votesA = haveTally ? tally.votesA : winsA;
   const pctA = total > 0 ? Math.round((votesA / total) * 100) : 50;
   const pctB = 100 - pctA;
+  // Bar geometry: hold 50/50 until revealed (the CSS width transition then
+  // animates to the real split), and never let a side collapse to nothing —
+  // a 0/100 tally renders 7/93 visually while the labels stay honest.
+  const clampW = (n: number) => Math.min(93, Math.max(7, n));
+  const wA = seen ? clampW(pctA) : 50;
   const line =
     hookText ?? firstSentence(verdict) ?? `${heroA.name} or ${heroB.name} — who actually wins?`;
 
@@ -2111,32 +2212,31 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
     router.push(`/compare/${heroA.id}/${heroB.id}` as Parameters<typeof router.push>[0]);
 
   return (
-    <section className="debate-teaser">
+    <section className={`debate-teaser${seen ? ' in' : ''}`} ref={sectionRef}>
       <div className="debate-inner">
-        <p className="section-eyebrow">Today&apos;s debate</p>
-        <h2 className="section-heading">
+        <p className="section-eyebrow debate-eyebrow">Today&apos;s debate</p>
+        <h2 className="section-heading debate-heading">
           {heroA.name} <span className="debate-vs-text">vs</span> {heroB.name}
         </h2>
-        <p className="section-sub">{line}</p>
+        <p className="section-sub debate-sub">{line}</p>
 
-        <div className="debate-card">
-          <div className="debate-portraits">
-            <DebatePortrait hero={heroA} side="l" />
-            <span className="debate-vs" aria-hidden="true">
-              VS
-            </span>
-            <DebatePortrait hero={heroB} side="r" />
+        <div className="debate-stage">
+          <DebateSide hero={heroA} side="l" />
+          <DebateSide hero={heroB} side="r" />
+          <div className="debate-seam" aria-hidden="true" />
+          <span className="debate-coin" aria-hidden="true">
+            VS
+          </span>
+        </div>
+
+        <div className="debate-split" aria-hidden="true">
+          <div className="debate-split-bar">
+            <div className="debate-split-fill l" style={{ width: `${wA}%` }} />
+            <div className="debate-split-fill r" style={{ width: `${100 - wA}%` }} />
           </div>
-
-          <div className="debate-split" aria-hidden="true">
-            <div className="debate-split-bar">
-              <div className="debate-split-fill l" style={{ width: `${pctA}%` }} />
-              <div className="debate-split-fill r" style={{ width: `${pctB}%` }} />
-            </div>
-            <div className="debate-split-labels">
-              <span className="l">{pctA}%</span>
-              <span className="r">{pctB}%</span>
-            </div>
+          <div className="debate-split-labels">
+            <span className="l">{pctA}%</span>
+            <span className="r">{pctB}%</span>
           </div>
         </div>
 
