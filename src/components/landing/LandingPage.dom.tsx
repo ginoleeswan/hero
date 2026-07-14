@@ -1778,7 +1778,7 @@ const CSS = `
   /* The stage: fighters square off from the bottom corners (side B mirrored so
      they FACE each other), the crossfire of takes filling the air between. */
   .debate-stage {
-    position:relative; margin-top:44px; height:380px;
+    position:relative; margin-top:44px;
     border-radius:20px; overflow:hidden;
     border:1px solid var(--border);
     background:
@@ -1787,14 +1787,15 @@ const CSS = `
       var(--card);
     box-shadow:0 30px 80px rgba(0,0,0,0.5);
   }
+  /* The air above the face-off — where the argument happens. */
+  .debate-air { position:relative; height:236px; }
+  /* The face-off row: two halves sized to the ART's aspect, so the FULL
+     portrait always renders — nothing crops, at any viewport width. */
+  .debate-faceoff { display:flex; }
   .debate-side {
-    position:absolute; bottom:0; width:50%; height:58%;
+    position:relative; width:50%; aspect-ratio:1/1;
     overflow:hidden;
-    mask-image:linear-gradient(to top, #000 0%, #000 74%, transparent 100%);
-    -webkit-mask-image:linear-gradient(to top, #000 0%, #000 74%, transparent 100%);
   }
-  .debate-side.l { left:0; }
-  .debate-side.r { right:0; }
   /* Duotone: grayscale art washed in the camp colour (mix-blend color keeps
      luminance, swaps hue — the montage "ghost gallery" trick), so any source
      art harmonises with the section instead of shouting its own palette. */
@@ -1816,7 +1817,7 @@ const CSS = `
      scroll the stage in — the reader causes the confrontation. Transforms are
      cleared once landed so no composited layer outlives the motion. */
   .debate-side img {
-    position:absolute; left:0; right:0; top:9%; width:100%; height:100%;
+    position:absolute; inset:0; width:100%; height:100%;
     object-fit:cover; object-position:top;
   }
   /* Face each other: mirror side B (portrait art overwhelmingly faces right). */
@@ -1844,24 +1845,20 @@ const CSS = `
      conversation cadence, tails aimed at their camp. */
   .debate-bubble {
     position:absolute; z-index:3; max-width:62%;
-    padding:11px 14px 12px; border-radius:14px; text-align:left;
-    font-size:13.5px; line-height:1.45; color:var(--beige);
-    background:rgba(20,33,48,0.92);
-    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
-    border:1px solid var(--border);
-    box-shadow:0 14px 40px rgba(0,0,0,0.45);
+    text-align:left;
+    font-size:15px; line-height:1.5; color:var(--beige);
+    text-shadow:0 2px 16px rgba(0,0,0,0.85);
   }
   .debate-bubble .debate-bubble-author {
     display:block; margin-top:6px;
     font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase;
   }
-  .debate-bubble.a { border-color:rgba(231,115,51,0.45); border-bottom-left-radius:4px; }
-  .debate-bubble.b { border-color:rgba(21,161,171,0.45); border-bottom-right-radius:4px; }
+  .debate-bubble.b { text-align:right; }
   .debate-bubble.a .debate-bubble-author { color:var(--orange); }
   .debate-bubble.b .debate-bubble-author { color:var(--teal); }
-  .debate-bubble.slot1 { top:22px; left:16px; }
-  .debate-bubble.slot2 { top:104px; right:16px; }
-  .debate-bubble.slot3 { top:196px; left:50%; transform:translateX(-50%); max-width:66%; }
+  .debate-bubble.slot1 { top:26px; left:20px; }
+  .debate-bubble.slot2 { top:104px; right:20px; }
+  .debate-bubble.slot3 { top:182px; left:50%; transform:translateX(-50%); max-width:70%; text-align:center; }
   .debate-teaser.in .debate-bubble.slot1 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) .55s both; }
   .debate-teaser.in .debate-bubble.slot2 { animation:debateBubble .5s cubic-bezier(.2,1.4,.4,1) 1.2s both; }
   .debate-teaser.in .debate-bubble.slot3 { animation:debateBubbleC .5s cubic-bezier(.2,1.4,.4,1) 1.9s both; }
@@ -2013,12 +2010,11 @@ const CSS = `
 
     /* Sections */
     .section,.screenshots,.showcase,.cta-section,.debate-teaser { padding:64px 20px; }
-    .debate-stage { height:340px; }
-    .debate-bubble { font-size:12.5px; max-width:72%; }
-    .debate-bubble.slot2 { top:96px; }
-    .debate-bubble.slot3 { top:184px; max-width:76%; }
-    .debate-side { height:52%; }
-    .debate-faceoff-seam { height:52%; }
+    .debate-air { height:212px; }
+    .debate-bubble { font-size:13.5px; max-width:74%; }
+    .debate-bubble.slot1 { top:16px; }
+    .debate-bubble.slot2 { top:88px; }
+    .debate-bubble.slot3 { top:158px; max-width:80%; }
     .section-heading { font-size:clamp(24px,6vw,34px); margin-bottom:16px; }
     .section-sub { font-size:15px; }
 
@@ -2437,15 +2433,19 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
         <p className="section-sub debate-sub">{line}</p>
 
         <div className="debate-stage" ref={stageRef}>
-          <DebateSide hero={heroA} side="l" />
-          <DebateSide hero={heroB} side="r" />
+          <div className="debate-air">
+            {bubbles.map((bubble, idx) => (
+              <div key={idx} className={`debate-bubble ${bubble.side} slot${idx + 1}`}>
+                {bubble.body}
+                <span className="debate-bubble-author">{bubble.author}</span>
+              </div>
+            ))}
+          </div>
+          <div className="debate-faceoff">
+            <DebateSide hero={heroA} side="l" />
+            <DebateSide hero={heroB} side="r" />
+          </div>
           <div className="debate-faceoff-seam" aria-hidden="true" />
-          {bubbles.map((bubble, idx) => (
-            <div key={idx} className={`debate-bubble ${bubble.side} slot${idx + 1}`}>
-              {bubble.body}
-              <span className="debate-bubble-author">{bubble.author}</span>
-            </div>
-          ))}
         </div>
 
         <div className="debate-split">
