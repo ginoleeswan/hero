@@ -1,4 +1,4 @@
-import { useChromeColor } from '../contexts/WebChromeContext';
+import { isLightColor, useChromeColor } from '../contexts/WebChromeContext';
 import { useWebCanvas } from './useWebCanvas';
 
 interface ScreenChrome {
@@ -32,4 +32,16 @@ interface ScreenChrome {
 export function useScreenChrome({ top, canvas }: ScreenChrome) {
   useWebCanvas(canvas);
   useChromeColor(top ?? canvas);
+  // Dev guard for the constant-ink chrome rule: on mobile web the canvas tints
+  // BOTH iOS Safari bars (and is re-sampled across scroll/toolbar states), so it
+  // must never be light — the status zone would visibly change colour. Light
+  // bodies belong on the page surface (with PageEndCap closing it on ink), not
+  // on the canvas. Desktop may use light canvases freely.
+  if (__DEV__ && typeof window !== 'undefined' && window.innerWidth < 768 && isLightColor(canvas)) {
+    console.warn(
+      `useScreenChrome: light canvas "${canvas}" on a mobile viewport — the iOS ` +
+        'status zone will change colour. Use SURFACE.ink and close the page on ' +
+        'ink (PageEndCap) instead.',
+    );
+  }
 }

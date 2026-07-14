@@ -163,6 +163,27 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
     };
   }, [isMobile, pathname]);
 
+  // Publish where page-level sticky utilities (the browse search deck, the
+  // /search header) should pin: tucked under the bar while it's shown, docked
+  // near the top edge when it retires — so utilities rise/yield in one motion
+  // with the bar instead of floating where it used to be. CSS var so consumers
+  // stay pure CSS (top/padding + transition) with no shared React state.
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const root = document.documentElement;
+    if (!isMobile) {
+      root.style.removeProperty('--mob-utility-top');
+      return undefined;
+    }
+    root.style.setProperty(
+      '--mob-utility-top',
+      mobHidden
+        ? 'calc(env(safe-area-inset-top) + 8px)'
+        : `calc(env(safe-area-inset-top) + ${TOPBAR_HEIGHT - 8}px)`,
+    );
+    return () => root.style.removeProperty('--mob-utility-top');
+  }, [isMobile, mobHidden]);
+
   // New routes start at the top — reset the scroll-derived bar state on
   // navigation, then the scroll listener above takes over.
   /* eslint-disable react-hooks/set-state-in-effect */
