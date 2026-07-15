@@ -425,7 +425,7 @@ export default function AdminHealthScreen() {
             ) : showHealthSkeleton ? (
               <PipelinesSkeleton narrow={narrow} />
             ) : null)}
-          {domain === 'inbox' && <InboxLane jump={inboxJump} />}
+          {domain === 'inbox' && <InboxLane jump={inboxJump} flash={flash} />}
           {domain === 'audience' && (
             <AudienceLane narrow={narrow} onOpenReview={() => jumpInbox('review')} />
           )}
