@@ -1,5 +1,5 @@
 import { View, StyleSheet } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, usePathname } from 'expo-router';
 import { COLORS, SURFACE } from '../../../src/constants/colors';
 import { useTeamBattle } from '../../../src/hooks/useTeamBattle';
 import { useAuth } from '../../../src/hooks/useAuth';
@@ -7,17 +7,19 @@ import { useScreenChrome } from '../../../src/hooks/useScreenChrome';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 import { ClashArena } from '../../../src/components/versus/ClashArena';
 import { ClashSkeleton } from '../../../src/components/versus/ClashSkeleton';
+import { loginHref } from '../../../src/lib/loginRedirect';
 
 export default function TeamClashWeb() {
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
   const { battleId } = useLocalSearchParams<{ battleId: string }>();
   const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
   const { loading, sideA, sideB, result, tally, vote } = useTeamBattle(battleId);
 
   const onVote = (teamId: string) => {
     if (!user) {
-      router.push('/(auth)/login');
+      router.push(loginHref(pathname));
       return;
     }
     void vote(teamId);

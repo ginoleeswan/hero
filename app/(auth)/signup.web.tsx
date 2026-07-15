@@ -8,8 +8,9 @@ import {
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
+import { loginHref } from '../../src/lib/loginRedirect';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { PageEndCap } from '../../src/components/web/PageEndCap';
 import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';
@@ -26,6 +27,7 @@ const HERO_ASPECT = LOGIN_HERO.width / LOGIN_HERO.height;
 export default function WebSignupScreen() {
   const { signUp, signInWithGoogle, signInWithApple } = useAuth();
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string | string[] }>();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
 
@@ -70,7 +72,7 @@ export default function WebSignupScreen() {
         <Text style={styles.pendingEmail}>{pendingEmail}</Text>
       </Text>
       <Text style={styles.pendingHint}>Can’t find it? Check your Spam or Junk folder.</Text>
-      <Pressable onPress={() => router.push('/(auth)/login')} style={styles.pendingCta as object}>
+      <Pressable onPress={() => router.push(loginHref(returnTo))} style={styles.pendingCta as object}>
         <Text style={styles.pendingCtaText}>Back to Sign In</Text>
       </Pressable>
       <Pressable
@@ -198,7 +200,7 @@ export default function WebSignupScreen() {
         .
       </Text>
 
-      <Pressable onPress={() => router.push('/(auth)/login')} style={styles.switchRow as object}>
+      <Pressable onPress={() => router.push(loginHref(returnTo))} style={styles.switchRow as object}>
         <Text style={styles.switchText}>Already have an account? </Text>
         <Text style={styles.switchLink}>Sign in</Text>
       </Pressable>

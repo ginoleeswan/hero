@@ -15,7 +15,7 @@ import {
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter, Link } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter, usePathname, Link } from 'expo-router';
 import ReAnimated, {
   FadeIn,
   FadeOut,
@@ -33,6 +33,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { NotFoundView, LoadErrorView } from '../../src/components/NotFoundView';
 import { heroRowToCharacterData } from '../../src/lib/db/heroes';
+import { loginHref } from '../../src/lib/loginRedirect';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas';
 import { groupTitlesByMedia } from '../../src/lib/db/titles';
 import { PortrayedBySection } from '../../src/components/PortrayedBySection';
@@ -592,6 +593,7 @@ export default function CharacterScreen() {
     imageUri?: string;
   }>();
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const compareStripStyle = [styles.compareStrip, { paddingBottom: insets.bottom || 16 }];
   const {
@@ -1682,7 +1684,7 @@ export default function CharacterScreen() {
           user={user}
           isAdmin={isAdmin}
           priorCount={0}
-          onRequestSignIn={() => router.push('/(auth)/login')}
+          onRequestSignIn={() => router.push(loginHref(pathname))}
           onSubmitted={async () => {
             // Admin edits apply immediately — pull the fresh row so the change
             // shows on the page without a manual reload.
@@ -1702,7 +1704,7 @@ export default function CharacterScreen() {
           imageUrl={reportCtx?.imageUrl ?? null}
           portraitUrl={heroPortraitUrl}
           user={user}
-          onRequestSignIn={() => router.push('/(auth)/login')}
+          onRequestSignIn={() => router.push(loginHref(pathname))}
         />
       ) : null}
 

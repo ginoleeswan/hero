@@ -10,13 +10,14 @@ import {
   ScrollView,
   useWindowDimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useAuth } from '../../src/hooks/useAuth';
+import { loginHref } from '../../src/lib/loginRedirect';
 import { COLORS } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { DotGrid } from '../../src/components/ui/DotGrid';
@@ -34,6 +35,7 @@ const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 export default function SignupScreen() {
   const { signUp, signInWithGoogle, signInWithApple } = useAuth();
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
 
@@ -124,7 +126,7 @@ export default function SignupScreen() {
                 <Text style={styles.pendingHint}>
                   Can’t find it? Check your Spam or Junk folder.
                 </Text>
-                <Pressable onPress={() => router.push('/(auth)/login')} style={styles.pendingCta}>
+                <Pressable onPress={() => router.push(loginHref(returnTo))} style={styles.pendingCta}>
                   <Text style={styles.pendingCtaText}>Back to Sign In</Text>
                 </Pressable>
                 <Pressable
@@ -257,7 +259,7 @@ export default function SignupScreen() {
                   .
                 </Text>
 
-                <Pressable onPress={() => router.push('/(auth)/login')} style={styles.switchRow}>
+                <Pressable onPress={() => router.push(loginHref(returnTo))} style={styles.switchRow}>
                   <Text style={styles.switchText}>Already have an account? </Text>
                   <Text style={styles.switchLink}>Sign in</Text>
                 </Pressable>

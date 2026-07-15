@@ -10,7 +10,7 @@ import {
   ScrollView,
   useWindowDimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,6 +24,7 @@ import { AnimatedInput } from '../../src/components/ui/AnimatedInput';
 import { SocialDivider } from '../../src/components/ui/SocialDivider';
 import { GoogleSignInButton } from '../../src/components/ui/GoogleSignInButton';
 import { AppleSignInButton } from '../../src/components/ui/AppleSignInButton';
+import { postAuthTarget, signupHref } from '../../src/lib/loginRedirect';
 
 // Google Sign-In requires the OAuth URL scheme registered at native build time.
 // Expo Go / dev client builds don't have it — hide the button in those environments.
@@ -34,6 +35,7 @@ const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 export default function LoginScreen() {
   const { signIn, signInWithGoogle, signInWithApple } = useAuth();
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
 
@@ -61,7 +63,9 @@ export default function LoginScreen() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.replace('/explore');
+      // Return to the page the user was acting on (the AuthGate honors the same
+      // param and would otherwise win the race anyway — both compute this target).
+      router.replace(postAuthTarget(returnTo));
     }
   };
 
@@ -222,7 +226,7 @@ export default function LoginScreen() {
               )}
             </Pressable>
 
-            <Pressable onPress={() => router.push('/(auth)/signup')} style={styles.switchRow}>
+            <Pressable onPress={() => router.push(signupHref(returnTo))} style={styles.switchRow}>
               <Text style={styles.switchText}>Don’t have an account? </Text>
               <Text style={styles.switchLink}>Sign up</Text>
             </Pressable>

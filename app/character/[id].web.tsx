@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, Fragment, type ComponentProps } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, usePathname } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { NotFoundView, LoadErrorView } from '../../src/components/NotFoundView';
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
+import { loginHref } from '../../src/lib/loginRedirect';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
 import { groupPowers } from '../../src/constants/powerIcons';
 import { useHeroDetail } from '../../src/hooks/useHeroDetail';
@@ -506,6 +507,7 @@ function VitalCount({ value, style }: { value: number; style?: object }) {
 export default function WebCharacterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const pathname = usePathname();
   const { width, height: winHeight } = useWindowDimensions();
   // Freeze at mount: winHeight changes as the iOS toolbar collapses, which
   // resized the hero mid-scroll and re-cropped the cover art (a "zoom" jitter).
@@ -2391,7 +2393,7 @@ export default function WebCharacterScreen() {
           user={user}
           isAdmin={isAdmin}
           priorCount={0}
-          onRequestSignIn={() => router.push('/(auth)/login')}
+          onRequestSignIn={() => router.push(loginHref(pathname))}
           onSubmitted={() => {
             if (isAdmin) reloadHero();
           }}
@@ -2405,7 +2407,7 @@ export default function WebCharacterScreen() {
           imageUrl={reportCtx?.imageUrl ?? null}
           portraitUrl={heroPortraitUrl}
           user={user}
-          onRequestSignIn={() => router.push('/(auth)/login')}
+          onRequestSignIn={() => router.push(loginHref(pathname))}
         />
         {/* end mobile */}
       </View>

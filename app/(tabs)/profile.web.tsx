@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { queryClient } from '../../src/lib/query/queryClient';
+import { loginHref } from '../../src/lib/loginRedirect';
 import { exploreKeys } from '../../src/lib/query/keys';
 import {
   View,
@@ -23,7 +24,7 @@ import { LOGO_MASK_PATH as HERO_LOGO_PATH } from '../../src/constants/logo';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { useProfileData } from '../../src/hooks/useProfileData';
@@ -84,6 +85,7 @@ function username(email: string) {
 
 function GuestWebProfileScreen() {
   const router = useRouter();
+  const pathname = usePathname();
   const { width } = useWindowDimensions();
   const isMobile = width < SIDEBAR_BREAKPOINT;
 
@@ -97,7 +99,7 @@ function GuestWebProfileScreen() {
         Sign in to save your favourite heroes, customise your profile, and sync across devices.
       </Text>
       <Pressable
-        onPress={() => router.push('/(auth)/login')}
+        onPress={() => router.push(loginHref(pathname))}
         style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
           [guest.signInBtn, hovered && (guest.signInBtnHover as object)] as object
         }

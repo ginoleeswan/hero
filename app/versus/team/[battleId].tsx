@@ -1,5 +1,5 @@
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useLocalSearchParams, useRouter, usePathname, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -8,17 +8,19 @@ import { useTeamBattle } from '../../../src/hooks/useTeamBattle';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { ClashArena } from '../../../src/components/versus/ClashArena';
 import { ClashSkeleton } from '../../../src/components/versus/ClashSkeleton';
+import { loginHref } from '../../../src/lib/loginRedirect';
 
 export default function TeamClashScreen() {
   const { battleId } = useLocalSearchParams<{ battleId: string }>();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
   const { loading, sideA, sideB, result, tally, vote } = useTeamBattle(battleId);
 
   const onVote = async (teamId: string) => {
     if (!user) {
-      router.push('/(auth)/login');
+      router.push(loginHref(pathname));
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
