@@ -101,7 +101,10 @@ export default function TitleScreen() {
             subline="Check your connection and try again."
             actions={[
               { label: 'Retry', primary: true, onPress: () => titleQuery.refetch() },
-              { label: 'Go back', onPress: () => (router.canGoBack() ? router.back() : router.replace('/explore')) },
+              {
+                label: 'Go back',
+                onPress: () => (router.canGoBack() ? router.back() : router.replace('/explore')),
+              },
             ]}
           />
         </View>
@@ -125,7 +128,13 @@ export default function TitleScreen() {
           icon="film-outline"
           headline="Title not found"
           subline="We don't have this title in the archive yet."
-          actions={[{ label: 'Go back', primary: true, onPress: () => (router.canGoBack() ? router.back() : router.replace('/explore')) }]}
+          actions={[
+            {
+              label: 'Go back',
+              primary: true,
+              onPress: () => (router.canGoBack() ? router.back() : router.replace('/explore')),
+            },
+          ]}
         />
       </View>
     );
@@ -275,6 +284,8 @@ export default function TitleScreen() {
           contentFit="cover"
           cachePolicy="memory-disk"
           transition={300}
+          // Above-the-fold LCP element on the title page — fetch at high priority.
+          priority="high"
         />
       ) : (
         <View style={[styles.posterFloatImg, styles.posterFloatPlaceholder]}>
@@ -306,7 +317,10 @@ export default function TitleScreen() {
     return (
       <View style={styles.webPage}>
         <Stack.Screen options={{ headerShown: false }} />
-        <FilmBackdropHeader film={film} onBack={() => (router.canGoBack() ? router.back() : router.replace('/explore'))} />
+        <FilmBackdropHeader
+          film={film}
+          onBack={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
+        />
         {/* Header is real (seeded stub or live row); the body waits on all its
             data and dissolves in over a body skeleton — so it never shifts. */}
         <View style={styles.bodyRegion}>
@@ -378,7 +392,10 @@ export default function TitleScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        <FilmBackdropHeader film={film} onBack={() => (router.canGoBack() ? router.back() : router.replace('/explore'))} />
+        <FilmBackdropHeader
+          film={film}
+          onBack={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
+        />
 
         {/* Header is real (seeded stub or live row); the body waits on all its
             data, then swaps in (gated → in place, no shift). */}

@@ -56,6 +56,8 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
           contentFit="cover"
           cachePolicy="memory-disk"
           transition={400}
+          // Full-bleed backdrop = the above-the-fold LCP element on title pages.
+          priority="high"
         />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.backdropPlaceholder]} />
