@@ -362,7 +362,7 @@ export default function IssueScreen() {
           subline="Check your connection and try again."
           actions={[
             { label: 'Retry', primary: true, onPress: () => issueQuery.refetch() },
-            { label: 'Go back', onPress: () => router.back() },
+            { label: 'Go back', onPress: () => (router.canGoBack() ? router.back() : router.replace('/explore')) },
           ]}
         />
       </View>
@@ -388,7 +388,7 @@ export default function IssueScreen() {
           icon="book-outline"
           headline="Issue not found"
           subline="We don't have this issue in the archive yet."
-          actions={[{ label: 'Go back', primary: true, onPress: () => router.back() }]}
+          actions={[{ label: 'Go back', primary: true, onPress: () => (router.canGoBack() ? router.back() : router.replace('/explore')) }]}
         />
       </View>
     );

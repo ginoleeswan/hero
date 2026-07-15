@@ -33,10 +33,37 @@ describe('getCategoryPage tag filter', () => {
     expect(selectArg).not.toContain('hero_tags');
   });
 
-  it('inner-joins hero_tags and filters by each selected tag', async () => {
+  it('aliases the hero_tags inner join and filters the alias', async () => {
     await getCategoryPage('popular', { ...DEFAULT_FILTERS, tags: ['anti-hero'], page: 0 });
     const selectArg = (chain.select as jest.Mock).mock.calls[0][0] as string;
-    expect(selectArg).toContain('hero_tags!inner');
-    expect(chain.eq).toHaveBeenCalledWith('hero_tags.tag', 'anti-hero');
+    expect(selectArg).toContain('t0:hero_tags!inner(tag)');
+    expect(chain.eq).toHaveBeenCalledWith('t0.tag', 'anti-hero');
+  });
+
+  it('gives each tag its OWN aliased join so multiple tags AND (not an impossible single-row match)', async () => {
+    await getCategoryPage('popular', {
+      ...DEFAULT_FILTERS,
+      tags: ['comic-relief', 'wholesome'],
+      page: 0,
+    });
+    const selectArg = (chain.select as jest.Mock).mock.calls[0][0] as string;
+    // Two distinct aliased joins, not one shared embed.
+    expect(selectArg).toContain('t0:hero_tags!inner(tag)');
+    expect(selectArg).toContain('t1:hero_tags!inner(tag)');
+    // Each tag filters its own alias — never two .eq on the same key.
+    expect(chain.eq).toHaveBeenCalledWith('t0.tag', 'comic-relief');
+    expect(chain.eq).toHaveBeenCalledWith('t1.tag', 'wholesome');
+  });
+
+  it('double-quotes the search value so commas/parens do not break the .or() filter', async () => {
+    await getCategoryPage('popular', {
+      ...DEFAULT_FILTERS,
+      search: 'Spider-Man (2099)',
+      page: 0,
+    });
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    expect(orArg).toBe(
+      'name.ilike."%Spider-Man (2099)%",full_name.ilike."%Spider-Man (2099)%"',
+    );
   });
 });
