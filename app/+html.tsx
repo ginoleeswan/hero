@@ -74,6 +74,9 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-title" content="Mythique" />
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: rootStyle }} />
+        {/* Register the push-only service worker. No permission is requested
+            here — that only happens when the user flips the Settings toggle. */}
+        <script dangerouslySetInnerHTML={{ __html: swRegister }} />
       </head>
       <body>{children}</body>
     </html>
@@ -112,4 +115,15 @@ html, body { background-color: #0b1820; overscroll-behavior-y: none; }
    the very first paint — the runtime copy in _layout.web.tsx is the belt, this
    is the suspenders. */
 input, textarea, select { font-size: max(16px, 1em) !important; }
+`;
+
+// Registers /sw.js after load. Guarded for SSR/unsupported browsers. Registration
+// alone shows nothing — the SW only wakes for a push, and permission is asked
+// exclusively from the Settings toggle.
+const swRegister = `
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  });
+}
 `;

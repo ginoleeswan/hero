@@ -1,8 +1,14 @@
-import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Redirect } from 'expo-router';
 import { useAuth } from '../src/hooks/useAuth';
+import {
+  getPushState,
+  subscribeToPush,
+  unsubscribeFromPush,
+  type PushState,
+} from '../src/lib/push';
 import { useProfile } from '../src/hooks/useProfile';
 import { useCachedAdminFlag } from '../src/hooks/useCachedAdminFlag';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
@@ -80,6 +86,66 @@ function SettingRow({
     >
       {inner}
     </Pressable>
+  );
+}
+
+/**
+ * Daily-matchup push toggle. Renders nothing until support/state is known, and
+ * nothing at all where Web Push isn't available (no SW/PushManager, or no VAPID
+ * key configured) — so it silently absents itself on unsupported browsers.
+ */
+function NotificationsSection({ userId }: { userId: string }) {
+  const [state, setState] = useState<PushState | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    getPushState().then((s) => {
+      if (alive) setState(s);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (state === null || state === 'unsupported') return null;
+
+  const denied = state === 'denied';
+  const on = state === 'subscribed';
+
+  const toggle = async () => {
+    setBusy(true);
+    const res = on ? await unsubscribeFromPush() : await subscribeToPush(userId);
+    // Re-read the true state (covers a denied prompt or a browser-side change).
+    setState(res.error ? await getPushState() : on ? 'unsubscribed' : 'subscribed');
+    setBusy(false);
+  };
+
+  return (
+    <SectionShell title="Notifications">
+      <View style={styles.row}>
+        <View style={[styles.badge, styles.badgeNavy]}>
+          <Ionicons name="notifications-outline" size={16} color={COLORS.navy} />
+        </View>
+        <View style={styles.notifText}>
+          <Text style={styles.label}>Daily matchup alert</Text>
+          <Text style={styles.notifSub}>
+            {denied ? 'Blocked in your browser settings' : "Today's debate, once a day"}
+          </Text>
+        </View>
+        {busy ? (
+          <ActivityIndicator size="small" color={COLORS.navy} style={styles.rowIndicator} />
+        ) : (
+          <Switch
+            value={on}
+            onValueChange={toggle}
+            disabled={denied}
+            trackColor={{ true: COLORS.orange, false: '#d9d2c4' }}
+            accessibilityLabel="Daily matchup notifications"
+          />
+        )}
+      </View>
+    </SectionShell>
   );
 }
 
@@ -165,6 +231,8 @@ export default function WebSettingsScreen() {
             />
           )}
         </SectionShell>
+
+        <NotificationsSection userId={user.id} />
 
         {isAdmin && (
           <SectionShell title="Admin">
@@ -295,6 +363,8 @@ const styles = StyleSheet.create({
     maxWidth: 240,
   },
   rowIndicator: { width: 34, marginRight: 0 },
+  notifText: { flex: 1, gap: 1 },
+  notifSub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey },
 
   disclaimer: {
     fontFamily: 'Nunito_400Regular',
