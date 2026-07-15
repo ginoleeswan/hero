@@ -2018,6 +2018,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_mark_comicvine_unmatched: {
+        Args: { p_hero_id: string }
+        Returns: undefined
+      }
       admin_merge_heroes: {
         Args: { p_loser: string; p_winner: string }
         Returns: undefined
@@ -2059,6 +2063,10 @@ export type Database = {
       admin_run_wikidata_resolve: {
         Args: { p_limit?: number }
         Returns: string
+      }
+      admin_set_comicvine_match: {
+        Args: { p_comicvine_id: string; p_hero_id: string }
+        Returns: undefined
       }
       admin_set_drain_cron: { Args: { p_enabled: boolean }; Returns: string }
       admin_set_universe: {
