@@ -87,8 +87,8 @@ export function UniverseBreakdown({ counts, total, onNavigate }: UniverseBreakdo
               <Pressable
                 key={s.key}
                 onPress={() => onNavigate(s.path!)}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [styles.legendPress, hovered && (styles.legendPressHover as object)] as object
+                style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+                  [styles.legendPress, (hovered || pressed) && (styles.legendPressHover as object)] as object
                 }
               >
                 {row}

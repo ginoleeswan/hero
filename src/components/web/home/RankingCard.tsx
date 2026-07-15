@@ -25,8 +25,8 @@ export function RankingCard({ hero, statKey, onPress }: RankingCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [rc.wrap, hovered && (rc.wrapHover as object)] as object
+      style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+        [rc.wrap, (hovered || pressed) && (rc.wrapHover as object)] as object
       }
     >
       <HeroImage

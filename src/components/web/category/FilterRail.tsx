@@ -112,6 +112,7 @@ const s = StyleSheet.create({
     paddingVertical: 16,
     maxHeight: 'calc(100vh - 300px)',
     overflowY: 'auto',
+    scrollbarWidth: 'none', // no desktop scrollbar chrome on mobile web
   } as object,
   header: {
     flexDirection: 'row',

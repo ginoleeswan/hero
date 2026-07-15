@@ -22,8 +22,8 @@ function MoverRow({
   return (
     <Pressable
       onPress={onPress}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [s.row, hovered && (s.rowHover as object)] as object
+      style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+        [s.row, (hovered || pressed) && (s.rowHover as object)] as object
       }
     >
       <Text style={[s.rank, lead && (s.rankLead as object)] as object}>{i + 1}</Text>

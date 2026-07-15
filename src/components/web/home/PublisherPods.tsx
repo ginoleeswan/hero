@@ -50,12 +50,12 @@ export function PublisherPods({
             onPress={() => onNavigate(`/universe/${p.slug}`)}
             accessibilityRole="link"
             accessibilityLabel={`Browse ${p.name} heroes`}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+            style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
               [
                 s.pod,
                 onPaper && (s.podPaper as object),
                 isDesktop ? s.podFlex : s.podHalfWidth,
-                hovered && ((onPaper ? s.podPaperHover : s.podHover) as object),
+                (hovered || pressed) && ((onPaper ? s.podPaperHover : s.podHover) as object),
               ] as object
             }
           >
@@ -108,6 +108,7 @@ const s = StyleSheet.create({
   wordmark: {
     fontFamily: 'Flame-Regular',
     fontSize: 26,
+    lineHeight: 32, // ≥1.22× Flame floor
     letterSpacing: 0.5,
   },
 });

@@ -45,7 +45,7 @@ function Fighter({
   return (
     <Pressable
       onPress={onVote}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+      style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
         [
           m.portrait,
           { width: size, height: size },
@@ -99,7 +99,7 @@ function FighterFace({
       onPress={onVote}
       accessibilityRole="button"
       accessibilityLabel={`Vote for ${hero.name}`}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+      style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
         [
           m.face,
           side === 'a' ? m.faceLeft : m.faceRight,
@@ -237,8 +237,8 @@ function VotePrompt({
       <View style={m.voteRow as object}>
         <Pressable
           onPress={() => onVote('a')}
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [m.voteBtn, m.voteBtnA, hovered && (m.voteBtnHoverA as object)] as object
+          style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+            [m.voteBtn, m.voteBtnA, (hovered || pressed) && (m.voteBtnHoverA as object)] as object
           }
         >
           <Text style={m.voteBtnText} numberOfLines={1}>
@@ -247,8 +247,8 @@ function VotePrompt({
         </Pressable>
         <Pressable
           onPress={() => onVote('b')}
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [m.voteBtn, m.voteBtnB, hovered && (m.voteBtnHoverB as object)] as object
+          style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+            [m.voteBtn, m.voteBtnB, (hovered || pressed) && (m.voteBtnHoverB as object)] as object
           }
         >
           <Text style={m.voteBtnText} numberOfLines={1}>

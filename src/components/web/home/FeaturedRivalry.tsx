@@ -20,11 +20,11 @@ export function FeaturedRivalry({ rivalry }: { rivalry: Rivalry }) {
     <View style={{ paddingHorizontal: pagePad, marginBottom: 52 } as object}>
       <Pressable
         onPress={() => router.push(`/compare/${a.id}/${b.id}` as Parameters<typeof router.push>[0])}
-        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-          [s.card, { height: h }, hovered && (s.cardHover as object)] as object
+        style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+          [s.card, { height: h }, (hovered || pressed) && (s.cardHover as object)] as object
         }
       >
-        {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
+        {({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) => (
           <>
             {/* Diagonal panel split — the comic slash. Faces zoom slowly on
                 hover (cinematic, not springy). */}
@@ -37,7 +37,7 @@ export function FeaturedRivalry({ rivalry }: { rivalry: Rivalry }) {
               // Short, wide containers crop a horizontal slice — anchor down the
               // image so the face rides up into frame instead of the top of the head.
               contentPosition={{ top: '32%', left: '50%' }}
-              style={[s.faceA, hovered && (s.faceZoom as object)] as object}
+              style={[s.faceA, (hovered || pressed) && (s.faceZoom as object)] as object}
             />
             <HeroImage
               id={b.id}
@@ -48,7 +48,7 @@ export function FeaturedRivalry({ rivalry }: { rivalry: Rivalry }) {
               // Short, wide containers crop a horizontal slice — anchor down the
               // image so the face rides up into frame instead of the top of the head.
               contentPosition={{ top: '32%', left: '50%' }}
-              style={[s.faceB, hovered && (s.faceZoomB as object)] as object}
+              style={[s.faceB, (hovered || pressed) && (s.faceZoomB as object)] as object}
             />
             <View style={s.seam as object} />
             <View style={s.slash as object} />
@@ -60,7 +60,7 @@ export function FeaturedRivalry({ rivalry }: { rivalry: Rivalry }) {
 
             <View style={s.center as object}>
               <VsBadge size={width < 760 ? 52 : 68} variant="solid" />
-              <View style={[s.cta, hovered && (s.ctaHover as object)] as object}>
+              <View style={[s.cta, (hovered || pressed) && (s.ctaHover as object)] as object}>
                 <Text style={s.ctaText as object}>Open the Arena →</Text>
               </View>
             </View>

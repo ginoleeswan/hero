@@ -20,8 +20,8 @@ function FearedCard({
   return (
     <Pressable
       onPress={onPress}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [c.card, hovered && (c.cardHover as object)] as object
+      style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+        [c.card, (hovered || pressed) && (c.cardHover as object)] as object
       }
     >
       <HeroImage
@@ -152,6 +152,7 @@ const c = StyleSheet.create({
   name: {
     fontFamily: 'Flame-Regular',
     fontSize: 16,
+    lineHeight: 20, // ≥1.22× Flame floor
     color: COLORS.beige,
     textShadow: '0 1px 6px rgba(0,0,0,0.9)',
   } as object,

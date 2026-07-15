@@ -68,11 +68,11 @@ export function ThisMonthInHistory({
         {/* Cover — proper thumbnail at 2:3 */}
         <Pressable
           onPress={openLead}
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+          style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
             [
               s.cover,
               { width: COVER_W, height: COVER_H },
-              hovered && (s.coverHover as object),
+              (hovered || pressed) && (s.coverHover as object),
             ] as object
           }
         >
@@ -115,8 +115,8 @@ export function ThisMonthInHistory({
           {!!leadChar && (
             <Pressable
               onPress={openLead}
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [s.cta, hovered && (s.ctaHover as object)] as object
+              style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+                [s.cta, (hovered || pressed) && (s.ctaHover as object)] as object
               }
             >
               <Text style={s.ctaText as object}>Meet {leadChar.name} →</Text>
@@ -133,8 +133,8 @@ export function ThisMonthInHistory({
                   <Pressable
                     key={c.id}
                     onPress={() => onHeroPress(c.id)}
-                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                      [s.charChip, hovered && (s.charChipHover as object)] as object
+                    style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+                      [s.charChip, (hovered || pressed) && (s.charChipHover as object)] as object
                     }
                   >
                     <View

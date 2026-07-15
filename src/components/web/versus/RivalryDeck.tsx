@@ -16,8 +16,8 @@ function RivalryMini({ r, onPress }: { r: Rivalry; onPress: () => void }) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${r.a.name} versus ${r.b.name}`}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [c.mini, hovered && (c.miniHover as object)] as object
+      style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+        [c.mini, (hovered || pressed) && (c.miniHover as object)] as object
       }
     >
       <View style={c.half}>

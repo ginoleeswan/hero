@@ -50,15 +50,15 @@ export function CategoryBrowseGrid({
             onPress={() => onNavigate(pathFor(p.slug, p.kind))}
             accessibilityRole="link"
             accessibilityLabel={`Browse ${p.label}`}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+            style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
               [
                 s.tile,
                 { width: tileW, height: tileH },
-                hovered && (s.tileHover as object),
+                (hovered || pressed) && (s.tileHover as object),
               ] as object
             }
           >
-            {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
+            {({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) => (
               <>
                 {/* Only render the cover when we actually have art — the
                     HeroImage initials fallback reads as broken on a doorway
@@ -84,7 +84,7 @@ export function CategoryBrowseGrid({
                   </Text>
                 </View>
                 {/* Signature seam — the house orange hairline surfaces on hover. */}
-                <View style={[s.seam, hovered && (s.seamOn as object)] as object} />
+                <View style={[s.seam, (hovered || pressed) && (s.seamOn as object)] as object} />
               </>
             )}
           </Pressable>

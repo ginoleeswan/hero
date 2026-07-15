@@ -44,7 +44,7 @@ function FighterCard({
       disabled={revealed}
       accessibilityRole="button"
       accessibilityLabel={`Vote for ${hero.name}`}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+      style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
         [
           fc.card,
           { width: w, height: h },
@@ -152,8 +152,8 @@ function CrowdBar({
       <Pressable
         onPress={onOpen}
         accessibilityRole="button"
-        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-          [c.linkRow, hovered && (c.linkHover as object)] as object
+        style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+          [c.linkRow, (hovered || pressed) && (c.linkHover as object)] as object
         }
       >
         <Text style={c.link as object}>See full breakdown →</Text>
@@ -231,8 +231,8 @@ export function ShowdownStage({
             onPress={onShuffle}
             accessibilityRole="button"
             accessibilityLabel="Shuffle to a random matchup"
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [c.shuffle, hovered && (c.shuffleHover as object)] as object
+            style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+              [c.shuffle, (hovered || pressed) && (c.shuffleHover as object)] as object
             }
           >
             <Ionicons name="shuffle" size={15} color={COLORS.beige} />

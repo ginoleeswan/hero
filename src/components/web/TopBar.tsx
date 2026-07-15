@@ -181,7 +181,9 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
         ? 'calc(env(safe-area-inset-top) + 8px)'
         : `calc(env(safe-area-inset-top) + ${TOPBAR_HEIGHT - 8}px)`,
     );
-    return () => root.style.removeProperty('--mob-utility-top');
+    return () => {
+      root.style.removeProperty('--mob-utility-top');
+    };
   }, [isMobile, mobHidden]);
 
   // New routes start at the top — reset the scroll-derived bar state on

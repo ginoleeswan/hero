@@ -48,8 +48,8 @@ function LinkColumn({
         <Pressable
           key={l.label}
           onPress={() => onNavigate(l.path)}
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [s.linkWrap, hovered && (s.linkWrapHover as object)] as object
+          style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+            [s.linkWrap, (hovered || pressed) && (s.linkWrapHover as object)] as object
           }
         >
           <Text style={s.link as object}>{l.label}</Text>
@@ -89,8 +89,8 @@ export function HomeFooter({ heroCount, onNavigate }: HomeFooterProps) {
             </Text>
             <Pressable
               onPress={() => onNavigate('/support')}
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [s.support, hovered && (s.supportHover as object)] as object
+              style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+                [s.support, (hovered || pressed) && (s.supportHover as object)] as object
               }
             >
               <Text style={s.supportText as object}>♥ Support Mythique — it’s free & ad-free</Text>
