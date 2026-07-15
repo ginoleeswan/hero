@@ -287,7 +287,7 @@ export default function TitleScreen() {
   const tmdbLink = (
     <TouchableOpacity
       style={styles.tmdbLink}
-      onPress={() => Linking.openURL(tmdbUrl)}
+      onPress={() => Platform.OS === 'web' ? window.open(tmdbUrl, '_blank', 'noopener') : Linking.openURL(tmdbUrl)}
       activeOpacity={0.7}
     >
       <Ionicons name="open-outline" size={13} color={COLORS.orange} />
@@ -442,7 +442,7 @@ export default function TitleScreen() {
             <View style={styles.section}>
               <TouchableOpacity
                 style={styles.linkBtn}
-                onPress={() => Linking.openURL(tmdbUrl)}
+                onPress={() => Platform.OS === 'web' ? window.open(tmdbUrl, '_blank', 'noopener') : Linking.openURL(tmdbUrl)}
                 activeOpacity={0.8}
               >
                 <Ionicons name="open-outline" size={14} color="#fff" />

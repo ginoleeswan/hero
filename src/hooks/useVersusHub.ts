@@ -93,9 +93,10 @@ export function useVersusHub() {
       return;
     }
     let active = true;
-    const localYesterday = new Date();
-    localYesterday.setDate(localYesterday.getDate() - 1);
-    const key = matchupVoteKey(yesterdayResult.heroAId, yesterdayResult.heroBId, localYesterday);
+    // UTC yesterday — the rotation and vote keys live on the server's UTC
+    // calendar (see dayStamp), so "yesterday" must be computed on it too.
+    const utcYesterday = new Date(Date.now() - 86_400_000);
+    const key = matchupVoteKey(yesterdayResult.heroAId, yesterdayResult.heroBId, utcYesterday);
     AsyncStorage.getItem(key)
       .then((v) => {
         if (active && (v === 'a' || v === 'b')) setYourPick(v);

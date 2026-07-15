@@ -47,6 +47,7 @@ export default function WebLoginScreen() {
   const passwordRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
+    if (!email.trim() || !password) return; // no empty round-trips
     setLoading(true);
     setError(null);
     const { error } = await signIn(email, password);

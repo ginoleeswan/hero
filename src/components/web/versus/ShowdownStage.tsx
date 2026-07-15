@@ -227,6 +227,7 @@ export function ShowdownStage({
             <Text style={[c.coinText, { fontSize: coin * 0.3 }] as object}>VS</Text>
           </View>
           <Pressable
+            hitSlop={8}
             onPress={onShuffle}
             accessibilityRole="button"
             accessibilityLabel="Shuffle to a random matchup"

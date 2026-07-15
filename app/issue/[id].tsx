@@ -524,17 +524,18 @@ export default function IssueScreen() {
           locations={[0, 0.5, 1]}
           style={StyleSheet.absoluteFill}
         />
-        {!isWeb ? (
-          <Pressable
-            onPress={() => router.back()}
-            style={[n.backBtn, { top: insets.top + 12 }]}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
-            <Ionicons name="chevron-back" size={20} color="#fff" />
-          </Pressable>
-        ) : null}
+        {/* In-page back on every platform — mobile web previously had no way
+            back except browser chrome (the TopBar logo jumps to /explore).
+            Deep links have no history, so fall back to /explore. */}
+        <Pressable
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
+          style={[n.backBtn, { top: isWeb ? 76 : insets.top + 12 }]}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="chevron-back" size={20} color="#fff" />
+        </Pressable>
         <View style={[n.content, { paddingTop: isWeb ? 80 : insets.top + 60 }]}>
           <View style={{ width: narrowCoverW, height: Math.round(narrowCoverW * 1.5) }}>
             <CoverArt url={issue.coverUrl} accent={accent} />

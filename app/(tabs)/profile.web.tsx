@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { queryClient } from '../../src/lib/query/queryClient';
+import { exploreKeys } from '../../src/lib/query/keys';
 import {
   View,
   Text,
@@ -506,9 +508,16 @@ export default function WebProfileScreen() {
         text: 'Remove',
         style: 'destructive',
         onPress: () => {
-          removeFavourite(user.id, hero.id).catch(() => {});
+          // Optimistic removal WITH rollback — a swallowed failure left the UI
+          // and DB diverged (hero reappeared on the next refetch with a false
+          // "Removed" toast already shown).
           setFavourites((prev) => prev.filter((h) => h.id !== hero.id));
           showToast(`Removed ${hero.name}`);
+          void queryClient.invalidateQueries({ queryKey: exploreKeys.favourites(user.id) });
+          removeFavourite(user.id, hero.id).catch(() => {
+            setFavourites((prev) => (prev.some((h) => h.id === hero.id) ? prev : [hero, ...prev]));
+            showToast(`Couldn't remove ${hero.name} — try again`);
+          });
         },
       },
     ]);

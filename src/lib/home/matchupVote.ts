@@ -5,12 +5,12 @@
 
 export type MatchupSide = 'a' | 'b';
 
-/** Local calendar day as YYYY-MM-DD — the matchup rotates daily, so does the key. */
+/** UTC calendar day as YYYY-MM-DD — the matchup rotates on the server's UTC
+ *  calendar (daily_debates / todayIso), so the vote key must use the same one:
+ *  a local-date key could file a pick under a day the pair doesn't belong to
+ *  around midnight in non-UTC timezones. */
 export function dayStamp(d = new Date()): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return d.toISOString().slice(0, 10);
 }
 
 /** Storage key for a given day's matchup. Includes the pair ids so a reschedule
