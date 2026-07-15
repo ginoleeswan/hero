@@ -3,7 +3,7 @@
 // this lane is the anywhere-device posting checklist — preview each post, copy
 // its caption, tick it off. Posted-state lives in social_posts (admin RLS),
 // so it syncs across devices. Web-only, like the rest of the command center.
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, TextInput, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -675,8 +675,27 @@ export function SocialDomain() {
   const [view, setView] = useState<PubView>('queue');
   // Per-batch collapse; fully-posted batches start collapsed (see render).
   const [openBatches, setOpenBatches] = useState<Record<string, boolean>>({});
-  // "Skip" rotates today's pick without marking it posted (session-local).
-  const [skipCount, setSkipCount] = useState(0);
+  // "Skip" hides today's pick without marking it posted — persisted per-day in
+  // localStorage so a skipped post STAYS skipped across refreshes (it used to
+  // be session-only, so refreshing brought the skipped post right back).
+  const skipKey = `mythique.social.skipped.${new Date().toISOString().slice(0, 10)}`;
+  const [skipped, setSkipped] = useState<Set<string>>(() => {
+    if (typeof localStorage === 'undefined') return new Set();
+    try {
+      return new Set(JSON.parse(localStorage.getItem(skipKey) ?? '[]') as string[]);
+    } catch {
+      return new Set();
+    }
+  });
+  const skipPost = (id: string) => {
+    setSkipped((prev) => {
+      const next = new Set(prev).add(id);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(skipKey, JSON.stringify([...next]));
+      }
+      return next;
+    });
+  };
 
   const onToggle = async (p: SocialPost) => {
     await setSocialPosted(p.id, !p.posted_at);
@@ -701,23 +720,27 @@ export function SocialDomain() {
   // The daily queue: this month's organic pack + ad library, INTERLEAVED so
   // consecutive days vary (organic, ad, organic, ad …). Marking one posted
   // advances the queue automatically.
-  const monthly = (prefix: string) =>
-    allPosts
-      .filter((p) => p.batch.startsWith(prefix) && !p.posted_at)
-      .sort((a, b) => b.batch.localeCompare(a.batch) || a.ord - b.ord);
-  const organicQ = monthly('organic-');
-  const adsQ = monthly('ad-library-');
-  const dailyQueue: SocialPost[] = [];
-  for (let i = 0; i < Math.max(organicQ.length, adsQ.length); i++) {
-    if (organicQ[i]) dailyQueue.push(organicQ[i]);
-    if (adsQ[i]) dailyQueue.push(adsQ[i]);
-  }
+  // The daily queue recomputes only when posts or the skipped set change (not on
+  // every collapse/toggle render).
+  const dailyQueue: SocialPost[] = useMemo(() => {
+    const monthly = (prefix: string) =>
+      allPosts
+        .filter((p) => p.batch.startsWith(prefix) && !p.posted_at)
+        .sort((a, b) => b.batch.localeCompare(a.batch) || a.ord - b.ord);
+    const organicQ = monthly('organic-');
+    const adsQ = monthly('ad-library-');
+    const queue: SocialPost[] = [];
+    for (let i = 0; i < Math.max(organicQ.length, adsQ.length); i++) {
+      if (organicQ[i] && !skipped.has(organicQ[i].id)) queue.push(organicQ[i]);
+      if (adsQ[i] && !skipped.has(adsQ[i].id)) queue.push(adsQ[i]);
+    }
+    return queue;
+  }, [allPosts, skipped]);
   const monthlyAll = allPosts.filter(
     (p) => p.batch.startsWith('organic-') || p.batch.startsWith('ad-library-'),
   );
   const monthlyDone = monthlyAll.filter((p) => p.posted_at).length;
-  const upNext =
-    dailyQueue[skipCount % Math.max(1, dailyQueue.length)] ?? allPosts.find((p) => !p.posted_at);
+  const upNext = dailyQueue[0] ?? allPosts.find((p) => !p.posted_at && !skipped.has(p.id));
 
   const rulesPanel = (
     <Panel
@@ -883,11 +906,11 @@ export function SocialDomain() {
             <TodayCard
               post={upNext}
               onToggle={onToggle}
-              onSkip={dailyQueue.length > 1 ? () => setSkipCount((c) => c + 1) : undefined}
+              onSkip={upNext ? () => skipPost(upNext.id) : undefined}
             />
           </Panel>
         ) : (
-          <Panel title="Post today" hint="Everything is posted 🎉">
+          <Panel title="Post today" hint="Everything is posted">
             <Text style={styles.empty}>
               Generate next month's packs: organic-pack.mjs + batch-month.mjs
             </Text>

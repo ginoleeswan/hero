@@ -436,8 +436,8 @@ const styles = StyleSheet.create({
   barFillDim: { backgroundColor: 'rgba(224,168,62,0.55)' },
 
   split: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' },
-  splitMain: { flexGrow: 2, flexBasis: 460, minWidth: 320 },
-  splitRail: { flexGrow: 1, flexBasis: 280, minWidth: 260 },
+  splitMain: { flexGrow: 2, flexBasis: 460, minWidth: 0 },
+  splitRail: { flexGrow: 1, flexBasis: 280, minWidth: 0 },
 
   topRow: {
     flexDirection: 'row',
