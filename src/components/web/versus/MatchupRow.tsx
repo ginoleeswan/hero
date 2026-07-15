@@ -12,6 +12,10 @@ interface Props {
   blurb?: string;
   /** Desktop: lay the cards out as a wrapping grid instead of a scroll rail. */
   wrap?: boolean;
+  /** The host column's horizontal padding — the mobile rail bleeds past it so
+   *  cards scroll off the physical screen edge instead of clipping at the
+   *  column boundary; the same value restores the visual gutter inside. */
+  bleed?: number;
   children: ReactNode;
 }
 
@@ -19,7 +23,7 @@ interface Props {
  *  (kicker + Flame title + blurb). On mobile it's a horizontal scroll rail; on
  *  desktop the cards wrap into a grid so the full width is used. The caller
  *  decides whether to render it at all (an empty row is simply omitted). */
-export function MatchupRow({ icon, kicker, title, blurb, wrap, children }: Props) {
+export function MatchupRow({ icon, kicker, title, blurb, wrap, bleed = 0, children }: Props) {
   return (
     <View style={s.wrap}>
       <View style={s.head}>
@@ -33,7 +37,12 @@ export function MatchupRow({ icon, kicker, title, blurb, wrap, children }: Props
       {wrap ? (
         <View style={s.grid}>{children}</View>
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={bleed ? ({ marginHorizontal: -bleed } as object) : undefined}
+          contentContainerStyle={[s.row, bleed ? { paddingHorizontal: bleed } : null] as object}
+        >
           {children}
         </ScrollView>
       )}

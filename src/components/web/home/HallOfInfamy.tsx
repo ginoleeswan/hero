@@ -54,9 +54,12 @@ function FearedCard({
 export function HallOfInfamy({
   villains,
   flush = false,
+  bleed = 0,
 }: {
   villains: FearedVillain[];
   flush?: boolean;
+  /** Host column padding to bleed past (mobile rail edge-to-edge). */
+  bleed?: number;
 }) {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -78,9 +81,10 @@ export function HallOfInfamy({
         </Text>
       </View>
       <ScrollView
+        style={bleed ? ({ marginHorizontal: -bleed, marginBottom: -28 } as object) : ({ marginBottom: -28 } as object)}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[c.row, { paddingHorizontal: pagePad }] as object}
+        contentContainerStyle={[c.row, { paddingHorizontal: pagePad + bleed }] as object}
       >
         {villains.map((v, i) => (
           <FearedCard
@@ -108,7 +112,10 @@ const c = StyleSheet.create({
     marginTop: 2,
   } as object,
 
-  row: { flexDirection: 'row', gap: 16, paddingTop: 4, paddingBottom: 8 },
+  // paddingBottom carves headroom inside the scroller's clipped overflow so the
+  // card drop-shadow isn't cut flat; the ScrollView's negative marginBottom
+  // gives the space back to the layout.
+  row: { flexDirection: 'row', gap: 16, paddingTop: 4, paddingBottom: 36 },
   card: {
     width: CARD_W,
     height: CARD_H,

@@ -1,5 +1,5 @@
 // app/category/[slug].web.tsx — Full grid view for a hero category (web)
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { memo, useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -96,24 +96,28 @@ const sk = StyleSheet.create({
 });
 
 // ── Card ──────────────────────────────────────────────────────────────────────
-function HeroCard({
+// Memoized with a stable handler contract (the hero is passed back to the
+// handlers) so late-arriving state (facet counts, peek) doesn't re-reconcile
+// all 30 cards — the search grid's pattern.
+const HeroCard = memo(function HeroCard({
   hero,
+  priority,
   onPress,
-  onLongPress,
-  onInfo,
+  onPeek,
 }: {
   hero: Hero;
-  onPress: () => void;
-  onLongPress?: () => void;
-  onInfo?: () => void;
+  priority?: 'high';
+  onPress: (id: string) => void;
+  onPeek?: (hero: Hero) => void;
 }) {
+  const onInfo = onPeek ? () => onPeek(hero) : undefined;
   return (
     <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
+      onPress={() => onPress(String(hero.id))}
+      onLongPress={onInfo}
       delayLongPress={300}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [card.wrap, hovered && (card.wrapHover as object)] as object
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
+        [card.wrap, (hovered || pressed) && (card.wrapHover as object)] as object
       }
     >
       {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
@@ -131,6 +135,7 @@ function HeroCard({
             style={StyleSheet.absoluteFill}
             recyclingKey={String(hero.id)}
             transition={150}
+            priority={priority}
           />
           <View style={card.overlay as object} />
           <View style={card.bottom}>
@@ -158,7 +163,7 @@ function HeroCard({
       )}
     </Pressable>
   );
-}
+});
 
 const card = StyleSheet.create({
   wrap: {
@@ -288,6 +293,10 @@ export default function WebCategoryScreen() {
   const heroes = flattenCategoryPages(activeQuery.data);
   const total = activeQuery.data?.pages[0]?.total ?? 0;
   const loading = activeQuery.isPending;
+  // With keepPreviousData, filter/search changes keep the previous grid mounted
+  // while the new page loads — dim it slightly (search-grid pattern) instead of
+  // flashing 24 skeletons.
+  const showingStale = activeQuery.isPlaceholderData && activeQuery.isFetching;
   const loadingMore = isFetchingNextPage;
 
   // Facet counts come from a category-keyed RPC; universe pages have none.
@@ -298,6 +307,9 @@ export default function WebCategoryScreen() {
       setCounts(null);
       return;
     }
+    // Mobile: the counts only feed the filter SHEET — don't let this query
+    // contend with the grid query on mount; fetch when the sheet first opens.
+    if (!isDesktop && !sheetOpen) return;
     let cancelled = false;
     getCategoryFacetCounts(categorySlug, queryFilters)
       .then((c) => {
@@ -309,7 +321,7 @@ export default function WebCategoryScreen() {
     return () => {
       cancelled = true;
     };
-  }, [categorySlug, queryFilters]);
+  }, [categorySlug, queryFilters, isDesktop, sheetOpen]);
 
   const handlePress = useCallback(
     (id: string) => {
@@ -352,7 +364,9 @@ export default function WebCategoryScreen() {
   // one, but sourced from the category's top heroes (full colour in the banner).
   const [catMontage, setCatMontage] = useState<{ uri: string; blurhash?: string | null }[]>([]);
   useEffect(() => {
-    if (!categorySlug) {
+    // The montage only renders on desktop (BrowseBanner skips it when compact);
+    // on mobile this was a second grid-shaped query racing the real grid.
+    if (!categorySlug || !isDesktop) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCatMontage([]);
       return;
@@ -368,10 +382,10 @@ export default function WebCategoryScreen() {
     return () => {
       cancelled = true;
     };
-  }, [categorySlug, buildMontage]);
+  }, [categorySlug, isDesktop, buildMontage]);
 
   useEffect(() => {
-    if (!universeTerm) {
+    if (!universeTerm || !isDesktop) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setMontage([]);
       return;
@@ -387,7 +401,7 @@ export default function WebCategoryScreen() {
     return () => {
       cancelled = true;
     };
-  }, [universeTerm, buildMontage]);
+  }, [universeTerm, isDesktop, buildMontage]);
 
   // Franchise montage — same instant-loading pattern, sourced from the franchise
   // roster. Lets brand-less franchise pages lead with the editorial banner too.
@@ -395,7 +409,7 @@ export default function WebCategoryScreen() {
     { uri: string; blurhash?: string | null }[]
   >([]);
   useEffect(() => {
-    if (!franchiseTerm) {
+    if (!franchiseTerm || !isDesktop) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFranchiseMontage([]);
       return;
@@ -411,7 +425,7 @@ export default function WebCategoryScreen() {
     return () => {
       cancelled = true;
     };
-  }, [franchiseTerm, buildMontage]);
+  }, [franchiseTerm, isDesktop, buildMontage]);
 
   // Drive the reveal. When page-0 data lands, fade the grid up over the opaque
   // skeleton, then unmount the skeleton; on a fresh load (re)arm it.
@@ -467,14 +481,15 @@ export default function WebCategoryScreen() {
   const contentPad = isDesktop ? 32 : 16;
 
   const grid = (
-    <View style={gridStyle as object}>
-      {heroes.map((hero) => (
+    <View style={[gridStyle, showingStale && { opacity: 0.55 }] as object}>
+      {heroes.map((hero, i) => (
         <HeroCard
           key={hero.id}
           hero={hero}
-          onPress={() => handlePress(String(hero.id))}
-          onLongPress={() => setPeek(hero)}
-          onInfo={() => setPeek(hero)}
+          // First rows fetch ahead of the below-fold cards.
+          priority={i < 9 ? 'high' : undefined}
+          onPress={handlePress}
+          onPeek={setPeek}
         />
       ))}
       {loadingMore && Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={`sk-${i}`} />)}
@@ -629,7 +644,11 @@ export default function WebCategoryScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.activeStripContent as object}
+            // Bleed past the strip's own padding so chips scroll off the screen edge.
+            style={{ marginHorizontal: -contentPad } as object}
+            contentContainerStyle={
+              [styles.activeStripContent, { paddingHorizontal: contentPad }] as object
+            }
           >
             <ActiveFilterChips slug={categorySlug} filters={filters} setFilter={setFilter} />
             <Pressable

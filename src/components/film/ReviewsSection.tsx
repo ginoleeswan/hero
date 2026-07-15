@@ -53,6 +53,9 @@ export function ReviewsSection({ reviews }: { reviews: TitleReview[] }) {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        // Bleed past the body column's padding (20) so cards scroll off the
+        // physical screen edge — matches the sibling film rails' `bleed`.
+        style={styles.bleed as object}
         contentContainerStyle={styles.row}
       >
         {reviews.map((r, i) => (
@@ -64,6 +67,7 @@ export function ReviewsSection({ reviews }: { reviews: TitleReview[] }) {
 }
 
 const styles = StyleSheet.create({
+  bleed: { marginHorizontal: -20 },
   block: { gap: 14 },
   label: {
     fontFamily: 'Flame-Regular',

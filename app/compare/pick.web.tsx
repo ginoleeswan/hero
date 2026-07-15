@@ -364,6 +364,7 @@ export default function BattleBuilderWeb() {
                 </Text>
                 {curated.teammates.length > 0 && !query ? (
                   <CuratedRow
+                    bleed={contentPad}
                     label={`⚡ Teammates of ${squadLead?.name ?? ''}`}
                     items={curated.teammates}
                     onPick={(item) => add(item)}
