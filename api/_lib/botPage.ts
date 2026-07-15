@@ -713,6 +713,35 @@ export function buildUniverseBotPage(name: string, slug: string, heroes: Related
   });
 }
 
+/**
+ * Crawlable franchise hub (e.g. /franchise/Star Wars): every catalogue character
+ * whose `franchise` exactly equals `name`, linked into the graph. Franchises have
+ * no brand registry, so the canonical is always the URL-encoded raw name — which
+ * is exactly how the app's /franchise/[slug] route resolves it.
+ */
+export function buildFranchiseBotPage(name: string, heroes: RelatedLite[]): string {
+  const label = `${name} Characters`;
+  const blurb =
+    `Every character from the ${name} franchise on Mythique — heroes, villains, ` +
+    `powers, stats and who-would-win matchups, ranked by fame.`;
+  const path = `/franchise/${encodeURIComponent(name)}`;
+  const body = [
+    `<header><h1>${escapeHtml(label)}</h1><p>${escapeHtml(blurb)}</p></header>`,
+    section('Characters', characterOrderedList(heroes)),
+    hubNav(),
+    FOOTER,
+  ].join('\n');
+  return buildDoc({
+    title: `${name} Characters — Full List, Powers & Stats | Mythique`,
+    description: blurb,
+    path,
+    ogImage: `${SITE_URL}/og.png`,
+    ogType: 'website',
+    jsonLd: hubJsonLd(label, path, blurb, heroes),
+    body,
+  });
+}
+
 /** Unknown-id response — noindex so crawlers drop dead URLs instead of
  *  indexing an empty shell. Served with a 404 status by the handler. */
 export function buildNotFoundPage(): string {

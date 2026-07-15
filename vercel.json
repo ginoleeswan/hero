@@ -90,6 +90,17 @@
       ],
       "destination": "/api/bot-page?kind=universe&slug=:slug"
     },
+    {
+      "source": "/franchise/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot).*"
+        }
+      ],
+      "destination": "/api/bot-page?kind=franchise&slug=:slug"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

@@ -1,6 +1,7 @@
 import {
   buildCategoryBotPage,
   buildCharacterBotPage,
+  buildFranchiseBotPage,
   buildNotFoundPage,
   buildTeamBotPage,
   buildTitleBotPage,
@@ -318,5 +319,23 @@ describe('buildUniverseBotPage', () => {
     expect(raw).toContain(
       'rel="canonical" href="https://mythique.app/universe/Some%20Indie%20Press"',
     );
+  });
+});
+
+describe('buildFranchiseBotPage', () => {
+  const html = buildFranchiseBotPage('Star Wars', roster());
+
+  it('canonicalizes to the encoded franchise name under /franchise', () => {
+    expect(html).toContain('rel="canonical" href="https://mythique.app/franchise/Star%20Wars"');
+  });
+
+  it('puts the franchise name in the title, heading and CollectionPage LD', () => {
+    expect(html).toContain('Star Wars Characters — Full List, Powers &amp; Stats | Mythique');
+    expect(html).toContain('<h1>Star Wars Characters</h1>');
+    expect(html).toContain('"@type":"CollectionPage"');
+  });
+
+  it('links the roster into the character graph', () => {
+    expect(html).toContain('href="/character/h_1"');
   });
 });

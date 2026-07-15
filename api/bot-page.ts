@@ -6,6 +6,7 @@
 import {
   buildCategoryBotPage,
   buildCharacterBotPage,
+  buildFranchiseBotPage,
   buildNotFoundPage,
   buildTeamBotPage,
   buildTitleBotPage,
@@ -317,6 +318,19 @@ async function render(query: Req['query']): Promise<string | null> {
     });
     if (heroes.length === 0) return null;
     return buildUniverseBotPage(name, slug, heroes);
+  }
+  if (kind === 'franchise') {
+    // Franchise is an exact `franchise` value (no registry); the param is the
+    // URL-encoded raw name, matching how /franchise/[slug] resolves it.
+    const name = str(query.slug).trim();
+    if (!name) return null;
+    const heroes = await fetchHubHeroes({
+      select: 'id,name',
+      params: [['franchise', `eq.${name}`]],
+      order: 'fame_score.desc.nullslast',
+    });
+    if (heroes.length === 0) return null;
+    return buildFranchiseBotPage(name, heroes);
   }
   return null;
 }
