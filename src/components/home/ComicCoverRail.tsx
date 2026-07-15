@@ -24,8 +24,11 @@ export function ComicCoverRail({
   comics,
   onIssuePress,
   onLight,
+  alignEnd = false,
 }: {
   comics: NewComic[];
+  /** Right-align the header (the character page's section-title grammar). */
+  alignEnd?: boolean;
   onIssuePress: (issueId: string) => void;
   /** Set on a light/paper background (e.g. the character In Print section) so the
    *  title reads dark instead of the band's beige. */
@@ -34,7 +37,7 @@ export function ComicCoverRail({
   if (comics.length === 0) return null;
   return (
     <View style={s.section}>
-      <View style={s.header}>
+      <View style={[s.header, alignEnd && s.headerEnd]}>
         <Text style={s.label}>This Week</Text>
         <Text style={[s.title, onLight && s.titleOnLight]}>New Comics</Text>
       </View>
@@ -83,6 +86,7 @@ export function ComicCoverRail({
 const s = StyleSheet.create({
   section: { marginTop: 4, marginBottom: 6 },
   header: { paddingHorizontal: 16, marginBottom: 12 },
+  headerEnd: { alignItems: 'flex-end' },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,

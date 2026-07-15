@@ -115,7 +115,13 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
   // recognisable foes/allies/teammates (every one resolves to a card).
   const enemyNames = useMemo(() => (related?.enemies ?? []).map((h) => h.name), [related]);
   const allyNames = useMemo(() => (related?.allies ?? []).map((h) => h.name), [related]);
-  const teammateNames = useMemo(() => (related?.teammates ?? []).map((h) => h.name), [related]);
+  const teammateNames = useMemo(() => {
+    // Dedupe against allies: the two rails render back-to-back and a teammate
+    // who is also an ally showed twice in a row (reads like a rendering bug).
+    // Allies wins the placement; Teammates keeps only its exclusive members.
+    const allies = new Set((related?.allies ?? []).map((h) => h.name));
+    return (related?.teammates ?? []).map((h) => h.name).filter((n) => !allies.has(n));
+  }, [related]);
 
   useEffect(() => {
     if (!id) return;

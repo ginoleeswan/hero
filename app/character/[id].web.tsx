@@ -2212,6 +2212,7 @@ export default function WebCharacterScreen() {
                 {newIssues.length > 0 ? (
                   <View style={styles.mSection}>
                     <ComicCoverRail
+                      alignEnd
                       comics={newIssues}
                       onLight
                       onIssuePress={(issueId) =>
@@ -3426,7 +3427,10 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   percentileBadgeText: {
-    flexShrink: 1, fontFamily: 'Nunito_800ExtraBold', fontSize: 12 },
+    flexShrink: 1,
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 12,
+  },
 
   // ── Mobile native-style immersive layout ──
   mHero: {

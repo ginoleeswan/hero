@@ -91,7 +91,7 @@ export function LegendBand({
             <View style={styles.moment}>
               <View style={[styles.momentDot, { backgroundColor: accent }] as object} />
               <Text style={styles.momentLabel}>Portrayed by</Text>
-              <PortrayedBySection portrayals={portrayals!} contentInset={0} />
+              <PortrayedBySection portrayals={portrayals!} contentInset={0} accent={accent} />
             </View>
           ) : null}
         </View>
