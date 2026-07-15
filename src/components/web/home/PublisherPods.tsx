@@ -1,4 +1,5 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { prefetchUniverse } from '../../../lib/query/prefetchBrowse';
 import { CARD_SHADOW, ELEVATION, pageGutter } from '../../../constants/colors';
 import { FEATURED_PUBLISHERS } from '../../../constants/publishers';
 import { BrandLogoView } from '../../PublisherBadge';
@@ -47,6 +48,8 @@ export function PublisherPods({
         return (
           <Pressable
             key={p.slug}
+            // Warm the grid on touch-down — the page paints instantly on arrival.
+            onPressIn={() => prefetchUniverse(p.slug)}
             onPress={() => onNavigate(`/universe/${p.slug}`)}
             accessibilityRole="link"
             accessibilityLabel={`Browse ${p.name} characters`}

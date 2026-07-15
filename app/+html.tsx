@@ -20,6 +20,23 @@ export default function Root({ children }: PropsWithChildren) {
         {/* Tints the iOS status-bar / browser chrome to match the deep-navy backdrop
             so the system UI blends with the page instead of flashing white. */}
         <meta name="theme-color" content="#0b1820" />
+        {/* Keep Safari's own chrome dark through LOADING states too (the CSS
+            color-scheme in the style below covers the rest; the meta form is
+            parsed earliest). */}
+        <meta name="color-scheme" content="dark" />
+        {/* Preconnects: the grid's image CDNs + the API — shaves the DNS+TLS
+            round-trips off the first hero-image and first query of a session
+            (~100-300ms each on cellular). */}
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="preconnect" href="https://comicvine.gamespot.com" />
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+        {process.env.EXPO_PUBLIC_SUPABASE_URL ? (
+          <link
+            rel="preconnect"
+            href={process.env.EXPO_PUBLIC_SUPABASE_URL}
+            crossOrigin="anonymous"
+          />
+        ) : null}
 
         {/* SEO + social sharing. The OG image is an absolute URL on the
             production domain — update it if you launch on a different host. */}

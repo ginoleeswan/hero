@@ -438,7 +438,7 @@ export default function WebCategoryScreen() {
   useEffect(() => {
     if (gridReady) {
       gridFade.setValue(0);
-      Animated.timing(gridFade, { toValue: 1, duration: 320, useNativeDriver: true }).start(
+      Animated.timing(gridFade, { toValue: 1, duration: 220, useNativeDriver: true }).start(
         ({ finished }) => finished && setSkelMounted(false),
       );
     } else {

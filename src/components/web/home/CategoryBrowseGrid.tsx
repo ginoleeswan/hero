@@ -3,6 +3,7 @@
 // near-identical category rails. Navigation wants a map, not a feed: the grid
 // shows every door at once, nothing hidden behind a horizontal scroll.
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { prefetchCategory } from '../../../lib/query/prefetchBrowse';
 import { HeroImage } from '../../HeroImage';
 import {
   COLORS,
@@ -47,6 +48,8 @@ export function CategoryBrowseGrid({
         return (
           <Pressable
             key={p.slug}
+            // Warm the grid on touch-down — the page paints instantly on arrival.
+            onPressIn={() => prefetchCategory(p.slug as never)}
             onPress={() => onNavigate(pathFor(p.slug, p.kind))}
             accessibilityRole="link"
             accessibilityLabel={`Browse ${p.label}`}

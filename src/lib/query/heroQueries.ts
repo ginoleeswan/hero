@@ -89,6 +89,9 @@ export function useCategoryHeroes(slug: CategorySlug | null, filters: CategoryFi
     // Filter/search changes keep the previous grid on screen (dimmed) instead
     // of flashing the whole page back to skeletons — same as the search grid.
     placeholderData: keepPreviousData,
+    // The catalog changes slowly — keep browse pages warm for the session so
+    // returning to a universe/category repaints instantly.
+    staleTime: 1000 * 60 * 30,
   });
 }
 
@@ -111,6 +114,9 @@ export function useUniverseHeroes(term: string | null, filters: CategoryFilters)
     // Filter/search changes keep the previous grid on screen (dimmed) instead
     // of flashing the whole page back to skeletons — same as the search grid.
     placeholderData: keepPreviousData,
+    // The catalog changes slowly — keep browse pages warm for the session so
+    // returning to a universe/category repaints instantly.
+    staleTime: 1000 * 60 * 30,
   });
 }
 
@@ -133,6 +139,9 @@ export function useFranchiseHeroes(term: string | null, filters: CategoryFilters
     // Filter/search changes keep the previous grid on screen (dimmed) instead
     // of flashing the whole page back to skeletons — same as the search grid.
     placeholderData: keepPreviousData,
+    // The catalog changes slowly — keep browse pages warm for the session so
+    // returning to a universe/category repaints instantly.
+    staleTime: 1000 * 60 * 30,
   });
 }
 
@@ -155,6 +164,9 @@ export function useTeamHeroes(teamName: string | null, filters: CategoryFilters)
     // Filter/search changes keep the previous grid on screen (dimmed) instead
     // of flashing the whole page back to skeletons — same as the search grid.
     placeholderData: keepPreviousData,
+    // The catalog changes slowly — keep browse pages warm for the session so
+    // returning to a universe/category repaints instantly.
+    staleTime: 1000 * 60 * 30,
   });
 }
 
