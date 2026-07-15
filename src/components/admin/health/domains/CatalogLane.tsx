@@ -4,6 +4,7 @@
 // sub-tab + worklist state (formerly lifted into health.web.tsx); Review moved
 // to the Inbox lane.
 import { useEffect, useState } from 'react';
+import { useUrlTabState } from '../../../../hooks/useUrlTabState';
 import { Animated, ScrollView, View, StyleSheet } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SubTabs } from '../SubTabs';
@@ -54,7 +55,12 @@ export function CatalogLane({
   jump,
 }: CatalogLaneProps) {
   const queryClient = useQueryClient();
-  const [sub, setSub] = useState<CatalogSub>('coverage');
+  const [sub, setSub] = useUrlTabState<CatalogSub>('sub', 'coverage', [
+    'coverage',
+    'distributions',
+    'hygiene',
+    'sources',
+  ] as const);
   const [metric, setMetric] = useState<CoverageMetric>('portrait');
   const [page, setPage] = useState(0);
   const [pubFilter, setPubFilter] = useState<string | null>(null);

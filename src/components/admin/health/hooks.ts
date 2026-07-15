@@ -41,11 +41,15 @@ type Flash = (msg: string, tone?: LogTone) => void;
 export function useCatalogQueries({
   enabled,
   domain,
+  buildSub,
   historyLimit,
   ambiguousLimit,
 }: {
   enabled: boolean;
   domain: DomainKey;
+  /** The active Build sub-tab (from ?sub) — lets heavy queries gate on the
+   *  sub that renders them instead of firing on Build entry. */
+  buildSub?: string;
   historyLimit: number;
   ambiguousLimit: number;
 }) {
@@ -94,7 +98,7 @@ export function useCatalogQueries({
   const spendQ = useQuery({
     queryKey: ['geminiSpend'],
     queryFn: getGeminiSpend,
-    enabled: enabled && (onHome || onBuild),
+    enabled: enabled && (onHome || (onBuild && buildSub === 'spend')),
     staleTime: 5 * 60_000,
   });
   const ambiguousQ = useQuery({

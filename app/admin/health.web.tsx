@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { View, Animated, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useUrlTabState } from '../../src/hooks/useUrlTabState';
 import { useCommandAlerts } from '../../src/contexts/CommandAlertsContext';
 import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -67,7 +68,26 @@ export default function AdminHealthScreen() {
   const narrow = winW < 760;
   const { user, loading: authLoading } = useAuth();
 
-  const [domain, setDomain] = useState<DomainKey>('command');
+  // Tab persisted to ?tab so a refresh restores it (was always snapping back
+  // to Overview). setDomain also clears the lane's ?sub so a stale sub-tab from
+  // the previous lane doesn't carry over.
+  const [domain] = useUrlTabState<DomainKey>('tab', 'command', [
+    'command',
+    'catalog',
+    'pipelines',
+    'inbox',
+    'audience',
+    'publish',
+  ] as const);
+  const setDomain = useCallback(
+    (d: DomainKey) => {
+      router.setParams({ tab: d, sub: undefined } as Record<string, string | undefined>);
+    },
+    [router],
+  );
+  // The active Build sub-tab from the URL, so heavy Build queries can gate on it.
+  const rawSub = useLocalSearchParams().sub;
+  const buildSub = typeof rawSub === 'string' ? rawSub : undefined;
   const [batchSize, setBatchSize] = useState(25);
   const [historyLimit, setHistoryLimit] = useState(30);
   const [ambiguousLimit, setAmbiguousLimit] = useState(25);
@@ -162,6 +182,7 @@ export default function AdminHealthScreen() {
   } = useCatalogQueries({
     enabled: canQuery,
     domain,
+    buildSub,
     historyLimit,
     ambiguousLimit,
   });

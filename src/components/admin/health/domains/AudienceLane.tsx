@@ -4,6 +4,7 @@
 // while it's active; query keys match the old page-level ones so nothing else
 // changes.
 import { useState } from 'react';
+import { useUrlTabState } from '../../../../hooks/useUrlTabState';
 import { useQuery } from '@tanstack/react-query';
 import { SubTabs } from '../SubTabs';
 import { TrafficDomain } from './TrafficDomain';
@@ -22,7 +23,11 @@ export function AudienceLane({
   narrow: boolean;
   onOpenReview: () => void;
 }) {
-  const [sub, setSub] = useState<AudienceSub>('traffic');
+  const [sub, setSub] = useUrlTabState<AudienceSub>('sub', 'traffic', [
+    'traffic',
+    'community',
+    'errors',
+  ] as const);
   const [trafficDays, setTrafficDays] = useState(28);
 
   const trafficQ = useQuery({

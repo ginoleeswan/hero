@@ -248,7 +248,8 @@ export function SocialInsightsDomain() {
               <View style={styles.angleHead}>
                 <Text style={[styles.angleName, i === 0 && styles.angleNameTop]}>{a.angle}</Text>
                 <Text style={styles.angleMeta}>
-                  {a.n} post{a.n === 1 ? '' : 's'} · ❤️💬 {fmt(Math.round(a.avgEngage))} avg
+                  {a.n} post{a.n === 1 ? '' : 's'} · <Ionicons name="heart" size={10} />
+                  <Ionicons name="chatbubble" size={10} /> {fmt(Math.round(a.avgEngage))} avg
                 </Text>
                 <Text style={styles.angleValue}>{fmt(Math.round(a.avgViews))}</Text>
               </View>
@@ -274,9 +275,19 @@ export function SocialInsightsDomain() {
             <View key={p.platform} style={styles.platRow}>
               <Text style={styles.platName}>{p.platform}</Text>
               <View style={styles.platNums}>
-                <Text style={styles.platViews}>{p.views ? `👁 ${fmt(p.views)}` : '—'}</Text>
+                <Text style={styles.platViews}>
+                  {p.views ? (
+                    <>
+                      {'\u2009'}
+                      <Ionicons name="eye" size={11} /> {fmt(p.views)}
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </Text>
                 <Text style={styles.platSub}>
-                  ❤️ {fmt(p.likes)} · 💬 {fmt(p.comments)} · {p.posts.size} post
+                  <Ionicons name="heart" size={10} /> {fmt(p.likes)} ·{' '}
+                  <Ionicons name="chatbubble" size={10} /> {fmt(p.comments)} · {p.posts.size} post
                   {p.posts.size === 1 ? '' : 's'}
                 </Text>
               </View>
@@ -316,7 +327,8 @@ export function SocialInsightsDomain() {
             <View style={styles.topNums}>
               <Text style={styles.topViews}>{fmt(t.views)}</Text>
               <Text style={styles.topSub}>
-                ❤️ {fmt(t.likes)} · 💬 {fmt(t.comments)}
+                <Ionicons name="heart" size={10} /> {fmt(t.likes)} ·{' '}
+                <Ionicons name="chatbubble" size={10} /> {fmt(t.comments)}
               </Text>
             </View>
           </View>
@@ -424,8 +436,8 @@ const styles = StyleSheet.create({
   barFillDim: { backgroundColor: 'rgba(224,168,62,0.55)' },
 
   split: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' },
-  splitMain: { flexGrow: 2, flexBasis: 460, minWidth: 320 },
-  splitRail: { flexGrow: 1, flexBasis: 280, minWidth: 260 },
+  splitMain: { flexGrow: 2, flexBasis: 460, minWidth: 0 },
+  splitRail: { flexGrow: 1, flexBasis: 280, minWidth: 0 },
 
   topRow: {
     flexDirection: 'row',

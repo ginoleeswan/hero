@@ -4,6 +4,7 @@
 // Reports tab and the old Catalog › Review sub-tab. Sub-tab badges are live
 // queue counts; both panels self-fetch and stay unchanged.
 import { useEffect, useState } from 'react';
+import { useUrlTabState } from '../../../../hooks/useUrlTabState';
 import { useQuery } from '@tanstack/react-query';
 import { SubTabs } from '../SubTabs';
 import { ReportsDomain } from './ReportsDomain';
@@ -15,7 +16,7 @@ import type { LaneJump } from '../format';
 export type InboxSub = 'reports' | 'review';
 
 export function InboxLane({ jump }: { jump?: LaneJump<InboxSub> | null }) {
-  const [sub, setSub] = useState<InboxSub>('reports');
+  const [sub, setSub] = useUrlTabState<InboxSub>('sub', 'reports', ['reports', 'review'] as const);
   useEffect(() => {
     if (jump) setSub(jump.sub);
   }, [jump]);

@@ -4,6 +4,7 @@
 // Enrich (the funnel + "Needs you" review) · Generate (AI powerstats/portraits) ·
 // Activity (log · recently built · crons) · Runs (the run-history dashboard).
 import { useEffect, useState } from 'react';
+import { useUrlTabState } from '../../../../hooks/useUrlTabState';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { Bento } from '../Bento';
 import { Panel } from '../Panel';
@@ -84,7 +85,14 @@ export function PipelinesDomain({
   const { buildIds, setBuildIds, busy, batchSize, setBatchSize, narrow } = controls;
 
   // Sub-tabs split the dense Build domain into focused, no-scroll views.
-  const [sub, setSub] = useState<BuildSub>('add');
+  const [sub, setSub] = useUrlTabState<BuildSub>('sub', 'add', [
+    'add',
+    'enrich',
+    'generate',
+    'activity',
+    'runs',
+    'spend',
+  ] as const);
   const [statsIds, setStatsIds] = useState<string[] | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [portraitIds, setPortraitIds] = useState<string[] | null>(null);
