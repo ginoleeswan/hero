@@ -17,6 +17,7 @@ import {
   type BotTitle,
   type RelatedLite,
 } from './_lib/botPage';
+import { universeBrandBySlug, universeBrandForPublisher } from '../src/constants/universeBrands';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';
@@ -299,16 +300,23 @@ async function render(query: Req['query']): Promise<string | null> {
     return buildCategoryBotPage(slug, heroes);
   }
   if (kind === 'universe') {
-    // The slug is the raw publisher term (Vercel decodes the path segment).
-    const name = str(query.slug).trim();
-    if (!name) return null;
+    // The param may arrive as a registry slug (app links: /universe/marvel) or a
+    // raw publisher name (older/character-page links: /universe/Marvel Comics).
+    // Resolve both to ONE canonical brand so the two forms collapse to a single
+    // indexable URL (registered → stable slug; unregistered → the raw name).
+    const param = str(query.slug).trim();
+    if (!param) return null;
+    const brand = universeBrandBySlug(param) ?? universeBrandForPublisher(param);
+    const term = brand ? brand.query : param; // ILIKE term against `publisher`
+    const name = brand ? brand.name : param; // display name / H1
+    const slug = brand ? brand.slug : param; // canonical path segment
     const heroes = await fetchHubHeroes({
       select: 'id,name',
-      params: [['publisher', `ilike.*${name}*`]],
+      params: [['publisher', `ilike.*${term}*`]],
       order: 'fame_score.desc.nullslast',
     });
     if (heroes.length === 0) return null;
-    return buildUniverseBotPage(name, heroes);
+    return buildUniverseBotPage(name, slug, heroes);
   }
   return null;
 }

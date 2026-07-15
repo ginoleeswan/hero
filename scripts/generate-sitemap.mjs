@@ -18,10 +18,7 @@ import { join } from 'node:path';
 // Mirrors SITE_URL in src/constants/site.ts (this standalone build script can't
 // import TS). Override at build time with SITEMAP_BASE_URL. Keep in sync with
 // SITE_URL if the origin ever changes.
-const BASE_URL = (process.env.SITEMAP_BASE_URL || 'https://mythique.app').replace(
-  /\/$/,
-  '',
-);
+const BASE_URL = (process.env.SITEMAP_BASE_URL || 'https://mythique.app').replace(/\/$/, '');
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY;
 
@@ -38,6 +35,69 @@ const STATIC_ROUTES = [
   { loc: '/search', changefreq: 'weekly', priority: '0.7' },
   { loc: '/privacy', changefreq: 'yearly', priority: '0.3' },
   { loc: '/terms', changefreq: 'yearly', priority: '0.3' },
+];
+
+// Registered universe (publisher/studio) slugs — mirrors the slug set of
+// UNIVERSE_BRANDS in src/constants/universeBrands.ts (this standalone build
+// script can't import TS). These are the canonical /universe/<slug> URLs the app
+// and the crawler bot pages both link to; unregistered universes stay
+// discoverable via character-page links rather than the sitemap.
+// __tests__/constants/universeBrands.test.ts guards this list against drift.
+const UNIVERSE_SLUGS = [
+  'marvel',
+  'dc',
+  'dark-horse',
+  'star-wars',
+  'image',
+  'netherrealm',
+  'babylon-5',
+  'avatar-last-airbender',
+  'snk',
+  'the-boys',
+  'sin-city',
+  'pokemon',
+  'gatchaman',
+  'hanna-barbera',
+  'looney-tunes',
+  'cd-projekt-red',
+  'rocky-bullwinkle',
+  'insomniac',
+  'star-trek',
+  'green-hornet',
+  'tmnt',
+  'conan',
+  'ben-10',
+  'buffy',
+  'harvey',
+  'terminator',
+  'bungie',
+  'crystal-dynamics',
+  'playstation-studios',
+  'xbox-game-studios',
+  'god-of-war',
+  'halo',
+  'santa-monica-studio',
+  'namco',
+  'radical-entertainment',
+  'alien',
+  'predator',
+  'indiana-jones',
+  'jurassic-park',
+  'nintendo',
+  'shueisha',
+  'warp-graphics',
+  'archie',
+  'disney',
+  'valiant',
+  'top-cow',
+  'malibu',
+  'rebellion',
+  'capcom',
+  'sega',
+  'mattel',
+  'hasbro',
+  'kodansha',
+  'warner-bros',
 ];
 
 // Fixed category taxonomy — mirrors CategorySlug in src/lib/db/heroes/types.ts.
@@ -151,6 +211,12 @@ async function main() {
     'utf8',
   );
   indexFiles.push('categories.xml');
+  await writeFile(
+    join(SITEMAP_DIR, 'universes.xml'),
+    urlSet(UNIVERSE_SLUGS.map((slug) => ({ loc: `/universe/${slug}`, changefreq: 'weekly' }))),
+    'utf8',
+  );
+  indexFiles.push('universes.xml');
 
   // Dynamic content — fail-soft so a Supabase blip can't break the deploy.
   if (SUPABASE_URL && SUPABASE_KEY) {

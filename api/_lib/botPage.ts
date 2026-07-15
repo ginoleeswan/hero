@@ -7,6 +7,7 @@
 // Kept free of runtime deps (like shareMeta.ts) so it's unit-testable under
 // jest and safe to bundle into the RN-free Vercel functions in api/.
 import { SITE_URL } from '../../src/constants/site';
+import { universeHref } from '../../src/constants/universeBrands';
 import { escapeHtml, vsShareLine } from './shareMeta';
 
 /** The hero columns the bot page renders. Subset of the heroes Row. */
@@ -59,21 +60,13 @@ export function stripHtml(s: string | null | undefined): string {
     .trim();
 }
 
-/** SuperheroAPI category buckets that must never link as a browsable universe
- *  (mirrors NON_UNIVERSE_PUBLISHERS in src/constants/publishers.ts, which the
- *  RN-free api/ bundle can't import). */
-const NON_UNIVERSE_PUBLISHERS = new Set([
-  'Non-Fictional',
-  'Creator-Owned',
-  'Company-Licensed',
-  'In the Public Domain',
-]);
-
 /** /universe browse link for a publisher, or null when it isn't browsable.
- *  Routes by raw name — /universe/[slug] ilike-matches unregistered slugs. */
+ *  Delegates to the shared canonicaliser so character bot pages link universes
+ *  by the SAME URL the app and sitemap use (registered brands by stable slug,
+ *  others by encoded raw name) — no duplicate /universe/<raw> vs /universe/<slug>
+ *  competing for the same content. */
 export function universePath(publisher: string | null | undefined): string | null {
-  if (!publisher || NON_UNIVERSE_PUBLISHERS.has(publisher)) return null;
-  return `/universe/${encodeURIComponent(publisher)}`;
+  return universeHref(publisher);
 }
 
 function heroLink(h: RelatedLite): string {
@@ -475,21 +468,58 @@ export function buildVsBotPage(
     section('More matchups', more ? `<ul>${more}</ul>` : ''),
     FOOTER,
   ].join('\n');
+  const canonicalUrl = `${SITE_URL}/compare/${encodeURIComponent(cA.id)}/${encodeURIComponent(
+    cB.id,
+  )}`;
   return buildDoc({
     title: titleText,
     description: desc,
     path: `/compare/${encodeURIComponent(cA.id)}/${encodeURIComponent(cB.id)}`,
     ogImage: `${SITE_URL}/api/og?a=${encodeURIComponent(a.id)}&b=${encodeURIComponent(b.id)}`,
     ogType: 'website',
+    // WebPage + FAQPage: the FAQ targets the "who would win, X vs Y?" query
+    // directly (People-Also-Ask / featured-snippet real estate) with a factual,
+    // data-backed answer — this matchup content is unique to Mythique.
     jsonLd: serializeLd({
       '@context': 'https://schema.org',
-      '@type': 'WebPage',
-      name: titleText,
-      description: desc,
-      url: `${SITE_URL}/compare/${encodeURIComponent(cA.id)}/${encodeURIComponent(cB.id)}`,
+      '@graph': [
+        { '@type': 'WebPage', name: titleText, description: desc, url: canonicalUrl },
+        {
+          '@type': 'FAQPage',
+          url: canonicalUrl,
+          mainEntity: [
+            {
+              '@type': 'Question',
+              name: `Who would win in a fight, ${a.name} or ${b.name}?`,
+              acceptedAnswer: { '@type': 'Answer', text: vsAnswer(a.name, b.name, tally) },
+            },
+          ],
+        },
+      ],
     }),
     body,
   });
+}
+
+/** Plain-text answer for the versus FAQ — the community lean when votes exist,
+ *  otherwise an open-debate invite. Kept factual so the rich result never
+ *  overstates a verdict. */
+function vsAnswer(aName: string, bName: string, tally: { votesA: number; votesB: number }): string {
+  const total = tally.votesA + tally.votesB;
+  if (total > 0) {
+    const aLeads = tally.votesA >= tally.votesB;
+    const leader = aLeads ? aName : bName;
+    const [hi, lo] = aLeads ? [tally.votesA, tally.votesB] : [tally.votesB, tally.votesA];
+    const pct = Math.round((hi / total) * 100);
+    return (
+      `The Mythique community currently favours ${leader}, with ${pct}% of ${total} ` +
+      `votes (${hi}–${lo}). Compare their full power stats and cast your own vote.`
+    );
+  }
+  return (
+    `It's an open debate — no community votes yet. Compare ${aName} and ${bName} ` +
+    `stat by stat and cast the first vote on Mythique.`
+  );
 }
 
 // --- Browsable hub pages (categories + universes) -------------------------
@@ -654,16 +684,18 @@ export function buildCategoryBotPage(slug: string, heroes: RelatedLite[]): strin
 }
 
 /**
- * Crawlable universe hub (e.g. /universe/Marvel Comics): every catalogue
- * character from one publisher/studio, linked into the graph. `name` is the raw
- * (decoded) publisher term; the canonical re-encodes it to match universePath().
+ * Crawlable universe hub (e.g. /universe/marvel): every catalogue character from
+ * one publisher/studio, linked into the graph. `name` is the display name (brand
+ * name for a registered universe, else the raw publisher); `slug` is the canonical
+ * path segment (stable brand slug, else the raw name) — the handler resolves both
+ * so /universe/<slug> and /universe/<raw> collapse to one canonical URL.
  */
-export function buildUniverseBotPage(name: string, heroes: RelatedLite[]): string {
+export function buildUniverseBotPage(name: string, slug: string, heroes: RelatedLite[]): string {
   const label = `${name} Characters`;
   const blurb =
     `Every character from ${name} on Mythique — heroes, villains, powers, stats and ` +
     `who-would-win matchups, ranked by fame.`;
-  const path = `/universe/${encodeURIComponent(name)}`;
+  const path = `/universe/${encodeURIComponent(slug)}`;
   const body = [
     `<header><h1>${escapeHtml(label)}</h1><p>${escapeHtml(blurb)}</p></header>`,
     section('Characters', characterOrderedList(heroes)),
