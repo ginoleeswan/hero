@@ -100,16 +100,15 @@ export function SocialInsightsDomain() {
     setTimeout(() => setSyncMsg(null), 4000);
   };
 
-  const SyncButton = ({
-    platform,
-    icon,
-    label,
-  }: {
-    platform: 'instagram' | 'tiktok';
-    icon: 'logo-instagram' | 'logo-tiktok';
-    label: string;
-  }) => (
+  // Plain render helper (not a component) so its identity is stable across
+  // renders — eslint's "no components during render" rule.
+  const renderSyncButton = (
+    platform: 'instagram' | 'tiktok',
+    icon: 'logo-instagram' | 'logo-tiktok',
+    label: string,
+  ) => (
     <Pressable
+      key={platform}
       style={styles.syncBtn}
       onPress={() => runSync(platform)}
       disabled={syncing !== null}
@@ -127,8 +126,8 @@ export function SocialInsightsDomain() {
   const syncBtn = (
     <View style={styles.syncRow}>
       {syncMsg ? <Text style={styles.syncMsg}>{syncMsg}</Text> : null}
-      <SyncButton platform="instagram" icon="logo-instagram" label="Pull Instagram" />
-      <SyncButton platform="tiktok" icon="logo-tiktok" label="Pull TikTok" />
+      {renderSyncButton('instagram', 'logo-instagram', 'Pull Instagram')}
+      {renderSyncButton('tiktok', 'logo-tiktok', 'Pull TikTok')}
     </View>
   );
 
