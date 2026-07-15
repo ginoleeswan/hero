@@ -347,6 +347,28 @@ export default function IssueScreen() {
 
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
+  // Network failure must NOT strand the user on an infinite spinner: after
+  // react-query's retries give up, data stays undefined forever — surface a
+  // retry instead.
+  if (issue === undefined && issueQuery.isError) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <NotFoundView
+          stamp="Offline?"
+          stampColor={COLORS.red}
+          icon="cloud-offline-outline"
+          headline="Couldn't load this issue"
+          subline="Check your connection and try again."
+          actions={[
+            { label: 'Retry', primary: true, onPress: () => issueQuery.refetch() },
+            { label: 'Go back', onPress: () => router.back() },
+          ]}
+        />
+      </View>
+    );
+  }
+
   if (issue === undefined) {
     return (
       <View style={styles.loading}>

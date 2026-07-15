@@ -58,9 +58,15 @@ export default function TitleScreen() {
   const titleQuery = useTitle(id);
   const film = id ? titleQuery.data : null; // stub | real | null | undefined
   const realFilm = film && !titleQuery.isPlaceholderData ? film : undefined;
-  const heroes = useTitleHeroes(id).data;
-  const recs = useRecommendedTitles(realFilm).data;
-  const collection = useCollectionTitles(realFilm).data;
+  const heroesQ = useTitleHeroes(id);
+  const recsQ = useRecommendedTitles(realFilm);
+  const collectionQ = useCollectionTitles(realFilm);
+  // A failed secondary query must not gate the body forever — treat errors as
+  // "settled with nothing" so the page renders degraded instead of a permanent
+  // skeleton under a loaded header.
+  const heroes = heroesQ.isError ? [] : heroesQ.data;
+  const recs = recsQ.isError ? [] : recsQ.data;
+  const collection = collectionQ.isError ? [] : collectionQ.data;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar
   // (dark backdrop header under the status bar, beige body to the very bottom).
@@ -82,6 +88,25 @@ export default function TitleScreen() {
   const bodyPhase = useSkeletonTransition(film != null && !bodyReady, { delay: 0 });
 
   if (cold) {
+    // Network failure must NOT strand the user on an infinite skeleton.
+    if (titleQuery.isError) {
+      return (
+        <View style={styles.loadingShell}>
+          <Stack.Screen options={{ headerShown: false }} />
+          <NotFoundView
+            stamp="Offline?"
+            stampColor={COLORS.red}
+            icon="cloud-offline-outline"
+            headline="Couldn't load this title"
+            subline="Check your connection and try again."
+            actions={[
+              { label: 'Retry', primary: true, onPress: () => titleQuery.refetch() },
+              { label: 'Go back', onPress: () => router.back() },
+            ]}
+          />
+        </View>
+      );
+    }
     return (
       <View style={styles.loadingShell}>
         <Stack.Screen options={{ headerShown: false }} />

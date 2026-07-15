@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -40,6 +40,14 @@ export default function WebForgotPasswordScreen() {
   const [resendCooldown, setResendCooldown] = useState(0);
 
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Navigating away mid-cooldown must not leave the interval ticking (setState
+  // after unmount + a leaked timer).
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
 
   function startCooldown(seconds: number) {
     setResendCooldown(seconds);

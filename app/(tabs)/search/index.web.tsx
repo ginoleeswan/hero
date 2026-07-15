@@ -33,6 +33,7 @@ import { SEARCH_UNIVERSES } from '../../../src/constants/publishers';
 import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
 import { SearchBrowse } from '../../../src/components/web/search/SearchBrowse';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
+import { useQuery } from '@tanstack/react-query';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 import { SEARCH_CHIP } from '../../../src/components/web/searchChip';
 import { useScreenChrome } from '../../../src/hooks/useScreenChrome';
@@ -190,37 +191,21 @@ export default function WebSearchScreen() {
 
   // Landing rails: fame-ranked "Popular" icons (everyone) + the signed-in user's
   // recently-viewed characters ("jump back in"). Both are character portraits —
-  // the icons ARE the discovery surface. Fetched lazily, cleared-safe.
-  const [popular, setPopular] = useState<RailHero[]>([]);
-  const [recentlyViewed, setRecentlyViewed] = useState<RailHero[]>([]);
-  useEffect(() => {
-    let cancelled = false;
-    getSearchIdleHeroes(20)
-      .then((rows) => {
-        if (!cancelled) setPopular(rows);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  useEffect(() => {
-    if (!user?.id) {
-      // Signed-out: no history. Effect-based fetch (pre-React-Query).
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setRecentlyViewed([]);
-      return;
-    }
-    let cancelled = false;
-    getRecentlyViewed(user.id, 16)
-      .then((rows) => {
-        if (!cancelled) setRecentlyViewed(rows);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id]);
+  // the icons ARE the discovery surface. React Query so revisits hit the cache
+  // (the old effect+setState pair refetched on every navigation to /search).
+  const popularQ = useQuery({
+    queryKey: ['search', 'idlePopular', 20],
+    queryFn: () => getSearchIdleHeroes(20),
+    staleTime: 1000 * 60 * 30,
+  });
+  const recentQ = useQuery({
+    queryKey: ['search', 'recentlyViewed', user?.id ?? 'anon'],
+    queryFn: () => getRecentlyViewed(user!.id, 16),
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 5,
+  });
+  const popular = popularQ.data ?? [];
+  const recentlyViewed = user?.id ? (recentQ.data ?? []) : [];
 
   // Search is a dark discovery surface (like Explore / Versus): the whole page —
   // status-bar zone, header and body — is one continuous deep-ink ground so the
