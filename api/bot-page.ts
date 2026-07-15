@@ -34,7 +34,7 @@ const HERO_COLUMNS =
   'id,name,full_name,aliases,alignment,publisher,franchise,description,summary,' +
   'first_appearance,occupation,place_of_birth,race,gender,height_metric,weight_metric,' +
   'base,creators,teams,powers,intelligence,strength,speed,durability,power,combat,' +
-  'portrait_url,image_url';
+  'portrait_url,image_url,wikidata_qid,enwiki_title';
 
 async function fetchHero(id: string): Promise<BotHero | null> {
   const url = `${SUPABASE_URL}/rest/v1/heroes?id=eq.${encodeURIComponent(
