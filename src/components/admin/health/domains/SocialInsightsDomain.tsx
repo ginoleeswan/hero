@@ -24,6 +24,7 @@ import {
   listSocialPosts,
   listPostResults,
   syncInstagram,
+  syncTiktok,
   type SocialPost,
   type SocialPostResult,
 } from '../../../../lib/db/socialPosts';
@@ -63,31 +64,56 @@ export function SocialInsightsDomain() {
   const postsQ = useQuery({ queryKey: ['socialPosts'], queryFn: listSocialPosts });
   const resultsQ = useQuery({ queryKey: ['socialPostResults'], queryFn: listPostResults });
   const narrow = useWindowDimensions().width < 640;
-  const [syncing, setSyncing] = useState(false);
+  // One control per connected platform — pulls that platform's post metrics
+  // into social_post_results. TikTok is read-only analytics (no reply API).
+  const [syncing, setSyncing] = useState<'instagram' | 'tiktok' | null>(null);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
-  const runSync = async () => {
-    setSyncing(true);
+  const runSync = async (platform: 'instagram' | 'tiktok') => {
+    setSyncing(platform);
     setSyncMsg(null);
+    const label = platform === 'tiktok' ? 'TikTok' : 'Instagram';
     try {
-      const r = await syncInstagram();
-      setSyncMsg(`Synced ${r.matched} Instagram post${r.matched === 1 ? '' : 's'}`);
+      const r = platform === 'tiktok' ? await syncTiktok() : await syncInstagram();
+      setSyncMsg(`Synced ${r.matched} ${label} post${r.matched === 1 ? '' : 's'}`);
       qc.invalidateQueries({ queryKey: ['socialPostResults'] });
     } catch (e) {
-      setSyncMsg(e instanceof Error ? e.message : 'Sync failed');
+      setSyncMsg(e instanceof Error ? e.message : `${label} sync failed`);
     }
-    setSyncing(false);
+    setSyncing(null);
     setTimeout(() => setSyncMsg(null), 4000);
   };
-  const syncBtn = (
-    <Pressable style={styles.syncBtn} onPress={runSync} disabled={syncing} hitSlop={6}>
-      {syncing ? (
+
+  const SyncButton = ({
+    platform,
+    icon,
+    label,
+  }: {
+    platform: 'instagram' | 'tiktok';
+    icon: 'logo-instagram' | 'logo-tiktok';
+    label: string;
+  }) => (
+    <Pressable
+      style={styles.syncBtn}
+      onPress={() => runSync(platform)}
+      disabled={syncing !== null}
+      hitSlop={6}
+    >
+      {syncing === platform ? (
         <ActivityIndicator size="small" color={GOLD} />
       ) : (
-        <Ionicons name="logo-instagram" size={14} color={COLORS.navy} />
+        <Ionicons name={icon} size={14} color={COLORS.navy} />
       )}
-      <Text style={styles.syncBtnText}>{syncing ? 'Syncing…' : (syncMsg ?? 'Sync Instagram')}</Text>
+      <Text style={styles.syncBtnText}>{syncing === platform ? 'Syncing…' : label}</Text>
     </Pressable>
+  );
+
+  const syncBtn = (
+    <View style={styles.syncRow}>
+      {syncMsg ? <Text style={styles.syncMsg}>{syncMsg}</Text> : null}
+      <SyncButton platform="instagram" icon="logo-instagram" label="Pull Instagram" />
+      <SyncButton platform="tiktok" icon="logo-tiktok" label="Pull TikTok" />
+    </View>
   );
 
   if (postsQ.isLoading || resultsQ.isLoading) {
@@ -105,7 +131,7 @@ export function SocialInsightsDomain() {
   if (latest.length === 0) {
     return (
       <Panel title="Insights" hint="Numbers appear here as results come in" action={syncBtn}>
-        <EmptyState text="No results yet — hit Sync Instagram to pull your posts, or log numbers from Post today › Posted (reddit & instagram refresh nightly)." />
+        <EmptyState text="No results yet — hit Pull Instagram / Pull TikTok to import your posts, or log numbers from Post today › Posted (reddit & instagram refresh nightly)." />
       </Panel>
     );
   }
@@ -339,6 +365,8 @@ export function SocialInsightsDomain() {
 }
 
 const styles = StyleSheet.create({
+  syncRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  syncMsg: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.navy, opacity: 0.7 },
   wrap: { gap: 12, width: '100%' },
   syncBtn: {
     flexDirection: 'row',
