@@ -1,8 +1,14 @@
 import 'react-native-url-polyfill/auto';
 import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View, Text, Pressable, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Stack, useRouter, useSegments, useGlobalSearchParams } from 'expo-router';
+import {
+  Stack,
+  useRouter,
+  useSegments,
+  useGlobalSearchParams,
+  type ErrorBoundaryProps,
+} from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -20,6 +26,13 @@ import AnalyticsProvider from '../src/components/Analytics';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../src/lib/query/queryClient';
 import { postAuthTarget } from '../src/lib/loginRedirect';
+import { COLORS } from '../src/constants/colors';
+import { initSentry, captureException } from '../src/lib/sentry';
+
+// Start crash reporting as early as possible (module scope, before any render).
+// No-op without EXPO_PUBLIC_SENTRY_DSN. init() also installs the native
+// ErrorUtils handler that reports fatal JS errors for free.
+initSentry();
 
 if (Platform.OS !== 'web') {
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
@@ -41,6 +54,66 @@ if (Platform.OS !== 'web') {
 }
 
 SplashScreen.preventAutoHideAsync();
+
+// Expo Router renders this in place of the tree if a render throws, instead of a
+// blank white screen — a graceful, on-brand recovery surface. Mirrors the web
+// ErrorBoundary (app/_layout.web.tsx) visually. Reports via Sentry: the
+// self-hosted client_errors feed is web-only (recordClientError no-ops on
+// native), so native crashes only reach Sentry.
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  useEffect(() => {
+    captureException(error, { boundary: 'root-native' });
+  }, [error]);
+
+  return (
+    <View style={eb.root}>
+      <Text style={eb.title}>Something went wrong</Text>
+      <Text style={eb.body}>
+        An unexpected error interrupted the page. You can try again — if it keeps happening, reload
+        the app.
+      </Text>
+      {__DEV__ ? <Text style={eb.detail}>{error.message}</Text> : null}
+      <Pressable onPress={retry} style={eb.btn}>
+        <Text style={eb.btnText}>Try again</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const eb = StyleSheet.create({
+  root: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0b1820',
+    padding: 28,
+  },
+  title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.beige, textAlign: 'center' },
+  body: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    lineHeight: 22,
+    color: 'rgba(245,235,220,0.7)',
+    textAlign: 'center',
+    maxWidth: 420,
+    marginTop: 10,
+  },
+  detail: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.4)',
+    textAlign: 'center',
+    marginTop: 14,
+  },
+  btn: {
+    marginTop: 24,
+    backgroundColor: COLORS.orange,
+    borderRadius: 999,
+    paddingVertical: 13,
+    paddingHorizontal: 28,
+  },
+  btnText: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#fff' },
+});
 
 // Drives the presence heartbeat app-wide (no-op when logged out). Rendered as a
 // sibling of the router so it lives for the whole session without re-mounting.

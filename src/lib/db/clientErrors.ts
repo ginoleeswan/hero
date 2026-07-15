@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { supabase } from '../supabase';
+import { captureException } from '../sentry';
 
 // Self-hosted client error collection (web only). Fed by the web ErrorBoundary
 // and global window error / unhandledrejection handlers. Fire-and-forget so
@@ -47,6 +48,13 @@ export function recordClientError(
   const source =
     opts?.source ?? (typeof location !== 'undefined' ? location.pathname + location.search : null);
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 500) : null;
+
+  // Mirror the same deduped/throttled stream into Sentry for aggregation +
+  // alerting (no-op when no DSN). The self-hosted insert below stays the
+  // in-app admin feed — Sentry is additive, not a replacement.
+  const forwarded = new Error(msg);
+  if (stack) forwarded.stack = stack;
+  captureException(forwarded, { kind, source });
 
   void (async () => {
     try {

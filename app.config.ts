@@ -102,6 +102,10 @@ const config: ExpoConfig = {
         imageWidth: 200,
       },
     ],
+    // Crash/error reporting. The config plugin wires native symbolication +
+    // source-map upload at EAS build time (needs SENTRY_AUTH_TOKEN); at runtime
+    // the SDK no-ops without EXPO_PUBLIC_SENTRY_DSN. See src/lib/sentry.ts.
+    '@sentry/react-native/expo',
   ],
   experiments: {
     typedRoutes: true,

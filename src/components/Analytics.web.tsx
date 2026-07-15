@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { usePathname, useSegments } from 'expo-router';
 import { recordPageView } from '../lib/db/pageViews';
+import { setSentryTag } from '../lib/sentry';
 
 export default function AnalyticsProvider() {
   // path is the concrete URL (e.g. /character/123); route is the matched
@@ -20,6 +21,8 @@ export default function AnalyticsProvider() {
     if (!path || lastPath.current === path) return;
     lastPath.current = path;
     void recordPageView(route, path);
+    // Tag the Sentry scope so any error is attributed to the route pattern.
+    setSentryTag('route', route);
   }, [path, route]);
 
   return (

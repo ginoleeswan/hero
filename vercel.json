@@ -1,5 +1,5 @@
 {
-  "buildCommand": "yarn expo export -p web && node scripts/generate-sitemap.mjs",
+  "buildCommand": "yarn expo export -p web --source-maps && node scripts/generate-sitemap.mjs && node scripts/upload-sourcemaps.mjs",
   "outputDirectory": "dist",
   "rewrites": [
     {
