@@ -62,6 +62,10 @@ export default function Root({ children }: PropsWithChildren) {
           content="Explore every fictional universe — characters, teams and films from Marvel to anime — and settle who'd win."
         />
         <meta name="twitter:image" content={`${SITE_URL}/og.png`} />
+        {/* Site-level structured data: identifies Mythique as an Organization and
+            declares the sitelinks search box (SearchAction → /search?q=). The
+            deep content pages carry their own richer JSON-LD via /api/bot-page. */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredData }} />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         {/* Standalone web-app capability. When the site is added to the iOS Home
@@ -82,6 +86,33 @@ export default function Root({ children }: PropsWithChildren) {
     </html>
   );
 }
+
+// Site-wide JSON-LD (WebSite + SearchAction + Organization). `<` is escaped so
+// no field value can prematurely close the <script> tag.
+const structuredData = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      name: 'Mythique',
+      url: SITE_URL,
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: `${SITE_URL}/search?q={search_term_string}`,
+        },
+        'query-input': 'required name=search_term_string',
+      },
+    },
+    {
+      '@type': 'Organization',
+      name: 'Mythique',
+      url: SITE_URL,
+      logo: `${SITE_URL}/icon-512.png`,
+    },
+  ],
+}).replace(/</g, '\\u003c');
 
 const rootStyle = `
 /* Fill the FULL viewport — including behind the iOS status bar, home indicator

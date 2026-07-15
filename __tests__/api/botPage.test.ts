@@ -1,14 +1,19 @@
 import {
+  buildCategoryBotPage,
   buildCharacterBotPage,
+  buildFranchiseBotPage,
   buildNotFoundPage,
   buildTeamBotPage,
   buildTitleBotPage,
+  buildUniverseBotPage,
   buildVsBotPage,
+  CATEGORY_SEO,
   metaDescription,
   stripHtml,
   universePath,
   type BotHero,
   type BotTitle,
+  type RelatedLite,
 } from '../../api/_lib/botPage';
 
 const hero = (overrides: Partial<BotHero> = {}): BotHero => ({
@@ -50,8 +55,14 @@ describe('stripHtml', () => {
 });
 
 describe('universePath', () => {
-  it('links real universes by raw name', () => {
-    expect(universePath('DC Comics')).toBe('/universe/DC%20Comics');
+  it('links registered universes by their canonical slug (not raw name)', () => {
+    // "DC Comics" resolves to the dc brand → /universe/dc, matching the app and
+    // sitemap so the two URL forms never compete as duplicate content.
+    expect(universePath('DC Comics')).toBe('/universe/dc');
+    expect(universePath('Marvel Comics')).toBe('/universe/marvel');
+  });
+  it('links unregistered universes by encoded raw name', () => {
+    expect(universePath('Some Indie Press')).toBe('/universe/Some%20Indie%20Press');
   });
   it('never links category buckets', () => {
     expect(universePath('Creator-Owned')).toBeNull();
@@ -114,7 +125,7 @@ describe('buildCharacterBotPage', () => {
     expect(html).toContain('href="/character/h_4"');
     expect(html).toContain('href="/compare/h_1/h_3"');
     expect(html).toContain('Superman vs Lex Luthor — who wins?');
-    expect(html).toContain('href="/universe/DC%20Comics"');
+    expect(html).toContain('href="/universe/dc"');
   });
 
   it('escapes hero-controlled fields everywhere, including JSON-LD', () => {
@@ -179,7 +190,7 @@ describe('buildTeamBotPage', () => {
     expect(html).toContain('<title>Justice League — Members &amp; Roster | Mythique</title>');
     expect(html).toContain('href="/character/h_1"');
     expect(html).toContain('"@type":"ItemList"');
-    expect(html).toContain('href="/universe/DC%20Comics"');
+    expect(html).toContain('href="/universe/dc"');
   });
 });
 
@@ -213,6 +224,25 @@ describe('buildVsBotPage', () => {
     expect(html).toContain('<th>Superman</th><th>Doomsday</th>');
   });
 
+  it('emits FAQPage JSON-LD targeting the "who would win" query', () => {
+    const m = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    const ld = JSON.parse(m![1]);
+    const faq = ld['@graph'].find((n: { '@type': string }) => n['@type'] === 'FAQPage');
+    expect(faq).toBeDefined();
+    expect(faq.mainEntity[0].name).toBe('Who would win in a fight, Superman or Doomsday?');
+    // 3–1 tally → Superman favoured at 75% of 4 votes.
+    expect(faq.mainEntity[0].acceptedAnswer.text).toContain('favours Superman, with 75% of 4');
+  });
+
+  it('gives an open-debate FAQ answer when there are no votes', () => {
+    const noVotes = buildVsBotPage(a, b, { votesA: 0, votesB: 0 }, { forA: [], forB: [] });
+    const ld = JSON.parse(
+      noVotes.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1],
+    );
+    const faq = ld['@graph'].find((n: { '@type': string }) => n['@type'] === 'FAQPage');
+    expect(faq.mainEntity[0].acceptedAnswer.text).toContain('open debate');
+  });
+
   it('links both fighters and onward matchups, skipping the current pair', () => {
     expect(html).toContain('href="/character/h_1"');
     expect(html).toContain('href="/character/h_9"');
@@ -225,5 +255,87 @@ describe('buildVsBotPage', () => {
 describe('buildNotFoundPage', () => {
   it('is noindex so crawlers drop dead URLs', () => {
     expect(buildNotFoundPage()).toContain('name="robots" content="noindex"');
+  });
+});
+
+const roster = (): RelatedLite[] => [
+  { id: 'h_1', name: 'Superman' },
+  { id: 'h_2', name: 'Batman' },
+  { id: 'h_3', name: 'Wonder Woman' },
+];
+
+describe('buildCategoryBotPage', () => {
+  const html = buildCategoryBotPage('strongest', roster());
+
+  it('renders the keyword-targeted title and H1 from CATEGORY_SEO', () => {
+    // buildDoc HTML-escapes the title, so the ampersand becomes &amp;.
+    expect(html).toContain(
+      `<title>${CATEGORY_SEO.strongest.label} — Powers, Stats &amp; Rankings | Mythique</title>`,
+    );
+    expect(html).toContain(`<h1>${CATEGORY_SEO.strongest.label}</h1>`);
+  });
+
+  it('canonicalizes to the category path', () => {
+    expect(html).toContain('rel="canonical" href="https://mythique.app/category/strongest"');
+  });
+
+  it('links every character in an ordered list', () => {
+    expect(html).toContain('<ol><li><a href="/character/h_1">Superman</a></li>');
+    expect(html).toContain('href="/character/h_3"');
+  });
+
+  it('emits CollectionPage + ItemList JSON-LD', () => {
+    expect(html).toContain('"@type":"CollectionPage"');
+    expect(html).toContain('"@type":"ItemList"');
+    expect(html).toContain('"numberOfItems":3');
+  });
+
+  it('cross-links sibling hubs but not itself', () => {
+    expect(html).toContain('href="/category/marvel"');
+    expect(html).not.toContain('href="/category/strongest"');
+  });
+});
+
+describe('buildUniverseBotPage', () => {
+  // Registered brand: display name "Marvel", canonical slug "marvel".
+  const html = buildUniverseBotPage('Marvel', 'marvel', roster());
+
+  it('canonicalizes to the brand slug', () => {
+    expect(html).toContain('rel="canonical" href="https://mythique.app/universe/marvel"');
+  });
+
+  it('puts the universe name in the title and heading', () => {
+    expect(html).toContain('Marvel Characters — Heroes, Villains &amp; Power Stats | Mythique');
+    expect(html).toContain('<h1>Marvel Characters</h1>');
+  });
+
+  it('links the roster into the character graph', () => {
+    expect(html).toContain('href="/character/h_2"');
+    expect(html).toContain('"@type":"CollectionPage"');
+  });
+
+  it('encodes an unregistered raw-name slug in the canonical', () => {
+    const raw = buildUniverseBotPage('Some Indie Press', 'Some Indie Press', roster());
+    expect(raw).toContain(
+      'rel="canonical" href="https://mythique.app/universe/Some%20Indie%20Press"',
+    );
+  });
+});
+
+describe('buildFranchiseBotPage', () => {
+  const html = buildFranchiseBotPage('Star Wars', roster());
+
+  it('canonicalizes to the encoded franchise name under /franchise', () => {
+    expect(html).toContain('rel="canonical" href="https://mythique.app/franchise/Star%20Wars"');
+  });
+
+  it('puts the franchise name in the title, heading and CollectionPage LD', () => {
+    expect(html).toContain('Star Wars Characters — Full List, Powers &amp; Stats | Mythique');
+    expect(html).toContain('<h1>Star Wars Characters</h1>');
+    expect(html).toContain('"@type":"CollectionPage"');
+  });
+
+  it('links the roster into the character graph', () => {
+    expect(html).toContain('href="/character/h_1"');
   });
 });

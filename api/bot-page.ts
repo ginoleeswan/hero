@@ -4,16 +4,21 @@
 // nothing without JS, so this route is what makes the catalogue indexable.
 // Social preview bots stay on /api/share-meta; humans never hit either.
 import {
+  buildCategoryBotPage,
   buildCharacterBotPage,
+  buildFranchiseBotPage,
   buildNotFoundPage,
   buildTeamBotPage,
   buildTitleBotPage,
+  buildUniverseBotPage,
   buildVsBotPage,
+  CATEGORY_SEO,
   type BotHero,
   type BotTeam,
   type BotTitle,
   type RelatedLite,
 } from './_lib/botPage';
+import { universeBrandBySlug, universeBrandForPublisher } from '../src/constants/universeBrands';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';
@@ -134,6 +139,119 @@ async function fetchTally(a: string, b: string): Promise<{ votesA: number; votes
   }
 }
 
+// Number of characters listed on a hub page — enough dense internal linking to
+// be crawl-valuable, bounded so a page never balloons.
+const HUB_LIMIT = 100;
+
+// PostgREST query per category slug. Mirrors the predicates in
+// getAllHeroesBySlug (src/lib/db/heroes/categories.ts) — this RN-free bundle
+// can't import that module, so keep the two in sync when categories change.
+// Values are raw PostgREST filter expressions; URLSearchParams percent-encodes
+// them (parens, quotes, `*` wildcards, spaces all decode correctly server-side).
+type CatQuery = { select: string; params: Array<[string, string]>; order: string };
+const TAG_SELECT = 'id,name,hero_tags!inner(tag)';
+const CATEGORY_QUERY: Record<string, CatQuery> = {
+  popular: {
+    select: 'id,name',
+    params: [['category', 'eq.popular']],
+    order: 'fame_score.desc.nullslast',
+  },
+  villain: {
+    select: 'id,name',
+    params: [
+      ['alignment', 'eq.bad'],
+      ['publisher', 'not.in.("Non-Fictional","In the Public Domain")'],
+    ],
+    order: 'fame_score.desc.nullslast',
+  },
+  xmen: {
+    select: 'id,name',
+    params: [['or', '(group_affiliation.ilike.*x-men*,group_affiliation.ilike.*xmen*)']],
+    order: 'fame_score.desc.nullslast',
+  },
+  'anti-heroes': {
+    select: 'id,name',
+    params: [['alignment', 'ilike.*neutral*']],
+    order: 'fame_score.desc.nullslast',
+  },
+  marvel: {
+    select: 'id,name',
+    params: [['publisher', 'ilike.*marvel*']],
+    order: 'fame_score.desc.nullslast',
+  },
+  dc: {
+    select: 'id,name',
+    params: [['publisher', 'ilike.*dc*']],
+    order: 'fame_score.desc.nullslast',
+  },
+  image: {
+    select: 'id,name',
+    params: [['publisher', 'ilike.*image*']],
+    order: 'fame_score.desc.nullslast',
+  },
+  'dark-horse': {
+    select: 'id,name',
+    params: [['publisher', 'ilike.*dark horse*']],
+    order: 'fame_score.desc.nullslast',
+  },
+  strongest: {
+    select: 'id,name',
+    params: [['strength', 'not.is.null']],
+    order: 'strength.desc.nullslast',
+  },
+  'most-intelligent': {
+    select: 'id,name',
+    params: [['intelligence', 'not.is.null']],
+    order: 'intelligence.desc.nullslast',
+  },
+  'most-iconic': {
+    select: 'id,name',
+    params: [['publisher', 'not.in.("Non-Fictional","In the Public Domain","Company-Licensed")']],
+    order: 'fame_score.desc.nullslast',
+  },
+  'franchise-icons': {
+    select: 'id,name',
+    params: [['franchise', 'not.is.null']],
+    order: 'issue_count.desc.nullslast',
+  },
+  anime: {
+    select: TAG_SELECT,
+    params: [['hero_tags.tag', 'eq.anime']],
+    order: 'issue_count.desc.nullslast',
+  },
+  'video-games': {
+    select: TAG_SELECT,
+    params: [['hero_tags.tag', 'eq.video-game']],
+    order: 'issue_count.desc.nullslast',
+  },
+  horror: {
+    select: TAG_SELECT,
+    params: [['hero_tags.tag', 'eq.horror-icon']],
+    order: 'issue_count.desc.nullslast',
+  },
+};
+
+/** Fetch the top HUB_LIMIT heroes for a hub query, id+name only. Fail-soft to
+ *  [] so a hub with no results (or a transient error) becomes a noindex 404
+ *  rather than a served 500. */
+async function fetchHubHeroes(spec: CatQuery): Promise<RelatedLite[]> {
+  try {
+    const sp = new URLSearchParams();
+    sp.set('select', spec.select);
+    for (const [k, v] of spec.params) sp.append(k, v);
+    sp.set('order', spec.order);
+    sp.set('limit', String(HUB_LIMIT));
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/heroes?${sp.toString()}`, {
+      headers: { apikey: SUPABASE_KEY },
+    });
+    if (!r.ok) return [];
+    const rows = (await r.json()) as Array<{ id?: string; name?: string }>;
+    return rows.filter((h): h is RelatedLite => !!h.id && !!h.name);
+  } catch {
+    return [];
+  }
+}
+
 function str(v: string | string[] | undefined): string {
   return typeof v === 'string' ? v : '';
 }
@@ -171,6 +289,48 @@ async function render(query: Req['query']): Promise<string | null> {
       fetchRelated(b.id, 'enemy'),
     ]);
     return buildVsBotPage(a, b, tally, { forA, forB });
+  }
+  if (kind === 'category') {
+    const slug = str(query.slug);
+    const spec = CATEGORY_QUERY[slug];
+    // Only render known slugs (CATEGORY_QUERY and CATEGORY_SEO share the set) —
+    // an unknown slug becomes a noindex 404 instead of an empty hub.
+    if (!spec || !CATEGORY_SEO[slug]) return null;
+    const heroes = await fetchHubHeroes(spec);
+    if (heroes.length === 0) return null;
+    return buildCategoryBotPage(slug, heroes);
+  }
+  if (kind === 'universe') {
+    // The param may arrive as a registry slug (app links: /universe/marvel) or a
+    // raw publisher name (older/character-page links: /universe/Marvel Comics).
+    // Resolve both to ONE canonical brand so the two forms collapse to a single
+    // indexable URL (registered → stable slug; unregistered → the raw name).
+    const param = str(query.slug).trim();
+    if (!param) return null;
+    const brand = universeBrandBySlug(param) ?? universeBrandForPublisher(param);
+    const term = brand ? brand.query : param; // ILIKE term against `publisher`
+    const name = brand ? brand.name : param; // display name / H1
+    const slug = brand ? brand.slug : param; // canonical path segment
+    const heroes = await fetchHubHeroes({
+      select: 'id,name',
+      params: [['publisher', `ilike.*${term}*`]],
+      order: 'fame_score.desc.nullslast',
+    });
+    if (heroes.length === 0) return null;
+    return buildUniverseBotPage(name, slug, heroes);
+  }
+  if (kind === 'franchise') {
+    // Franchise is an exact `franchise` value (no registry); the param is the
+    // URL-encoded raw name, matching how /franchise/[slug] resolves it.
+    const name = str(query.slug).trim();
+    if (!name) return null;
+    const heroes = await fetchHubHeroes({
+      select: 'id,name',
+      params: [['franchise', `eq.${name}`]],
+      order: 'fame_score.desc.nullslast',
+    });
+    if (heroes.length === 0) return null;
+    return buildFranchiseBotPage(name, heroes);
   }
   return null;
 }

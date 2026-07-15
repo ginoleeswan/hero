@@ -7,6 +7,7 @@
 // Kept free of runtime deps (like shareMeta.ts) so it's unit-testable under
 // jest and safe to bundle into the RN-free Vercel functions in api/.
 import { SITE_URL } from '../../src/constants/site';
+import { universeHref } from '../../src/constants/universeBrands';
 import { escapeHtml, vsShareLine } from './shareMeta';
 
 /** The hero columns the bot page renders. Subset of the heroes Row. */
@@ -59,21 +60,13 @@ export function stripHtml(s: string | null | undefined): string {
     .trim();
 }
 
-/** SuperheroAPI category buckets that must never link as a browsable universe
- *  (mirrors NON_UNIVERSE_PUBLISHERS in src/constants/publishers.ts, which the
- *  RN-free api/ bundle can't import). */
-const NON_UNIVERSE_PUBLISHERS = new Set([
-  'Non-Fictional',
-  'Creator-Owned',
-  'Company-Licensed',
-  'In the Public Domain',
-]);
-
 /** /universe browse link for a publisher, or null when it isn't browsable.
- *  Routes by raw name — /universe/[slug] ilike-matches unregistered slugs. */
+ *  Delegates to the shared canonicaliser so character bot pages link universes
+ *  by the SAME URL the app and sitemap use (registered brands by stable slug,
+ *  others by encoded raw name) — no duplicate /universe/<raw> vs /universe/<slug>
+ *  competing for the same content. */
 export function universePath(publisher: string | null | undefined): string | null {
-  if (!publisher || NON_UNIVERSE_PUBLISHERS.has(publisher)) return null;
-  return `/universe/${encodeURIComponent(publisher)}`;
+  return universeHref(publisher);
 }
 
 function heroLink(h: RelatedLite): string {
@@ -475,19 +468,276 @@ export function buildVsBotPage(
     section('More matchups', more ? `<ul>${more}</ul>` : ''),
     FOOTER,
   ].join('\n');
+  const canonicalUrl = `${SITE_URL}/compare/${encodeURIComponent(cA.id)}/${encodeURIComponent(
+    cB.id,
+  )}`;
   return buildDoc({
     title: titleText,
     description: desc,
     path: `/compare/${encodeURIComponent(cA.id)}/${encodeURIComponent(cB.id)}`,
     ogImage: `${SITE_URL}/api/og?a=${encodeURIComponent(a.id)}&b=${encodeURIComponent(b.id)}`,
     ogType: 'website',
+    // WebPage + FAQPage: the FAQ targets the "who would win, X vs Y?" query
+    // directly (People-Also-Ask / featured-snippet real estate) with a factual,
+    // data-backed answer — this matchup content is unique to Mythique.
     jsonLd: serializeLd({
       '@context': 'https://schema.org',
-      '@type': 'WebPage',
-      name: titleText,
-      description: desc,
-      url: `${SITE_URL}/compare/${encodeURIComponent(cA.id)}/${encodeURIComponent(cB.id)}`,
+      '@graph': [
+        { '@type': 'WebPage', name: titleText, description: desc, url: canonicalUrl },
+        {
+          '@type': 'FAQPage',
+          url: canonicalUrl,
+          mainEntity: [
+            {
+              '@type': 'Question',
+              name: `Who would win in a fight, ${a.name} or ${b.name}?`,
+              acceptedAnswer: { '@type': 'Answer', text: vsAnswer(a.name, b.name, tally) },
+            },
+          ],
+        },
+      ],
     }),
+    body,
+  });
+}
+
+/** Plain-text answer for the versus FAQ — the community lean when votes exist,
+ *  otherwise an open-debate invite. Kept factual so the rich result never
+ *  overstates a verdict. */
+function vsAnswer(aName: string, bName: string, tally: { votesA: number; votesB: number }): string {
+  const total = tally.votesA + tally.votesB;
+  if (total > 0) {
+    const aLeads = tally.votesA >= tally.votesB;
+    const leader = aLeads ? aName : bName;
+    const [hi, lo] = aLeads ? [tally.votesA, tally.votesB] : [tally.votesB, tally.votesA];
+    const pct = Math.round((hi / total) * 100);
+    return (
+      `The Mythique community currently favours ${leader}, with ${pct}% of ${total} ` +
+      `votes (${hi}–${lo}). Compare their full power stats and cast your own vote.`
+    );
+  }
+  return (
+    `It's an open debate — no community votes yet. Compare ${aName} and ${bName} ` +
+    `stat by stat and cast the first vote on Mythique.`
+  );
+}
+
+// --- Browsable hub pages (categories + universes) -------------------------
+// These target head/mid-tail queries ("strongest characters", "marvel
+// villains", "dc characters") that a single character page can't rank for, and
+// they funnel crawl equity down into the character graph via dense links.
+
+/** SEO copy for each browsable category hub. Mirrors CATEGORY_LABELS /
+ *  CATEGORY_DESCRIPTIONS in src/lib/db/heroes/categories.ts — the RN-free api/
+ *  bundle can't import that RN module, so keep the slug set in sync when
+ *  categories change. Labels are written as the search phrases we want to win,
+ *  not the app's short UI labels. */
+export const CATEGORY_SEO: Record<string, { label: string; blurb: string }> = {
+  popular: {
+    label: 'Most Popular Superheroes & Villains',
+    blurb:
+      'The most beloved and recognizable characters across all of fiction — Marvel, DC, anime, games and beyond — ranked by fame on Mythique.',
+  },
+  villain: {
+    label: 'Greatest Supervillains of All Time',
+    blurb:
+      'The forces of darkness across Marvel, DC, anime and beyond — the most iconic supervillains, ranked by fame, with powers and stats.',
+  },
+  xmen: {
+    label: 'X-Men Characters',
+    blurb:
+      "Every member of Charles Xavier's world — X-Men mutants, allies and villains — with powers, stats and who-would-win matchups.",
+  },
+  'anti-heroes': {
+    label: 'Greatest Anti-Heroes',
+    blurb:
+      'Characters who walk the line between hero and villain — the most iconic anti-heroes across all fiction, with powers and stats.',
+  },
+  marvel: {
+    label: 'Marvel Characters',
+    blurb:
+      'Heroes and villains from the Marvel Universe — powers, stats, teams and who-would-win matchups, ranked by fame.',
+  },
+  dc: {
+    label: 'DC Characters',
+    blurb:
+      'Heroes and villains of the DC Universe — powers, stats, teams and who-would-win matchups, ranked by fame.',
+  },
+  image: {
+    label: 'Image Comics Characters',
+    blurb:
+      'Creator-owned heroes and villains from Image Comics — Spawn, Invincible and more — with powers, stats and matchups.',
+  },
+  'dark-horse': {
+    label: 'Dark Horse Characters',
+    blurb:
+      'Heroes and villains from Dark Horse Comics — Hellboy, Sin City and beyond — with powers, stats and matchups.',
+  },
+  strongest: {
+    label: 'Strongest Characters',
+    blurb:
+      'The most physically powerful characters in fiction, ranked by raw strength — with full power stats and matchups.',
+  },
+  'most-intelligent': {
+    label: 'Most Intelligent Characters',
+    blurb:
+      'The greatest minds across comics, film and games, ranked by intelligence — with full power stats and matchups.',
+  },
+  'most-iconic': {
+    label: 'Most Iconic Characters',
+    blurb:
+      'The most recognizable characters across comics and screen, ranked by fame — with powers, stats and matchups.',
+  },
+  'franchise-icons': {
+    label: 'Icons Beyond the Comics',
+    blurb:
+      'Legendary characters from film, TV, games and anime — icons that transcend the page, with powers, stats and matchups.',
+  },
+  anime: {
+    label: 'Anime & Manga Characters',
+    blurb:
+      'Heroes and villains from the biggest anime and manga — powers, stats and who-would-win matchups, ranked.',
+  },
+  'video-games': {
+    label: 'Video Game Characters',
+    blurb:
+      'Legends straight out of video-game history — powers, stats and who-would-win matchups, ranked by fame.',
+  },
+  horror: {
+    label: 'Horror Icons',
+    blurb:
+      'The slashers and monsters of horror cinema — the most iconic villains of horror, with powers, stats and matchups.',
+  },
+};
+
+/** Cross-links to the other hub pages so crawlers walk between them and equity
+ *  spreads across the hub graph. Optionally excludes the current category. */
+function hubNav(excludeSlug?: string): string {
+  const items = Object.entries(CATEGORY_SEO)
+    .filter(([slug]) => slug !== excludeSlug)
+    .map(([slug, m]) => `<li><a href="/category/${slug}">${escapeHtml(m.label)}</a></li>`)
+    .join('');
+  return items ? `<nav><h2>Browse more</h2><ul>${items}</ul></nav>` : '';
+}
+
+/** Ordered, linked character list — the internal-link payload of a hub page. */
+function characterOrderedList(heroes: RelatedLite[]): string {
+  if (heroes.length === 0) return '';
+  return `<ol>${heroes.map((h) => `<li>${heroLink(h)}</li>`).join('')}</ol>`;
+}
+
+/** JSON-LD for a hub page: CollectionPage wrapping an ItemList of the linked
+ *  characters, plus breadcrumbs. `<` escaped so data text can't close the tag. */
+function hubJsonLd(name: string, path: string, description: string, heroes: RelatedLite[]): string {
+  const itemListElement = heroes.map((h, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: h.name,
+    url: `${SITE_URL}/character/${encodeURIComponent(h.id)}`,
+  }));
+  return serializeLd({
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name,
+    description,
+    url: `${SITE_URL}${path}`,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: heroes.length,
+      itemListElement,
+    },
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Mythique', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Browse', item: `${SITE_URL}/explore` },
+        { '@type': 'ListItem', position: 3, name },
+      ],
+    },
+  });
+}
+
+/**
+ * Crawlable category hub (e.g. /category/strongest): a keyword-targeted H1 +
+ * intro, an ordered list of the top characters (each linked into the graph),
+ * cross-links to sibling hubs, and CollectionPage JSON-LD. `slug` must be a key
+ * of CATEGORY_SEO — the handler validates before calling.
+ */
+export function buildCategoryBotPage(slug: string, heroes: RelatedLite[]): string {
+  const meta = CATEGORY_SEO[slug];
+  const path = `/category/${slug}`;
+  const body = [
+    `<header><h1>${escapeHtml(meta.label)}</h1><p>${escapeHtml(meta.blurb)}</p></header>`,
+    section('Characters', characterOrderedList(heroes)),
+    hubNav(slug),
+    FOOTER,
+  ].join('\n');
+  return buildDoc({
+    title: `${meta.label} — Powers, Stats & Rankings | Mythique`,
+    description: meta.blurb,
+    path,
+    ogImage: `${SITE_URL}/og.png`,
+    ogType: 'website',
+    jsonLd: hubJsonLd(meta.label, path, meta.blurb, heroes),
+    body,
+  });
+}
+
+/**
+ * Crawlable universe hub (e.g. /universe/marvel): every catalogue character from
+ * one publisher/studio, linked into the graph. `name` is the display name (brand
+ * name for a registered universe, else the raw publisher); `slug` is the canonical
+ * path segment (stable brand slug, else the raw name) — the handler resolves both
+ * so /universe/<slug> and /universe/<raw> collapse to one canonical URL.
+ */
+export function buildUniverseBotPage(name: string, slug: string, heroes: RelatedLite[]): string {
+  const label = `${name} Characters`;
+  const blurb =
+    `Every character from ${name} on Mythique — heroes, villains, powers, stats and ` +
+    `who-would-win matchups, ranked by fame.`;
+  const path = `/universe/${encodeURIComponent(slug)}`;
+  const body = [
+    `<header><h1>${escapeHtml(label)}</h1><p>${escapeHtml(blurb)}</p></header>`,
+    section('Characters', characterOrderedList(heroes)),
+    hubNav(),
+    FOOTER,
+  ].join('\n');
+  return buildDoc({
+    title: `${name} Characters — Heroes, Villains & Power Stats | Mythique`,
+    description: blurb,
+    path,
+    ogImage: `${SITE_URL}/og.png`,
+    ogType: 'website',
+    jsonLd: hubJsonLd(label, path, blurb, heroes),
+    body,
+  });
+}
+
+/**
+ * Crawlable franchise hub (e.g. /franchise/Star Wars): every catalogue character
+ * whose `franchise` exactly equals `name`, linked into the graph. Franchises have
+ * no brand registry, so the canonical is always the URL-encoded raw name — which
+ * is exactly how the app's /franchise/[slug] route resolves it.
+ */
+export function buildFranchiseBotPage(name: string, heroes: RelatedLite[]): string {
+  const label = `${name} Characters`;
+  const blurb =
+    `Every character from the ${name} franchise on Mythique — heroes, villains, ` +
+    `powers, stats and who-would-win matchups, ranked by fame.`;
+  const path = `/franchise/${encodeURIComponent(name)}`;
+  const body = [
+    `<header><h1>${escapeHtml(label)}</h1><p>${escapeHtml(blurb)}</p></header>`,
+    section('Characters', characterOrderedList(heroes)),
+    hubNav(),
+    FOOTER,
+  ].join('\n');
+  return buildDoc({
+    title: `${name} Characters — Full List, Powers & Stats | Mythique`,
+    description: blurb,
+    path,
+    ogImage: `${SITE_URL}/og.png`,
+    ogType: 'website',
+    jsonLd: hubJsonLd(label, path, blurb, heroes),
     body,
   });
 }
