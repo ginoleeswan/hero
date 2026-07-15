@@ -46,8 +46,19 @@ export function LegendBand({
         ] as object
       }
     >
-      <Text style={styles.title}>Legend</Text>
-      <View style={[styles.titleRule, { backgroundColor: accent + '22' }] as object} />
+      {flat ? (
+        <>
+          {/* Flat (mobile): the page's section-title grammar — Flame navy,
+              right-aligned over the full navy rule, matching its siblings. */}
+          <Text style={styles.titleFlat}>Legend</Text>
+          <View style={styles.titleRuleFlat} />
+        </>
+      ) : (
+        <>
+          <Text style={styles.title}>Legend</Text>
+          <View style={[styles.titleRule, { backgroundColor: accent + '22' }] as object} />
+        </>
+      )}
 
       <View style={styles.columns}>
         {hasDebut ? (
@@ -126,6 +137,18 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 10,
+  },
+  titleFlat: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
+    color: COLORS.navy,
+    textAlign: 'right',
+    paddingVertical: 5,
+  },
+  titleRuleFlat: {
+    height: 2,
+    backgroundColor: COLORS.navy,
+    marginBottom: 16,
   },
   titleRule: { height: 1, marginBottom: 16 },
   columns: { flexDirection: 'row', gap: 24, flexWrap: 'wrap' },

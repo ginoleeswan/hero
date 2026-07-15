@@ -102,11 +102,14 @@ const sk = StyleSheet.create({
 const HeroCard = memo(function HeroCard({
   hero,
   priority,
+  gridWidth,
   onPress,
   onPeek,
 }: {
   hero: Hero;
   priority?: 'high';
+  /** Image derivative width — mobile 3-col cells need ~360px, not 600. */
+  gridWidth?: number;
   onPress: (id: string) => void;
   onPeek?: (hero: Hero) => void;
 }) {
@@ -130,6 +133,7 @@ const HeroCard = memo(function HeroCard({
             imageMdUrl={hero.image_md_url}
             blurhash={hero.portrait_blurhash}
             grid
+            gridWidth={gridWidth}
             contentFit="cover"
             contentPosition={{ top: 0, left: '50%' }}
             style={StyleSheet.absoluteFill}
@@ -488,6 +492,7 @@ export default function WebCategoryScreen() {
           hero={hero}
           // First rows fetch ahead of the below-fold cards.
           priority={i < 9 ? 'high' : undefined}
+          gridWidth={isDesktop ? undefined : 360}
           onPress={handlePress}
           onPeek={setPeek}
         />

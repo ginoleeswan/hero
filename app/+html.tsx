@@ -85,6 +85,11 @@ html, body, #root {
    Content pages override this to beige at runtime via useWebCanvas, so the
    frosted toolbar still reads transparent over beige content there. */
 html, body { background-color: #0b1820; overscroll-behavior-y: none; }
+/* Safari renders its loading-state bars in the SYSTEM appearance (white in
+   light mode) until the page declares otherwise — the white band under the
+   toolbar during boot. Declaring a dark colour-scheme keeps the chrome dark
+   through every loading phase. */
+:root { color-scheme: dark; }
 /* iOS Safari auto-zooms the page when a focused control's EFFECTIVE font-size
    is under 16px (it ignores maximum-scale=1 since 16). Enforce the floor from
    the very first paint — the runtime copy in _layout.web.tsx is the belt, this
