@@ -59,6 +59,22 @@ const angleLabel = (p: SocialPost) => {
   return a.charAt(0).toUpperCase() + a.slice(1);
 };
 
+// Per-platform display: proper label + brand icon (data carries the raw
+// platform key). Unknown platforms fall back to a capitalised label + globe.
+const PLATFORM_META: Record<
+  string,
+  { label: string; icon: 'logo-instagram' | 'logo-tiktok' | 'logo-reddit' | 'globe-outline' }
+> = {
+  instagram: { label: 'Instagram', icon: 'logo-instagram' },
+  tiktok: { label: 'TikTok', icon: 'logo-tiktok' },
+  reddit: { label: 'Reddit', icon: 'logo-reddit' },
+};
+const platformMeta = (p: string) =>
+  PLATFORM_META[p] ?? {
+    label: p.charAt(0).toUpperCase() + p.slice(1),
+    icon: 'globe-outline' as const,
+  };
+
 export function SocialInsightsDomain() {
   const qc = useQueryClient();
   const postsQ = useQuery({ queryKey: ['socialPosts'], queryFn: listSocialPosts });
@@ -299,7 +315,10 @@ export function SocialInsightsDomain() {
         >
           {platformRows.map((p) => (
             <View key={p.platform} style={styles.platRow}>
-              <Text style={styles.platName}>{p.platform}</Text>
+              <View style={styles.platNameRow}>
+                <Ionicons name={platformMeta(p.platform).icon} size={13} color={COLORS.navy} />
+                <Text style={styles.platName}>{platformMeta(p.platform).label}</Text>
+              </View>
               <View style={styles.platNums}>
                 <Text style={styles.platViews}>
                   {p.views ? (
@@ -345,7 +364,7 @@ export function SocialInsightsDomain() {
                 <Text style={styles.topAngle}>{angleLabel(t.post)}</Text>
                 {[...new Set(t.platforms)].map((pf) => (
                   <Text key={pf} style={styles.topPlatform}>
-                    {pf}
+                    {platformMeta(pf).label}
                   </Text>
                 ))}
               </View>
@@ -366,6 +385,7 @@ export function SocialInsightsDomain() {
 
 const styles = StyleSheet.create({
   syncRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  platNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   syncMsg: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.navy, opacity: 0.7 },
   wrap: { gap: 12, width: '100%' },
   syncBtn: {
