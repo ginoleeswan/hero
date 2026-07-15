@@ -8,7 +8,9 @@ import {
 describe('parseUtm', () => {
   it('pulls all five UTM params from a query string', () => {
     expect(
-      parseUtm('?utm_source=tiktok&utm_medium=social&utm_campaign=bio&utm_content=v1&utm_term=goku'),
+      parseUtm(
+        '?utm_source=tiktok&utm_medium=social&utm_campaign=bio&utm_content=v1&utm_term=goku',
+      ),
     ).toEqual({
       source: 'tiktok',
       medium: 'social',

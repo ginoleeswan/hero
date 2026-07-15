@@ -71,18 +71,18 @@ for organic posts — so you can separate paid from organic acquisition at a gla
 
 ### Parameter cheatsheet
 
-| Param          | Use                          | Examples                              |
-| -------------- | ---------------------------- | ------------------------------------- |
-| `utm_source`   | the platform                 | `tiktok`, `instagram`, `reddit`       |
-| `utm_medium`   | paid vs organic              | `paid`, `social`, `referral`          |
-| `utm_campaign` | the creative / initiative    | `bio`, `aquaman-challenge`, `villains-top10` |
-| `utm_content`  | A/B variant (optional)       | `hook-a`, `hook-b`                     |
+| Param          | Use                       | Examples                                     |
+| -------------- | ------------------------- | -------------------------------------------- |
+| `utm_source`   | the platform              | `tiktok`, `instagram`, `reddit`              |
+| `utm_medium`   | paid vs organic           | `paid`, `social`, `referral`                 |
+| `utm_campaign` | the creative / initiative | `bio`, `aquaman-challenge`, `villains-top10` |
+| `utm_content`  | A/B variant (optional)    | `hook-a`, `hook-b`                           |
 
 ## Reading the results
 
 - **Admin → Traffic → Acquisition** — first-touch visitors and how many signed in,
   per campaign. This is the money view: `aquaman-challenge → 120 visitors, 14
-  signed in`.
+signed in`.
 - **Top referrers** (same tab) still catches untagged organic clicks by host.
 - Keep the campaign vocabulary small and consistent — every distinct spelling is
   a separate row.

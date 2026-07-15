@@ -53,10 +53,12 @@ const GUIDE = {
 // into the /compare page rather than just the homepage.
 async function resolvableRivalries() {
   const sb = makeSb(loadEnv());
-  const checks = await Promise.all(RIVALRIES.map(async ([a, b]) => {
-    const [ha, hb] = [await heroByName(sb, a), await heroByName(sb, b)];
-    return ha && hb ? { pair: [a, b], ids: [ha.id, hb.id] } : null;
-  }));
+  const checks = await Promise.all(
+    RIVALRIES.map(async ([a, b]) => {
+      const [ha, hb] = [await heroByName(sb, a), await heroByName(sb, b)];
+      return ha && hb ? { pair: [a, b], ids: [ha.id, hb.id] } : null;
+    }),
+  );
   return checks.filter(Boolean);
 }
 
@@ -96,8 +98,9 @@ function buildPlan(pool) {
 // Chrome launches flake occasionally — retry each generator before giving up.
 function run(script, args, tries = 3) {
   for (let t = 1; ; t++) {
-    try { return execFileSync(process.execPath, [join(ADS, script), ...args], { stdio: 'inherit' }); }
-    catch (e) {
+    try {
+      return execFileSync(process.execPath, [join(ADS, script), ...args], { stdio: 'inherit' });
+    } catch (e) {
       if (t >= tries) throw e;
       console.warn(`  retry ${t}/${tries - 1} for ${script}…`);
     }
@@ -124,8 +127,10 @@ function sources(post, size) {
 }
 
 const label = (post) =>
-  post.kind === 'brand' ? `brand-${post.style}`
-    : post.kind === 'matchup' ? `matchup-${slugPair(post.pair)}`
+  post.kind === 'brand'
+    ? `brand-${post.style}`
+    : post.kind === 'matchup'
+      ? `matchup-${slugPair(post.pair)}`
       : `ranking-${post.slug}`;
 
 // Self-contained visual planner written next to the images — open week.html in a
@@ -133,9 +138,10 @@ const label = (post) =>
 // "posted" checkbox persisted in localStorage. No server, no dependencies.
 function dashboard(stamp, size, entries, bioLink) {
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const cards = entries.map((e) => {
-    const g = GUIDE[e.kind];
-    return `<div class="card" data-id="${e.base}">
+  const cards = entries
+    .map((e) => {
+      const g = GUIDE[e.kind];
+      return `<div class="card" data-id="${e.base}">
       <div class="imgwrap"><img src="${e.base}.png" alt="${esc(e.name)}" loading="lazy"></div>
       <div class="body">
         <div class="row"><span class="day">${e.day.toUpperCase()}</span><span class="name">${esc(e.name)}</span>
@@ -145,7 +151,8 @@ function dashboard(stamp, size, entries, bioLink) {
         <pre class="cap">${esc(e.caption.trim())}</pre>
         <button class="copy">Copy caption</button>
       </div></div>`;
-  }).join('\n');
+    })
+    .join('\n');
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mythique — week ${stamp}</title><style>
 :root{--navy:#06121a;--panel:#0f2231;--gold:#e0a83e;--cream:#f6eddd;--muted:#9db4c4;--line:rgba(246,237,221,.09)}
@@ -195,7 +202,10 @@ document.querySelectorAll('.card').forEach(card=>{
 
 async function main() {
   const args = process.argv.slice(2);
-  const get = (f, d) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : d; };
+  const get = (f, d) => {
+    const i = args.indexOf(f);
+    return i >= 0 ? args[i + 1] : d;
+  };
   const size = get('--size', '4x5');
   const dry = args.includes('--dry-run');
   // UTM tagging for the links appended to each caption. Defaults suit the organic
@@ -207,7 +217,10 @@ async function main() {
   const bioLink = taggedLink({ site, source: utmSource, medium: 'social', campaign: 'bio' });
 
   const pool = await resolvableRivalries();
-  if (!pool.length) { console.error('No rivalry pair resolves against the heroes table.'); process.exit(1); }
+  if (!pool.length) {
+    console.error('No rivalry pair resolves against the heroes table.');
+    process.exit(1);
+  }
   const plan = buildPlan(pool);
   console.log(`Week plan (rotation #${week}, size ${size}):`);
   plan.forEach((p, i) => console.log(`  ${DAYS[i]}  ${label(p)}`));
@@ -234,12 +247,16 @@ async function main() {
     const post = plan[i];
     console.log(`\n[${DAYS[i]}] ${label(post)}`);
     if (post.kind === 'brand') run('ad-brand.mjs', ['--style', post.style, '--size', size]);
-    else if (post.kind === 'matchup') run('ad-matchup.mjs', ['--matchup', post.pair.join(','), '--size', size]);
+    else if (post.kind === 'matchup')
+      run('ad-matchup.mjs', ['--matchup', post.pair.join(','), '--size', size]);
     else run('ad-ranking.mjs', ['--by', post.by, '--size', size]);
 
     const [img, cap] = sources(post, size);
     const base = `${String(i + 1).padStart(2, '0')}-${DAYS[i]}-${label(post)}`;
-    if (!existsSync(img)) { console.error(`  !! expected output missing: ${img}`); continue; }
+    if (!existsSync(img)) {
+      console.error(`  !! expected output missing: ${img}`);
+      continue;
+    }
     copyFileSync(img, join(weekDir, `${base}.png`));
     // Append a UTM-tagged link (campaign = post label). Matchups deep-link into
     // the /compare page; everything else lands on the homepage. This makes each
@@ -247,18 +264,30 @@ async function main() {
     // docs/marketing/utm-attribution.md.
     const rawCaption = existsSync(cap) ? readFileSync(cap, 'utf8') : '';
     const path = post.kind === 'matchup' && post.ids ? comparePath(post.ids) : '/';
-    const link = taggedLink({ site, source: utmSource, medium: utmMedium, campaign: label(post), path });
+    const link = taggedLink({
+      site,
+      source: utmSource,
+      medium: utmMedium,
+      campaign: label(post),
+      path,
+    });
     const caption = rawCaption ? `${rawCaption.trimEnd()}\n\n🔗 ${link}` : `🔗 ${link}`;
     writeFileSync(join(weekDir, `${base}.caption.txt`), caption);
     const g = GUIDE[post.kind];
     lines.push(`- **${DAYS[i]}** — ${label(post)} (\`${base}.png\`) · ${g.where} · ${g.when}`);
     entries.push({ day: DAYS[i], base, kind: post.kind, name: label(post), caption });
   }
-  lines.push('', 'Post one per day; paste the matching `.caption.txt`. Stories: re-run with `--size 9x16`.');
+  lines.push(
+    '',
+    'Post one per day; paste the matching `.caption.txt`. Stories: re-run with `--size 9x16`.',
+  );
   writeFileSync(join(weekDir, 'PLAN.md'), lines.join('\n') + '\n');
   writeFileSync(join(weekDir, 'week.html'), dashboard(stamp, size, entries, bioLink));
   console.log(`\nWeek ready → ${weekDir}`);
   console.log(`Open the visual planner:  open "${join(weekDir, 'week.html')}"`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
