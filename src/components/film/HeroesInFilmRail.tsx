@@ -76,7 +76,7 @@ export function HeroesInFilmRail({
 
   return (
     <View style={styles.block}>
-      <Text style={styles.label}>Heroes in this Film</Text>
+      <Text style={styles.label}>Characters in this Film</Text>
       {scroller}
     </View>
   );

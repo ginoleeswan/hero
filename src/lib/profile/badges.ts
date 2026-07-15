@@ -72,7 +72,7 @@ export function computeBadges(input: BadgeInput, now: number = Date.now()): Badg
     {
       id: 'curator',
       label: 'Curator',
-      description: 'Favourited 10 heroes',
+      description: 'Favourited 10 characters',
       icon: 'heart',
       earned: favourites >= 10,
       progress: { current: favourites, target: 10 },
@@ -80,7 +80,7 @@ export function computeBadges(input: BadgeInput, now: number = Date.now()): Badg
     {
       id: 'archivist',
       label: 'Archivist',
-      description: 'Favourited 50 heroes',
+      description: 'Favourited 50 characters',
       icon: 'library',
       earned: favourites >= 50,
       progress: { current: favourites, target: 50 },

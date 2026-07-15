@@ -21,7 +21,7 @@ const BROWSE: FooterLink[] = [
 
 const DISCOVER: FooterLink[] = [
   { label: 'Most Iconic', path: '/category/most-iconic' },
-  { label: 'Strongest Heroes', path: '/category/strongest' },
+  { label: 'Strongest Characters', path: '/category/strongest' },
   { label: 'Brightest Minds', path: '/category/most-intelligent' },
   { label: 'X-Men', path: '/category/xmen' },
 ];

@@ -62,7 +62,7 @@ export const EDITABLE_FIELDS: EditableFieldDef[] = [
   {
     field: 'origin',
     label: 'Origin',
-    question: 'Where does this hero come from?',
+    question: 'Where does this character come from?',
     guideline: 'Their origin story — a sentence or two.',
     multiline: true,
     group: 'profile',
@@ -118,7 +118,7 @@ export const EDITABLE_FIELDS: EditableFieldDef[] = [
 export const SUMMARY_FIELD: EditableFieldDef = {
   field: 'summary',
   label: 'Summary',
-  question: 'How would you sum up this hero?',
+  question: 'How would you sum up this character?',
   guideline: 'A short overview — two or three sentences.',
   multiline: true,
 };

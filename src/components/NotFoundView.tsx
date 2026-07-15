@@ -158,7 +158,7 @@ export function NotFoundView({
 // Quiet, retryable failure — the hero exists, it just didn't load. Deliberately
 // not a poster (which would imply the hero is gone for good).
 export function LoadErrorView({
-  headline = "Couldn't load this hero",
+  headline = "Couldn't load this character",
   subline = 'Check your connection and try again.',
   actions,
 }: {

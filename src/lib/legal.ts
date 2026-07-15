@@ -27,7 +27,7 @@ export const PRIVACY: LegalDoc = {
       heading: 'Information we collect',
       body: [
         'Account details: if you sign up, we store your email address and an authentication identifier through our auth provider (Supabase). If you sign in with Google, we receive your basic profile (name, email, avatar) from Google — not your password.',
-        'Your activity: heroes you favourite, matchup votes you cast, and any corrections you submit to the encyclopedia. This is tied to your account so we can show it back to you.',
+        'Your activity: characters you favourite, matchup votes you cast, and any corrections you submit to the encyclopedia. This is tied to your account so we can show it back to you.',
         'Device storage: the daily “Guess the Hero” game stores your progress, streak and stats locally on your device. We do not need an account for that.',
         'Usage analytics: we use privacy-friendly, aggregate analytics (Vercel Analytics) to understand page views and traffic. It does not use cookies to track you across other sites.',
       ],

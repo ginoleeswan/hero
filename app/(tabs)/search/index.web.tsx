@@ -370,7 +370,7 @@ export default function WebSearchScreen() {
   const countLabel = loading
     ? 'Searching…'
     : gridHeroes.length === 0
-      ? 'No heroes found'
+      ? 'No characters found'
       : capped
         ? `${RESULT_LIMIT}+ results`
         : `${gridHeroes.length} result${gridHeroes.length !== 1 ? 's' : ''}`;
@@ -654,7 +654,7 @@ export default function WebSearchScreen() {
             ))}
           {!loading && gridHeroes.length === 0 && !topResult && (
             <View style={styles.center}>
-              <Text style={styles.empty}>No heroes match {title}.</Text>
+              <Text style={styles.empty}>No characters match {title}.</Text>
             </View>
           )}
           {capped && (

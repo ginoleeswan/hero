@@ -443,7 +443,7 @@ export default function SearchScreen() {
       <View style={styles.emptyIconWrap}>
         <Ionicons name="search-outline" size={30} color={COLORS.orange} />
       </View>
-      <Text style={styles.emptyHeadline}>No heroes found</Text>
+      <Text style={styles.emptyHeadline}>No characters found</Text>
       <Text style={styles.emptySub}>Try a different search or filter</Text>
     </View>
   );

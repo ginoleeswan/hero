@@ -422,7 +422,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
 
         {/* Glass info panel — flex child beside the portrait strip */}
         <View style={pss.glassPanel as object}>
-          <Text style={pss.glassPanelEyebrow as object}>Featured Hero</Text>
+          <Text style={pss.glassPanelEyebrow as object}>Featured Character</Text>
           <Text style={pss.glassPanelName as object} numberOfLines={2}>
             {hero.name}
           </Text>
@@ -477,7 +477,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
                   key={i}
                   onPress={() => setActiveIndex(i)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Show featured hero ${i + 1} of ${heroes.length}`}
+                  accessibilityLabel={`Show featured character ${i + 1} of ${heroes.length}`}
                   style={pss.dotHit as object}
                 >
                   <View
@@ -515,7 +515,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
       </View>
       <View style={pss.panelMobile}>
         <View>
-          <Text style={pss.panelLabel as object}>Featured Hero</Text>
+          <Text style={pss.panelLabel as object}>Featured Character</Text>
           <Text style={pss.panelNameMobile as object} numberOfLines={2}>
             {hero.name}
           </Text>
@@ -540,7 +540,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
                 key={i}
                 onPress={() => setActiveIndex(i)}
                 accessibilityRole="button"
-                accessibilityLabel={`Show featured hero ${i + 1} of ${heroes.length}`}
+                accessibilityLabel={`Show featured character ${i + 1} of ${heroes.length}`}
                 style={pss.dotHit as object}
               >
                 <View style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object} />

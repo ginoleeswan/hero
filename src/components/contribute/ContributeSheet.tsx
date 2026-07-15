@@ -81,7 +81,7 @@ export function ContributeSheet({
   const prompt = isReport
     ? 'Something look wrong?'
     : isFact
-      ? 'Know a fun fact about this hero?'
+      ? 'Know a fun fact about this character?'
       : field!.question;
   const guideline = isReport
     ? "Tell us what's incorrect and a moderator will take a look."

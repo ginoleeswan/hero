@@ -49,7 +49,7 @@ export function PublisherPods({
             key={p.slug}
             onPress={() => onNavigate(`/universe/${p.slug}`)}
             accessibilityRole="link"
-            accessibilityLabel={`Browse ${p.name} heroes`}
+            accessibilityLabel={`Browse ${p.name} characters`}
             style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
               [
                 s.pod,

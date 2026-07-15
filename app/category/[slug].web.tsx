@@ -255,7 +255,7 @@ export default function WebCategoryScreen() {
   const universeTerm = isUniverse && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
   const title = categorySlug
     ? CATEGORY_LABELS[categorySlug]
-    : (franchiseTerm ?? brand?.name ?? slug ?? 'Heroes');
+    : (franchiseTerm ?? brand?.name ?? slug ?? 'Characters');
   const description = categorySlug ? CATEGORY_DESCRIPTIONS[categorySlug] : null;
   // Every browse page leads with a masthead banner — the consistent pattern:
   // a registered brand gets the logo stage; everything else (categories,
@@ -722,7 +722,7 @@ export default function WebCategoryScreen() {
             <View style={styles.center}>
               <Ionicons name="search-outline" size={34} color="rgba(29,45,51,0.25)" />
               <Text style={styles.empty}>
-                {activeChips.length > 0 ? 'No heroes match these filters' : 'No heroes found'}
+                {activeChips.length > 0 ? 'No characters match these filters' : 'No characters found'}
               </Text>
               {activeChips.length > 0 && (
                 <Pressable
