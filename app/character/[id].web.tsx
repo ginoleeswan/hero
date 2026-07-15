@@ -806,6 +806,10 @@ export default function WebCharacterScreen() {
                 style={[StyleSheet.absoluteFill, styles.stageBackdrop] as object}
                 cachePolicy="memory-disk"
                 recyclingKey={id}
+                // Fills the stage, so Chrome often measures THIS as the LCP
+                // element (largest paint) over the foreground portrait — keep it
+                // high-priority too. Shares the source URI, so no extra fetch.
+                priority="high"
               />
             ) : null}
             {/* Gradient scrim keeps the identity text legible over the backdrop */}
@@ -1559,6 +1563,10 @@ export default function WebCharacterScreen() {
                       contentPosition={{ top: 0, left: '50%' }}
                       style={StyleSheet.absoluteFill}
                       recyclingKey={id}
+                      // The portrait is the above-the-fold LCP element on the
+                      // most-trafficked SEO page — fetch it at high priority so
+                      // it isn't queued behind lazy/below-the-fold requests.
+                      priority="high"
                     />
                     <View style={[styles.portraitOverlay, { pointerEvents: 'none' }] as object} />
                     <View

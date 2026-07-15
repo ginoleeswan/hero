@@ -173,6 +173,9 @@ function ArenaPortrait({
           source={image}
           contentFit="cover"
           contentPosition="top"
+          // Both fighters are the above-the-fold LCP of the versus page — fetch
+          // at high priority so the matchup paints without waiting on lazy work.
+          priority="high"
           style={
             [
               styles.arenaImage,
