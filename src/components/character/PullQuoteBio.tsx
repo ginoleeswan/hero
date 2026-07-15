@@ -25,18 +25,21 @@ export function PullQuoteBio({
   hasBiography,
   onReadMore,
   onEdit,
+  flat = false,
 }: {
   summary: string;
   accent: string;
   hasBiography: boolean;
   onReadMore: () => void;
   onEdit?: () => void;
+  /** Sit directly on the beige sheet (no white card chrome) — mobile web. */
+  flat?: boolean;
 }) {
   if (!summary && !hasBiography) return null;
   const { lead, rest } = splitLeadSentence(summary);
   const quotable = rest.length > 0;
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, flat && (styles.flat as object)] as object}>
       <View style={[styles.quoteBar, { backgroundColor: accent }] as object} />
       <View style={styles.body}>
         {summary ? (
@@ -101,6 +104,16 @@ const styles = StyleSheet.create({
     boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
     padding: 20,
     overflow: 'hidden',
+  } as object,
+  // Flat variant: the editorial quote sits directly on the sheet — accent bar
+  // + typography only, no box (mobile web, where stacked cards read heavy).
+  flat: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderRadius: 0,
+    boxShadow: 'none',
+    padding: 0,
+    paddingVertical: 2,
   } as object,
   quoteBar: {
     width: 3,

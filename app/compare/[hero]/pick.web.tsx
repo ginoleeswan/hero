@@ -58,6 +58,7 @@ function Rail({
   onPeek,
   accent,
   tagline,
+  pad = 0,
 }: {
   label: string;
   items: RailItem[];
@@ -68,6 +69,8 @@ function Rail({
   onPeek: (item: PeekHero) => void;
   accent?: boolean;
   tagline?: string;
+  /** Host padding to bleed past — cards scroll off the physical screen edge. */
+  pad?: number;
 }) {
   return (
     <View style={styles.section}>
@@ -84,8 +87,12 @@ function Rail({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.railFade as object}
-        contentContainerStyle={styles.railRow as object}
+        // Bleed past the sheet padding: cards scroll off the physical screen
+        // edge (no fade mask — it read as the cards dissolving mid-rail).
+        style={pad ? ({ marginHorizontal: -pad } as object) : undefined}
+        contentContainerStyle={
+          [styles.railRow, pad ? { paddingLeft: pad, paddingRight: pad } : null] as object
+        }
       >
         {items.map((item) => {
           const key = `${group}-${item.id}`;
@@ -296,7 +303,7 @@ export default function WebPickOpponentScreen() {
                 {showSuggestions && (
                   <View style={styles.sections}>
                     {rivals.length > 0 && (
-                      <Rail
+                      <Rail pad={wide ? 32 : 24}
                         label="Rivalries"
                         items={rivals}
                         group="rivalries"
@@ -309,7 +316,7 @@ export default function WebPickOpponentScreen() {
                       />
                     )}
                     {friendlyFire.length > 0 && (
-                      <Rail
+                      <Rail pad={wide ? 32 : 24}
                         label="Friendly Fire"
                         items={friendlyFire}
                         group="friendly"
@@ -321,7 +328,7 @@ export default function WebPickOpponentScreen() {
                       />
                     )}
                     {family.length > 0 && (
-                      <Rail
+                      <Rail pad={wide ? 32 : 24}
                         label="Bloodline"
                         items={family}
                         group="family"
@@ -333,7 +340,7 @@ export default function WebPickOpponentScreen() {
                       />
                     )}
                     {sameUniverse.length > 0 && (
-                      <Rail
+                      <Rail pad={wide ? 32 : 24}
                         label="Same Universe"
                         items={sameUniverse}
                         group="same"
@@ -344,7 +351,7 @@ export default function WebPickOpponentScreen() {
                       />
                     )}
                     {dreamMatches.length > 0 && (
-                      <Rail
+                      <Rail pad={wide ? 32 : 24}
                         label="Dream Matches"
                         items={dreamMatches}
                         group="dream"
@@ -356,7 +363,7 @@ export default function WebPickOpponentScreen() {
                       />
                     )}
                     {similar.length > 0 && (
-                      <Rail
+                      <Rail pad={wide ? 32 : 24}
                         label="Similar Power"
                         items={similar}
                         group="similar"
@@ -410,8 +417,6 @@ export default function WebPickOpponentScreen() {
 }
 
 const SHEET_MAX = 1180;
-const railFadeMask = 'linear-gradient(to right, #000 92%, transparent 100%)';
-
 const styles = StyleSheet.create({
   root: { minHeight: '100lvh', backgroundColor: COLORS.navy } as object,
   scroll: { flex: 1 },
@@ -531,7 +536,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
     marginBottom: 12,
   },
-  railFade: { maskImage: railFadeMask, WebkitMaskImage: railFadeMask } as object,
   railRow: {
     display: 'flex',
     flexDirection: 'row',

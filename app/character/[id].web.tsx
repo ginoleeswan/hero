@@ -480,7 +480,9 @@ export default function WebCharacterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { width, height: winHeight } = useWindowDimensions();
-  const mHeroHeight = Math.round(winHeight * M_HERO_RATIO);
+  // Freeze at mount: winHeight changes as the iOS toolbar collapses, which
+  // resized the hero mid-scroll and re-cropped the cover art (a "zoom" jitter).
+  const [mHeroHeight] = useState(() => Math.round(winHeight * M_HERO_RATIO));
   const isDesktop = width >= 700;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
@@ -1794,7 +1796,7 @@ export default function WebCharacterScreen() {
                   {/* Theme trait chips — identity, so they live with the name */}
                   {narrative && narrative.tags.length > 0 ? (
                     <View style={styles.mStageTraits}>
-                      <TraitBand tags={narrative.tags} onInk />
+                      <TraitBand tags={narrative.tags} onInk compact />
                     </View>
                   ) : null}
 
@@ -1875,6 +1877,7 @@ export default function WebCharacterScreen() {
                 ) : details.summary || details.description ? (
                   <View style={styles.mBlock}>
                     <PullQuoteBio
+                      flat
                       summary={details.summary ?? ''}
                       accent={theme.accent}
                       hasBiography={!!details.description}
@@ -1887,18 +1890,7 @@ export default function WebCharacterScreen() {
                 ) : null}
 
                 {/* Power Profile — card grammar with the accent crown wash */}
-                <View
-                  style={
-                    [
-                      styles.mBlock,
-                      styles.mPowerBand,
-                      {
-                        backgroundImage: `linear-gradient(180deg, ${theme.accentWash} 0%, rgba(255,255,255,0) 65%)`,
-                        borderColor: theme.accent + '33',
-                      },
-                    ] as object
-                  }
-                >
+                <View style={[styles.mBlock, styles.mPowerBand] as object}>
                   <View style={styles.mStatTitleRow}>
                     <Text style={styles.mSectionTitle}>Power Profile</Text>
                     {data.statsSource === 'ai' ? (
@@ -2235,14 +2227,7 @@ export default function WebCharacterScreen() {
                       <Text style={styles.mSectionTitle}>Gallery · {galleryImages.length}</Text>
                       <View style={styles.mSectionDivider} />
                     </View>
-                    <View
-                      style={
-                        {
-                          maskImage: 'linear-gradient(90deg, black 82%, transparent 100%)',
-                          WebkitMaskImage: 'linear-gradient(90deg, black 82%, transparent 100%)',
-                        } as object
-                      }
-                    >
+                    <View>
                       <GalleryStrip
                         images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
                         onPress={(i) => {
@@ -2917,6 +2902,9 @@ const sk = StyleSheet.create({
     marginTop: -28,
     paddingTop: 12,
     paddingBottom: 0,
+    // Above the pinned hero so the sheet rides over it (the curtain).
+    position: 'relative',
+    zIndex: 1,
   },
   mPad: { paddingHorizontal: 20, paddingTop: 18 },
   mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
@@ -3439,7 +3427,11 @@ const styles = StyleSheet.create({
   // ── Mobile native-style immersive layout ──
   mHero: {
     width: '100%',
-    position: 'relative',
+    // The curtain: the portrait pins to the viewport while the beige sheet
+    // (zIndex above) slides up OVER it on scroll.
+    position: 'sticky' as unknown as 'relative',
+    top: 0,
+    zIndex: 0,
     justifyContent: 'flex-end',
     overflow: 'hidden',
     backgroundColor: COLORS.deepNavy,
@@ -3564,15 +3556,11 @@ const styles = StyleSheet.create({
   // Mobile Power Profile — inset white card with the accent crown wash;
   // horizontal padding compensates the margin so content stays flush with
   // sibling mBlock text (12 + 8 = 20).
+  // Flat on the sheet like the sections around it — the white inset card read
+  // heavy against the otherwise-flat mobile layout.
   mPowerBand: {
-    backgroundColor: 'white',
-    marginHorizontal: 12,
-    marginTop: 6,
-    paddingHorizontal: 8,
-    paddingBottom: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
+    marginTop: 2,
+    paddingBottom: 18,
   } as object,
 
   // Dossier — collapsible card ported from the native screen.

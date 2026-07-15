@@ -18,6 +18,8 @@ interface Props {
   tags: HeroTagChip[];
   /** Dark-stage variant: translucent pills tuned for the ink band. */
   onInk?: boolean;
+  /** Smaller pills for tight stages (the mobile identity header). */
+  compact?: boolean;
 }
 
 // A slim, colour-coded band of theme pills. Each pill is tinted by its vocab
@@ -25,7 +27,7 @@ interface Props {
 // the band reads as "this hero's themes" at a glance — sibling to the
 // alignment/origin badges in the identity header. `onInk` retunes the pills
 // for the dark identity band, where they now live on the character page.
-export function TraitBand({ tags, onInk }: Props) {
+export function TraitBand({ tags, onInk, compact = false }: Props) {
   if (tags.length === 0) return null;
   return (
     <View style={styles.row}>
@@ -36,13 +38,20 @@ export function TraitBand({ tags, onInk }: Props) {
             key={t.slug}
             style={[
               styles.pill,
+              compact && styles.pillCompact,
               onInk
                 ? { backgroundColor: withAlpha(c, 0.22), borderColor: withAlpha(c, 0.6) }
                 : { backgroundColor: withAlpha(c, 0.1), borderColor: withAlpha(c, 0.35) },
             ]}
           >
             <View style={[styles.dot, { backgroundColor: onInk ? towardWhite(c, 0.35) : c }]} />
-            <Text style={[styles.label, { color: onInk ? towardWhite(c, 0.55) : c }]}>
+            <Text
+              style={[
+                styles.label,
+                compact && styles.labelCompact,
+                { color: onInk ? towardWhite(c, 0.55) : c },
+              ]}
+            >
               {t.label}
             </Text>
           </View>
@@ -64,7 +73,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
   },
+  pillCompact: { height: 23, paddingLeft: 8, paddingRight: 10, gap: 5, borderRadius: 12 },
   dot: { width: 6, height: 6, borderRadius: 3 },
+  labelCompact: { fontSize: 10, letterSpacing: 0.5 },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11.5,
