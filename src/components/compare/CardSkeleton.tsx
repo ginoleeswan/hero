@@ -19,10 +19,13 @@ export function CardSkeleton({
   width,
   height,
   fill,
+  tone = 'dark',
 }: {
   width?: number;
   height?: number;
   fill?: boolean;
+  /** 'light' = soft ink tint for beige sheets (solid navy slabs read harsh there). */
+  tone?: 'dark' | 'light';
 }) {
   const [measured, setMeasured] = useState(typeof width === 'number' ? width : 0);
   const x = useSharedValue(0);
@@ -49,16 +52,24 @@ export function CardSkeleton({
   return (
     <View
       onLayout={fill ? onLayout : undefined}
-      style={[styles.base, fill ? (styles.fill as object) : { width, height }]}
+      style={[
+        styles.base,
+        tone === 'light' && styles.baseLight,
+        fill ? (styles.fill as object) : { width, height },
+      ]}
     >
-      <View style={styles.nameBar} />
+      <View style={[styles.nameBar, tone === 'light' && styles.nameBarLight]} />
       {measured > 0 && (
         <Animated.View
           pointerEvents="none"
           style={[StyleSheet.absoluteFill, { width: measured }, sweepStyle]}
         >
           <LinearGradient
-            colors={['transparent', 'rgba(245,235,220,0.10)', 'transparent']}
+            colors={
+              tone === 'light'
+                ? ['transparent', 'rgba(255,255,255,0.45)', 'transparent']
+                : ['transparent', 'rgba(245,235,220,0.10)', 'transparent']
+            }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={StyleSheet.absoluteFill}
@@ -75,6 +86,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#223843',
   },
+  baseLight: { backgroundColor: 'rgba(41,60,67,0.10)' },
   fill: { width: '100%', height: '100%' },
   nameBar: {
     position: 'absolute',
@@ -85,4 +97,5 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: 'rgba(245,235,220,0.10)',
   },
+  nameBarLight: { backgroundColor: 'rgba(41,60,67,0.14)' },
 });

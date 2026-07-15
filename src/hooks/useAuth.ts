@@ -139,9 +139,11 @@ export function useAuth(): AuthState {
     if (Platform.OS === 'web') {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { // Return to the page the user was acting on (not the root) — losing the
+        options: {
+          // Return to the page the user was acting on (not the root) — losing the
           // character/debate context after OAuth forced a re-navigation.
-          redirectTo: window.location.href },
+          redirectTo: window.location.href,
+        },
       });
       return { error };
     }
@@ -168,9 +170,11 @@ export function useAuth(): AuthState {
     if (Platform.OS === 'web') {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
-        options: { // Return to the page the user was acting on (not the root) — losing the
+        options: {
+          // Return to the page the user was acting on (not the root) — losing the
           // character/debate context after OAuth forced a re-navigation.
-          redirectTo: window.location.href },
+          redirectTo: window.location.href,
+        },
       });
       return { error };
     }

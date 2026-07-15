@@ -29,7 +29,7 @@ import { COLORS, SURFACE } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { PullQuoteBio } from '../../src/components/character/PullQuoteBio';
 import { LegendBand } from '../../src/components/web/character/LegendBand';
-import { PowerStatCell } from '../../src/components/web/character/PowerStatCell';
+import { PowerStatCell, statDisplayValue } from '../../src/components/web/character/PowerStatCell';
 import { Reveal } from '../../src/components/web/Reveal';
 import { SectionDotRail } from '../../src/components/web/character/SectionDotRail';
 import {
@@ -476,11 +476,40 @@ function FactTile({
   );
 }
 
+// The hero vitals count up on arrival — the page's opening beat. Reduced
+// motion (and SSR) renders the final value immediately.
+function VitalCount({ value, style }: { value: number; style?: object }) {
+  const reduced =
+    typeof window === 'undefined' ||
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+  const [display, setDisplay] = useState(reduced ? value : 0);
+  useEffect(() => {
+    if (reduced) {
+      setDisplay(value);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now() + 250; // beat after the stage settles
+    const DUR = 900;
+    const tick = (now: number) => {
+      const t = Math.min(Math.max(now - start, 0) / DUR, 1);
+      setDisplay(statDisplayValue(t, value));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return <Text style={style}>{display.toLocaleString()}</Text>;
+}
+
 export default function WebCharacterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { width, height: winHeight } = useWindowDimensions();
-  const mHeroHeight = Math.round(winHeight * M_HERO_RATIO);
+  // Freeze at mount: winHeight changes as the iOS toolbar collapses, which
+  // resized the hero mid-scroll and re-cropped the cover art (a "zoom" jitter).
+  const [mHeroHeight] = useState(() => Math.round(winHeight * M_HERO_RATIO));
   const isDesktop = width >= 700;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
@@ -1037,7 +1066,7 @@ export default function WebCharacterScreen() {
                       />
                     ) : (
                       <View style={styles.statBand}>
-                        {STAT_CONFIG.map(({ key, label, color }) => {
+                        {STAT_CONFIG.map(({ key, label, color }, si) => {
                           if (statsGenerating) {
                             return (
                               <View key={key} style={styles.bandCell}>
@@ -1068,6 +1097,8 @@ export default function WebCharacterScreen() {
                           );
                           return (
                             <PowerStatCell
+                              // Cascade: cells sweep in sequence.
+                              delay={si * 90}
                               key={key}
                               value={isNaN(raw) ? null : raw}
                               label={label}
@@ -1333,7 +1364,7 @@ export default function WebCharacterScreen() {
                             {groups.film.length > 0 ? (
                               <>
                                 <Text style={styles.cardTitle}>
-                                  On Screen ({groups.film.length})
+                                  On Screen · {groups.film.length}
                                 </Text>
                                 <View style={styles.cardDivider} />
                                 <MovieStrip
@@ -1347,7 +1378,7 @@ export default function WebCharacterScreen() {
                             {groups.tv.length > 0 ? (
                               <View style={groups.film.length > 0 ? { marginTop: 22 } : undefined}>
                                 <Text style={styles.cardTitle}>
-                                  Television ({groups.tv.length})
+                                  Television · {groups.tv.length}
                                 </Text>
                                 <View style={styles.cardDivider} />
                                 <MovieStrip
@@ -1794,14 +1825,14 @@ export default function WebCharacterScreen() {
                   {/* Theme trait chips — identity, so they live with the name */}
                   {narrative && narrative.tags.length > 0 ? (
                     <View style={styles.mStageTraits}>
-                      <TraitBand tags={narrative.tags} onInk />
+                      <TraitBand tags={narrative.tags} onInk compact />
                     </View>
                   ) : null}
 
                   <View style={styles.mVitals}>
                     {powerTotal > 0 ? (
                       <View style={styles.mVitalItem}>
-                        <Text style={styles.mVitalVal}>{powerTotal}</Text>
+                        <VitalCount value={powerTotal} style={styles.mVitalVal as object} />
                         <Text style={styles.mVitalLabel}>Power</Text>
                       </View>
                     ) : null}
@@ -1809,9 +1840,10 @@ export default function WebCharacterScreen() {
                       <>
                         <View style={styles.mVitalDiv} />
                         <View style={styles.mVitalItem}>
-                          <Text style={styles.mVitalVal}>
-                            {details.issueCount!.toLocaleString()}
-                          </Text>
+                          <VitalCount
+                            value={details.issueCount!}
+                            style={styles.mVitalVal as object}
+                          />
                           <Text style={styles.mVitalLabel}>Appearances</Text>
                         </View>
                       </>
@@ -1820,9 +1852,10 @@ export default function WebCharacterScreen() {
                       <>
                         <View style={styles.mVitalDiv} />
                         <View style={styles.mVitalItem}>
-                          <Text style={styles.mVitalVal}>
-                            {details.movieCount ?? details.movies!.length}
-                          </Text>
+                          <VitalCount
+                            value={details.movieCount ?? details.movies!.length}
+                            style={styles.mVitalVal as object}
+                          />
                           <Text style={styles.mVitalLabel}>Movies</Text>
                         </View>
                       </>
@@ -1856,7 +1889,19 @@ export default function WebCharacterScreen() {
               </View>
 
               {/* Beige content sheet rising over the hero */}
-              <View style={styles.mSheet}>
+              <View
+                style={
+                  [
+                    styles.mSheet,
+                    {
+                      // A whisper of the character's colour at the sheet's
+                      // crown — the page carries their temperature, not just
+                      // their trims.
+                      backgroundImage: `radial-gradient(120% 340px at 50% 0%, ${theme.accentWash} 0%, rgba(255,255,255,0) 70%)`,
+                    },
+                  ] as object
+                }
+              >
                 {comicVineLoading && !details.summary ? (
                   <View style={styles.mBlock}>
                     <SkeletonBlock
@@ -1875,6 +1920,7 @@ export default function WebCharacterScreen() {
                 ) : details.summary || details.description ? (
                   <View style={styles.mBlock}>
                     <PullQuoteBio
+                      flat
                       summary={details.summary ?? ''}
                       accent={theme.accent}
                       hasBiography={!!details.description}
@@ -1887,18 +1933,7 @@ export default function WebCharacterScreen() {
                 ) : null}
 
                 {/* Power Profile — card grammar with the accent crown wash */}
-                <View
-                  style={
-                    [
-                      styles.mBlock,
-                      styles.mPowerBand,
-                      {
-                        backgroundImage: `linear-gradient(180deg, ${theme.accentWash} 0%, rgba(255,255,255,0) 65%)`,
-                        borderColor: theme.accent + '33',
-                      },
-                    ] as object
-                  }
-                >
+                <View style={[styles.mBlock, styles.mPowerBand] as object}>
                   <View style={styles.mStatTitleRow}>
                     <Text style={styles.mSectionTitle}>Power Profile</Text>
                     {data.statsSource === 'ai' ? (
@@ -1928,7 +1963,7 @@ export default function WebCharacterScreen() {
                     <View style={styles.mStatRows}>
                       {[STAT_CONFIG.slice(0, 3), STAT_CONFIG.slice(3)].map((row, ri) => (
                         <View key={ri} style={styles.statBand}>
-                          {row.map(({ key, label, color }) => {
+                          {row.map(({ key, label, color }, ci) => {
                             if (statsGenerating) {
                               return (
                                 <View key={key} style={styles.bandCell}>
@@ -1959,6 +1994,7 @@ export default function WebCharacterScreen() {
                             );
                             return (
                               <PowerStatCell
+                                delay={(ri * 3 + ci) * 90}
                                 key={key}
                                 value={isNaN(raw) ? null : raw}
                                 label={label}
@@ -2080,6 +2116,7 @@ export default function WebCharacterScreen() {
                 <Reveal>
                   <View style={styles.mBlock}>
                     <LegendBand
+                      flat
                       accent={theme.accent}
                       accentWash={theme.accentWash}
                       firstIssue={data.firstIssue ?? null}
@@ -2178,7 +2215,7 @@ export default function WebCharacterScreen() {
                             <>
                               <View style={styles.mSectionHead}>
                                 <Text style={styles.mSectionTitle}>
-                                  On Screen ({groups.film.length})
+                                  On Screen · {groups.film.length}
                                 </Text>
                                 <View style={styles.mSectionDivider} />
                               </View>
@@ -2196,7 +2233,7 @@ export default function WebCharacterScreen() {
                             <View style={groups.film.length > 0 ? styles.mSubBlock : undefined}>
                               <View style={styles.mSectionHead}>
                                 <Text style={styles.mSectionTitle}>
-                                  Television ({groups.tv.length})
+                                  Television · {groups.tv.length}
                                 </Text>
                                 <View style={styles.mSectionDivider} />
                               </View>
@@ -2216,50 +2253,57 @@ export default function WebCharacterScreen() {
                   : null}
 
                 {/* On shelves now — recent issues featuring this character */}
-                {newIssues.length > 0 ? (
-                  <View style={styles.mSection}>
-                    <ComicCoverRail
-                      comics={newIssues}
-                      onLight
-                      onIssuePress={(issueId) =>
-                        router.push(`/issue/${issueId}` as Parameters<typeof router.push>[0])
-                      }
-                    />
-                  </View>
-                ) : null}
-
-                {/* Gallery — character art + covers (multi-source) */}
-                {galleryImages && galleryImages.length > 0 ? (
+                {/* In Print — the page's print footprint as ONE dense band:
+                    this week's issues + the art gallery under a single title,
+                    with the dossier's small-caps sub-label grammar. */}
+                {newIssues.length > 0 || (galleryImages && galleryImages.length > 0) ? (
                   <View style={styles.mSection}>
                     <View style={styles.mSectionHead}>
-                      <Text style={styles.mSectionTitle}>Gallery · {galleryImages.length}</Text>
+                      <Text style={styles.mSectionTitle}>In Print</Text>
                       <View style={styles.mSectionDivider} />
                     </View>
-                    <View
-                      style={
-                        {
-                          maskImage: 'linear-gradient(90deg, black 82%, transparent 100%)',
-                          WebkitMaskImage: 'linear-gradient(90deg, black 82%, transparent 100%)',
-                        } as object
-                      }
-                    >
-                      <GalleryStrip
-                        images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
-                        onPress={(i) => {
-                          const issueId = galleryImages[i]?.issueId;
-                          if (issueId) {
-                            router.push(
-                              `/issue/cvi:${issueId}` as Parameters<typeof router.push>[0],
-                            );
-                            return;
+                    {newIssues.length > 0 ? (
+                      <>
+                        <Text style={styles.mSubLabel}>This week</Text>
+                        <ComicCoverRail
+                          hideHeader
+                          comics={newIssues}
+                          onLight
+                          onIssuePress={(issueId) =>
+                            router.push(`/issue/${issueId}` as Parameters<typeof router.push>[0])
                           }
-                          setLightboxImages(
-                            galleryImages.map((g) => ({ url: g.url, caption: g.caption })),
-                          );
-                          setLightboxIndex(i);
-                        }}
-                      />
-                    </View>
+                        />
+                      </>
+                    ) : null}
+                    {galleryImages && galleryImages.length > 0 ? (
+                      <>
+                        <Text
+                          style={
+                            [styles.mSubLabel, newIssues.length > 0 && { marginTop: 18 }] as object
+                          }
+                        >
+                          Gallery · {galleryImages.length}
+                        </Text>
+                        <View>
+                          <GalleryStrip
+                            images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
+                            onPress={(i) => {
+                              const issueId = galleryImages[i]?.issueId;
+                              if (issueId) {
+                                router.push(
+                                  `/issue/cvi:${issueId}` as Parameters<typeof router.push>[0],
+                                );
+                                return;
+                              }
+                              setLightboxImages(
+                                galleryImages.map((g) => ({ url: g.url, caption: g.caption })),
+                              );
+                              setLightboxIndex(i);
+                            }}
+                          />
+                        </View>
+                      </>
+                    ) : null}
                   </View>
                 ) : null}
 
@@ -2917,9 +2961,13 @@ const sk = StyleSheet.create({
     marginTop: -28,
     paddingTop: 12,
     paddingBottom: 0,
+    // Above the pinned hero so the sheet rides over it (the curtain).
+    position: 'relative',
+    zIndex: 1,
   },
   mPad: { paddingHorizontal: 20, paddingTop: 18 },
-  mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
+  // Flat like the live Power Profile section (the inset card chrome is gone).
+  mStatsCard: { paddingVertical: 8 },
 });
 
 const styles = StyleSheet.create({
@@ -3426,6 +3474,7 @@ const styles = StyleSheet.create({
   cardDivider: { height: 1, backgroundColor: '#ede5da', marginBottom: 14 },
 
   percentileBadge: {
+    flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -3434,12 +3483,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
-  percentileBadgeText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 12 },
+  percentileBadgeText: {
+    flexShrink: 1,
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 12,
+  },
 
   // ── Mobile native-style immersive layout ──
   mHero: {
     width: '100%',
-    position: 'relative',
+    // The curtain: the portrait pins to the viewport while the beige sheet
+    // (zIndex above) slides up OVER it on scroll.
+    position: 'sticky' as unknown as 'relative',
+    top: 0,
+    zIndex: 0,
     justifyContent: 'flex-end',
     overflow: 'hidden',
     backgroundColor: COLORS.deepNavy,
@@ -3564,15 +3621,11 @@ const styles = StyleSheet.create({
   // Mobile Power Profile — inset white card with the accent crown wash;
   // horizontal padding compensates the margin so content stays flush with
   // sibling mBlock text (12 + 8 = 20).
+  // Flat on the sheet like the sections around it — the white inset card read
+  // heavy against the otherwise-flat mobile layout.
   mPowerBand: {
-    backgroundColor: 'white',
-    marginHorizontal: 12,
-    marginTop: 6,
-    paddingHorizontal: 8,
-    paddingBottom: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
+    marginTop: 2,
+    paddingBottom: 18,
   } as object,
 
   // Dossier — collapsible card ported from the native screen.
@@ -3631,7 +3684,8 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
   },
   mFamilyBlock: { paddingHorizontal: 20, paddingTop: 18 },
-  mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
+  // Flat like the live Power Profile section (the inset card chrome is gone).
+  mStatsCard: { paddingVertical: 8 },
   mStatRows: { gap: 14 },
   mStatTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
   mStatFooter: {
@@ -3639,9 +3693,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 14,
+    // The percentile copy varies ("Stronger than 84% of characters") — wrap
+    // instead of overflowing the viewport (which widened the document and
+    // painted an ink band down the whole page's right edge).
+    flexWrap: 'wrap',
+    gap: 8,
   },
   mStatFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   mSection: { paddingTop: 18 },
+  // Small-caps sub-label inside a section — the dossier grammar (Legend's
+  // DID YOU KNOW / PORTRAYED BY moments use the same voice).
+  mSubLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: 'rgba(41,60,67,0.55)',
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  } as object,
   mSocialWeb: { paddingHorizontal: 20, paddingTop: 8 },
   mSubBlock: { marginTop: 22 },
   // Padding for edge-to-edge rails (MovieStrip) so the featured card + decade

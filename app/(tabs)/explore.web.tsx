@@ -32,6 +32,7 @@ import {
 } from '../../src/components/web/home/TodaysMatchup';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
+import { idlePrefetchTopUniverses } from '../../src/lib/query/prefetchBrowse';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { DailyChallengeBanner } from '../../src/components/game/DailyChallengeBanner';
 import { SeoHead } from '../../src/components/web/SeoHead';
@@ -1258,6 +1259,12 @@ export default function WebHomeScreen() {
   // whole screen reads as one immersive ink surface — top chrome and canvas both
   // lock to ink, declared together so the status bar and toolbar can't drift.
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
+
+  // Warm the flagship universes while the browser is idle — tapping Marvel/DC
+  // then opens a fully cached page (no query, images already in HTTP cache).
+  useEffect(() => {
+    idlePrefetchTopUniverses();
+  }, []);
 
   // 1. MATCH THE ACCORDION_SCALES EXACTLY
   const optimalPoolSize = width >= 1280 ? 8 : width >= 900 ? 6 : 3;

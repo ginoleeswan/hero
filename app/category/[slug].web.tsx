@@ -102,11 +102,14 @@ const sk = StyleSheet.create({
 const HeroCard = memo(function HeroCard({
   hero,
   priority,
+  gridWidth,
   onPress,
   onPeek,
 }: {
   hero: Hero;
   priority?: 'high';
+  /** Image derivative width — mobile 3-col cells need ~360px, not 600. */
+  gridWidth?: number;
   onPress: (id: string) => void;
   onPeek?: (hero: Hero) => void;
 }) {
@@ -130,6 +133,7 @@ const HeroCard = memo(function HeroCard({
             imageMdUrl={hero.image_md_url}
             blurhash={hero.portrait_blurhash}
             grid
+            gridWidth={gridWidth}
             contentFit="cover"
             contentPosition={{ top: 0, left: '50%' }}
             style={StyleSheet.absoluteFill}
@@ -434,7 +438,7 @@ export default function WebCategoryScreen() {
   useEffect(() => {
     if (gridReady) {
       gridFade.setValue(0);
-      Animated.timing(gridFade, { toValue: 1, duration: 320, useNativeDriver: true }).start(
+      Animated.timing(gridFade, { toValue: 1, duration: 220, useNativeDriver: true }).start(
         ({ finished }) => finished && setSkelMounted(false),
       );
     } else {
@@ -488,6 +492,7 @@ export default function WebCategoryScreen() {
           hero={hero}
           // First rows fetch ahead of the below-fold cards.
           priority={i < 9 ? 'high' : undefined}
+          gridWidth={isDesktop ? undefined : 360}
           onPress={handlePress}
           onPeek={setPeek}
         />
@@ -720,10 +725,29 @@ export default function WebCategoryScreen() {
           )}
           {!loading && heroes.length === 0 ? (
             <View style={styles.center}>
-              <Ionicons name="search-outline" size={34} color="rgba(29,45,51,0.25)" />
+              <Ionicons
+                name={activeQuery.isError ? 'cloud-offline-outline' : 'search-outline'}
+                size={34}
+                color="rgba(29,45,51,0.25)"
+              />
               <Text style={styles.empty}>
-                {activeChips.length > 0 ? 'No characters match these filters' : 'No characters found'}
+                {activeQuery.isError
+                  ? "Couldn't load characters — check your connection"
+                  : activeChips.length > 0
+                    ? 'No characters match these filters'
+                    : 'No characters found'}
               </Text>
+              {activeQuery.isError ? (
+                <Pressable
+                  onPress={() => activeQuery.refetch()}
+                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                    [styles.emptyClear, hovered && (styles.emptyClearHover as object)] as object
+                  }
+                >
+                  <Ionicons name="refresh" size={15} color={COLORS.beige} />
+                  <Text style={styles.emptyClearText as object}>Retry</Text>
+                </Pressable>
+              ) : null}
               {activeChips.length > 0 && (
                 <Pressable
                   onPress={reset}

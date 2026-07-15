@@ -58,6 +58,7 @@ function Rail({
   onPeek,
   accent,
   tagline,
+  pad = 0,
 }: {
   label: string;
   items: RailItem[];
@@ -68,6 +69,8 @@ function Rail({
   onPeek: (item: PeekHero) => void;
   accent?: boolean;
   tagline?: string;
+  /** Host padding to bleed past — cards scroll off the physical screen edge. */
+  pad?: number;
 }) {
   return (
     <View style={styles.section}>
@@ -84,8 +87,12 @@ function Rail({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.railFade as object}
-        contentContainerStyle={styles.railRow as object}
+        // Bleed past the sheet padding: cards scroll off the physical screen
+        // edge (no fade mask — it read as the cards dissolving mid-rail).
+        style={pad ? ({ marginHorizontal: -pad } as object) : undefined}
+        contentContainerStyle={
+          [styles.railRow, pad ? { paddingLeft: pad, paddingRight: pad } : null] as object
+        }
       >
         {items.map((item) => {
           const key = `${group}-${item.id}`;
@@ -119,13 +126,13 @@ function WebPickSkeleton() {
       <View style={[styles.skelLabel, { width: 130 }] as object} />
       <View style={styles.skelRail as object}>
         {Array.from({ length: 8 }).map((_, i) => (
-          <CardSkeleton key={i} width={138} height={196} />
+          <CardSkeleton key={i} width={138} height={196} tone="light" />
         ))}
       </View>
       <View style={[styles.skelLabel, { width: 96, marginTop: 6 }] as object} />
       <View style={rosterGrid as object}>
         {Array.from({ length: 12 }).map((_, i) => (
-          <CardSkeleton key={i} fill />
+          <CardSkeleton key={i} fill tone="light" />
         ))}
       </View>
     </View>
@@ -160,6 +167,11 @@ export default function WebPickOpponentScreen() {
   } = usePickOpponents(hero ?? '', name);
 
   useEffect(() => {
+    // Desktop-only autofocus. On touch devices the programmatic focus (a) made
+    // iOS ZOOM the page — focus fires while the view-transition arrival is
+    // still scale-transforming the snapshot, so the 16px input reads smaller —
+    // and (b) instantly buried the suggestion rails under the keyboard.
+    if (typeof window !== 'undefined' && !window.matchMedia('(hover: hover)').matches) return;
     const t = setTimeout(() => inputRef.current?.focus(), 120);
     return () => clearTimeout(t);
   }, []);
@@ -297,6 +309,7 @@ export default function WebPickOpponentScreen() {
                   <View style={styles.sections}>
                     {rivals.length > 0 && (
                       <Rail
+                        pad={wide ? 32 : 24}
                         label="Rivalries"
                         items={rivals}
                         group="rivalries"
@@ -310,6 +323,7 @@ export default function WebPickOpponentScreen() {
                     )}
                     {friendlyFire.length > 0 && (
                       <Rail
+                        pad={wide ? 32 : 24}
                         label="Friendly Fire"
                         items={friendlyFire}
                         group="friendly"
@@ -322,6 +336,7 @@ export default function WebPickOpponentScreen() {
                     )}
                     {family.length > 0 && (
                       <Rail
+                        pad={wide ? 32 : 24}
                         label="Bloodline"
                         items={family}
                         group="family"
@@ -334,6 +349,7 @@ export default function WebPickOpponentScreen() {
                     )}
                     {sameUniverse.length > 0 && (
                       <Rail
+                        pad={wide ? 32 : 24}
                         label="Same Universe"
                         items={sameUniverse}
                         group="same"
@@ -345,6 +361,7 @@ export default function WebPickOpponentScreen() {
                     )}
                     {dreamMatches.length > 0 && (
                       <Rail
+                        pad={wide ? 32 : 24}
                         label="Dream Matches"
                         items={dreamMatches}
                         group="dream"
@@ -357,6 +374,7 @@ export default function WebPickOpponentScreen() {
                     )}
                     {similar.length > 0 && (
                       <Rail
+                        pad={wide ? 32 : 24}
                         label="Similar Power"
                         items={similar}
                         group="similar"
@@ -410,8 +428,6 @@ export default function WebPickOpponentScreen() {
 }
 
 const SHEET_MAX = 1180;
-const railFadeMask = 'linear-gradient(to right, #000 92%, transparent 100%)';
-
 const styles = StyleSheet.create({
   root: { minHeight: '100lvh', backgroundColor: COLORS.navy } as object,
   scroll: { flex: 1 },
@@ -421,7 +437,7 @@ const styles = StyleSheet.create({
   skelLabel: {
     height: 12,
     borderRadius: 5,
-    backgroundColor: 'rgba(41,60,67,0.1)',
+    backgroundColor: 'rgba(41,60,67,0.12)',
     marginBottom: 16,
   },
   skelRail: {
@@ -531,7 +547,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
     marginBottom: 12,
   },
-  railFade: { maskImage: railFadeMask, WebkitMaskImage: railFadeMask } as object,
   railRow: {
     display: 'flex',
     flexDirection: 'row',

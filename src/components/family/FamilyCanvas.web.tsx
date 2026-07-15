@@ -167,6 +167,8 @@ function FamilyStage({
   onClose?: () => void;
   onNavigate?: () => void;
 }): ReactElement {
+  // Touch devices pinch/pan the canvas; the ± buttons are desktop chrome.
+  const canHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches;
   const [vp, setVp] = useState({ w: 0, h: 0 });
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
@@ -339,12 +341,17 @@ function FamilyStage({
         </GestureDetector>
 
         <View style={[styles.zoomButtons, fullscreen && styles.zoomButtonsFs]}>
-          <Pressable style={styles.zoomBtn} onPress={zoomIn}>
-            <Ionicons name="add" size={18} color={COLORS.black} />
-          </Pressable>
-          <Pressable style={styles.zoomBtn} onPress={zoomOut}>
-            <Ionicons name="remove" size={18} color={COLORS.black} />
-          </Pressable>
+          {/* ± buttons are pointer affordances — touch pinches instead. */}
+          {canHover ? (
+            <>
+              <Pressable style={styles.zoomBtn} onPress={zoomIn}>
+                <Ionicons name="add" size={18} color={COLORS.black} />
+              </Pressable>
+              <Pressable style={styles.zoomBtn} onPress={zoomOut}>
+                <Ionicons name="remove" size={18} color={COLORS.black} />
+              </Pressable>
+            </>
+          ) : null}
           <Pressable style={styles.zoomBtn} onPress={recenter}>
             <Ionicons name="locate-outline" size={16} color={COLORS.black} />
           </Pressable>
@@ -425,11 +432,10 @@ export function FamilyCanvas({
           </>
         ) : (
           <>
-            {/* Mobile: bare section header that matches the native screen —
-              relatives count on the left, navy "Family" title + rule on the right. */}
+            {/* Mobile: the page's section-title grammar — right-aligned
+              "Family · N" over the rule, matching "Gallery · N". */}
             <View style={styles.mHeader}>
-              <Text style={styles.mCount}>{relativesCount}</Text>
-              <Text style={styles.mTitle}>Family</Text>
+              <Text style={styles.mTitle}>Family · {members.length}</Text>
             </View>
             <View style={styles.mDivider} />
           </>
@@ -593,12 +599,7 @@ const styles = StyleSheet.create({
   },
 
   // Mobile header — mirrors the native FamilyCanvas + the other mobile sections.
-  mHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
+  mHeader: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'baseline' },
   mTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 20,

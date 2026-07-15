@@ -182,109 +182,109 @@ export default function VersusHubWeb() {
           source has settled (rows.settled), so sections don't pop in one after
           another as their individual queries land. ── */}
       {rows.settled && (
-      <View style={[s.feed, { paddingHorizontal: contentPad }] as object}>
-        <View style={s.feedInner}>
-          {rows.rivalries.length > 0 && (
-            <Reveal>
-              <MatchupRow
-                bleed={isDesktop ? 0 : contentPad}
-                icon="sword-cross"
-                kicker="Grudge Matches"
-                title="Greatest Rivalries"
-                blurb="The debates that never settle — fans keep score."
-                wrap={isDesktop}
-              >
-                {/* Cap at 10 on the desktop grid (two full 5-up rows) so the
+        <View style={[s.feed, { paddingHorizontal: contentPad }] as object}>
+          <View style={s.feedInner}>
+            {rows.rivalries.length > 0 && (
+              <Reveal>
+                <MatchupRow
+                  bleed={isDesktop ? 0 : contentPad}
+                  icon="sword-cross"
+                  kicker="Grudge Matches"
+                  title="Greatest Rivalries"
+                  blurb="The debates that never settle — fans keep score."
+                  wrap={isDesktop}
+                >
+                  {/* Cap at 10 on the desktop grid (two full 5-up rows) so the
                     section never trails off with a 2-card orphan row. */}
-                {(isDesktop ? rows.rivalries.slice(0, 10) : rows.rivalries).map((m) => (
-                  <MatchupCard
-                    key={`${m.a.id}-${m.b.id}`}
-                    a={heroSide(m.a)}
-                    b={heroSide(m.b)}
-                    large={isDesktop}
-                    onOpen={() => openArena(m.a, m.b)}
-                  />
-                ))}
-              </MatchupRow>
-            </Reveal>
-          )}
+                  {(isDesktop ? rows.rivalries.slice(0, 10) : rows.rivalries).map((m) => (
+                    <MatchupCard
+                      key={`${m.a.id}-${m.b.id}`}
+                      a={heroSide(m.a)}
+                      b={heroSide(m.b)}
+                      large={isDesktop}
+                      onOpen={() => openArena(m.a, m.b)}
+                    />
+                  ))}
+                </MatchupRow>
+              </Reveal>
+            )}
 
-          {rows.dream.length > 0 && (
+            {rows.dream.length > 0 && (
+              <Reveal>
+                <MatchupRow
+                  bleed={isDesktop ? 0 : contentPad}
+                  icon="star-four-points"
+                  kicker="Cross-Universe"
+                  title="Dream Matches"
+                  blurb="Marvel meets DC — clashes the comics can't print."
+                  wrap={isDesktop}
+                >
+                  {rows.dream.map((m) => (
+                    <MatchupCard
+                      key={`${m.a.id}-${m.b.id}`}
+                      a={heroSide(m.a)}
+                      b={heroSide(m.b)}
+                      large={isDesktop}
+                      onOpen={() => openArena(m.a, m.b)}
+                    />
+                  ))}
+                </MatchupRow>
+              </Reveal>
+            )}
+
+            {rows.goliath.length > 0 && (
+              <Reveal>
+                <MatchupRow
+                  bleed={isDesktop ? 0 : contentPad}
+                  icon="scale-unbalanced"
+                  kicker="The Upsets"
+                  title="David vs Goliath"
+                  blurb="Underdogs against the heavyweights."
+                  wrap={isDesktop}
+                >
+                  {rows.goliath.map((m) => (
+                    <MatchupCard
+                      key={`${m.a.id}-${m.b.id}`}
+                      a={heroSide(m.a)}
+                      b={heroSide(m.b)}
+                      large={isDesktop}
+                      onOpen={() => openArena(m.a, m.b)}
+                    />
+                  ))}
+                </MatchupRow>
+              </Reveal>
+            )}
+
+            {rows.teams.length > 0 && (
+              <Reveal>
+                <MatchupRow
+                  bleed={isDesktop ? 0 : contentPad}
+                  icon="account-group"
+                  kicker="Squads"
+                  title="Team Battles"
+                  blurb="Iconic squads clash — roster against roster."
+                  wrap={isDesktop}
+                >
+                  {rows.teams.map((m) => (
+                    <MatchupCard
+                      key={`${m.a.id}-${m.b.id}`}
+                      a={{ name: m.a.name, art: m.a.logo_url }}
+                      b={{ name: m.b.name, art: m.b.logo_url }}
+                      fit="contain"
+                      large={isDesktop}
+                      onOpen={() => openTeam(m.a.id, m.b.id)}
+                    />
+                  ))}
+                </MatchupRow>
+              </Reveal>
+            )}
+
+            {/* Public Enemies — flush so it aligns with the matchup rows above. */}
             <Reveal>
-              <MatchupRow
-                bleed={isDesktop ? 0 : contentPad}
-                icon="star-four-points"
-                kicker="Cross-Universe"
-                title="Dream Matches"
-                blurb="Marvel meets DC — clashes the comics can't print."
-                wrap={isDesktop}
-              >
-                {rows.dream.map((m) => (
-                  <MatchupCard
-                    key={`${m.a.id}-${m.b.id}`}
-                    a={heroSide(m.a)}
-                    b={heroSide(m.b)}
-                    large={isDesktop}
-                    onOpen={() => openArena(m.a, m.b)}
-                  />
-                ))}
-              </MatchupRow>
+              <HallOfInfamy villains={mostFeared} flush bleed={contentPad} />
             </Reveal>
-          )}
-
-          {rows.goliath.length > 0 && (
-            <Reveal>
-              <MatchupRow
-                bleed={isDesktop ? 0 : contentPad}
-                icon="scale-unbalanced"
-                kicker="The Upsets"
-                title="David vs Goliath"
-                blurb="Underdogs against the heavyweights."
-                wrap={isDesktop}
-              >
-                {rows.goliath.map((m) => (
-                  <MatchupCard
-                    key={`${m.a.id}-${m.b.id}`}
-                    a={heroSide(m.a)}
-                    b={heroSide(m.b)}
-                    large={isDesktop}
-                    onOpen={() => openArena(m.a, m.b)}
-                  />
-                ))}
-              </MatchupRow>
-            </Reveal>
-          )}
-
-          {rows.teams.length > 0 && (
-            <Reveal>
-              <MatchupRow
-                bleed={isDesktop ? 0 : contentPad}
-                icon="account-group"
-                kicker="Squads"
-                title="Team Battles"
-                blurb="Iconic squads clash — roster against roster."
-                wrap={isDesktop}
-              >
-                {rows.teams.map((m) => (
-                  <MatchupCard
-                    key={`${m.a.id}-${m.b.id}`}
-                    a={{ name: m.a.name, art: m.a.logo_url }}
-                    b={{ name: m.b.name, art: m.b.logo_url }}
-                    fit="contain"
-                    large={isDesktop}
-                    onOpen={() => openTeam(m.a.id, m.b.id)}
-                  />
-                ))}
-              </MatchupRow>
-            </Reveal>
-          )}
-
-          {/* Public Enemies — flush so it aligns with the matchup rows above. */}
-          <Reveal>
-            <HallOfInfamy villains={mostFeared} flush bleed={contentPad} />
-          </Reveal>
+          </View>
         </View>
-      </View>
       )}
     </View>
   );

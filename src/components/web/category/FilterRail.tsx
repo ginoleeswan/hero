@@ -179,7 +179,7 @@ const s = StyleSheet.create({
     flex: 1,
     minWidth: 0, // let the field shrink within the rail instead of pushing past it
     fontFamily: 'Nunito_400Regular',
-    fontSize: 13.5,
+    fontSize: 16, // ≥16: iOS zooms on focus below this
     color: COLORS.beige,
     outlineStyle: 'none',
     outlineWidth: 0,

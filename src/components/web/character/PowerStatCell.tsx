@@ -53,11 +53,14 @@ export function PowerStatCell({
   label,
   color,
   median,
+  delay = 0,
 }: {
   value: number | null;
   label: string;
   color: string;
   median?: number;
+  /** Stagger (ms) so a grid of cells cascades instead of firing at once. */
+  delay?: number;
 }) {
   const [ref, play] = usePlayOnce();
   const target = value ?? 0;
@@ -75,15 +78,15 @@ export function PowerStatCell({
       return;
     }
     let raf = 0;
-    const start = performance.now();
+    const start = performance.now() + delay;
     const tick = (now: number) => {
-      const progress = Math.min((now - start) / DURATION_MS, 1);
+      const progress = Math.min(Math.max(now - start, 0) / DURATION_MS, 1);
       setDisplay(statDisplayValue(progress, target));
       if (progress < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [play, target]);
+  }, [play, target, delay]);
 
   return (
     <View ref={ref} style={styles.cell}>
@@ -98,7 +101,7 @@ export function PowerStatCell({
                 // Tiny values still read as a deliberate fill.
                 minWidth: play && fill > 0 ? 5 : 0,
                 backgroundColor: color,
-                transition: 'width 750ms cubic-bezier(0.16, 1, 0.3, 1)',
+                transition: `width 750ms cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`,
               },
             ] as object
           }

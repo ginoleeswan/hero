@@ -83,13 +83,16 @@ export function heroGridImageSource(
   imageUrl?: string | null,
   portraitUrl?: string | null,
   imageMdUrl?: string | null,
+  // Mobile 3-col grid cells are ~110pt (≈330px @3x) — the 600px desktop
+  // derivative is ~2x the bytes needed there. Callers pass a tighter width.
+  width: number = GRID_WIDTH,
 ): { uri: string } {
   const uri =
     realUrl(portraitUrl) ??
     realUrl(imageMdUrl) ??
     realUrl(imageUrl) ??
     (isNumericId(id) ? `${CDN_BASE}/${id}.jpg` : '');
-  return { uri: withResize(uri, GRID_WIDTH, 'scale_medium') };
+  return { uri: withResize(uri, width, 'scale_medium') };
 }
 
 /**

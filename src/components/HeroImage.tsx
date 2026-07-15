@@ -13,6 +13,8 @@ import {
 interface HeroImageProps {
   /** expo-image fetch priority — 'high' for above-the-fold cards. */
   priority?: 'low' | 'normal' | 'high';
+  /** Grid derivative width override (mobile 3-col grids want ~360, not 600). */
+  gridWidth?: number;
   id: string | number;
   name: string;
   imageUrl?: string | null;
@@ -61,11 +63,12 @@ export function HeroImage({
   blurRadius,
   onLoad,
   priority,
+  gridWidth,
 }: HeroImageProps) {
   const [errored, setErrored] = useState(false);
 
   const source = grid
-    ? heroGridImageSource(id, imageUrl, portraitUrl, imageMdUrl)
+    ? heroGridImageSource(id, imageUrl, portraitUrl, imageMdUrl, gridWidth)
     : heroImageSource(id, imageUrl, portraitUrl);
 
   const showMonogram = !source.uri || errored;

@@ -16,6 +16,7 @@ export function LegendBand({
   facts,
   portrayals,
   onPressDebut,
+  flat = false,
 }: {
   accent: string;
   accentWash: string;
@@ -23,6 +24,8 @@ export function LegendBand({
   facts: string[];
   portrayals: HeroPortrayals | null;
   onPressDebut: () => void;
+  /** Sit directly on the beige sheet — no white card chrome (mobile web). */
+  flat?: boolean;
 }) {
   const hasPortrayals =
     !!portrayals && (portrayals.performers.length > 0 || portrayals.voiceActors.length > 0);
@@ -34,15 +37,28 @@ export function LegendBand({
       style={
         [
           styles.band,
-          {
-            backgroundImage: `linear-gradient(180deg, ${accentWash} 0%, rgba(255,255,255,0) 65%)`,
-            borderColor: accent + '33',
-          },
+          flat
+            ? (styles.flat as object)
+            : {
+                backgroundImage: `linear-gradient(180deg, ${accentWash} 0%, rgba(255,255,255,0) 65%)`,
+                borderColor: accent + '33',
+              },
         ] as object
       }
     >
-      <Text style={styles.title}>Legend</Text>
-      <View style={[styles.titleRule, { backgroundColor: accent + '22' }] as object} />
+      {flat ? (
+        <>
+          {/* Flat (mobile): the page's section-title grammar — Flame navy,
+              right-aligned over the full navy rule, matching its siblings. */}
+          <Text style={styles.titleFlat}>Legend</Text>
+          <View style={styles.titleRuleFlat} />
+        </>
+      ) : (
+        <>
+          <Text style={styles.title}>Legend</Text>
+          <View style={[styles.titleRule, { backgroundColor: accent + '22' }] as object} />
+        </>
+      )}
 
       <View style={styles.columns}>
         {hasDebut ? (
@@ -86,7 +102,7 @@ export function LegendBand({
             <View style={styles.moment}>
               <View style={[styles.momentDot, { backgroundColor: accent }] as object} />
               <Text style={styles.momentLabel}>Portrayed by</Text>
-              <PortrayedBySection portrayals={portrayals!} contentInset={0} />
+              <PortrayedBySection portrayals={portrayals!} contentInset={0} accent={accent} />
             </View>
           ) : null}
         </View>
@@ -103,6 +119,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
   } as object,
+  // Flat variant: the timeline sits directly on the beige sheet — mobile web,
+  // where the boxed section read heavy against the flat layout around it.
+  flat: {
+    backgroundColor: 'transparent',
+    backgroundImage: 'none',
+    borderWidth: 0,
+    borderRadius: 0,
+    boxShadow: 'none',
+    padding: 0,
+    paddingVertical: 4,
+  } as object,
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
@@ -110,6 +137,18 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 10,
+  },
+  titleFlat: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
+    color: COLORS.navy,
+    textAlign: 'right',
+    paddingVertical: 5,
+  },
+  titleRuleFlat: {
+    height: 2,
+    backgroundColor: COLORS.navy,
+    marginBottom: 16,
   },
   titleRule: { height: 1, marginBottom: 16 },
   columns: { flexDirection: 'row', gap: 24, flexWrap: 'wrap' },

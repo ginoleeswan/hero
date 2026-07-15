@@ -426,7 +426,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
+    fontSize: 16, // ≥16: iOS zooms on focus below this
     color: COLORS.black,
     minHeight: 64,
     textAlignVertical: 'top',

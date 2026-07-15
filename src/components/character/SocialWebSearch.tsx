@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
+    fontSize: 16, // ≥16: iOS zooms on focus below this
     color: INK_TEXT.primary,
     outlineStyle: 'none',
   } as object,

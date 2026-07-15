@@ -20,6 +20,23 @@ export default function Root({ children }: PropsWithChildren) {
         {/* Tints the iOS status-bar / browser chrome to match the deep-navy backdrop
             so the system UI blends with the page instead of flashing white. */}
         <meta name="theme-color" content="#0b1820" />
+        {/* Keep Safari's own chrome dark through LOADING states too (the CSS
+            color-scheme in the style below covers the rest; the meta form is
+            parsed earliest). */}
+        <meta name="color-scheme" content="dark" />
+        {/* Preconnects: the grid's image CDNs + the API — shaves the DNS+TLS
+            round-trips off the first hero-image and first query of a session
+            (~100-300ms each on cellular). */}
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="preconnect" href="https://comicvine.gamespot.com" />
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+        {process.env.EXPO_PUBLIC_SUPABASE_URL ? (
+          <link
+            rel="preconnect"
+            href={process.env.EXPO_PUBLIC_SUPABASE_URL}
+            crossOrigin="anonymous"
+          />
+        ) : null}
 
         {/* SEO + social sharing. The OG image is an absolute URL on the
             production domain — update it if you launch on a different host. */}
@@ -85,4 +102,14 @@ html, body, #root {
    Content pages override this to beige at runtime via useWebCanvas, so the
    frosted toolbar still reads transparent over beige content there. */
 html, body { background-color: #0b1820; overscroll-behavior-y: none; }
+/* Safari renders its loading-state bars in the SYSTEM appearance (white in
+   light mode) until the page declares otherwise — the white band under the
+   toolbar during boot. Declaring a dark colour-scheme keeps the chrome dark
+   through every loading phase. */
+:root { color-scheme: dark; }
+/* iOS Safari auto-zooms the page when a focused control's EFFECTIVE font-size
+   is under 16px (it ignores maximum-scale=1 since 16). Enforce the floor from
+   the very first paint — the runtime copy in _layout.web.tsx is the belt, this
+   is the suspenders. */
+input, textarea, select { font-size: max(16px, 1em) !important; }
 `;
