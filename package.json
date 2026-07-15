@@ -26,6 +26,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-google-signin/google-signin": "^16.1.2",
     "@react-native-masked-view/masked-view": "^0.3.2",
+    "@sentry/react-native": "~7.11.0",
     "@supabase/supabase-js": "^2.101.1",
     "@tanstack/react-query": "^5.101.0",
     "@vercel/analytics": "^2.0.1",
@@ -127,6 +128,7 @@
     "moduleNameMapper": {
       "^react-native-reanimated/mock$": "<rootDir>/__mocks__/react-native-reanimated-mock-shim.js",
       "^@react-native-async-storage/async-storage$": "@react-native-async-storage/async-storage/jest/async-storage-mock",
+      "^@sentry/react-native$": "<rootDir>/__mocks__/@sentry/react-native.js",
       "\\.svg$": "<rootDir>/__mocks__/svgMock.js",
       "^(\\.{1,2}/.*)\\.ts$": "$1"
     }

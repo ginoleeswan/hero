@@ -1,7 +1,10 @@
-const { getDefaultConfig } = require('expo/metro-config');
+// getSentryExpoConfig wraps Expo's getDefaultConfig to add source-map handling
+// for Sentry symbolication. Every customization below is re-applied on top of
+// it (SVG transformer, ext tweaks, web-stub resolver) — order matters.
+const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 const path = require('path');
 
-const config = getDefaultConfig(__dirname);
+const config = getSentryExpoConfig(__dirname);
 
 // SVG support: transform .svg into react-native-svg components on every
 // platform, instead of treating them as image assets — RN's <Image> can't

@@ -31,6 +31,11 @@ import { COLORS } from '../src/constants/colors';
 import { postAuthTarget } from '../src/lib/loginRedirect';
 import AnalyticsProvider from '../src/components/Analytics';
 import { recordClientError, installGlobalErrorCapture } from '../src/lib/db/clientErrors';
+import { initSentry } from '../src/lib/sentry';
+
+// Start crash reporting as early as possible (module scope, before any render).
+// No-op without EXPO_PUBLIC_SENTRY_DSN.
+initSentry();
 
 // Expo Router renders this in place of the tree if a render throws, instead of a
 // blank white screen — a graceful, on-brand recovery surface for production.
