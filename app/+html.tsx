@@ -85,4 +85,9 @@ html, body, #root {
    Content pages override this to beige at runtime via useWebCanvas, so the
    frosted toolbar still reads transparent over beige content there. */
 html, body { background-color: #0b1820; overscroll-behavior-y: none; }
+/* iOS Safari auto-zooms the page when a focused control's EFFECTIVE font-size
+   is under 16px (it ignores maximum-scale=1 since 16). Enforce the floor from
+   the very first paint — the runtime copy in _layout.web.tsx is the belt, this
+   is the suspenders. */
+input, textarea, select { font-size: max(16px, 1em) !important; }
 `;

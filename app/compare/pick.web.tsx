@@ -571,7 +571,7 @@ const s = StyleSheet.create({
   input: {
     flex: 1,
     fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
+    fontSize: 16, // never below 16 — iOS zooms the page on focus otherwise
     color: COLORS.beige,
     outlineStyle: 'none' as unknown as undefined,
   },

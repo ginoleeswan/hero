@@ -274,14 +274,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 13,
     fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
+    fontSize: 16, // ≥16: iOS zooms on focus below this
     color: COLORS.navy,
   },
   inputStandalone: {
     paddingHorizontal: 14,
     paddingVertical: 13,
     fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
+    fontSize: 16, // ≥16: iOS zooms on focus below this
     color: COLORS.navy,
   },
   eye: { paddingHorizontal: 12, paddingVertical: 13 },

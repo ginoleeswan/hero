@@ -167,6 +167,11 @@ export default function WebPickOpponentScreen() {
   } = usePickOpponents(hero ?? '', name);
 
   useEffect(() => {
+    // Desktop-only autofocus. On touch devices the programmatic focus (a) made
+    // iOS ZOOM the page — focus fires while the view-transition arrival is
+    // still scale-transforming the snapshot, so the 16px input reads smaller —
+    // and (b) instantly buried the suggestion rails under the keyboard.
+    if (typeof window !== 'undefined' && !window.matchMedia('(hover: hover)').matches) return;
     const t = setTimeout(() => inputRef.current?.focus(), 120);
     return () => clearTimeout(t);
   }, []);
