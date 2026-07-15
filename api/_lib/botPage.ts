@@ -40,7 +40,26 @@ export type BotHero = {
   combat: number | null;
   portrait_url: string | null;
   image_url: string | null;
+  // Entity anchors for JSON-LD `sameAs` — ties the page to its Knowledge-Graph
+  // node so Google/answer-engines recognise the character as a known entity.
+  wikidata_qid: string | null;
+  enwiki_title: string | null;
 };
+
+/** Build the schema.org `sameAs` list — the external authorities that identify
+ *  this character. Wikidata is the Knowledge-Graph hub; the English-Wikipedia
+ *  article is the human-readable anchor. Empty when the hero has neither. */
+export function entitySameAs(hero: Pick<BotHero, 'wikidata_qid' | 'enwiki_title'>): string[] {
+  const out: string[] = [];
+  const qid = hero.wikidata_qid?.trim();
+  if (qid && /^Q\d+$/.test(qid)) out.push(`https://www.wikidata.org/wiki/${qid}`);
+  const title = hero.enwiki_title?.trim();
+  if (title) {
+    // MediaWiki canonical form: spaces → underscores, then percent-encode.
+    out.push(`https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`);
+  }
+  return out;
+}
 
 export type RelatedLite = { id: string; name: string };
 
@@ -107,6 +126,8 @@ function jsonLd(hero: BotHero, description: string): string {
     (a): a is string => !!a && a.trim() !== '' && a !== hero.name,
   );
   if (alts.length > 0) person.alternateName = alts.slice(0, 10);
+  const sameAs = entitySameAs(hero);
+  if (sameAs.length > 0) person.sameAs = sameAs;
   const crumbs = [
     { '@type': 'ListItem', position: 1, name: 'Mythique', item: SITE_URL },
     { '@type': 'ListItem', position: 2, name: 'Characters', item: `${SITE_URL}/search` },
@@ -483,7 +504,23 @@ export function buildVsBotPage(
     jsonLd: serializeLd({
       '@context': 'https://schema.org',
       '@graph': [
-        { '@type': 'WebPage', name: titleText, description: desc, url: canonicalUrl },
+        {
+          '@type': 'WebPage',
+          name: titleText,
+          description: desc,
+          url: canonicalUrl,
+          // Community votes are real user engagement — surfacing the count as an
+          // InteractionCounter signals this is an active, participatory page.
+          ...(tally.votesA + tally.votesB > 0
+            ? {
+                interactionStatistic: {
+                  '@type': 'InteractionCounter',
+                  interactionType: 'https://schema.org/VoteAction',
+                  userInteractionCount: tally.votesA + tally.votesB,
+                },
+              }
+            : {}),
+        },
         {
           '@type': 'FAQPage',
           url: canonicalUrl,

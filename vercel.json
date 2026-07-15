@@ -19,7 +19,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot).*"
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot|GPTBot|OAI-SearchBot|ChatGPT-User|PerplexityBot|Perplexity-User|ClaudeBot|Claude-User|anthropic-ai|Applebot|Amazonbot|Bytespider|CCBot|YouBot|Meta-ExternalAgent|Diffbot).*"
         }
       ],
       "destination": "/api/bot-page?kind=character&id=:id"
@@ -30,7 +30,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot).*"
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot|GPTBot|OAI-SearchBot|ChatGPT-User|PerplexityBot|Perplexity-User|ClaudeBot|Claude-User|anthropic-ai|Applebot|Amazonbot|Bytespider|CCBot|YouBot|Meta-ExternalAgent|Diffbot).*"
         }
       ],
       "destination": "/api/bot-page?kind=title&id=:id"
@@ -41,7 +41,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot).*"
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot|GPTBot|OAI-SearchBot|ChatGPT-User|PerplexityBot|Perplexity-User|ClaudeBot|Claude-User|anthropic-ai|Applebot|Amazonbot|Bytespider|CCBot|YouBot|Meta-ExternalAgent|Diffbot).*"
         }
       ],
       "destination": "/api/bot-page?kind=team&id=:id"
@@ -63,7 +63,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot).*"
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot|GPTBot|OAI-SearchBot|ChatGPT-User|PerplexityBot|Perplexity-User|ClaudeBot|Claude-User|anthropic-ai|Applebot|Amazonbot|Bytespider|CCBot|YouBot|Meta-ExternalAgent|Diffbot).*"
         }
       ],
       "destination": "/api/bot-page?kind=vs&a=:hero&b=:opponent"
@@ -74,7 +74,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot).*"
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot|GPTBot|OAI-SearchBot|ChatGPT-User|PerplexityBot|Perplexity-User|ClaudeBot|Claude-User|anthropic-ai|Applebot|Amazonbot|Bytespider|CCBot|YouBot|Meta-ExternalAgent|Diffbot).*"
         }
       ],
       "destination": "/api/bot-page?kind=category&slug=:slug"
@@ -85,7 +85,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot).*"
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot|GPTBot|OAI-SearchBot|ChatGPT-User|PerplexityBot|Perplexity-User|ClaudeBot|Claude-User|anthropic-ai|Applebot|Amazonbot|Bytespider|CCBot|YouBot|Meta-ExternalAgent|Diffbot).*"
         }
       ],
       "destination": "/api/bot-page?kind=universe&slug=:slug"
@@ -96,7 +96,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot).*"
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot|GPTBot|OAI-SearchBot|ChatGPT-User|PerplexityBot|Perplexity-User|ClaudeBot|Claude-User|anthropic-ai|Applebot|Amazonbot|Bytespider|CCBot|YouBot|Meta-ExternalAgent|Diffbot).*"
         }
       ],
       "destination": "/api/bot-page?kind=franchise&slug=:slug"

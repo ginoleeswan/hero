@@ -8,6 +8,7 @@ import {
   buildUniverseBotPage,
   buildVsBotPage,
   CATEGORY_SEO,
+  entitySameAs,
   metaDescription,
   stripHtml,
   universePath,
@@ -45,6 +46,8 @@ const hero = (overrides: Partial<BotHero> = {}): BotHero => ({
   combat: 85,
   portrait_url: 'https://img.example/superman.jpg',
   image_url: null,
+  wikidata_qid: 'Q79015',
+  enwiki_title: 'Superman',
   ...overrides,
 });
 
@@ -67,6 +70,19 @@ describe('universePath', () => {
   it('never links category buckets', () => {
     expect(universePath('Creator-Owned')).toBeNull();
     expect(universePath(null)).toBeNull();
+  });
+});
+
+describe('entitySameAs', () => {
+  it('builds Wikidata + Wikipedia URLs, encoding the article title', () => {
+    expect(entitySameAs({ wikidata_qid: 'Q2', enwiki_title: 'Iron Man' })).toEqual([
+      'https://www.wikidata.org/wiki/Q2',
+      'https://en.wikipedia.org/wiki/Iron_Man',
+    ]);
+  });
+  it('ignores a malformed QID and missing title', () => {
+    expect(entitySameAs({ wikidata_qid: 'not-a-qid', enwiki_title: null })).toEqual([]);
+    expect(entitySameAs({ wikidata_qid: null, enwiki_title: '  ' })).toEqual([]);
   });
 });
 
@@ -111,6 +127,21 @@ describe('buildCharacterBotPage', () => {
     expect(html).toContain('"@type":"ProfilePage"');
     expect(html).toContain('"name":"Superman"');
     expect(html).toContain('"alternateName":["Clark Kent","Man of Steel"]');
+  });
+
+  it('links the character to its Knowledge-Graph entity via sameAs', () => {
+    expect(html).toContain(
+      '"sameAs":["https://www.wikidata.org/wiki/Q79015","https://en.wikipedia.org/wiki/Superman"]',
+    );
+  });
+
+  it('omits sameAs entirely when no entity anchors exist', () => {
+    const orphan = buildCharacterBotPage(hero({ wikidata_qid: null, enwiki_title: null }), {
+      allies: [],
+      enemies: [],
+      teammates: [],
+    });
+    expect(orphan).not.toContain('sameAs');
   });
 
   it('renders profile facts and power stats', () => {
@@ -241,6 +272,23 @@ describe('buildVsBotPage', () => {
     );
     const faq = ld['@graph'].find((n: { '@type': string }) => n['@type'] === 'FAQPage');
     expect(faq.mainEntity[0].acceptedAnswer.text).toContain('open debate');
+  });
+
+  it('marks up total community votes as an InteractionCounter', () => {
+    const ld = JSON.parse(
+      html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1],
+    );
+    const page = ld['@graph'].find((n: { '@type': string }) => n['@type'] === 'WebPage');
+    expect(page.interactionStatistic).toMatchObject({
+      '@type': 'InteractionCounter',
+      interactionType: 'https://schema.org/VoteAction',
+      userInteractionCount: 4, // 3 + 1
+    });
+  });
+
+  it('omits the InteractionCounter when there are no votes', () => {
+    const noVotes = buildVsBotPage(a, b, { votesA: 0, votesB: 0 }, { forA: [], forB: [] });
+    expect(noVotes).not.toContain('InteractionCounter');
   });
 
   it('links both fighters and onward matchups, skipping the current pair', () => {
