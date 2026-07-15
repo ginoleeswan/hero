@@ -1,14 +1,18 @@
 import {
+  buildCategoryBotPage,
   buildCharacterBotPage,
   buildNotFoundPage,
   buildTeamBotPage,
   buildTitleBotPage,
+  buildUniverseBotPage,
   buildVsBotPage,
+  CATEGORY_SEO,
   metaDescription,
   stripHtml,
   universePath,
   type BotHero,
   type BotTitle,
+  type RelatedLite,
 } from '../../api/_lib/botPage';
 
 const hero = (overrides: Partial<BotHero> = {}): BotHero => ({
@@ -225,5 +229,63 @@ describe('buildVsBotPage', () => {
 describe('buildNotFoundPage', () => {
   it('is noindex so crawlers drop dead URLs', () => {
     expect(buildNotFoundPage()).toContain('name="robots" content="noindex"');
+  });
+});
+
+const roster = (): RelatedLite[] => [
+  { id: 'h_1', name: 'Superman' },
+  { id: 'h_2', name: 'Batman' },
+  { id: 'h_3', name: 'Wonder Woman' },
+];
+
+describe('buildCategoryBotPage', () => {
+  const html = buildCategoryBotPage('strongest', roster());
+
+  it('renders the keyword-targeted title and H1 from CATEGORY_SEO', () => {
+    // buildDoc HTML-escapes the title, so the ampersand becomes &amp;.
+    expect(html).toContain(
+      `<title>${CATEGORY_SEO.strongest.label} — Powers, Stats &amp; Rankings | Mythique</title>`,
+    );
+    expect(html).toContain(`<h1>${CATEGORY_SEO.strongest.label}</h1>`);
+  });
+
+  it('canonicalizes to the category path', () => {
+    expect(html).toContain('rel="canonical" href="https://mythique.app/category/strongest"');
+  });
+
+  it('links every character in an ordered list', () => {
+    expect(html).toContain('<ol><li><a href="/character/h_1">Superman</a></li>');
+    expect(html).toContain('href="/character/h_3"');
+  });
+
+  it('emits CollectionPage + ItemList JSON-LD', () => {
+    expect(html).toContain('"@type":"CollectionPage"');
+    expect(html).toContain('"@type":"ItemList"');
+    expect(html).toContain('"numberOfItems":3');
+  });
+
+  it('cross-links sibling hubs but not itself', () => {
+    expect(html).toContain('href="/category/marvel"');
+    expect(html).not.toContain('href="/category/strongest"');
+  });
+});
+
+describe('buildUniverseBotPage', () => {
+  const html = buildUniverseBotPage('Marvel Comics', roster());
+
+  it('canonicalizes with the encoded publisher name', () => {
+    expect(html).toContain('rel="canonical" href="https://mythique.app/universe/Marvel%20Comics"');
+  });
+
+  it('puts the universe name in the title and heading', () => {
+    expect(html).toContain(
+      'Marvel Comics Characters — Heroes, Villains &amp; Power Stats | Mythique',
+    );
+    expect(html).toContain('<h1>Marvel Comics Characters</h1>');
+  });
+
+  it('links the roster into the character graph', () => {
+    expect(html).toContain('href="/character/h_2"');
+    expect(html).toContain('"@type":"CollectionPage"');
   });
 });

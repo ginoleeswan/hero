@@ -492,6 +492,195 @@ export function buildVsBotPage(
   });
 }
 
+// --- Browsable hub pages (categories + universes) -------------------------
+// These target head/mid-tail queries ("strongest characters", "marvel
+// villains", "dc characters") that a single character page can't rank for, and
+// they funnel crawl equity down into the character graph via dense links.
+
+/** SEO copy for each browsable category hub. Mirrors CATEGORY_LABELS /
+ *  CATEGORY_DESCRIPTIONS in src/lib/db/heroes/categories.ts — the RN-free api/
+ *  bundle can't import that RN module, so keep the slug set in sync when
+ *  categories change. Labels are written as the search phrases we want to win,
+ *  not the app's short UI labels. */
+export const CATEGORY_SEO: Record<string, { label: string; blurb: string }> = {
+  popular: {
+    label: 'Most Popular Superheroes & Villains',
+    blurb:
+      'The most beloved and recognizable characters across all of fiction — Marvel, DC, anime, games and beyond — ranked by fame on Mythique.',
+  },
+  villain: {
+    label: 'Greatest Supervillains of All Time',
+    blurb:
+      'The forces of darkness across Marvel, DC, anime and beyond — the most iconic supervillains, ranked by fame, with powers and stats.',
+  },
+  xmen: {
+    label: 'X-Men Characters',
+    blurb:
+      "Every member of Charles Xavier's world — X-Men mutants, allies and villains — with powers, stats and who-would-win matchups.",
+  },
+  'anti-heroes': {
+    label: 'Greatest Anti-Heroes',
+    blurb:
+      'Characters who walk the line between hero and villain — the most iconic anti-heroes across all fiction, with powers and stats.',
+  },
+  marvel: {
+    label: 'Marvel Characters',
+    blurb:
+      'Heroes and villains from the Marvel Universe — powers, stats, teams and who-would-win matchups, ranked by fame.',
+  },
+  dc: {
+    label: 'DC Characters',
+    blurb:
+      'Heroes and villains of the DC Universe — powers, stats, teams and who-would-win matchups, ranked by fame.',
+  },
+  image: {
+    label: 'Image Comics Characters',
+    blurb:
+      'Creator-owned heroes and villains from Image Comics — Spawn, Invincible and more — with powers, stats and matchups.',
+  },
+  'dark-horse': {
+    label: 'Dark Horse Characters',
+    blurb:
+      'Heroes and villains from Dark Horse Comics — Hellboy, Sin City and beyond — with powers, stats and matchups.',
+  },
+  strongest: {
+    label: 'Strongest Characters',
+    blurb:
+      'The most physically powerful characters in fiction, ranked by raw strength — with full power stats and matchups.',
+  },
+  'most-intelligent': {
+    label: 'Most Intelligent Characters',
+    blurb:
+      'The greatest minds across comics, film and games, ranked by intelligence — with full power stats and matchups.',
+  },
+  'most-iconic': {
+    label: 'Most Iconic Characters',
+    blurb:
+      'The most recognizable characters across comics and screen, ranked by fame — with powers, stats and matchups.',
+  },
+  'franchise-icons': {
+    label: 'Icons Beyond the Comics',
+    blurb:
+      'Legendary characters from film, TV, games and anime — icons that transcend the page, with powers, stats and matchups.',
+  },
+  anime: {
+    label: 'Anime & Manga Characters',
+    blurb:
+      'Heroes and villains from the biggest anime and manga — powers, stats and who-would-win matchups, ranked.',
+  },
+  'video-games': {
+    label: 'Video Game Characters',
+    blurb:
+      'Legends straight out of video-game history — powers, stats and who-would-win matchups, ranked by fame.',
+  },
+  horror: {
+    label: 'Horror Icons',
+    blurb:
+      'The slashers and monsters of horror cinema — the most iconic villains of horror, with powers, stats and matchups.',
+  },
+};
+
+/** Cross-links to the other hub pages so crawlers walk between them and equity
+ *  spreads across the hub graph. Optionally excludes the current category. */
+function hubNav(excludeSlug?: string): string {
+  const items = Object.entries(CATEGORY_SEO)
+    .filter(([slug]) => slug !== excludeSlug)
+    .map(([slug, m]) => `<li><a href="/category/${slug}">${escapeHtml(m.label)}</a></li>`)
+    .join('');
+  return items ? `<nav><h2>Browse more</h2><ul>${items}</ul></nav>` : '';
+}
+
+/** Ordered, linked character list — the internal-link payload of a hub page. */
+function characterOrderedList(heroes: RelatedLite[]): string {
+  if (heroes.length === 0) return '';
+  return `<ol>${heroes.map((h) => `<li>${heroLink(h)}</li>`).join('')}</ol>`;
+}
+
+/** JSON-LD for a hub page: CollectionPage wrapping an ItemList of the linked
+ *  characters, plus breadcrumbs. `<` escaped so data text can't close the tag. */
+function hubJsonLd(name: string, path: string, description: string, heroes: RelatedLite[]): string {
+  const itemListElement = heroes.map((h, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: h.name,
+    url: `${SITE_URL}/character/${encodeURIComponent(h.id)}`,
+  }));
+  return serializeLd({
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name,
+    description,
+    url: `${SITE_URL}${path}`,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: heroes.length,
+      itemListElement,
+    },
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Mythique', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Browse', item: `${SITE_URL}/explore` },
+        { '@type': 'ListItem', position: 3, name },
+      ],
+    },
+  });
+}
+
+/**
+ * Crawlable category hub (e.g. /category/strongest): a keyword-targeted H1 +
+ * intro, an ordered list of the top characters (each linked into the graph),
+ * cross-links to sibling hubs, and CollectionPage JSON-LD. `slug` must be a key
+ * of CATEGORY_SEO — the handler validates before calling.
+ */
+export function buildCategoryBotPage(slug: string, heroes: RelatedLite[]): string {
+  const meta = CATEGORY_SEO[slug];
+  const path = `/category/${slug}`;
+  const body = [
+    `<header><h1>${escapeHtml(meta.label)}</h1><p>${escapeHtml(meta.blurb)}</p></header>`,
+    section('Characters', characterOrderedList(heroes)),
+    hubNav(slug),
+    FOOTER,
+  ].join('\n');
+  return buildDoc({
+    title: `${meta.label} — Powers, Stats & Rankings | Mythique`,
+    description: meta.blurb,
+    path,
+    ogImage: `${SITE_URL}/og.png`,
+    ogType: 'website',
+    jsonLd: hubJsonLd(meta.label, path, meta.blurb, heroes),
+    body,
+  });
+}
+
+/**
+ * Crawlable universe hub (e.g. /universe/Marvel Comics): every catalogue
+ * character from one publisher/studio, linked into the graph. `name` is the raw
+ * (decoded) publisher term; the canonical re-encodes it to match universePath().
+ */
+export function buildUniverseBotPage(name: string, heroes: RelatedLite[]): string {
+  const label = `${name} Characters`;
+  const blurb =
+    `Every character from ${name} on Mythique — heroes, villains, powers, stats and ` +
+    `who-would-win matchups, ranked by fame.`;
+  const path = `/universe/${encodeURIComponent(name)}`;
+  const body = [
+    `<header><h1>${escapeHtml(label)}</h1><p>${escapeHtml(blurb)}</p></header>`,
+    section('Characters', characterOrderedList(heroes)),
+    hubNav(),
+    FOOTER,
+  ].join('\n');
+  return buildDoc({
+    title: `${name} Characters — Heroes, Villains & Power Stats | Mythique`,
+    description: blurb,
+    path,
+    ogImage: `${SITE_URL}/og.png`,
+    ogType: 'website',
+    jsonLd: hubJsonLd(label, path, blurb, heroes),
+    body,
+  });
+}
+
 /** Unknown-id response — noindex so crawlers drop dead URLs instead of
  *  indexing an empty shell. Served with a 404 status by the handler. */
 export function buildNotFoundPage(): string {
