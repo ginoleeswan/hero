@@ -130,8 +130,13 @@ export function IdleSuggestions({
 
 const styles = StyleSheet.create({
   container: { flexDirection: 'column', flex: 1 } as object,
-  scroll: { flexDirection: 'column', flex: 1, overflowY: 'auto',
-    scrollbarWidth: 'none', // no desktop scrollbar chrome on mobile web paddingBottom: 6 } as object,
+  scroll: {
+    flexDirection: 'column',
+    flex: 1,
+    overflowY: 'auto',
+    scrollbarWidth: 'none', // no desktop scrollbar chrome on mobile web
+    paddingBottom: 6,
+  } as object,
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
