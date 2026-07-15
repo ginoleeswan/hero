@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Stack, useRouter, useSegments, usePathname, type ErrorBoundaryProps } from 'expo-router';
+import {
+  Stack,
+  useRouter,
+  useSegments,
+  usePathname,
+  useGlobalSearchParams,
+  type ErrorBoundaryProps,
+} from 'expo-router';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import {
@@ -21,6 +28,7 @@ import { WebChromeProvider, AdaptiveStatusBarCover } from '../src/contexts/WebCh
 import { CommandAlertsProvider } from '../src/contexts/CommandAlertsContext';
 import { queryClient } from '../src/lib/query/queryClient';
 import { COLORS } from '../src/constants/colors';
+import { postAuthTarget } from '../src/lib/loginRedirect';
 import AnalyticsProvider from '../src/components/Analytics';
 import { recordClientError, installGlobalErrorCapture } from '../src/lib/db/clientErrors';
 
@@ -96,6 +104,7 @@ function WebAuthGate({ fontsReady }: { fontsReady: boolean }) {
   const segments = useSegments();
   const router = useRouter();
   const pathname = usePathname();
+  const { returnTo } = useGlobalSearchParams<{ returnTo?: string | string[] }>();
   const [settled, setSettled] = useState(false);
 
   const segs = segments as string[];
@@ -106,14 +115,18 @@ function WebAuthGate({ fontsReady }: { fontsReady: boolean }) {
     const isRoot = segs.length === 0;
 
     if (user && (inAuthGroup || isRoot)) {
-      router.replace('/explore');
+      // Honor a sanitized returnTo (the login screen's ?returnTo). The gate owns
+      // this redirect — it would otherwise race/clobber any post-login nav. This
+      // is also the ONLY post-OAuth redirect on web (OAuth full-page-returns to
+      // the login URL, which now carries returnTo).
+      router.replace(postAuthTarget(returnTo));
     } else {
       // Auth gate resolved (no redirect needed) — reveal the app. Driven by
       // async session + route segments, so it belongs in an effect.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSettled(true);
     }
-  }, [user, loading, segs, inAuthGroup, router]);
+  }, [user, loading, segs, inAuthGroup, router, returnTo]);
 
   // Native document scroll for every route: content bleeds edge-to-edge under the
   // iOS Safari toolbar and the toolbar can collapse (it only minimizes on

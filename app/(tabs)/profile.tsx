@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { queryClient } from '../../src/lib/query/queryClient';
+import { loginHref } from '../../src/lib/loginRedirect';
 import { exploreKeys } from '../../src/lib/query/keys';
 import {
   View,
@@ -24,7 +25,7 @@ import { PressScale } from '../../src/components/ui/PressScale';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { useProfileData } from '../../src/hooks/useProfileData';
@@ -142,6 +143,7 @@ const GUEST_BENEFITS = [
 
 function GuestProfileScreen() {
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
 
   return (
@@ -222,7 +224,7 @@ function GuestProfileScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.push('/(auth)/login')}
+            onPress={() => router.push(loginHref(pathname))}
             style={styles.guestSignUpBtn}
             activeOpacity={0.85}
           >

@@ -4,13 +4,14 @@
 // useMatchupTakes; report/delete lives behind a small per-card overflow menu.
 import { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 import { useMatchupTakes } from '../../hooks/useMatchupTakes';
 import { ReportSheet } from '../report/ReportSheet';
+import { loginHref } from '../../lib/loginRedirect';
 import type { Take } from '../../lib/db/takes';
 
 const MAX_LEN = 280;
@@ -155,6 +156,7 @@ function TakeCard({
 
 export function TakesSection({ heroA, heroB }: TakesSectionProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
   const { pickedId: votePickedId } = useMatchupVote(heroA.id, heroB.id);
   const { takes, myTake, submit, remove, agree, agreedIds, error } = useMatchupTakes(
@@ -176,7 +178,7 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
     }
   }, [votePickedId, pick]);
 
-  const goToLogin = () => router.push('/(auth)/login');
+  const goToLogin = () => router.push(loginHref(pathname));
 
   const handleSubmit = async () => {
     if (!user) {

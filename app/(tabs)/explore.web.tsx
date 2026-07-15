@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import {
   COLORS,
   SURFACE,
@@ -21,6 +21,7 @@ import { Reveal } from '../../src/components/web/Reveal';
 import { HeroImage } from '../../src/components/HeroImage';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
 import { type Hero } from '../../src/lib/db/heroes';
+import { loginHref } from '../../src/lib/loginRedirect';
 import { RightNowBand } from '../../src/components/web/home/RightNowBand';
 import { useExploreData } from '../../src/lib/query/exploreQueries';
 import type { FavouriteHero } from '../../src/types';
@@ -1250,6 +1251,7 @@ const fi = StyleSheet.create({
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function WebHomeScreen() {
   const router = useRouter();
+  const pathname = usePathname();
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
   const gutter = pageGutter(width);
@@ -1500,11 +1502,7 @@ export default function WebHomeScreen() {
                 <FavouritesInvite
                   gutter={gutter}
                   isAuthed={!!user}
-                  onCta={() =>
-                    router.push(
-                      (user ? '/search' : '/(auth)/login') as Parameters<typeof router.push>[0],
-                    )
-                  }
+                  onCta={() => router.push(user ? '/search' : loginHref(pathname))}
                 />
               )}
             </Reveal>

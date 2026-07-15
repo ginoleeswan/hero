@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
+import { loginHref } from '../../lib/loginRedirect';
 import { useAuth } from '../../hooks/useAuth';
 import { useProfile } from '../../hooks/useProfile';
 import { useSearch } from '../../contexts/SearchContext';
@@ -390,7 +391,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
                 ref={(node) => {
                   if (node) (node as unknown as HTMLElement).title = 'Sign in';
                 }}
-                onPress={() => router.push('/(auth)/login')}
+                onPress={() => router.push(loginHref(pathname))}
                 style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [c.item, hovered && hoverStyle] as object
                 }

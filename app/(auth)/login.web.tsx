@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { PageEndCap } from '../../src/components/web/PageEndCap';
@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SocialDivider } from '../../src/components/ui/SocialDivider';
 import { GoogleSignInButton } from '../../src/components/ui/GoogleSignInButton';
 import { AppleSignInButton } from '../../src/components/ui/AppleSignInButton';
+import { postAuthTarget, signupHref } from '../../src/lib/loginRedirect';
 
 const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 const HERO_ASPECT = LOGIN_HERO.width / LOGIN_HERO.height;
@@ -26,6 +27,7 @@ const HERO_ASPECT = LOGIN_HERO.width / LOGIN_HERO.height;
 export default function WebLoginScreen() {
   const { signIn, signInWithGoogle, signInWithApple } = useAuth();
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string | string[] }>();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
 
@@ -55,7 +57,8 @@ export default function WebLoginScreen() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.replace('/explore');
+      // Return to the acting page (the AuthGate honors the same param post-OAuth).
+      router.replace(postAuthTarget(returnTo));
     }
   };
 
@@ -165,7 +168,7 @@ export default function WebLoginScreen() {
         )}
       </Pressable>
 
-      <Pressable onPress={() => router.push('/(auth)/signup')} style={styles.switchRow as object}>
+      <Pressable onPress={() => router.push(signupHref(returnTo))} style={styles.switchRow as object}>
         <Text style={styles.switchText}>Don’t have an account? </Text>
         <Text style={styles.switchLink}>Sign up</Text>
       </Pressable>

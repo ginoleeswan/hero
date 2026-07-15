@@ -2,7 +2,7 @@ import 'react-native-url-polyfill/auto';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, useGlobalSearchParams } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -19,6 +19,7 @@ import { LogoLoader } from '../src/components/ui/LogoLoader';
 import AnalyticsProvider from '../src/components/Analytics';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../src/lib/query/queryClient';
+import { postAuthTarget } from '../src/lib/loginRedirect';
 
 if (Platform.OS !== 'web') {
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
@@ -52,6 +53,9 @@ function AuthGate({ fontsReady }: { fontsReady: boolean }) {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  // Global (not local) — AuthGate is not the route component, so it reads the
+  // login screen's ?returnTo from the app-wide param bag.
+  const { returnTo } = useGlobalSearchParams<{ returnTo?: string | string[] }>();
   const [settled, setSettled] = useState(false);
 
   useEffect(() => {
@@ -63,14 +67,17 @@ function AuthGate({ fontsReady }: { fontsReady: boolean }) {
     const atRoot = Platform.OS !== 'web' && (segments.length as number) === 0;
 
     if (user && (inAuthGroup || atRoot)) {
-      router.replace('/explore');
+      // Honor a sanitized returnTo so signing in returns the user to the page
+      // they were acting on. The gate MUST own this: it's a second redirect
+      // that would otherwise clobber any post-login navigation to /explore.
+      router.replace(postAuthTarget(returnTo));
     } else {
       // Auth gate resolved (no redirect needed) — reveal the app. Driven by
       // async session + route segments, so it belongs in an effect.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSettled(true);
     }
-  }, [user, loading, segments, router]);
+  }, [user, loading, segments, router, returnTo]);
 
   // Single boot gate: one LogoLoader spans the whole cold start (fonts + auth)
   // so the logo animation runs continuously instead of restarting at the
