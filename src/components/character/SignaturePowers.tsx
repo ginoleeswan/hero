@@ -39,7 +39,12 @@ export function SignaturePowerTiles({
   return (
     <View style={styles.row}>
       {signature.map((p) => (
-        <View key={p.name} style={[styles.tile] as object}>
+        <View
+          key={p.name}
+          style={
+            [styles.tile, { borderColor: accent + '26', backgroundColor: accent + '08' }] as object
+          }
+        >
           <View style={styles.tileHead}>
             <View style={[styles.iconBadge, { backgroundColor: accent + '1a' }] as object}>
               <MaterialCommunityIcons
@@ -63,10 +68,14 @@ export function SignaturePowerTiles({
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  // Flat on the sheet: an accent icon badge + title + blurb, no box chrome —
-  // matches the page's flattened bio/power sections (mobile cohesion).
   tile: {
-    paddingVertical: 10,
+    flex: 1,
+    minWidth: 200,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
   },
   tileHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   iconBadge: {

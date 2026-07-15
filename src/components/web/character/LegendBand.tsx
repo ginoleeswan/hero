@@ -16,6 +16,7 @@ export function LegendBand({
   facts,
   portrayals,
   onPressDebut,
+  flat = false,
 }: {
   accent: string;
   accentWash: string;
@@ -23,6 +24,8 @@ export function LegendBand({
   facts: string[];
   portrayals: HeroPortrayals | null;
   onPressDebut: () => void;
+  /** Sit directly on the beige sheet — no white card chrome (mobile web). */
+  flat?: boolean;
 }) {
   const hasPortrayals =
     !!portrayals && (portrayals.performers.length > 0 || portrayals.voiceActors.length > 0);
@@ -34,10 +37,12 @@ export function LegendBand({
       style={
         [
           styles.band,
-          {
-            backgroundImage: `linear-gradient(180deg, ${accentWash} 0%, rgba(255,255,255,0) 65%)`,
-            borderColor: accent + '33',
-          },
+          flat
+            ? (styles.flat as object)
+            : {
+                backgroundImage: `linear-gradient(180deg, ${accentWash} 0%, rgba(255,255,255,0) 65%)`,
+                borderColor: accent + '33',
+              },
         ] as object
       }
     >
@@ -102,6 +107,17 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
+  } as object,
+  // Flat variant: the timeline sits directly on the beige sheet — mobile web,
+  // where the boxed section read heavy against the flat layout around it.
+  flat: {
+    backgroundColor: 'transparent',
+    backgroundImage: 'none',
+    borderWidth: 0,
+    borderRadius: 0,
+    boxShadow: 'none',
+    padding: 0,
+    paddingVertical: 4,
   } as object,
   title: {
     fontFamily: 'Flame-Regular',

@@ -2072,6 +2072,7 @@ export default function WebCharacterScreen() {
                 <Reveal>
                   <View style={styles.mBlock}>
                     <LegendBand
+                      flat
                       accent={theme.accent}
                       accentWash={theme.accentWash}
                       firstIssue={data.firstIssue ?? null}
