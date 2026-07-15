@@ -725,12 +725,29 @@ export default function WebCategoryScreen() {
           )}
           {!loading && heroes.length === 0 ? (
             <View style={styles.center}>
-              <Ionicons name="search-outline" size={34} color="rgba(29,45,51,0.25)" />
+              <Ionicons
+                name={activeQuery.isError ? 'cloud-offline-outline' : 'search-outline'}
+                size={34}
+                color="rgba(29,45,51,0.25)"
+              />
               <Text style={styles.empty}>
-                {activeChips.length > 0
-                  ? 'No characters match these filters'
-                  : 'No characters found'}
+                {activeQuery.isError
+                  ? "Couldn't load characters — check your connection"
+                  : activeChips.length > 0
+                    ? 'No characters match these filters'
+                    : 'No characters found'}
               </Text>
+              {activeQuery.isError ? (
+                <Pressable
+                  onPress={() => activeQuery.refetch()}
+                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                    [styles.emptyClear, hovered && (styles.emptyClearHover as object)] as object
+                  }
+                >
+                  <Ionicons name="refresh" size={15} color={COLORS.beige} />
+                  <Text style={styles.emptyClearText as object}>Retry</Text>
+                </Pressable>
+              ) : null}
               {activeChips.length > 0 && (
                 <Pressable
                   onPress={reset}
