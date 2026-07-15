@@ -22,6 +22,10 @@ const RANKINGS = [
   ['speed', 'top-10-fastest'],
 ];
 
+// Production origin for the UTM-tagged links appended to each caption. Override
+// with --site if the origin changes. See docs/marketing/utm-attribution.md.
+const SITE = 'https://mythique.app';
+
 // Weekly rotation seed — same week = same plan (idempotent), next week differs.
 const week = Math.floor(Date.now() / 604_800_000);
 
@@ -45,11 +49,32 @@ const GUIDE = {
 };
 
 // Only rivalries whose BOTH names exact-match the heroes table (names drift).
+// Carries the resolved hero ids too, so matchup captions can deep-link straight
+// into the /compare page rather than just the homepage.
 async function resolvableRivalries() {
   const sb = makeSb(loadEnv());
-  const checks = await Promise.all(RIVALRIES.map(async ([a, b]) =>
-    ((await heroByName(sb, a)) && (await heroByName(sb, b))) ? [a, b] : null));
+  const checks = await Promise.all(RIVALRIES.map(async ([a, b]) => {
+    const [ha, hb] = [await heroByName(sb, a), await heroByName(sb, b)];
+    return ha && hb ? { pair: [a, b], ids: [ha.id, hb.id] } : null;
+  }));
   return checks.filter(Boolean);
+}
+
+// /compare orders the pair by hero id (see lib.mjs pickMatchup); mirror that so
+// the deep-link matches the canonical URL and shares vote/OG state.
+function comparePath([ida, idb]) {
+  const [x, y] = ida <= idb ? [ida, idb] : [idb, ida];
+  return `/compare/${x}/${y}`;
+}
+
+// Build a UTM-tagged link. campaign = the post label, so each creative is its
+// own row in admin → Traffic → Acquisition.
+function taggedLink({ site, source, medium, campaign, path = '/' }) {
+  const u = new URL(path, site);
+  u.searchParams.set('utm_source', source);
+  u.searchParams.set('utm_medium', medium);
+  u.searchParams.set('utm_campaign', campaign);
+  return u.toString();
 }
 
 function buildPlan(pool) {
@@ -59,10 +84,10 @@ function buildPlan(pool) {
   // Mon..Sun: brand / matchup / ranking / brand / matchup / brand / ranking
   return [
     { kind: 'brand', style: bs(0) },
-    { kind: 'matchup', pair: riv(0) },
+    { kind: 'matchup', pair: riv(0).pair, ids: riv(0).ids },
     { kind: 'ranking', by: rank(0)[0], slug: rank(0)[1] },
     { kind: 'brand', style: bs(1) },
-    { kind: 'matchup', pair: riv(1) },
+    { kind: 'matchup', pair: riv(1).pair, ids: riv(1).ids },
     { kind: 'brand', style: bs(2) },
     { kind: 'ranking', by: rank(1)[0], slug: rank(1)[1] },
   ];
@@ -106,7 +131,7 @@ const label = (post) =>
 // Self-contained visual planner written next to the images — open week.html in a
 // browser: previews, where/when/how per post, one-click caption copy, and a
 // "posted" checkbox persisted in localStorage. No server, no dependencies.
-function dashboard(stamp, size, entries) {
+function dashboard(stamp, size, entries, bioLink) {
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const cards = entries.map((e) => {
     const g = GUIDE[e.kind];
@@ -129,7 +154,9 @@ body{background:linear-gradient(#0d1f2b,var(--navy) 40%);color:var(--cream);font
 .wrap{max-width:1180px;margin:0 auto}
 h1{font-size:24px;font-weight:650;letter-spacing:.2px}
 h1 span{color:var(--gold)}
-.sub{color:var(--muted);font-size:13.5px;margin:6px 0 26px}
+.sub{color:var(--muted);font-size:13.5px;margin:6px 0 14px}
+.bio{background:rgba(224,168,62,.08);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin:0 0 26px;font-size:12.5px;color:var(--cream);word-break:break-all}
+.bio b{color:var(--gold)}.bio a{color:var(--gold)}.bio span{color:var(--muted)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
 .card{background:linear-gradient(180deg,var(--panel),#0b1c27);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
 .card.is-done{opacity:.45}
@@ -148,6 +175,7 @@ h1 span{color:var(--gold)}
 </style></head><body><div class="wrap">
 <h1>mythique<span>.</span> — content week ${stamp}</h1>
 <div class="sub">${entries.length} posts · ${size} · one per day · stories: re-run with --size 9x16 (matchups → poll sticker)</div>
+<div class="bio"><b>Bio link</b> — set as your profile link; carries feed/TikTok attribution: <a href="${esc(bioLink)}">${esc(bioLink)}</a><br><span>Feed/TikTok captions aren’t clickable — the per-post 🔗 pays off on X and Story link stickers.</span></div>
 <div class="grid">${cards}</div>
 <div class="foot">Consistency beats timing — one post a day, reply to every comment. · Unofficial fan encyclopedia. Characters © their respective owners.</div>
 </div><script>
@@ -170,6 +198,13 @@ async function main() {
   const get = (f, d) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : d; };
   const size = get('--size', '4x5');
   const dry = args.includes('--dry-run');
+  // UTM tagging for the links appended to each caption. Defaults suit the organic
+  // Instagram/X track this batch targets; pass --utm-source tiktok / --utm-medium
+  // paid when repurposing for a paid run.
+  const site = get('--site', SITE);
+  const utmSource = get('--utm-source', 'instagram');
+  const utmMedium = get('--utm-medium', 'social');
+  const bioLink = taggedLink({ site, source: utmSource, medium: 'social', campaign: 'bio' });
 
   const pool = await resolvableRivalries();
   if (!pool.length) { console.error('No rivalry pair resolves against the heroes table.'); process.exit(1); }
@@ -182,7 +217,18 @@ async function main() {
   const weekDir = join(OUT_DIR, `week-${stamp}`);
   mkdirSync(weekDir, { recursive: true });
 
-  const lines = [`# Mythique — content week ${stamp}`, '', `Size: ${size} · rotation #${week}`, ''];
+  const lines = [
+    `# Mythique — content week ${stamp}`,
+    '',
+    `Size: ${size} · rotation #${week}`,
+    '',
+    `**Bio link** (set this as your profile link — carries feed/TikTok attribution): ${bioLink}`,
+    '',
+    '> Captions on TikTok & the Instagram feed are **not clickable** — the tagged',
+    '> link there is a reference; attribution for those comes from the bio link.',
+    '> The per-post link pays off on **X** and **Instagram Story link stickers**.',
+    '',
+  ];
   const entries = [];
   for (let i = 0; i < plan.length; i++) {
     const post = plan[i];
@@ -195,15 +241,22 @@ async function main() {
     const base = `${String(i + 1).padStart(2, '0')}-${DAYS[i]}-${label(post)}`;
     if (!existsSync(img)) { console.error(`  !! expected output missing: ${img}`); continue; }
     copyFileSync(img, join(weekDir, `${base}.png`));
-    const caption = existsSync(cap) ? readFileSync(cap, 'utf8') : '';
-    if (caption) writeFileSync(join(weekDir, `${base}.caption.txt`), caption);
+    // Append a UTM-tagged link (campaign = post label). Matchups deep-link into
+    // the /compare page; everything else lands on the homepage. This makes each
+    // creative measurable in admin → Traffic → Acquisition — see
+    // docs/marketing/utm-attribution.md.
+    const rawCaption = existsSync(cap) ? readFileSync(cap, 'utf8') : '';
+    const path = post.kind === 'matchup' && post.ids ? comparePath(post.ids) : '/';
+    const link = taggedLink({ site, source: utmSource, medium: utmMedium, campaign: label(post), path });
+    const caption = rawCaption ? `${rawCaption.trimEnd()}\n\n🔗 ${link}` : `🔗 ${link}`;
+    writeFileSync(join(weekDir, `${base}.caption.txt`), caption);
     const g = GUIDE[post.kind];
     lines.push(`- **${DAYS[i]}** — ${label(post)} (\`${base}.png\`) · ${g.where} · ${g.when}`);
     entries.push({ day: DAYS[i], base, kind: post.kind, name: label(post), caption });
   }
   lines.push('', 'Post one per day; paste the matching `.caption.txt`. Stories: re-run with `--size 9x16`.');
   writeFileSync(join(weekDir, 'PLAN.md'), lines.join('\n') + '\n');
-  writeFileSync(join(weekDir, 'week.html'), dashboard(stamp, size, entries));
+  writeFileSync(join(weekDir, 'week.html'), dashboard(stamp, size, entries, bioLink));
   console.log(`\nWeek ready → ${weekDir}`);
   console.log(`Open the visual planner:  open "${join(weekDir, 'week.html')}"`);
 }
