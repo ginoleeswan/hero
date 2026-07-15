@@ -7,7 +7,9 @@ import { supabase } from '../supabase';
 const SESSION_KEY = 'mythique_sid';
 
 // Stable per-browser id so we can count unique visitors without identifying them.
-function getSessionId(): string | null {
+// Exported so attribution writes (session_attribution) key off the SAME id — the
+// server join between a campaign touch and later page views depends on it.
+export function getSessionId(): string | null {
   if (typeof localStorage === 'undefined') return null;
   try {
     let sid = localStorage.getItem(SESSION_KEY);
@@ -35,7 +37,7 @@ function getDevice(): string {
 }
 
 // Referring host, only when it's a different origin (skip internal navigation).
-function getReferrerHost(): string | null {
+export function getReferrerHost(): string | null {
   if (typeof document === 'undefined' || !document.referrer) return null;
   try {
     const ref = new URL(document.referrer);

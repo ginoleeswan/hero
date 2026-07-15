@@ -28,6 +28,17 @@ export interface HeroViews {
   image: string | null;
   views: number;
 }
+/** A first-touch acquisition bucket: campaign/source → visitors + sign-ins. */
+export interface AcquisitionRow {
+  /** Display label — campaign, else source, else referrer, else 'direct'. */
+  label: string;
+  source: string | null;
+  campaign: string | null;
+  /** Distinct sessions first seen in the window from this bucket. */
+  visitors: number;
+  /** How many of those sessions were signed in on any page view. */
+  signups: number;
+}
 /** One recent page view for the live activity feed. `name` is set when the path
  *  is a character route that resolves to a hero. */
 export interface LiveHit {
@@ -56,6 +67,8 @@ export interface TrafficOverview {
   topHeroes: HeroViews[];
   /** Most recent views for the live feed, newest first. */
   live: LiveHit[];
+  /** First-touch acquisition by campaign/source. Empty until links are tagged. */
+  acquisition: AcquisitionRow[];
 }
 
 type OverviewJson = ({ authorized: false } | ({ authorized: true } & TrafficOverview)) | null;
@@ -87,5 +100,6 @@ export async function fetchTrafficOverview(days = 28): Promise<TrafficOverview |
     devices: json.devices,
     topHeroes: json.topHeroes ?? [],
     live: json.live ?? [],
+    acquisition: json.acquisition ?? [],
   };
 }

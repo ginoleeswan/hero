@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { track } from '@vercel/analytics';
+import { attributionEventProps, getAttribution } from './attribution';
 
 // Named product events sent to Vercel Web Analytics' custom-events stream, so
 // the dashboard measures the funnel (sign-ups, votes, favourites) — not just
@@ -15,7 +16,10 @@ type EventProps = Record<string, string | number | boolean | null>;
 export function trackEvent(name: AnalyticsEvent, props?: EventProps): void {
   if (Platform.OS !== 'web') return;
   try {
-    track(name, props);
+    // Tag every event with the first-touch marketing source (utm_source/medium/
+    // campaign), so the dashboard can break the funnel down by campaign. Explicit
+    // call-site props win on any key collision.
+    track(name, { ...attributionEventProps(getAttribution()), ...props });
   } catch {
     // Analytics must never break the user action that triggered it.
   }

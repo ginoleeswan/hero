@@ -20,6 +20,7 @@ import type {
   ReferrerViews,
   DeviceViews,
   HeroViews,
+  AcquisitionRow,
 } from '../../../../lib/db/traffic';
 
 const RANGES = [
@@ -85,6 +86,28 @@ function SignedSplit({ signedIn, anon }: { signedIn: number; anon: number }) {
   );
 }
 
+// Acquisition row: campaign/source label, a visitor bar, and a "N signed in"
+// caption — the funnel from a marketing source to actual accounts.
+function AcqRow({ row, max }: { row: AcquisitionRow; max: number }) {
+  const pct = max > 0 ? Math.max(4, Math.round((row.visitors / max) * 100)) : 0;
+  return (
+    <View style={s.barRow}>
+      <View style={s.barLabelWrap}>
+        <Text style={s.barLabel} numberOfLines={1}>
+          {row.label}
+        </Text>
+        <Text style={s.barVal}>{row.visitors.toLocaleString()}</Text>
+      </View>
+      <View style={s.barTrack}>
+        <View style={[s.barFill, { width: `${pct}%` }]} />
+      </View>
+      <Text style={s.acqCap} numberOfLines={1}>
+        {row.visitors.toLocaleString()} visitors · {row.signups.toLocaleString()} signed in
+      </Text>
+    </View>
+  );
+}
+
 // Top-hero row: rank thumbnail, name, view count, and a proportional bar.
 function HeroRow({ hero, max, onPress }: { hero: HeroViews; max: number; onPress: () => void }) {
   const pct = max > 0 ? Math.max(4, Math.round((hero.views / max) * 100)) : 0;
@@ -138,7 +161,8 @@ export function TrafficDomain({
     );
   }
 
-  const { totals, prev, audience, series, topHeroes, live, activeNow, today } = data;
+  const { totals, prev, audience, series, topHeroes, live, activeNow, today, acquisition } = data;
+  const acqMax = Math.max(1, ...acquisition.map((a) => a.visitors));
   const seriesViews = series.map((d) => d.views);
   const seriesVisitors = series.map((d) => d.visitors);
   const signedTotal = audience.signedIn + audience.anon;
@@ -220,6 +244,23 @@ export function TrafficDomain({
         </Panel>
       </Bento.Row>
 
+      {/* Acquisition — where visitors (and signups) come from, by tagged campaign */}
+      <Panel
+        title="Acquisition"
+        hint="First-touch by campaign · UTM-tagged links"
+        action={<Text style={s.kpiFoot}>{acquisition.length ? '' : 'tag your links →'}</Text>}
+      >
+        {acquisition.length === 0 ? (
+          <EmptyState text="No tagged campaigns yet. Add UTM tags to your TikTok bio link and post links — see docs/marketing/utm-attribution.md." />
+        ) : (
+          <View style={s.barList}>
+            {acquisition.map((a, i) => (
+              <AcqRow key={i} row={a} max={acqMax} />
+            ))}
+          </View>
+        )}
+      </Panel>
+
       {/* Breakdowns */}
       <Bento.Row narrow={narrow}>
         <Panel title="Top pages" hint="Grouped routes" style={s.flex1}>
@@ -288,6 +329,7 @@ const s = StyleSheet.create({
   barVal: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.navy },
   barTrack: { height: 6, borderRadius: 999, backgroundColor: '#efe6d6', overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 999, backgroundColor: COLORS.orange },
+  acqCap: { fontFamily: 'Nunito_400Regular', fontSize: 10.5, color: COLORS.grey },
   locked: { alignItems: 'center', gap: 8, paddingVertical: 24 },
   lockedText: {
     fontFamily: 'Nunito_400Regular',

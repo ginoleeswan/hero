@@ -137,6 +137,15 @@ node scripts/social/ads/ad-web-hero.mjs --size all   # 16x9 | og | wide
 node scripts/social/ads/batch-week.mjs               # 4x5 feed; --size 9x16 for stories
 node scripts/social/ads/batch-week.mjs --dry-run     # print the plan only
 open "out/social/week-$(date +%F)/week.html"         # the planner
+
+# Each caption gets a UTM-tagged link (campaign = post label) + a bio link in the
+# planner, so every creative is measurable in admin → Traffic → Acquisition.
+# Defaults suit the organic IG/X track; override when repurposing for paid:
+node scripts/social/ads/batch-week.mjs --utm-source tiktok --utm-medium paid
+#   --site  https://mythique.app   (origin for the links)
+# Note: TikTok/IG-feed captions aren't clickable — the bio link carries their
+# attribution; the per-post link pays off on X and Story link stickers.
+# Playbook: docs/marketing/utm-attribution.md
 ```
 
 Shared: `ads/shell.mjs` (parametric `{w,h}` brand shell + disclaimer) and
