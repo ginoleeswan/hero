@@ -213,13 +213,13 @@ export default function WebPickOpponentScreen() {
     if (!art) return null;
     return {
       id: hero,
-      name: art.name ?? name ?? 'this hero',
+      name: art.name ?? name ?? 'this character',
       image_url: art.image_url ?? null,
       portrait_url: art.portrait_url ?? null,
     };
   })();
   const lockedSubject = subject ?? handoffSubject;
-  const subjectName = lockedSubject?.name ?? name ?? 'this hero';
+  const subjectName = lockedSubject?.name ?? name ?? 'this character';
   const showSuggestions =
     !debouncedQuery.trim() &&
     (rivals.length > 0 ||
@@ -366,7 +366,7 @@ export default function WebPickOpponentScreen() {
                         onPeek={setPeek}
                       />
                     )}
-                    <Text style={styles.sectionLabel}>All Heroes</Text>
+                    <Text style={styles.sectionLabel}>All Characters</Text>
                   </View>
                 )}
                 <View style={rosterGrid as object}>

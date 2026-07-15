@@ -170,7 +170,7 @@ export default function TitleScreen() {
   const heroesCard =
     heroes && heroes.length > 0 ? (
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Heroes in this Film</Text>
+        <Text style={styles.cardTitle}>Characters in this Film</Text>
         <View style={styles.cardDivider} />
         <HeroesInFilmRail heroes={heroes} inCard />
       </View>

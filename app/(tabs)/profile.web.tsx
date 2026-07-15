@@ -360,7 +360,7 @@ export default function WebProfileScreen() {
   const tasteInsight = [tasteAlignment, tasteTopUniverse].filter(Boolean).join(' · ');
   const showTaste = !!taste && taste.basedOn > 0 && (!!tasteInsight || tasteChips.length > 0);
   const tasteFootnote = taste
-    ? `Based on ${taste.basedOn} ${taste.basedOn === 1 ? 'hero' : 'heroes'} you've saved & viewed`
+    ? `Based on ${taste.basedOn} ${taste.basedOn === 1 ? 'character' : 'characters'} you've saved & viewed`
     : '';
 
   // Badges — derived from account age + favourites + matchup record + taste.
@@ -442,7 +442,7 @@ export default function WebProfileScreen() {
     {
       id: 'favourite',
       icon: 'heart-outline',
-      label: 'Save your first hero',
+      label: 'Save your first character',
       done: favourites.length > 0,
       onPress: () => router.push('/explore'),
     },
@@ -726,7 +726,7 @@ export default function WebProfileScreen() {
                     [mob.browseBtn, hovered && (mob.browseBtnHover as object)] as object
                   }
                 >
-                  <Text style={mob.browseBtnText}>Browse heroes</Text>
+                  <Text style={mob.browseBtnText}>Browse characters</Text>
                 </Pressable>
               </View>
             ) : (
@@ -1140,7 +1140,7 @@ export default function WebProfileScreen() {
                       [desk.browseBtn, hovered && (desk.browseBtnHover as object)] as object
                     }
                   >
-                    <Text style={desk.browseBtnText}>Browse heroes</Text>
+                    <Text style={desk.browseBtnText}>Browse characters</Text>
                   </Pressable>
                 </View>
               ) : (
@@ -1172,7 +1172,7 @@ export default function WebProfileScreen() {
                     }
                   >
                     <Ionicons name="add" size={26} color={COLORS.orange} />
-                    <Text style={desk.ghostText}>Add heroes</Text>
+                    <Text style={desk.ghostText}>Add characters</Text>
                   </Pressable>
                 </View>
               )}

@@ -187,6 +187,7 @@ export default function VersusHubWeb() {
           {rows.rivalries.length > 0 && (
             <Reveal>
               <MatchupRow
+                bleed={isDesktop ? 0 : contentPad}
                 icon="sword-cross"
                 kicker="Grudge Matches"
                 title="Greatest Rivalries"
@@ -211,6 +212,7 @@ export default function VersusHubWeb() {
           {rows.dream.length > 0 && (
             <Reveal>
               <MatchupRow
+                bleed={isDesktop ? 0 : contentPad}
                 icon="star-four-points"
                 kicker="Cross-Universe"
                 title="Dream Matches"
@@ -233,6 +235,7 @@ export default function VersusHubWeb() {
           {rows.goliath.length > 0 && (
             <Reveal>
               <MatchupRow
+                bleed={isDesktop ? 0 : contentPad}
                 icon="scale-unbalanced"
                 kicker="The Upsets"
                 title="David vs Goliath"
@@ -255,6 +258,7 @@ export default function VersusHubWeb() {
           {rows.teams.length > 0 && (
             <Reveal>
               <MatchupRow
+                bleed={isDesktop ? 0 : contentPad}
                 icon="account-group"
                 kicker="Squads"
                 title="Team Battles"
@@ -277,7 +281,7 @@ export default function VersusHubWeb() {
 
           {/* Public Enemies — flush so it aligns with the matchup rows above. */}
           <Reveal>
-            <HallOfInfamy villains={mostFeared} flush />
+            <HallOfInfamy villains={mostFeared} flush bleed={contentPad} />
           </Reveal>
         </View>
       </View>

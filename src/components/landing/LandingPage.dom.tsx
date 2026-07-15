@@ -3258,7 +3258,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                   'Rich profiles — powers, origins, abilities & trivia',
                   'Rivalry and family-tree graphs you can explore',
                   'Head-to-head matchups with real power stats',
-                  'Film, TV and game appearances for every hero',
+                  'Film, TV and game appearances for every character',
                 ].map((item, i) => (
                   <li key={i}>
                     <span className="check" aria-hidden="true">

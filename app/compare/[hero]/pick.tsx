@@ -116,7 +116,7 @@ export default function PickOpponentScreen() {
   const header = (
     <>
       <View style={[styles.stage, { paddingTop: headerHeight + 12 }]}>
-        <VsAnchor subject={subject} name={name ?? 'this hero'} tone="stage" />
+        <VsAnchor subject={subject} name={name ?? 'this character'} tone="stage" />
         <View style={styles.intent}>
           <Text style={styles.eyebrow}>Choose your challenger</Text>
         </View>
@@ -168,7 +168,7 @@ export default function PickOpponentScreen() {
                 onPeek={openPeek}
               />
             )}
-            <Text style={[styles.sectionLabel, styles.allLabel]}>All Heroes</Text>
+            <Text style={[styles.sectionLabel, styles.allLabel]}>All Characters</Text>
           </>
         )}
       </View>

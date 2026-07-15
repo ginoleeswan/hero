@@ -844,10 +844,10 @@ export default function CharacterScreen() {
           stampColor={COLORS.red}
           icon="person"
           headline="Whereabouts unknown"
-          subline="No such hero in the archive."
+          subline="No such character in the archive."
           actions={[
             { label: 'Back to Discover', primary: true, onPress: () => router.replace('/') },
-            { label: 'Search heroes', onPress: () => router.replace('/search') },
+            { label: 'Search characters', onPress: () => router.replace('/search') },
           ]}
         />
       </View>

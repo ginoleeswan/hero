@@ -26,8 +26,8 @@ export function MatchupCard({ a, b, onOpen, fit = 'cover', large = false }: Prop
   return (
     <Pressable
       onPress={onOpen}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [s.card, { width: pw * 2 + 2 }, hovered && (s.cardHover as object)] as object
+      style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+        [s.card, { width: pw * 2 + 2 }, (hovered || pressed) && (s.cardHover as object)] as object
       }
     >
       <View style={s.duo}>

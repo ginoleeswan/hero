@@ -86,6 +86,9 @@ export function useCategoryHeroes(slug: CategorySlug | null, filters: CategoryFi
       }),
     getNextPageParam: (lastPage, allPages) =>
       lastPage.heroes.length === CATEGORY_PAGE_SIZE ? allPages.length : undefined,
+    // Filter/search changes keep the previous grid on screen (dimmed) instead
+    // of flashing the whole page back to skeletons — same as the search grid.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -105,6 +108,9 @@ export function useUniverseHeroes(term: string | null, filters: CategoryFilters)
       }),
     getNextPageParam: (lastPage, allPages) =>
       lastPage.heroes.length === CATEGORY_PAGE_SIZE ? allPages.length : undefined,
+    // Filter/search changes keep the previous grid on screen (dimmed) instead
+    // of flashing the whole page back to skeletons — same as the search grid.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -124,6 +130,9 @@ export function useFranchiseHeroes(term: string | null, filters: CategoryFilters
       }),
     getNextPageParam: (lastPage, allPages) =>
       lastPage.heroes.length === CATEGORY_PAGE_SIZE ? allPages.length : undefined,
+    // Filter/search changes keep the previous grid on screen (dimmed) instead
+    // of flashing the whole page back to skeletons — same as the search grid.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -143,6 +152,9 @@ export function useTeamHeroes(teamName: string | null, filters: CategoryFilters)
       }),
     getNextPageParam: (lastPage, allPages) =>
       lastPage.heroes.length === CATEGORY_PAGE_SIZE ? allPages.length : undefined,
+    // Filter/search changes keep the previous grid on screen (dimmed) instead
+    // of flashing the whole page back to skeletons — same as the search grid.
+    placeholderData: keepPreviousData,
   });
 }
 

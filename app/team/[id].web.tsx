@@ -379,7 +379,11 @@ export default function WebTeamScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.activeStripContent as object}
+            // Bleed past the strip's own padding so chips scroll off the screen edge.
+            style={{ marginHorizontal: -contentPad } as object}
+            contentContainerStyle={
+              [styles.activeStripContent, { paddingHorizontal: contentPad }] as object
+            }
           >
             <ActiveFilterChips slug={null} filters={filters} setFilter={setFilter} />
             <Pressable onPress={reset} style={styles.stripClear as object}>

@@ -36,11 +36,11 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
         {/* Featured #1 — dominates the left column */}
         <Pressable
           onPress={() => onPress(String(lead.id))}
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [s.lead, hovered && (s.leadHover as object)] as object
+          style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+            [s.lead, (hovered || pressed) && (s.leadHover as object)] as object
           }
         >
-          {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
+          {({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) => (
             <>
               <HeroImage
                 id={String(lead.id)}
@@ -68,7 +68,7 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
               {/* Variant-cover foil: a diagonal light sweep crosses the #1 card
                   on hover — the grail item gets the holo treatment. */}
               <View
-                style={[s.foil, hovered && (s.foilOn as object)] as object}
+                style={[s.foil, (hovered || pressed) && (s.foilOn as object)] as object}
                 pointerEvents="none"
               />
             </>
@@ -81,11 +81,11 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
             <Pressable
               key={h.id}
               onPress={() => onPress(String(h.id))}
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [s.row, hovered && (s.rowHover as object)] as object
+              style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+                [s.row, (hovered || pressed) && (s.rowHover as object)] as object
               }
             >
-              {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
+              {({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) => (
                 <>
                   <Text style={[s.rank, { color: rankColor(i) }] as object}>
                     {String(i + 2).padStart(2, '0')}

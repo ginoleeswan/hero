@@ -2,21 +2,29 @@
 import { dayStamp, matchupVoteKey, statSplit, statLead } from '../../../src/lib/home/matchupVote';
 
 describe('dayStamp', () => {
-  it('formats the local calendar day as YYYY-MM-DD with zero-padding', () => {
-    expect(dayStamp(new Date(2026, 0, 5))).toBe('2026-01-05');
-    expect(dayStamp(new Date(2026, 11, 31))).toBe('2026-12-31');
+  it('formats the UTC calendar day as YYYY-MM-DD with zero-padding', () => {
+    // UTC-constructed dates: dayStamp rotates on the server's UTC calendar
+    // (matches daily_debates/todayIso), NOT the device's local one.
+    expect(dayStamp(new Date(Date.UTC(2026, 0, 5)))).toBe('2026-01-05');
+    expect(dayStamp(new Date(Date.UTC(2026, 11, 31)))).toBe('2026-12-31');
+  });
+
+  it('uses the UTC day even when the local calendar disagrees', () => {
+    // 23:30 UTC on Jan 5 is already Jan 6 in UTC+east timezones — the stamp
+    // must stay on the UTC day.
+    expect(dayStamp(new Date(Date.UTC(2026, 0, 5, 23, 30)))).toBe('2026-01-05');
   });
 });
 
 describe('matchupVoteKey', () => {
   it('namespaces by day and pair so a reschedule never reads a stale pick', () => {
-    const d = new Date(2026, 5, 17);
+    const d = new Date(Date.UTC(2026, 5, 17));
     expect(matchupVoteKey('a1', 'b2', d)).toBe('matchup-vote:2026-06-17:a1-b2');
   });
 
   it('changes when the day changes', () => {
-    const a = matchupVoteKey('x', 'y', new Date(2026, 5, 17));
-    const b = matchupVoteKey('x', 'y', new Date(2026, 5, 18));
+    const a = matchupVoteKey('x', 'y', new Date(Date.UTC(2026, 5, 17)));
+    const b = matchupVoteKey('x', 'y', new Date(Date.UTC(2026, 5, 18)));
     expect(a).not.toBe(b);
   });
 });

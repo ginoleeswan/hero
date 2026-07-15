@@ -32,11 +32,11 @@ export function WebHeroCard({
   return (
     <Pressable
       onPress={onPress}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+      style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
         [
           styles.card,
           featured && (styles.featured as object),
-          hovered && (styles.cardHover as object),
+          (hovered || pressed) && (styles.cardHover as object),
         ] as object
       }
     >

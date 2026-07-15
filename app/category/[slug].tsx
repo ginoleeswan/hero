@@ -70,7 +70,7 @@ const CATEGORY_TAGLINES: Record<CategorySlug, string> = {
   'anti-heroes': 'Heroes who break the rules to do what’s right.',
   marvel: 'Icons of the Marvel Universe.',
   dc: 'Legends of the DC Universe.',
-  image: 'Creator-owned heroes from Image Comics.',
+  image: 'Creator-owned characters from Image Comics.',
   'dark-horse': 'Heroes and villains from Dark Horse.',
   strongest: 'Raw power at the very top of the scale.',
   'most-intelligent': 'The sharpest minds in comics.',
@@ -169,7 +169,7 @@ export default function CategoryScreen() {
   const universeTerm = isUniverse && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
   const title = categorySlug
     ? CATEGORY_LABELS[categorySlug]
-    : (franchiseTerm ?? brand?.name ?? slug ?? 'Heroes');
+    : (franchiseTerm ?? brand?.name ?? slug ?? 'Characters');
 
   const [filters, setFilters] = useState<CategoryFilters>(() => ({
     ...DEFAULT_FILTERS,
@@ -518,7 +518,7 @@ export default function CategoryScreen() {
           onEndReachedThreshold={0.3}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Text style={styles.empty}>No heroes found</Text>
+              <Text style={styles.empty}>No characters found</Text>
             </View>
           }
           ListFooterComponent={

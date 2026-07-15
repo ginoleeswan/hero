@@ -59,7 +59,7 @@ function CanvasNode({
           <Text style={styles.heroName} numberOfLines={1}>
             {heroName}
           </Text>
-          <Text style={styles.heroTag}>THIS HERO</Text>
+          <Text style={styles.heroTag}>THIS CHARACTER</Text>
         </View>
       </View>
     );

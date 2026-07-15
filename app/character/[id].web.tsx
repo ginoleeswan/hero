@@ -606,10 +606,10 @@ export default function WebCharacterScreen() {
         stampColor={COLORS.red}
         icon="person"
         headline="Whereabouts unknown"
-        subline="No such hero in the archive."
+        subline="No such character in the archive."
         actions={[
           { label: 'Back to Discover', primary: true, onPress: () => router.replace('/') },
-          { label: 'Search heroes', onPress: () => router.replace('/search') },
+          { label: 'Search characters', onPress: () => router.replace('/search') },
         ]}
       />
     );
@@ -642,7 +642,7 @@ export default function WebCharacterScreen() {
 
   // Per-page SEO: title from name + publisher, description from the bio (HTML
   // stripped + truncated), OG image from the hero's portrait.
-  const seoPublisher = stats.biography.publisher || 'Superhero';
+  const seoPublisher = stats.biography.publisher || 'Character';
   const seoRaw =
     details.summary ||
     details.description ||
@@ -1106,7 +1106,7 @@ export default function WebCharacterScreen() {
                                 [styles.percentileBadgeText, { color: theme.accent }] as object
                               }
                             >
-                              Stronger than {percentile}% of heroes
+                              Stronger than {percentile}% of characters
                             </Text>
                           </View>
                         ) : null}
@@ -1989,7 +1989,7 @@ export default function WebCharacterScreen() {
                           <Text
                             style={[styles.percentileBadgeText, { color: theme.accent }] as object}
                           >
-                            Stronger than {percentile}% of heroes
+                            Stronger than {percentile}% of characters
                           </Text>
                         </View>
                       ) : null}

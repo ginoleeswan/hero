@@ -122,7 +122,7 @@ const GUEST_BENEFITS = [
     badge: 'accountIconBadgeOrange' as const,
     tint: COLORS.orange,
     title: 'Save your favourites',
-    sub: 'Build a personal collection of heroes',
+    sub: 'Build a personal collection of characters',
   },
   {
     icon: 'color-palette' as const,
@@ -348,7 +348,7 @@ export default function ProfileScreen() {
   const tasteInsight = [tasteAlignment, tasteTopUniverse].filter(Boolean).join(' · ');
   const showTaste = !!taste && taste.basedOn > 0 && (!!tasteInsight || tasteChips.length > 0);
   const tasteFootnote = taste
-    ? `Based on ${taste.basedOn} ${taste.basedOn === 1 ? 'hero' : 'heroes'} you've saved & viewed`
+    ? `Based on ${taste.basedOn} ${taste.basedOn === 1 ? 'character' : 'characters'} you've saved & viewed`
     : '';
 
   // Badges — derived from account age + favourites + matchup record + taste.
@@ -426,7 +426,7 @@ export default function ProfileScreen() {
     {
       id: 'favourite',
       icon: 'heart-outline',
-      label: 'Save your first hero',
+      label: 'Save your first character',
       done: favourites.length > 0,
       onPress: () => router.push('/explore'),
     },
@@ -789,7 +789,7 @@ export default function ProfileScreen() {
                 style={styles.browseBtn}
                 activeOpacity={0.8}
               >
-                <Text style={styles.browseBtnText}>Browse heroes</Text>
+                <Text style={styles.browseBtnText}>Browse characters</Text>
               </TouchableOpacity>
             </View>
           ) : (

@@ -252,7 +252,7 @@ export default function WebSignupScreen() {
         <View style={styles.brandBottom}>
           <Text style={styles.brandTagline}>Join the{'\n'}Universe</Text>
           <Text style={styles.brandSub}>
-            Track your favourite heroes across{'\n'}Marvel, DC, and beyond.
+            Track your favourite characters across{'\n'}Marvel, DC, and beyond.
           </Text>
           <View style={styles.brandAccent} />
         </View>

@@ -45,8 +45,8 @@ export function CategoryPodGrid({
           <Pressable
             key={p.slug}
             onPress={() => onPress(p.slug)}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [g.tile, hovered && (g.tileHover as object)] as object
+            style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+              [g.tile, (hovered || pressed) && (g.tileHover as object)] as object
             }
           >
             <HeroImage

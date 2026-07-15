@@ -78,7 +78,7 @@ export function SectionDotRail({
 const styles = StyleSheet.create({
   rail: {
     position: 'fixed',
-    left: 14,
+    left: 'max(14px, env(safe-area-inset-left))' as unknown as number,
     top: '50%',
     transform: [{ translateY: '-50%' as unknown as number }],
     gap: 10,

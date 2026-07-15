@@ -11,6 +11,8 @@ import {
 } from '../constants/heroImages';
 
 interface HeroImageProps {
+  /** expo-image fetch priority — 'high' for above-the-fold cards. */
+  priority?: 'low' | 'normal' | 'high';
   id: string | number;
   name: string;
   imageUrl?: string | null;
@@ -58,6 +60,7 @@ export function HeroImage({
   blurhash,
   blurRadius,
   onLoad,
+  priority,
 }: HeroImageProps) {
   const [errored, setErrored] = useState(false);
 
@@ -73,6 +76,7 @@ export function HeroImage({
 
   return (
     <Image
+      priority={priority}
       source={source}
       contentFit={contentFit}
       contentPosition={contentPosition}

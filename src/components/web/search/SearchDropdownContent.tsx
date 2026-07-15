@@ -322,7 +322,13 @@ const styles = StyleSheet.create({
   // inner flex:1 scroll which collapsed and overlapped its button once other
   // sections shared the panel — hence one shared scroll area here.)
   wrap: { flexDirection: 'column', flex: 1, minHeight: 0 } as object,
-  scroll: { flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto' } as object,
+  scroll: {
+    flexDirection: 'column',
+    flex: 1,
+    minHeight: 0,
+    overflowY: 'auto',
+    scrollbarWidth: 'none', // no desktop scrollbar chrome on mobile web
+  } as object,
   viewAll: {
     flexShrink: 0,
     paddingVertical: 12,

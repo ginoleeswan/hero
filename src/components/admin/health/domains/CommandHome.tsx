@@ -145,6 +145,130 @@ export function CommandHome({
   });
   const series = traffic?.series ?? [];
 
+  // Extracted so mobile/desktop can order them differently (see Bento.Row below).
+  // The ops floor — a live cross-domain stream.
+  const activityPanel = (
+    <Panel
+      title="Live activity"
+      hint="Runs · views · engagement, as it happens"
+      style={s.flex13}
+      fill={!narrow}
+      scroll={false}
+    >
+      <ActivityFeed items={feed} narrow={narrow} />
+    </Panel>
+  );
+  // Needs-you board (content-sized so its primary action is never clipped) +
+  // traffic pulse (absorbs the remaining height).
+  const attentionCol = (
+    <View style={[s.rightCol, !narrow && s.rightColFill]}>
+      <Panel title="Needs attention">
+        {allClear ? (
+          <View style={s.empty}>
+            <Ionicons name="checkmark-done-circle" size={22} color={COLORS.green} />
+            <Text style={s.emptyText}>All clear — nothing needs you right now.</Text>
+          </View>
+        ) : (
+          <Well>
+            {inboxCount > 0 ? (
+              <AttentionRow
+                icon="mail-unread-outline"
+                tint={COLORS.yellow}
+                count={inboxCount.toLocaleString()}
+                label="in the inbox"
+                onPress={onOpenInbox}
+              />
+            ) : null}
+            {needsYou > 0 ? (
+              <AttentionRow
+                icon="git-pull-request-outline"
+                tint={COLORS.yellow}
+                count={needsYou.toLocaleString()}
+                label="need your review"
+                onPress={onOpenBuild}
+              />
+            ) : null}
+            {failed > 0 ? (
+              <AttentionRow
+                icon="close-circle-outline"
+                tint={COLORS.red}
+                count={failed.toLocaleString()}
+                label="failed to enrich"
+                onPress={onOpenBuild}
+              />
+            ) : null}
+            {toEnrich > 0 ? (
+              <AttentionRow
+                icon="construct-outline"
+                tint={COLORS.orange}
+                count={toEnrich.toLocaleString()}
+                label="waiting to enrich"
+                onPress={onOpenBuild}
+              />
+            ) : null}
+            {overBudget ? (
+              <AttentionRow
+                icon="lock-closed-outline"
+                tint={COLORS.red}
+                count="!"
+                label="over monthly AI budget"
+                onPress={onOpenSpend}
+              />
+            ) : null}
+          </Well>
+        )}
+        {!allClear && toEnrich > 0 && !overBudget ? (
+          <Button
+            tone="primary"
+            icon="play"
+            label="Run enrichment now"
+            onPress={onRunDrain}
+            loading={draining}
+            style={s.runBtn}
+          />
+        ) : null}
+      </Panel>
+  
+      <Panel
+        title="Traffic pulse"
+        hint={traffic ? `Last ${traffic.rangeDays} days` : undefined}
+        style={s.stack}
+        fill={!narrow}
+        scroll={false}
+      >
+        {series.length >= 2 ? (
+          <View style={[s.pulseWrap, !narrow && s.pulseWrapFill]}>
+            {/* Headline stats lead; the trend fills the rest of the cell. */}
+            <View style={s.pulseStats}>
+              <PulseStat value={`${traffic?.activeNow ?? 0}`} label="active now" live />
+              <PulseStat
+                value={(traffic?.today.visitors ?? 0).toLocaleString()}
+                label="today"
+              />
+              <PulseStat
+                value={(traffic?.totals.visitors ?? 0).toLocaleString()}
+                label={`${traffic?.rangeDays ?? 0}d total`}
+              />
+            </View>
+            <View style={!narrow ? s.sparkFill : s.sparkFixed}>
+              <Sparkline
+                values={series.map((pt) => pt.visitors)}
+                color={COLORS.blue}
+                grow={!narrow}
+                height={narrow ? 88 : 120}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={s.empty}>
+            <Ionicons name="pulse-outline" size={18} color={COLORS.grey} />
+            <Text style={s.emptyText}>Traffic history fills in as visitors arrive.</Text>
+          </View>
+        )}
+      </Panel>
+    </View>
+  );
+
   return (
     <Bento fill={!narrow}>
       <LivePulse
@@ -161,126 +285,21 @@ export function CommandHome({
 
       <VitalsCluster vitals={vitals} />
 
+      {/* Mobile stacks the row's children — lead with the ACTIONABLE board
+          ("Needs attention" + pulse) and let the passive activity feed drop to
+          the bottom; desktop keeps activity left / attention right. */}
       <Bento.Row narrow={narrow} fill>
-        {/* The ops floor — a live cross-domain stream. */}
-        <Panel
-          title="Live activity"
-          hint="Runs · views · engagement, as it happens"
-          style={s.flex13}
-          fill={!narrow}
-          scroll={false}
-        >
-          <ActivityFeed items={feed} narrow={narrow} />
-        </Panel>
-
-        {/* Right column: needs-you board (content-sized so its primary action is
-            never clipped) + traffic pulse (absorbs the remaining height). */}
-        <View style={[s.rightCol, !narrow && s.rightColFill]}>
-          <Panel title="Needs attention">
-            {allClear ? (
-              <View style={s.empty}>
-                <Ionicons name="checkmark-done-circle" size={22} color={COLORS.green} />
-                <Text style={s.emptyText}>All clear — nothing needs you right now.</Text>
-              </View>
-            ) : (
-              <Well>
-                {inboxCount > 0 ? (
-                  <AttentionRow
-                    icon="mail-unread-outline"
-                    tint={COLORS.yellow}
-                    count={inboxCount.toLocaleString()}
-                    label="in the inbox"
-                    onPress={onOpenInbox}
-                  />
-                ) : null}
-                {needsYou > 0 ? (
-                  <AttentionRow
-                    icon="git-pull-request-outline"
-                    tint={COLORS.yellow}
-                    count={needsYou.toLocaleString()}
-                    label="need your review"
-                    onPress={onOpenBuild}
-                  />
-                ) : null}
-                {failed > 0 ? (
-                  <AttentionRow
-                    icon="close-circle-outline"
-                    tint={COLORS.red}
-                    count={failed.toLocaleString()}
-                    label="failed to enrich"
-                    onPress={onOpenBuild}
-                  />
-                ) : null}
-                {toEnrich > 0 ? (
-                  <AttentionRow
-                    icon="construct-outline"
-                    tint={COLORS.orange}
-                    count={toEnrich.toLocaleString()}
-                    label="waiting to enrich"
-                    onPress={onOpenBuild}
-                  />
-                ) : null}
-                {overBudget ? (
-                  <AttentionRow
-                    icon="lock-closed-outline"
-                    tint={COLORS.red}
-                    count="!"
-                    label="over monthly AI budget"
-                    onPress={onOpenSpend}
-                  />
-                ) : null}
-              </Well>
-            )}
-            {!allClear && toEnrich > 0 && !overBudget ? (
-              <Button
-                tone="primary"
-                icon="play"
-                label="Run enrichment now"
-                onPress={onRunDrain}
-                loading={draining}
-                style={s.runBtn}
-              />
-            ) : null}
-          </Panel>
-
-          <Panel
-            title="Traffic pulse"
-            hint={traffic ? `Last ${traffic.rangeDays} days` : undefined}
-            style={s.stack}
-            fill={!narrow}
-            scroll={false}
-          >
-            {series.length >= 2 ? (
-              <View style={[s.pulseWrap, !narrow && s.pulseWrapFill]}>
-                {/* Headline stats lead; the trend fills the rest of the cell. */}
-                <View style={s.pulseStats}>
-                  <PulseStat value={`${traffic?.activeNow ?? 0}`} label="active now" live />
-                  <PulseStat
-                    value={(traffic?.today.visitors ?? 0).toLocaleString()}
-                    label="today"
-                  />
-                  <PulseStat
-                    value={(traffic?.totals.visitors ?? 0).toLocaleString()}
-                    label={`${traffic?.rangeDays ?? 0}d total`}
-                  />
-                </View>
-                <View style={!narrow ? s.sparkFill : s.sparkFixed}>
-                  <Sparkline
-                    values={series.map((pt) => pt.visitors)}
-                    color={COLORS.blue}
-                    grow={!narrow}
-                    height={narrow ? 88 : 120}
-                  />
-                </View>
-              </View>
-            ) : (
-              <View style={s.empty}>
-                <Ionicons name="pulse-outline" size={18} color={COLORS.grey} />
-                <Text style={s.emptyText}>Traffic history fills in as visitors arrive.</Text>
-              </View>
-            )}
-          </Panel>
-        </View>
+        {narrow ? (
+          <>
+            {attentionCol}
+            {activityPanel}
+          </>
+        ) : (
+          <>
+            {activityPanel}
+            {attentionCol}
+          </>
+        )}
       </Bento.Row>
     </Bento>
   );
