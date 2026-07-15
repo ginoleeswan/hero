@@ -64,15 +64,18 @@ export default function Root({ children }: PropsWithChildren) {
 }
 
 const rootStyle = `
-/* Fill the FULL dynamic viewport — including behind the iOS status bar and home
-   indicator. Expo's reset injects \`height: 100%\`, which on iOS Safari resolves to
-   the chrome-excluded box, so the app gets boxed between the status bar and
-   toolbar and the safe-area zones show the bare navy backdrop (the "bands").
-   100dvh tracks the real viewport; !important is needed to beat Expo's
-   same-selector reset, and the plain 100% above is the fallback for old engines. */
+/* Fill the FULL viewport — including behind the iOS status bar, home indicator
+   and bottom toolbar. Expo's reset injects \`height: 100%\`, which on iOS Safari
+   resolves to the chrome-excluded box, so the app gets boxed between the status
+   bar and toolbar and the safe-area zones show the bare navy backdrop (the
+   "bands"). 100lvh (LARGE viewport) is deliberate over 100dvh: dvh re-evaluates
+   on every toolbar collapse/reveal, re-laying-out the entire app mid-gesture,
+   and it stops ABOVE the collapsed toolbar; lvh is stable and bleeds the shell
+   under the toolbar glass (constant-ink rule). !important beats Expo's
+   same-selector reset; the plain 100% above is the fallback for old engines. */
 html, body, #root {
   height: 100%;
-  height: 100dvh !important;
+  height: 100lvh !important;
 }
 /* The document's DEFAULT background. The iOS Safari status-bar inset and the
    frosted toolbar show whatever the body background is at that moment, so the

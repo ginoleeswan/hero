@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
   // Grows with content (not `flex: 1`, which clamps to one viewport and breaks
   // the sticky controls bar past the first screen of scroll — the document, not
   // this View, is the scroller).
-  root: { minHeight: '100vh' as unknown as number, backgroundColor: SURFACE.ink },
+  root: { minHeight: '100lvh' as unknown as number, backgroundColor: SURFACE.ink },
 
   // ── Sticky header (ink→navy gradient) ───────────────────────────────────────
   header: {

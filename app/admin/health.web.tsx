@@ -422,6 +422,8 @@ const styles = StyleSheet.create({
   // Pull-to-refresh spinner — pinned just below the floating nav (64 = TOPBAR_HEIGHT).
   ptr: {
     position: 'fixed',
+    transform: 'translateZ(0)',
+    willChange: 'transform',
     top: `calc(64px + env(safe-area-inset-top) + 6px)` as unknown as number,
     left: 0,
     right: 0,

@@ -178,8 +178,9 @@ function WebAuthGate({ fontsReady }: { fontsReady: boolean }) {
 }
 
 export default function WebRootLayout() {
-  // Expo's single web output ignores app/+html.tsx, so paint the document
-  // background deep-navy at runtime — otherwise the white default shows through
+  // app/+html.tsx paints the document navy at build time (output: 'static'
+  // renders it); this runtime repaint is belt-and-suspenders for any path that
+  // bypasses the static shell — otherwise the white default shows through
   // wherever the app root doesn't fully cover (top strip, overscroll).
   useEffect(() => {
     if (typeof document === 'undefined') return;

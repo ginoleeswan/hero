@@ -731,7 +731,7 @@ const styles = StyleSheet.create({
   } as object,
   // ── Mobile fixed search header ─────────────────────────────────────────────
   // position:fixed, NOT sticky. The app scrolls the document while every flex
-  // ancestor is clamped to 100dvh (#root { height: 100dvh }), so the containing
+  // ancestor is clamped to 100dvh (#root { height: 100lvh }), so the containing
   // block for a sticky child is only one viewport tall — sticky would release and
   // scroll away after the first screenful. Fixed pins it to the viewport like the
   // global TopBar; translateZ(0) forces a GPU layer so iOS Safari keeps it pinned
