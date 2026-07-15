@@ -447,9 +447,9 @@ function HistoryRow({
   const summary = [...latestByPlatform.values()]
     .map((r) => {
       const bits = [
-        fmtCount(r.views) && `👁 ${fmtCount(r.views)}`,
-        fmtCount(r.likes) && `❤️ ${fmtCount(r.likes)}`,
-        fmtCount(r.comments) && `💬 ${fmtCount(r.comments)}`,
+        fmtCount(r.views) && `${fmtCount(r.views)} views`,
+        fmtCount(r.likes) && `${fmtCount(r.likes)} likes`,
+        fmtCount(r.comments) && `${fmtCount(r.comments)} comments`,
       ].filter(Boolean);
       return `${r.platform}: ${bits.join(' ')}`;
     })
@@ -863,7 +863,7 @@ export function SocialDomain() {
             </View>
             <View style={styles.streakMeta}>
               <Text style={styles.streakText}>
-                {streak > 0 ? `🔥 ${streak}-day streak` : 'Start your streak today'}
+                {streak > 0 ? `${streak}-day streak` : 'Start your streak today'}
               </Text>
               <Text style={styles.streakSub}>
                 {monthlyDone}/{monthlyAll.length} this month
