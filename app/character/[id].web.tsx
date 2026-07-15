@@ -1335,7 +1335,7 @@ export default function WebCharacterScreen() {
                             {groups.film.length > 0 ? (
                               <>
                                 <Text style={styles.cardTitle}>
-                                  On Screen ({groups.film.length})
+                                  On Screen · {groups.film.length}
                                 </Text>
                                 <View style={styles.cardDivider} />
                                 <MovieStrip
@@ -1349,7 +1349,7 @@ export default function WebCharacterScreen() {
                             {groups.tv.length > 0 ? (
                               <View style={groups.film.length > 0 ? { marginTop: 22 } : undefined}>
                                 <Text style={styles.cardTitle}>
-                                  Television ({groups.tv.length})
+                                  Television · {groups.tv.length}
                                 </Text>
                                 <View style={styles.cardDivider} />
                                 <MovieStrip
@@ -2171,7 +2171,7 @@ export default function WebCharacterScreen() {
                             <>
                               <View style={styles.mSectionHead}>
                                 <Text style={styles.mSectionTitle}>
-                                  On Screen ({groups.film.length})
+                                  On Screen · {groups.film.length}
                                 </Text>
                                 <View style={styles.mSectionDivider} />
                               </View>
@@ -2189,7 +2189,7 @@ export default function WebCharacterScreen() {
                             <View style={groups.film.length > 0 ? styles.mSubBlock : undefined}>
                               <View style={styles.mSectionHead}>
                                 <Text style={styles.mSectionTitle}>
-                                  Television ({groups.tv.length})
+                                  Television · {groups.tv.length}
                                 </Text>
                                 <View style={styles.mSectionDivider} />
                               </View>
@@ -3416,6 +3416,7 @@ const styles = StyleSheet.create({
   cardDivider: { height: 1, backgroundColor: '#ede5da', marginBottom: 14 },
 
   percentileBadge: {
+    flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -3424,7 +3425,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
-  percentileBadgeText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 12 },
+  percentileBadgeText: {
+    flexShrink: 1, fontFamily: 'Nunito_800ExtraBold', fontSize: 12 },
 
   // ── Mobile native-style immersive layout ──
   mHero: {
@@ -3630,6 +3632,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 14,
+    // The percentile copy varies ("Stronger than 84% of characters") — wrap
+    // instead of overflowing the viewport (which widened the document and
+    // painted an ink band down the whole page's right edge).
+    flexWrap: 'wrap',
+    gap: 8,
   },
   mStatFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   mSection: { paddingTop: 18 },
