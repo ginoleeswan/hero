@@ -126,13 +126,13 @@ function WebPickSkeleton() {
       <View style={[styles.skelLabel, { width: 130 }] as object} />
       <View style={styles.skelRail as object}>
         {Array.from({ length: 8 }).map((_, i) => (
-          <CardSkeleton key={i} width={138} height={196} />
+          <CardSkeleton key={i} width={138} height={196} tone="light" />
         ))}
       </View>
       <View style={[styles.skelLabel, { width: 96, marginTop: 6 }] as object} />
       <View style={rosterGrid as object}>
         {Array.from({ length: 12 }).map((_, i) => (
-          <CardSkeleton key={i} fill />
+          <CardSkeleton key={i} fill tone="light" />
         ))}
       </View>
     </View>
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   skelLabel: {
     height: 12,
     borderRadius: 5,
-    backgroundColor: 'rgba(41,60,67,0.1)',
+    backgroundColor: 'rgba(41,60,67,0.12)',
     marginBottom: 16,
   },
   skelRail: {

@@ -2907,7 +2907,8 @@ const sk = StyleSheet.create({
     zIndex: 1,
   },
   mPad: { paddingHorizontal: 20, paddingTop: 18 },
-  mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
+  // Flat like the live Power Profile section (the inset card chrome is gone).
+  mStatsCard: { paddingVertical: 8 },
 });
 
 const styles = StyleSheet.create({
@@ -3619,7 +3620,8 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
   },
   mFamilyBlock: { paddingHorizontal: 20, paddingTop: 18 },
-  mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
+  // Flat like the live Power Profile section (the inset card chrome is gone).
+  mStatsCard: { paddingVertical: 8 },
   mStatRows: { gap: 14 },
   mStatTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
   mStatFooter: {
