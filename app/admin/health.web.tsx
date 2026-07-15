@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useIsAdmin } from '../../src/lib/query/heroDetailQueries';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
+import { readCachedAdminFlag, writeCachedAdminFlag } from '../../src/hooks/useCachedAdminFlag';
 import { LogoLoader } from '../../src/components/ui/LogoLoader';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import {
@@ -94,18 +95,28 @@ export default function AdminHealthScreen() {
   // Admin gate — reuse the shared useIsAdmin query so it can't collide with the
   // character pages on the ['profile', id] cache key (both store a boolean).
   const adminQ = useIsAdmin(user?.id);
+  const gateResolved = !authLoading && (!user || adminQ.isSuccess || adminQ.isError);
+  const isAdmin = adminQ.data === true;
+  // Returning admins start data queries IMMEDIATELY: the cached flag skips the
+  // two serial round-trips (session load -> admin check) that used to gate
+  // every fetch. Safe to be optimistic — the admin RPCs re-verify server-side
+  // (SECURITY DEFINER + is_admin), so a stale flag just yields empty results
+  // before the redirect fires.
+  const [cachedAdmin] = useState(readCachedAdminFlag);
+  const canQuery = (gateResolved && isAdmin) || cachedAdmin;
+  useEffect(() => {
+    if (adminQ.isSuccess) writeCachedAdminFlag(isAdmin);
+  }, [adminQ.isSuccess, isAdmin]);
   const unbrandedQ = useQuery({
     queryKey: ['unbrandedHeroes'],
     queryFn: () => listUnbrandedHeroes(300),
-    enabled: !!user,
+    enabled: !!user || cachedAdmin,
   });
   const openReportsQ = useQuery({
     queryKey: ['reportsQueue', 'open'],
     queryFn: () => fetchReportsQueue('open'),
-    enabled: !!user,
+    enabled: !!user || cachedAdmin,
   });
-  const gateResolved = !authLoading && (!user || adminQ.isSuccess || adminQ.isError);
-  const isAdmin = adminQ.data === true;
   useEffect(() => {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
@@ -114,7 +125,7 @@ export default function AdminHealthScreen() {
   const reviewQ = useQuery({
     queryKey: ['reviewQueue'],
     queryFn: () => getReviewQueue(),
-    enabled: gateResolved && isAdmin,
+    enabled: canQuery,
     staleTime: 30_000,
   });
 
@@ -124,14 +135,14 @@ export default function AdminHealthScreen() {
   const trafficQ = useQuery({
     queryKey: ['trafficOverview', 28],
     queryFn: () => fetchTrafficOverview(28),
-    enabled: gateResolved && isAdmin && onHome,
+    enabled: canQuery && onHome,
     refetchInterval: 20_000, // the "now" tick
     staleTime: 15_000,
   });
   const communityQ = useQuery({
     queryKey: ['communityOverview'],
     queryFn: fetchCommunityOverview,
-    enabled: gateResolved && isAdmin && onHome,
+    enabled: canQuery && onHome,
     refetchInterval: 30_000,
     staleTime: 20_000,
   });
@@ -149,7 +160,7 @@ export default function AdminHealthScreen() {
     portraitsPendingQ,
     recentEnrichedQ,
   } = useCatalogQueries({
-    enabled: gateResolved && isAdmin,
+    enabled: canQuery,
     domain,
     historyLimit,
     ambiguousLimit,
@@ -422,6 +433,8 @@ const styles = StyleSheet.create({
   // Pull-to-refresh spinner — pinned just below the floating nav (64 = TOPBAR_HEIGHT).
   ptr: {
     position: 'fixed',
+    transform: 'translateZ(0)',
+    willChange: 'transform',
     top: `calc(64px + env(safe-area-inset-top) + 6px)` as unknown as number,
     left: 0,
     right: 0,

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { queryClient } from '../../src/lib/query/queryClient';
+import { exploreKeys } from '../../src/lib/query/keys';
 import {
   View,
   Text,
@@ -493,9 +495,15 @@ export default function ProfileScreen() {
   const handleUnfavourite = (hero: FavouriteHero) => {
     if (!user) return;
     const confirm = () => {
-      removeFavourite(user.id, hero.id).catch(() => {});
+      // Optimistic removal WITH rollback (mirrors the takes-delete pattern) —
+      // a swallowed failure left the UI and DB diverged.
       setFavourites((prev) => prev.filter((h) => h.id !== hero.id));
       showToast(`Removed ${hero.name}`);
+      void queryClient.invalidateQueries({ queryKey: exploreKeys.favourites(user.id) });
+      removeFavourite(user.id, hero.id).catch(() => {
+        setFavourites((prev) => (prev.some((h) => h.id === hero.id) ? prev : [hero, ...prev]));
+        showToast(`Couldn't remove ${hero.name} — try again`);
+      });
     };
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(

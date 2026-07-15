@@ -294,7 +294,14 @@ function ManageSide({
 }
 
 const s = StyleSheet.create({
-  overlay: { position: 'fixed', inset: 0, zIndex: 40, justifyContent: 'flex-end' } as object,
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 40,
+    justifyContent: 'flex-end',
+    // Real transform pins fixed elements on iOS under body{overflow:visible}.
+    transform: 'translateZ(0)',
+  } as object,
   sheet: {
     backgroundColor: '#101d24',
     borderTopLeftRadius: 22,

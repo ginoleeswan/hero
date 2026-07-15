@@ -47,6 +47,7 @@ export default function WebLoginScreen() {
   const passwordRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
+    if (!email.trim() || !password) return; // no empty round-trips
     setLoading(true);
     setError(null);
     const { error } = await signIn(email, password);
@@ -408,7 +409,7 @@ const styles = StyleSheet.create({
     padding: 13,
     marginBottom: 10,
     fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
+    fontSize: 16,
     color: COLORS.navy,
     borderWidth: 1,
     borderColor: '#e0d6ca',
@@ -433,7 +434,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
     fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
+    fontSize: 16,
     color: COLORS.navy,
     outlineStyle: 'none',
   } as object,

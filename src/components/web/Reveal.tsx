@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 
-type Phase = 'hidden' | 'shown' | 'instant';
+type Phase = 'hidden' | 'shown' | 'landed' | 'instant';
 
 export function Reveal({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   const ref = useRef<View>(null);
@@ -40,20 +40,31 @@ export function Reveal({ children, style }: { children: ReactNode; style?: Style
     return () => io.disconnect();
   }, [phase]);
 
+  // Once the rise finishes, drop the opacity/transform/transition styles
+  // entirely: a settled translateY(0) still holds a composited layer, and iOS
+  // Safari clips composited layers to the layout viewport while the bottom
+  // toolbar collapses — content in the under-toolbar band went unpainted.
+  useEffect(() => {
+    if (phase !== 'shown') return;
+    const t = setTimeout(() => setPhase('landed'), 650); // transition is 600ms
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  const settled = phase === 'landed' || phase === 'instant';
   const visible = phase !== 'hidden';
   return (
     <View
       ref={ref}
       style={
         [
-          {
-            opacity: visible ? 1 : 0,
-            transform: [{ translateY: visible ? 0 : 14 }],
-            transition:
-              phase === 'instant'
-                ? undefined
-                : 'opacity 600ms cubic-bezier(0.16, 1, 0.3, 1), transform 600ms cubic-bezier(0.16, 1, 0.3, 1)',
-          } as object,
+          settled
+            ? null
+            : ({
+                opacity: visible ? 1 : 0,
+                transform: [{ translateY: visible ? 0 : 14 }],
+                transition:
+                  'opacity 600ms cubic-bezier(0.16, 1, 0.3, 1), transform 600ms cubic-bezier(0.16, 1, 0.3, 1)',
+              } as object),
           style,
         ] as object
       }

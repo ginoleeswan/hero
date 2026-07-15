@@ -26,8 +26,11 @@ export interface TodaysMatchup {
 }
 
 // A stable seed for "today" — same pair all day, new pair tomorrow.
+// UTC on purpose: the server-curated daily_debates row is keyed by UTC date
+// (todayIso), so the fallback pair must rotate on the SAME calendar or the two
+// code paths disagree about "today" around midnight in non-UTC timezones.
 function dailySeed(d = new Date()): number {
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
 }
 
 const STAT_KEYS = ['intelligence', 'strength', 'speed', 'durability', 'power', 'combat'] as const;

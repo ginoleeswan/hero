@@ -480,7 +480,7 @@ export default function WebTeamScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { minHeight: '100vh' as unknown as number, backgroundColor: SURFACE.ink },
+  root: { minHeight: '100lvh' as unknown as number, backgroundColor: SURFACE.ink },
 
   // Mobile controls-only bar (transparent — sits just under the banner).
   header: { paddingTop: 6, paddingBottom: 4 } as object,
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontFamily: 'Nunito_400Regular',
-    fontSize: 14.5,
+    fontSize: 16,
     color: COLORS.beige,
     outlineStyle: 'none',
     outlineWidth: 0,

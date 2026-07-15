@@ -34,6 +34,8 @@ export function RankingCard({ hero, statKey, onPress }: RankingCardProps) {
         name={hero.name}
         imageUrl={hero.image_url}
         portraitUrl={hero.portrait_url}
+        imageMdUrl={hero.image_md_url ?? null}
+        grid
         contentFit="cover"
         contentPosition="top"
         style={StyleSheet.absoluteFill}

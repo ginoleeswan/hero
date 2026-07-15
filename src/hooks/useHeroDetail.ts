@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { queryClient } from '../lib/query/queryClient';
+import { exploreKeys } from '../lib/query/keys';
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { fetchHeroDetails, fetchHeroGallery } from '../lib/api';
@@ -324,6 +326,9 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
     try {
       await (next ? addFavourite(user.id, id) : removeFavourite(user.id, id));
       if (next) trackEvent('favourite_add', { hero_id: id });
+      // Explore's "Your Favourites" row caches for 5 min with no focus refetch —
+      // invalidate it so the row reflects this change on the next visit.
+      void queryClient.invalidateQueries({ queryKey: exploreKeys.favourites(user.id) });
       getHeroFavouriteCount(id)
         .then(setFavCount)
         .catch(() => {});

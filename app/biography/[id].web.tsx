@@ -9,6 +9,7 @@ import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
+import { PageEndCap } from '../../src/components/web/PageEndCap';
 
 const HTML_STYLES = `
   body {
@@ -489,20 +490,24 @@ export default function WebBiographyScreen() {
           </View>
         </View>
       ) : (
-        <View style={styles.mobileBody}>
-          {hero ? (
-            hero.description ? (
-              <>
-                <style>{HTML_STYLES}</style>
-                <div ref={bioContentRef} dangerouslySetInnerHTML={{ __html: processedHtml }} />
-              </>
+        <>
+          <View style={styles.mobileBody}>
+            {hero ? (
+              hero.description ? (
+                <>
+                  <style>{HTML_STYLES}</style>
+                  <div ref={bioContentRef} dangerouslySetInnerHTML={{ __html: processedHtml }} />
+                </>
+              ) : (
+                <Text style={styles.empty}>No biography available.</Text>
+              )
             ) : (
-              <Text style={styles.empty}>No biography available.</Text>
-            )
-          ) : (
-            <BiographySkeleton />
-          )}
-        </View>
+              <BiographySkeleton />
+            )}
+          </View>
+          {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
+          <PageEndCap />
+        </>
       )}
     </View>
   );

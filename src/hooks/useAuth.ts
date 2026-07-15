@@ -139,7 +139,9 @@ export function useAuth(): AuthState {
     if (Platform.OS === 'web') {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin },
+        options: { // Return to the page the user was acting on (not the root) — losing the
+          // character/debate context after OAuth forced a re-navigation.
+          redirectTo: window.location.href },
       });
       return { error };
     }
@@ -166,7 +168,9 @@ export function useAuth(): AuthState {
     if (Platform.OS === 'web') {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
-        options: { redirectTo: window.location.origin },
+        options: { // Return to the page the user was acting on (not the root) — losing the
+          // character/debate context after OAuth forced a re-navigation.
+          redirectTo: window.location.href },
       });
       return { error };
     }

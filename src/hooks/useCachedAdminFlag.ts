@@ -2,6 +2,17 @@ import { useEffect, useState } from 'react';
 
 const KEY = 'mythique.is_admin';
 
+/** Last-known admin state (localStorage). For optimistic UI/prefetch only —
+ *  every admin surface re-verifies server-side. */
+export function readCachedAdminFlag(): boolean {
+  return typeof localStorage !== 'undefined' && localStorage.getItem(KEY) === '1';
+}
+
+export function writeCachedAdminFlag(isAdmin: boolean): void {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.setItem(KEY, isAdmin ? '1' : '0');
+}
+
 /**
  * The admin flag, backed by the last-known value (localStorage) so admin-only
  * UI — the settings "Admin" section, command-center entry points — renders on

@@ -81,8 +81,8 @@ export function WebChromeProvider({ children }: { children: ReactNode }) {
 
   const isLight = isLightColor(color);
 
-  // Drive the iOS Safari status-bar tint. Expo's single web output ignores
-  // app/+html.tsx, so we own the theme-color meta at runtime. iOS has no CSS
+  // Drive the iOS Safari status-bar tint. app/+html.tsx sets the initial
+  // theme-color at build time; we own it at runtime so it can track the page. iOS has no CSS
   // transition for theme-color, so we interpolate it ourselves over
   // CHROME_FADE_MS (hex only — rgb() is ignored) to match the cover's CSS fade,
   // tracking the current value in a ref so a new fade starts wherever the last

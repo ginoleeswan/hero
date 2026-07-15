@@ -87,6 +87,8 @@ function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () =>
             name={hero.name}
             imageUrl={hero.image_url}
             portraitUrl={hero.portrait_url}
+            imageMdUrl={'image_md_url' in hero ? (hero.image_md_url ?? null) : null}
+            grid
             contentFit="cover"
             contentPosition="top"
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
@@ -499,6 +501,8 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
           name={hero.name}
           imageUrl={hero.image_url}
           portraitUrl={hero.portrait_url}
+          imageMdUrl={hero.image_md_url ?? null}
+          grid
           contentFit="cover"
           contentPosition="top"
           style={StyleSheet.absoluteFill}

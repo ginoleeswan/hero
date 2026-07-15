@@ -20,7 +20,9 @@ export function usePresenceHeartbeat(): void {
     if (!user) return;
     let active = true;
     const beat = () => {
-      if (active) void touchLastSeen();
+      // Skip while backgrounded — a hidden tab shouldn't keep stamping
+      // last_seen (browsers throttle the timer anyway; this makes it explicit).
+      if (active && AppState.currentState === 'active') void touchLastSeen();
     };
 
     beat(); // stamp immediately on mount / sign-in
