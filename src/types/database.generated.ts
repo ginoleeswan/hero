@@ -1413,6 +1413,7 @@ export type Database = {
           expires_at: string | null
           external_id: string | null
           platform: string
+          refresh_token: string | null
           updated_at: string
         }
         Insert: {
@@ -1420,6 +1421,7 @@ export type Database = {
           expires_at?: string | null
           external_id?: string | null
           platform: string
+          refresh_token?: string | null
           updated_at?: string
         }
         Update: {
@@ -1427,7 +1429,41 @@ export type Database = {
           expires_at?: string | null
           external_id?: string | null
           platform?: string
+          refresh_token?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          failed_at: string | null
+          id: string
+          last_ok_at: string | null
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          failed_at?: string | null
+          id?: string
+          last_ok_at?: string | null
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          failed_at?: string | null
+          id?: string
+          last_ok_at?: string | null
+          p256dh?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -2087,6 +2123,8 @@ export type Database = {
         }
         Returns: Json
       }
+      compute_admin_community_overview: { Args: never; Returns: Json }
+      compute_catalog_health: { Args: never; Returns: Json }
       compute_enrichment_progress: { Args: never; Returns: Json }
       compute_explore_bundle: {
         Args: { p_browse_per_slug?: number; p_browse_slugs: string[] }
@@ -2101,6 +2139,7 @@ export type Database = {
         }
         Returns: number
       }
+      compute_get_source_coverage: { Args: never; Returns: Json }
       enrichment_progress: { Args: never; Returns: Json }
       find_duplicate_heroes: {
         Args: { p_limit?: number }
