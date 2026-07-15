@@ -68,3 +68,20 @@ export async function syncInstagram(): Promise<{
   if (error) throw new Error(error.message);
   return data ?? { scanned: 0, matched: 0, unmatched: 0 };
 }
+
+/** Trigger the TikTok sync edge function — matches recent TikTok videos to
+ *  queue posts by caption and writes fresh result snapshots (platform=tiktok).
+ *  Read-only analytics; TikTok has no reply-to-comments write API. */
+export async function syncTiktok(): Promise<{
+  scanned: number;
+  matched: number;
+  unmatched: number;
+}> {
+  const { data, error } = await supabase.functions.invoke<{
+    scanned: number;
+    matched: number;
+    unmatched: number;
+  }>('tiktok-sync', { body: {} });
+  if (error) throw new Error(error.message);
+  return data ?? { scanned: 0, matched: 0, unmatched: 0 };
+}
