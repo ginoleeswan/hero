@@ -303,7 +303,8 @@ export default function WebPickOpponentScreen() {
                 {showSuggestions && (
                   <View style={styles.sections}>
                     {rivals.length > 0 && (
-                      <Rail pad={wide ? 32 : 24}
+                      <Rail
+                        pad={wide ? 32 : 24}
                         label="Rivalries"
                         items={rivals}
                         group="rivalries"
@@ -316,7 +317,8 @@ export default function WebPickOpponentScreen() {
                       />
                     )}
                     {friendlyFire.length > 0 && (
-                      <Rail pad={wide ? 32 : 24}
+                      <Rail
+                        pad={wide ? 32 : 24}
                         label="Friendly Fire"
                         items={friendlyFire}
                         group="friendly"
@@ -328,7 +330,8 @@ export default function WebPickOpponentScreen() {
                       />
                     )}
                     {family.length > 0 && (
-                      <Rail pad={wide ? 32 : 24}
+                      <Rail
+                        pad={wide ? 32 : 24}
                         label="Bloodline"
                         items={family}
                         group="family"
@@ -340,7 +343,8 @@ export default function WebPickOpponentScreen() {
                       />
                     )}
                     {sameUniverse.length > 0 && (
-                      <Rail pad={wide ? 32 : 24}
+                      <Rail
+                        pad={wide ? 32 : 24}
                         label="Same Universe"
                         items={sameUniverse}
                         group="same"
@@ -351,7 +355,8 @@ export default function WebPickOpponentScreen() {
                       />
                     )}
                     {dreamMatches.length > 0 && (
-                      <Rail pad={wide ? 32 : 24}
+                      <Rail
+                        pad={wide ? 32 : 24}
                         label="Dream Matches"
                         items={dreamMatches}
                         group="dream"
@@ -363,7 +368,8 @@ export default function WebPickOpponentScreen() {
                       />
                     )}
                     {similar.length > 0 && (
-                      <Rail pad={wide ? 32 : 24}
+                      <Rail
+                        pad={wide ? 32 : 24}
                         label="Similar Power"
                         items={similar}
                         group="similar"

@@ -410,7 +410,11 @@ export default function WebSearchScreen() {
                   returnKeyType="search"
                 />
                 {inputQuery.length > 0 && (
-                  <Pressable onPress={() => setInputQuery('')} hitSlop={10} style={styles.clearBtn as object}>
+                  <Pressable
+                    onPress={() => setInputQuery('')}
+                    hitSlop={10}
+                    style={styles.clearBtn as object}
+                  >
                     <Ionicons name="close-circle" size={20} color="rgba(245,235,220,0.5)" />
                   </Pressable>
                 )}
@@ -456,7 +460,11 @@ export default function WebSearchScreen() {
                   returnKeyType="search"
                 />
                 {inputQuery.length > 0 && (
-                  <Pressable onPress={() => setInputQuery('')} hitSlop={10} style={styles.clearBtn as object}>
+                  <Pressable
+                    onPress={() => setInputQuery('')}
+                    hitSlop={10}
+                    style={styles.clearBtn as object}
+                  >
                     <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.5)" />
                   </Pressable>
                 )}

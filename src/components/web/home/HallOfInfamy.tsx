@@ -81,7 +81,11 @@ export function HallOfInfamy({
         </Text>
       </View>
       <ScrollView
-        style={bleed ? ({ marginHorizontal: -bleed, marginBottom: -28 } as object) : ({ marginBottom: -28 } as object)}
+        style={
+          bleed
+            ? ({ marginHorizontal: -bleed, marginBottom: -28 } as object)
+            : ({ marginBottom: -28 } as object)
+        }
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={[c.row, { paddingHorizontal: pagePad + bleed }] as object}

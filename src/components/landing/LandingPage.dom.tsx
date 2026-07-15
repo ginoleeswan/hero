@@ -2273,8 +2273,16 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
     }));
   if (bubbles.length < 2) {
     const seeds: DebateBubble[] = [
-      { body: `${heroA.name} takes this — and it isn't close.`, side: 'a', author: `Team ${heroA.name}` },
-      { body: `${heroB.name} wins it nine times out of ten.`, side: 'b', author: `Team ${heroB.name}` },
+      {
+        body: `${heroA.name} takes this — and it isn't close.`,
+        side: 'a',
+        author: `Team ${heroA.name}`,
+      },
+      {
+        body: `${heroB.name} wins it nine times out of ten.`,
+        side: 'b',
+        author: `Team ${heroB.name}`,
+      },
     ];
     for (const s of seeds) {
       if (bubbles.length >= 2) break;
@@ -2307,8 +2315,7 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
           </span>
         </p>
         <h2 className="section-heading debate-heading">
-          <span className="camp-a">{heroA.name}</span>{' '}
-          <span className="debate-vs-text">vs</span>{' '}
+          <span className="camp-a">{heroA.name}</span> <span className="debate-vs-text">vs</span>{' '}
           <span className="camp-b">{heroB.name}</span>
         </h2>
         <p className="section-sub debate-sub">{line}</p>
@@ -2750,7 +2757,13 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
 
       <nav>
         <div className="nav-brand">
-          <svg className="nav-logo" width={32} height={32} viewBox="0 0 1024 1024" aria-hidden="true">
+          <svg
+            className="nav-logo"
+            width={32}
+            height={32}
+            viewBox="0 0 1024 1024"
+            aria-hidden="true"
+          >
             <path fill="var(--beige)" d={LOGO_PATH} />
           </svg>
           <span className="nav-wordmark">mythique</span>

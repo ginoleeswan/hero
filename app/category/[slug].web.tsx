@@ -722,7 +722,9 @@ export default function WebCategoryScreen() {
             <View style={styles.center}>
               <Ionicons name="search-outline" size={34} color="rgba(29,45,51,0.25)" />
               <Text style={styles.empty}>
-                {activeChips.length > 0 ? 'No characters match these filters' : 'No characters found'}
+                {activeChips.length > 0
+                  ? 'No characters match these filters'
+                  : 'No characters found'}
               </Text>
               {activeChips.length > 0 && (
                 <Pressable

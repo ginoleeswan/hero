@@ -30,7 +30,9 @@ export function CuratedRow({ label, items, onPick, tone = 'dark', cardW = 88, bl
         style={bleed ? ({ marginHorizontal: -bleed } as object) : undefined}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.row, bleed ? { paddingLeft: bleed, paddingRight: bleed } : null] as object}
+        contentContainerStyle={
+          [styles.row, bleed ? { paddingLeft: bleed, paddingRight: bleed } : null] as object
+        }
       >
         {items.map((item) => (
           <OpponentCard
@@ -57,5 +59,4 @@ const styles = StyleSheet.create({
   },
   labelLight: { color: 'rgba(41,60,67,0.7)' },
   row: { flexDirection: 'row', gap: 10, paddingVertical: 1, paddingRight: 8 },
-
 });
