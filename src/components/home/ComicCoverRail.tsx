@@ -25,10 +25,13 @@ export function ComicCoverRail({
   onIssuePress,
   onLight,
   alignEnd = false,
+  hideHeader = false,
 }: {
   comics: NewComic[];
   /** Right-align the header (the character page's section-title grammar). */
   alignEnd?: boolean;
+  /** Host renders its own section header (e.g. the character page's In Print band). */
+  hideHeader?: boolean;
   onIssuePress: (issueId: string) => void;
   /** Set on a light/paper background (e.g. the character In Print section) so the
    *  title reads dark instead of the band's beige. */
@@ -37,10 +40,12 @@ export function ComicCoverRail({
   if (comics.length === 0) return null;
   return (
     <View style={s.section}>
-      <View style={[s.header, alignEnd && s.headerEnd]}>
-        <Text style={s.label}>This Week</Text>
-        <Text style={[s.title, onLight && s.titleOnLight]}>New Comics</Text>
-      </View>
+      {!hideHeader ? (
+        <View style={[s.header, alignEnd && s.headerEnd]}>
+          <Text style={s.label}>This Week</Text>
+          <Text style={[s.title, onLight && s.titleOnLight]}>New Comics</Text>
+        </View>
+      ) : null}
       <FlatList
         horizontal
         data={comics}

@@ -29,7 +29,7 @@ import { COLORS, SURFACE } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { PullQuoteBio } from '../../src/components/character/PullQuoteBio';
 import { LegendBand } from '../../src/components/web/character/LegendBand';
-import { PowerStatCell } from '../../src/components/web/character/PowerStatCell';
+import { PowerStatCell, statDisplayValue } from '../../src/components/web/character/PowerStatCell';
 import { Reveal } from '../../src/components/web/Reveal';
 import { SectionDotRail } from '../../src/components/web/character/SectionDotRail';
 import {
@@ -474,6 +474,33 @@ function FactTile({
       </View>
     </View>
   );
+}
+
+// The hero vitals count up on arrival — the page's opening beat. Reduced
+// motion (and SSR) renders the final value immediately.
+function VitalCount({ value, style }: { value: number; style?: object }) {
+  const reduced =
+    typeof window === 'undefined' ||
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+  const [display, setDisplay] = useState(reduced ? value : 0);
+  useEffect(() => {
+    if (reduced) {
+      setDisplay(value);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now() + 250; // beat after the stage settles
+    const DUR = 900;
+    const tick = (now: number) => {
+      const t = Math.min(Math.max(now - start, 0) / DUR, 1);
+      setDisplay(statDisplayValue(t, value));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return <Text style={style}>{display.toLocaleString()}</Text>;
 }
 
 export default function WebCharacterScreen() {
@@ -1039,7 +1066,7 @@ export default function WebCharacterScreen() {
                       />
                     ) : (
                       <View style={styles.statBand}>
-                        {STAT_CONFIG.map(({ key, label, color }) => {
+                        {STAT_CONFIG.map(({ key, label, color }, si) => {
                           if (statsGenerating) {
                             return (
                               <View key={key} style={styles.bandCell}>
@@ -1070,6 +1097,8 @@ export default function WebCharacterScreen() {
                           );
                           return (
                             <PowerStatCell
+                              // Cascade: cells sweep in sequence.
+                              delay={si * 90}
                               key={key}
                               value={isNaN(raw) ? null : raw}
                               label={label}
@@ -1803,7 +1832,7 @@ export default function WebCharacterScreen() {
                   <View style={styles.mVitals}>
                     {powerTotal > 0 ? (
                       <View style={styles.mVitalItem}>
-                        <Text style={styles.mVitalVal}>{powerTotal}</Text>
+                        <VitalCount value={powerTotal} style={styles.mVitalVal as object} />
                         <Text style={styles.mVitalLabel}>Power</Text>
                       </View>
                     ) : null}
@@ -1811,9 +1840,10 @@ export default function WebCharacterScreen() {
                       <>
                         <View style={styles.mVitalDiv} />
                         <View style={styles.mVitalItem}>
-                          <Text style={styles.mVitalVal}>
-                            {details.issueCount!.toLocaleString()}
-                          </Text>
+                          <VitalCount
+                            value={details.issueCount!}
+                            style={styles.mVitalVal as object}
+                          />
                           <Text style={styles.mVitalLabel}>Appearances</Text>
                         </View>
                       </>
@@ -1822,9 +1852,10 @@ export default function WebCharacterScreen() {
                       <>
                         <View style={styles.mVitalDiv} />
                         <View style={styles.mVitalItem}>
-                          <Text style={styles.mVitalVal}>
-                            {details.movieCount ?? details.movies!.length}
-                          </Text>
+                          <VitalCount
+                            value={details.movieCount ?? details.movies!.length}
+                            style={styles.mVitalVal as object}
+                          />
                           <Text style={styles.mVitalLabel}>Movies</Text>
                         </View>
                       </>
@@ -1858,7 +1889,19 @@ export default function WebCharacterScreen() {
               </View>
 
               {/* Beige content sheet rising over the hero */}
-              <View style={styles.mSheet}>
+              <View
+                style={
+                  [
+                    styles.mSheet,
+                    {
+                      // A whisper of the character's colour at the sheet's
+                      // crown — the page carries their temperature, not just
+                      // their trims.
+                      backgroundImage: `radial-gradient(120% 340px at 50% 0%, ${theme.accentWash} 0%, rgba(255,255,255,0) 70%)`,
+                    },
+                  ] as object
+                }
+              >
                 {comicVineLoading && !details.summary ? (
                   <View style={styles.mBlock}>
                     <SkeletonBlock
@@ -1920,7 +1963,7 @@ export default function WebCharacterScreen() {
                     <View style={styles.mStatRows}>
                       {[STAT_CONFIG.slice(0, 3), STAT_CONFIG.slice(3)].map((row, ri) => (
                         <View key={ri} style={styles.statBand}>
-                          {row.map(({ key, label, color }) => {
+                          {row.map(({ key, label, color }, ci) => {
                             if (statsGenerating) {
                               return (
                                 <View key={key} style={styles.bandCell}>
@@ -1951,6 +1994,7 @@ export default function WebCharacterScreen() {
                             );
                             return (
                               <PowerStatCell
+                                delay={(ri * 3 + ci) * 90}
                                 key={key}
                                 value={isNaN(raw) ? null : raw}
                                 label={label}
@@ -2209,44 +2253,57 @@ export default function WebCharacterScreen() {
                   : null}
 
                 {/* On shelves now — recent issues featuring this character */}
-                {newIssues.length > 0 ? (
-                  <View style={styles.mSection}>
-                    <ComicCoverRail
-                      alignEnd
-                      comics={newIssues}
-                      onLight
-                      onIssuePress={(issueId) =>
-                        router.push(`/issue/${issueId}` as Parameters<typeof router.push>[0])
-                      }
-                    />
-                  </View>
-                ) : null}
-
-                {/* Gallery — character art + covers (multi-source) */}
-                {galleryImages && galleryImages.length > 0 ? (
+                {/* In Print — the page's print footprint as ONE dense band:
+                    this week's issues + the art gallery under a single title,
+                    with the dossier's small-caps sub-label grammar. */}
+                {newIssues.length > 0 || (galleryImages && galleryImages.length > 0) ? (
                   <View style={styles.mSection}>
                     <View style={styles.mSectionHead}>
-                      <Text style={styles.mSectionTitle}>Gallery · {galleryImages.length}</Text>
+                      <Text style={styles.mSectionTitle}>In Print</Text>
                       <View style={styles.mSectionDivider} />
                     </View>
-                    <View>
-                      <GalleryStrip
-                        images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
-                        onPress={(i) => {
-                          const issueId = galleryImages[i]?.issueId;
-                          if (issueId) {
-                            router.push(
-                              `/issue/cvi:${issueId}` as Parameters<typeof router.push>[0],
-                            );
-                            return;
+                    {newIssues.length > 0 ? (
+                      <>
+                        <Text style={styles.mSubLabel}>This week</Text>
+                        <ComicCoverRail
+                          hideHeader
+                          comics={newIssues}
+                          onLight
+                          onIssuePress={(issueId) =>
+                            router.push(`/issue/${issueId}` as Parameters<typeof router.push>[0])
                           }
-                          setLightboxImages(
-                            galleryImages.map((g) => ({ url: g.url, caption: g.caption })),
-                          );
-                          setLightboxIndex(i);
-                        }}
-                      />
-                    </View>
+                        />
+                      </>
+                    ) : null}
+                    {galleryImages && galleryImages.length > 0 ? (
+                      <>
+                        <Text
+                          style={
+                            [styles.mSubLabel, newIssues.length > 0 && { marginTop: 18 }] as object
+                          }
+                        >
+                          Gallery · {galleryImages.length}
+                        </Text>
+                        <View>
+                          <GalleryStrip
+                            images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
+                            onPress={(i) => {
+                              const issueId = galleryImages[i]?.issueId;
+                              if (issueId) {
+                                router.push(
+                                  `/issue/cvi:${issueId}` as Parameters<typeof router.push>[0],
+                                );
+                                return;
+                              }
+                              setLightboxImages(
+                                galleryImages.map((g) => ({ url: g.url, caption: g.caption })),
+                              );
+                              setLightboxIndex(i);
+                            }}
+                          />
+                        </View>
+                      </>
+                    ) : null}
                   </View>
                 ) : null}
 
@@ -3644,6 +3701,17 @@ const styles = StyleSheet.create({
   },
   mStatFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   mSection: { paddingTop: 18 },
+  // Small-caps sub-label inside a section — the dossier grammar (Legend's
+  // DID YOU KNOW / PORTRAYED BY moments use the same voice).
+  mSubLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: 'rgba(41,60,67,0.55)',
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  } as object,
   mSocialWeb: { paddingHorizontal: 20, paddingTop: 8 },
   mSubBlock: { marginTop: 22 },
   // Padding for edge-to-edge rails (MovieStrip) so the featured card + decade
