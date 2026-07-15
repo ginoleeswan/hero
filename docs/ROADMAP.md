@@ -8,7 +8,25 @@ Last meaningful update: 2026-07-15.
 
 ## Recently shipped
 
-Big items landed in `main` (mid-July 2026):
+**Reliability + growth hardening batch** (mid-July 2026, PRs #89/#91/#92/#94/#95):
+
+- **Bug-hunt fixes** (#89) — multi-tag browse filter timing out / erroring the
+  grid; search chars (`,` `(` `)`) 400-ing the grid; two timezone divergences;
+  nav dead-ends on shared deep-links.
+- **Auth returnTo** (#91) — signing in returns you to the page + action you came
+  from (was always dumping you on /explore), email and web OAuth alike.
+- **Sentry crash reporting + native ErrorBoundary** (#92) — production errors
+  now surface (native had a silent white-screen gap); errors-only to protect the
+  bundle; fail-soft source maps. _Owner: set the Sentry DSN + auth token._
+- **ComicVine collision gate** (#94, closes #65) — a publisher-plausibility gate
+  stops cross-franchise same-name corruption; one shared matcher (no more
+  drift-twins); 83 historical suspects flagged `needs_review`. Admin queue to
+  resolve them tracked in [#93](https://github.com/ginoleeswan/hero/issues/93).
+- **Web push — daily-debate re-engagement** (#95) — opt-in notification for
+  today's matchup (web, signed-in, personalized for favourite-holders). _Owner:
+  generate + set VAPID keys._
+
+Earlier July items in `main`:
 
 - **Mobile-web chrome system** — the "constant-ink" rule: canvas always ink, every
   page opens and closes on ink (`PageEndCap`), transient auto-hiding top bar,
@@ -57,8 +75,14 @@ Deferred load-time pop-in fixes from the audits (all low/medium, cosmetic):
 - Biography header has no skeleton — [#87](https://github.com/ginoleeswan/hero/issues/87)
 
 ### 🐛 Data quality
-- ComicVine exact-name match collides across franchises (silent corruption) —
-  [#65](https://github.com/ginoleeswan/hero/issues/65)
+- ✅ ComicVine cross-franchise collision — root cause fixed (#94, closed #65).
+  Follow-up: admin review queue to resolve the 83 flagged rows —
+  [#93](https://github.com/ginoleeswan/hero/issues/93)
+
+### 🔔 Owner setup (unblocks shipped-but-dormant features)
+
+- Sentry (crash reporting, #92) — set the DSN + auth token.
+- Web push (daily-matchup notifications, #95) — generate + set VAPID keys.
 
 ---
 
