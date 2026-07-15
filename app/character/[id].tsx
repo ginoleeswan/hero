@@ -862,7 +862,7 @@ export default function CharacterScreen() {
         <LoadErrorView
           actions={[
             { label: 'Retry', primary: true, onPress: retryLoad },
-            { label: 'Go back', onPress: () => router.back() },
+            { label: 'Go back', onPress: () => (router.canGoBack() ? router.back() : router.replace('/explore')) },
           ]}
         />
       </View>

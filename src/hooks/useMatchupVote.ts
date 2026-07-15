@@ -37,6 +37,13 @@ export function useMatchupVote(heroAId: string, heroBId: string): MatchupVoteSta
 
   useEffect(() => {
     let active = true;
+    // Reset before the fetch so an in-place pair swap (same mounted instance)
+    // can't render the new matchup as already-revealed with the prior pair's
+    // pick/tally carried over. All current callers mount fresh per pair, but the
+    // hook must be correct on its own contract.
+    setPickedId(null);
+    setTally(null);
+    setLoaded(false);
     getVoterKey()
       .then((vk) => getMatchupTallyV2(heroAId, heroBId, vk))
       .then(async (t) => {

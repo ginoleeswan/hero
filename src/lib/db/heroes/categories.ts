@@ -237,6 +237,28 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
 const CATEGORY_LIST_COLUMNS =
   'id, name, image_url, image_md_url, portrait_url, portrait_blurhash, publisher, issue_count';
 
+// Select columns plus one ALIASED inner-join per tag (t0, t1, …). Each tag must
+// be its own join: a single `hero_tags!inner(tag)` embed filtered by two
+// `.eq('hero_tags.tag', …)` requires ONE junction row to equal both tags —
+// impossible — so the inner join keeps zero rows and the grid comes back empty
+// (worse: on large tables the planner times out). Independent aliased joins give
+// the correct "has ALL of these tags" semantics. See applyListFacets.
+function tagJoinSelect(tagList: string[]): string {
+  if (!tagList.length) return CATEGORY_LIST_COLUMNS;
+  const joins = tagList.map((_, i) => `t${i}:hero_tags!inner(tag)`).join(', ');
+  return `${CATEGORY_LIST_COLUMNS}, ${joins}`;
+}
+
+// A user's raw search text becomes an `.or()` filter value; PostgREST parses `,`
+// as its OR-term delimiter and `()` as grouping, so a query like `Rocket, Groot`
+// or `Spider-Man (2099)` produces a malformed logic tree → 400 → the whole grid
+// errors. Double-quoting the value makes those chars literal; we escape only the
+// `\` and `"` that would end the quoted string.
+function ilikeSearchOr(search: string): string {
+  const q = search.trim().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `name.ilike."%${q}%",full_name.ilike."%${q}%"`;
+}
+
 export async function getCategoryPage(
   slug: CategorySlug,
   options: { page: number; pageSize?: number; withCount?: boolean } & CategoryFilters,
@@ -261,9 +283,7 @@ export async function getCategoryPage(
   const to = from + pageSize - 1;
 
   // Inner-join hero_tags only when filtering by tag, so the base query is unchanged.
-  const selectCols = tagList.length
-    ? `${CATEGORY_LIST_COLUMNS}, hero_tags!inner(tag)`
-    : CATEGORY_LIST_COLUMNS;
+  const selectCols = tagJoinSelect(tagList);
 
   let q: any = supabase
     .from('heroes')
@@ -349,9 +369,12 @@ function applyListFacets(
 
   if (hasStats) q = q.gte('powerstats_total', 1);
 
-  for (const tag of tagList) q = q.eq('hero_tags.tag', tag);
+  // Aliased inner joins (t0, t1, …) so multiple tags AND correctly — see tagJoinSelect.
+  tagList.forEach((tag, i) => {
+    q = q.eq(`t${i}.tag`, tag);
+  });
 
-  if (search.trim()) q = q.or(`name.ilike.%${search.trim()}%,full_name.ilike.%${search.trim()}%`);
+  if (search.trim()) q = q.or(ilikeSearchOr(search));
 
   if (sort === 'az') q = q.order('name');
   else if (sort === 'power')
@@ -386,9 +409,7 @@ export async function getUniversePage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const selectCols = tagList.length
-    ? `${CATEGORY_LIST_COLUMNS}, hero_tags!inner(tag)`
-    : CATEGORY_LIST_COLUMNS;
+  const selectCols = tagJoinSelect(tagList);
 
   let q: any = supabase
     .from('heroes')
@@ -426,9 +447,7 @@ export async function getFranchisePage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const selectCols = tagList.length
-    ? `${CATEGORY_LIST_COLUMNS}, hero_tags!inner(tag)`
-    : CATEGORY_LIST_COLUMNS;
+  const selectCols = tagJoinSelect(tagList);
 
   let q: any = supabase
     .from('heroes')
@@ -562,9 +581,7 @@ export async function getTeamPage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const selectCols = tagList.length
-    ? `${CATEGORY_LIST_COLUMNS}, hero_tags!inner(tag)`
-    : CATEGORY_LIST_COLUMNS;
+  const selectCols = tagJoinSelect(tagList);
 
   let q: any = supabase
     .from('heroes')

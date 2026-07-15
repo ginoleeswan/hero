@@ -19,9 +19,12 @@ export interface TeamTally {
   myPick: string | null;
 }
 
-// Same daily-seed convention as src/lib/matchup.ts: same pair all day, new tomorrow.
+// Same daily-seed convention as src/lib/matchup.ts: same pair all day, new
+// tomorrow. UTC on purpose — the daily matchup/debate roll on the server's UTC
+// calendar (todayIso/dayStamp), so the team battle must too or "today"
+// disagrees across timezones around midnight.
 function dailySeed(d = new Date()): number {
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
 }
 
 /** Deterministically pick two distinct featured teams for a day. Pure + tested. */

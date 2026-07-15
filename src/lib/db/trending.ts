@@ -398,9 +398,9 @@ export function trendingTitleMeta(t: TrendingTitle): string | null {
     const d = new Date(t.release_date);
     if (Number.isNaN(d.getTime())) return null;
     if (d.getTime() > Date.now()) {
-      return `Coming ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      return `Coming ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`;
     }
-    return String(d.getFullYear());
+    return String(d.getUTCFullYear());
   }
   return null;
 }
@@ -442,7 +442,7 @@ export function trendingBadge(
     if (!Number.isNaN(d.getTime()) && d.getTime() > Date.now()) {
       return {
         tone: 'coming',
-        label: `Coming ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+        label: `Coming ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`,
       };
     }
   }
