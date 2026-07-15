@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_metric_cache: {
+        Row: {
+          computed_at: string
+          key: string
+          payload: Json
+        }
+        Insert: {
+          computed_at?: string
+          key: string
+          payload: Json
+        }
+        Update: {
+          computed_at?: string
+          key?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
       api_usage: {
         Row: {
           api: string
@@ -2069,6 +2087,7 @@ export type Database = {
         }
         Returns: Json
       }
+      compute_enrichment_progress: { Args: never; Returns: Json }
       compute_explore_bundle: {
         Args: { p_browse_per_slug?: number; p_browse_slugs: string[] }
         Returns: Json
@@ -2392,6 +2411,7 @@ export type Database = {
         Args: { p_date: string; p_guesses: number; p_won: boolean }
         Returns: undefined
       }
+      refresh_admin_metrics: { Args: never; Returns: undefined }
       refresh_explore_bundle: { Args: never; Returns: undefined }
       refresh_fame: { Args: never; Returns: number }
       register_film_match: {
@@ -2638,4 +2658,3 @@ export const Constants = {
     },
   },
 } as const
-
