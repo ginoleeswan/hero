@@ -28,6 +28,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { pickComicvineMatch } from '../_shared/comicvineMatch.ts';
 
 type SB = ReturnType<typeof createClient>;
 
@@ -63,17 +64,23 @@ const nameList = (arr: unknown, cap: number): string[] =>
 const cvParams = (extra: Record<string, string>) =>
   new URLSearchParams({ api_key: COMICVINE_API_KEY, format: 'json', ...extra });
 
-// done     -> enriched and written
-// unmatched-> ComicVine has no character by this exact name (mantle alias /
-//             non-comic figure). Terminal, NOT an error — leaves the backlog and
-//             surfaces neutrally; needs another source, not a retry.
-// failed   -> a genuine error: a stored id 404s, or the resolved comicvine_id
-//             collides with another hero (23505 — this row duplicates one already
-//             in the catalogue). Terminal.
-// retry    -> transient (rate limit / 5xx / network) — leave the row `pending` so
-//             the next run picks it up again. Critical for the unattended cron:
-//             a momentary ComicVine throttle must NOT permanently park a real hero.
-type EnrichOutcome = 'done' | 'unmatched' | 'failed' | 'retry';
+// done        -> enriched and written
+// unmatched   -> ComicVine has no character by this exact name (mantle alias /
+//                non-comic figure). Terminal, NOT an error — leaves the backlog
+//                and surfaces neutrally; needs another source, not a retry.
+// needs_review-> an exact-name hit exists but its publisher disagrees with the
+//                hero's (or same-name candidates are ambiguous). Auto-applying
+//                would risk cross-franchise corruption (issue #65 — "Aragorn" →
+//                a Marvel winged horse), so route to the admin review queue
+//                WITHOUT writing any data. Terminal until a human resolves it.
+// failed      -> a genuine error: a stored id 404s, or the resolved comicvine_id
+//                collides with another hero (23505 — this row duplicates one
+//                already in the catalogue). Terminal.
+// retry       -> transient (rate limit / 5xx / network) — leave the row `pending`
+//                so the next run picks it up again. Critical for the unattended
+//                cron: a momentary ComicVine throttle must NOT permanently park a
+//                real hero.
+type EnrichOutcome = 'done' | 'unmatched' | 'needs_review' | 'failed' | 'retry';
 
 // Classify a non-OK ComicVine HTTP response. 420 is ComicVine's own
 // "rate limit exceeded"; 429/5xx are transient too. Anything else (404, etc.)
@@ -83,12 +90,12 @@ const classifyHttp = (status: number): EnrichOutcome =>
 
 /**
  * Enrich one hero from ComicVine and persist every column. Identical parsing and
- * storage shape to get-comicvine-hero — kept self-contained because this project
- * deploys edge functions without cross-function `_shared` imports.
+ * storage shape to get-comicvine-hero; the name-match DECISION is shared with it
+ * via _shared/comicvineMatch.ts so the two can't drift.
  */
 async function enrichHero(
   sb: SB,
-  hero: { id: string; name: string; comicvine_id: string | null },
+  hero: { id: string; name: string; comicvine_id: string | null; publisher: string | null },
 ): Promise<EnrichOutcome> {
   // ── Resolve the ComicVine character + its lightweight fields ────────────────
   // Prefer the stored comicvine_id (one direct call, no name ambiguity). Only
@@ -133,7 +140,9 @@ async function enrichHero(
     const listRes = await fetch(
       `${COMICVINE_BASE}/characters/?${cvParams({
         filter: `name:${hero.name}`,
-        field_list: 'id,name,count_of_issue_appearances',
+        // publisher is REQUIRED here (not just on the detail call) so the match
+        // gate can compare it BEFORE committing — see _shared/comicvineMatch.ts.
+        field_list: 'id,name,count_of_issue_appearances,publisher',
         limit: '20',
       })}`,
     );
@@ -141,28 +150,16 @@ async function enrichHero(
     const listBody = await listRes.json();
     // Rate limited (HTTP 200 + status_code 107) — transient, leave row pending.
     if (listBody?.status_code === 107) return 'retry';
-    // ComicVine's name filter is an UNSORTED SUBSTRING match — "Bane" returns
-    // "Wolfsbane" as result #1. Taking results[0] blindly resolves heroes to the
-    // wrong character (corrupting data + colliding on the unique comicvine_id).
-    // Only accept an EXACT, case-insensitive name match, most-published first.
-    const wanted = hero.name.trim().toLowerCase();
-    // ComicVine often disambiguates with a parenthetical ("Spawn (Simmons)").
-    // Prefer a true-exact name; fall back to the name BEFORE the "(" equalling
-    // ours. Never a bare substring (that's the Bane↛Wolfsbane trap).
-    const base = (n: string) => n.split('(')[0].trim().toLowerCase();
-    const byPop = (a: Record<string, unknown>, b: Record<string, unknown>) =>
-      ((b.count_of_issue_appearances as number) ?? 0) -
-      ((a.count_of_issue_appearances as number) ?? 0);
-    const named = ((listBody.results ?? []) as Array<Record<string, unknown>>).filter(
-      (c) => typeof c.name === 'string',
-    );
-    const exact = named.filter((c) => (c.name as string).trim().toLowerCase() === wanted);
-    const match = (
-      exact.length > 0 ? exact : named.filter((c) => base(c.name as string) === wanted)
-    ).sort(byPop)[0];
-    // No ComicVine character with this exact name — terminal, but not an error.
-    if (!match?.id) return 'unmatched';
-    cvId = String(match.id);
+    // Shared decision: exact-name match gated by publisher plausibility. Rejects
+    // the Bane↛Wolfsbane substring trap AND the cross-franchise same-name trap
+    // (issue #65). Ambiguous → needs_review (human queue), never a blind write.
+    const decision = pickComicvineMatch(listBody.results ?? [], hero);
+    if (decision.kind === 'unmatched') return 'unmatched';
+    if (decision.kind === 'needs_review') {
+      console.log('[enrich-comicvine-batch] needs_review', hero.id, hero.name, decision.reason);
+      return 'needs_review';
+    }
+    cvId = decision.cvId;
     const res = await fetch(
       `${COMICVINE_BASE}/character/4005-${cvId}/?${cvParams({ field_list: CHAR_FIELDS })}`,
     );
@@ -380,7 +377,7 @@ serve(async (req: Request) => {
   const statuses = retryFailed ? ['pending', 'failed'] : ['pending'];
   const { data: batch, error: batchErr } = await sb
     .from('heroes')
-    .select('id, name, comicvine_id')
+    .select('id, name, comicvine_id, publisher')
     .in('comicvine_status', statuses)
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
@@ -392,6 +389,7 @@ serve(async (req: Request) => {
 
   let done = 0;
   let unmatched = 0;
+  let needsReview = 0;
   let failed = 0;
   let retry = 0;
   let cancelled = false;
@@ -411,7 +409,12 @@ serve(async (req: Request) => {
   const runId = (runRow as { id?: number } | null)?.id ?? null;
 
   try {
-    for (const hero of batch as Array<{ id: string; name: string; comicvine_id: string | null }>) {
+    for (const hero of batch as Array<{
+      id: string;
+      name: string;
+      comicvine_id: string | null;
+      publisher: string | null;
+    }>) {
       let outcome: EnrichOutcome;
       try {
         outcome = await enrichHero(sb, hero);
@@ -426,6 +429,12 @@ serve(async (req: Request) => {
         // Terminal, not an error: no ComicVine character by this exact name.
         unmatched++;
         await sb.from('heroes').update({ comicvine_status: 'unmatched' }).eq('id', hero.id);
+      } else if (outcome === 'needs_review') {
+        // Ambiguous / publisher-mismatched match — flag for the admin queue
+        // WITHOUT writing any enrichment data (issue #65). Not re-picked by the
+        // drain (it only selects pending/failed).
+        needsReview++;
+        await sb.from('heroes').update({ comicvine_status: 'needs_review' }).eq('id', hero.id);
       } else if (outcome === 'failed') {
         // Terminal error: stored id 404 or duplicate collision. Park it.
         failed++;
@@ -436,7 +445,7 @@ serve(async (req: Request) => {
       }
       // Push live progress every few heroes AND check for a stop request in the
       // same round trip (the admin console sets cancel_requested via RPC).
-      if (runId != null && (done + unmatched + failed + retry) % 3 === 0) {
+      if (runId != null && (done + unmatched + needsReview + failed + retry) % 3 === 0) {
         const { data: ctrl } = await sb
           .from('enrichment_runs')
           .update({ done, failed, retry })
@@ -479,6 +488,7 @@ serve(async (req: Request) => {
       processed: batch.length,
       done,
       unmatched,
+      needsReview,
       failed,
       retry,
       remaining: remaining ?? null,

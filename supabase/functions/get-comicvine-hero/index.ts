@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { pickComicvineMatch } from '../_shared/comicvineMatch.ts';
 
 const COMICVINE_API_KEY = Deno.env.get('COMICVINE_API_KEY') ?? '';
 const COMICVINE_BASE = 'https://comicvine.gamespot.com/api';
@@ -93,17 +94,23 @@ serve(async (req: Request) => {
     // and surfaces neutrally (these need another source, not a ComicVine retry).
     const markUnmatched = () =>
       supabase.from('heroes').update({ comicvine_status: 'unmatched' }).eq('id', heroId);
+    // An exact-name hit whose publisher disagrees (or ambiguous same-name
+    // candidates) — flag for the admin review queue WITHOUT writing data, so a
+    // cross-franchise collision (issue #65) can't silently overwrite the row.
+    const markNeedsReview = () =>
+      supabase.from('heroes').update({ comicvine_status: 'needs_review' }).eq('id', heroId);
 
     // ── Resolve the ComicVine character ─────────────────────────────────────────
     // Prefer the stored comicvine_id: one direct call, no name ambiguity. Fall back
     // to a name search only when there's no id on file (or the stored id is stale).
     const { data: row } = await supabase
       .from('heroes')
-      .select('comicvine_id')
+      .select('comicvine_id, publisher')
       .eq('id', heroId)
       .maybeSingle();
 
     let cvId: string | null = row?.comicvine_id ? String(row.comicvine_id) : null;
+    const heroPublisher: string | null = (row?.publisher as string | null) ?? null;
     let d: Record<string, unknown> | null = null;
 
     // Fetch a character by ComicVine id → 'ok' | 'transient' | 'empty'.
@@ -137,7 +144,8 @@ serve(async (req: Request) => {
       const listRes = await fetch(
         `${COMICVINE_BASE}/characters/?${cvParams({
           filter: `name:${heroName}`,
-          field_list: 'id,name,count_of_issue_appearances',
+          // publisher REQUIRED so the match gate can compare it pre-commit.
+          field_list: 'id,name,count_of_issue_appearances,publisher',
           limit: '20',
         })}`,
       );
@@ -149,33 +157,25 @@ serve(async (req: Request) => {
       const listBody = await listRes.json();
       // Rate limited (HTTP 200 + status_code 107) — transient, don't mark failed.
       if (listBody?.status_code === 107) return json(NULL_RESPONSE);
-      // ComicVine's name filter is an UNSORTED SUBSTRING match — "Bane" returns
-      // "Wolfsbane" as result #1. Taking results[0] blindly resolves heroes to the
-      // wrong character (corrupting their data and colliding on the unique
-      // comicvine_id). Only accept an EXACT, case-insensitive name match, and among
-      // those prefer the most-published. No exact match → don't guess, mark failed.
-      const wanted = heroName.trim().toLowerCase();
-      // ComicVine often disambiguates with a parenthetical ("Spawn (Simmons)").
-      // Prefer a true-exact name; fall back to the name BEFORE the "(" equalling
-      // ours. Never a bare substring (that's the Bane↛Wolfsbane trap).
-      const base = (n: string) => n.split('(')[0].trim().toLowerCase();
-      const byPop = (a: Record<string, unknown>, b: Record<string, unknown>) =>
-        ((b.count_of_issue_appearances as number) ?? 0) -
-        ((a.count_of_issue_appearances as number) ?? 0);
-      const named = ((listBody.results ?? []) as Array<Record<string, unknown>>).filter(
-        (c) => typeof c.name === 'string',
-      );
-      const exact = named.filter((c) => (c.name as string).trim().toLowerCase() === wanted);
-      const match = (exact.length > 0 ? exact : named.filter((c) => base(c.name as string) === wanted)).sort(
-        byPop,
-      )[0];
-      if (!match?.id) {
+      // Shared decision (see _shared/comicvineMatch.ts): exact-name match gated by
+      // publisher plausibility. Rejects the Bane↛Wolfsbane substring trap AND the
+      // cross-franchise same-name trap (issue #65) — ambiguous → needs_review.
+      const decision = pickComicvineMatch(listBody.results ?? [], {
+        name: heroName,
+        publisher: heroPublisher,
+      });
+      if (decision.kind === 'unmatched') {
         // No ComicVine character with this exact name — terminal, but not an
         // error: park as 'unmatched' (these need another source, not a retry).
         await markUnmatched();
         return json(NULL_RESPONSE);
       }
-      cvId = String(match.id);
+      if (decision.kind === 'needs_review') {
+        // Flag for human review; render un-enriched (no error surfaced).
+        await markNeedsReview();
+        return json(NULL_RESPONSE);
+      }
+      cvId = decision.cvId;
       const r = await fetchChar(cvId);
       if (r === 'transient') return json(NULL_RESPONSE);
       if (r === 'empty') {
