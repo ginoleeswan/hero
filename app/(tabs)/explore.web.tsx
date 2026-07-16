@@ -415,22 +415,30 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
                   isActive && (pss.cardActive as object),
                 ]}
               >
-                <HeroImage
-                  id={String(h.id)}
-                  name={h.name}
-                  imageUrl={h.image_url}
-                  portraitUrl={h.portrait_url}
-                  contentFit="cover"
-                  contentPosition={{ top: 0, left: '50%' }}
-                  style={[
-                    StyleSheet.absoluteFill,
-                    {
-                      opacity: isActive ? 1 : 0.4,
-                      transition: 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1)',
-                    } as any,
-                  ]}
-                  recyclingKey={String(h.id)}
-                />
+                {/* The opacity fade + its transition live on THIS wrapper, not the
+                    image — a composited layer (opacity/transition) escapes the
+                    card's rounded overflow clip in WebKit, poking square corners
+                    past the radius. The wrapper carries its own border-radius +
+                    overflow so the composited layer is itself rounded. */}
+                <View
+                  style={
+                    [
+                      pss.imgLayer,
+                      { opacity: isActive ? 1 : 0.4 },
+                    ] as object
+                  }
+                >
+                  <HeroImage
+                    id={String(h.id)}
+                    name={h.name}
+                    imageUrl={h.image_url}
+                    portraitUrl={h.portrait_url}
+                    contentFit="cover"
+                    contentPosition={{ top: 0, left: '50%' }}
+                    style={StyleSheet.absoluteFill}
+                    recyclingKey={String(h.id)}
+                  />
+                </View>
                 <View style={pss.cardOverlay as object} />
                 <Text
                   style={[
@@ -612,10 +620,11 @@ const pss = StyleSheet.create({
     gap: 12,
     contain: 'layout style',
     height: '100%',
-    // Yield to the glass panel if the fixed card widths ever exceed the band:
-    // the rightmost accordion slivers clip here (the strip owns this now that
-    // the wrap no longer clips) instead of the panel's edge getting sheared.
-    overflow: 'hidden',
+    // Clip the rightmost accordion slivers so they don't shear the glass panel,
+    // but NOT vertically — a plain overflow:hidden also clipped the active card's
+    // drop shadow flat at the bottom. clip-path insets the right edge (slivers)
+    // while extending top/bottom/left so the shadow renders in full.
+    clipPath: 'inset(-90px 0px -90px -60px)',
     flexShrink: 1,
     minWidth: 0,
   } as object,
@@ -631,6 +640,18 @@ const pss = StyleSheet.create({
   } as object,
   cardActive: {
     boxShadow: '0 20px 40px rgba(0,0,0,0.3), 0 8px 16px rgba(0,0,0,0.2)',
+  } as object,
+  // Rounded, overflow-clipped layer that carries the image + its opacity fade so
+  // the composited layer stays inside the card's radius (WebKit corner fix).
+  imgLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 14,
+    overflow: 'hidden',
+    transition: 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1)',
   } as object,
   cardOverlay: {
     position: 'absolute',
