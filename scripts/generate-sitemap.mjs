@@ -59,6 +59,7 @@ const UNIVERSE_SLUGS = [
   'dark-horse',
   'star-wars',
   'image',
+  'walking-dead',
   'netherrealm',
   'babylon-5',
   'avatar-last-airbender',

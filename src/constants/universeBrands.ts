@@ -26,6 +26,12 @@ export const UNIVERSE_BRANDS: UniverseBrand[] = [
   },
   { slug: 'image', name: 'Image', query: 'image', match: ['image'] },
   {
+    slug: 'walking-dead',
+    name: 'The Walking Dead',
+    query: 'walking dead',
+    match: ['walking dead'],
+  },
+  {
     slug: 'netherrealm',
     name: 'NetherRealm Studios',
     query: 'netherrealm',

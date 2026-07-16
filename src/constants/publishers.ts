@@ -41,6 +41,16 @@ import SnkLogo from '../../assets/brands/snk.svg';
 import TheBoysLogo from '../../assets/brands/the-boys.svg';
 import SinCityLogo from '../../assets/brands/sin-city.svg';
 import PokemonLogo from '../../assets/brands/pokemon.svg';
+import WalkingDeadLogo from '../../assets/brands/walking-dead.svg';
+import Babylon5Logo from '../../assets/brands/babylon-5.svg';
+import BuffyLogo from '../../assets/brands/buffy.svg';
+import TerminatorLogo from '../../assets/brands/terminator.svg';
+import RadicalLogo from '../../assets/brands/radical-entertainment.svg';
+import JurassicParkLogo from '../../assets/brands/jurassic-park.svg';
+import AlienLogo from '../../assets/brands/alien.svg';
+import PredatorLogo from '../../assets/brands/predator.svg';
+import GreenHornetLogo from '../../assets/brands/green-hornet.svg';
+import KodanshaLogo from '../../assets/brands/kodansha.svg';
 
 /** A brand logo, either a raster image (PNG via require) or an SVG component
  *  (via react-native-svg-transformer). Render helpers branch on which it is. */
@@ -159,6 +169,21 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     featured: true,
   },
 
+  // ── Franchises (matched via franchiseHref → brandForPublisher on the
+  // franchise display name, not the publisher column) ───────────────────────
+  {
+    slug: 'walking-dead',
+    name: 'The Walking Dead',
+    query: 'walking dead',
+    match: ['walking dead'],
+    color: '#7A1E1E',
+    colorDark: '#3D0F0F',
+    logo: WalkingDeadLogo,
+    // Black wordmark silhouette → white tint so it reads on the dark chip.
+    badgeSize: { width: 58, height: 14 },
+    logoTint: '#FFFFFF',
+  },
+
   // ── Universes from the Company-Licensed re-brand ──────────────────────────
   // Registered so they badge, route, and carry a brand colour. No `logo` yet —
   // surfaces fall back to the name wordmark until transparent PNGs are added
@@ -181,6 +206,12 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['babylon 5'],
     color: '#3B4C7A',
     colorDark: '#222E4D',
+    logo: Babylon5Logo,
+    // Blue wordmark + chrome "5" → white silhouette. The browse banner places the
+    // logo over its dark (deepNavy) edge and ignores logoOnLight, so the raw dark
+    // blue vanished there; a white tint reads on both the dark chip and the banner.
+    badgeSize: { width: 46, height: 20 },
+    logoTint: '#FFFFFF',
   },
   {
     slug: 'avatar-last-airbender',
@@ -318,6 +349,10 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['green hornet'],
     color: '#1E8449',
     colorDark: '#0F4D2A',
+    logo: GreenHornetLogo,
+    // Stylized "THE GREEN HORNET" wordmark → white silhouette for the dark chip.
+    badgeSize: { width: 40, height: 18 },
+    logoTint: '#FFFFFF',
   },
   {
     slug: 'tmnt',
@@ -353,6 +388,11 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['buffy'],
     color: '#9C2B3B',
     colorDark: '#5A1822',
+    logo: BuffyLogo,
+    // Black gothic script → white silhouette so the "Buffy" wordmark reads on
+    // the dark chip (the fine "the vampire slayer" subtitle is decorative).
+    badgeSize: { width: 40, height: 20 },
+    logoTint: '#FFFFFF',
   },
   {
     slug: 'harvey',
@@ -369,6 +409,10 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['terminator'],
     color: '#C0392B',
     colorDark: '#6E2017',
+    logo: TerminatorLogo,
+    // Metallic wordmark → white silhouette; wide + short (viewBox ~9.6:1).
+    badgeSize: { width: 68, height: 10 },
+    logoTint: '#FFFFFF',
   },
   {
     slug: 'bungie',
@@ -465,6 +509,9 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['radical entertainment'],
     color: '#A11D1D',
     colorDark: '#5C1010',
+    logo: RadicalLogo,
+    // Full-colour wordmark (blue letters + red atom "i") — keeps its own ink.
+    badgeSize: { width: 56, height: 15 },
   },
   {
     slug: 'alien',
@@ -473,6 +520,11 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['alien'],
     color: '#3C6B2F',
     colorDark: '#1F3A19',
+    logo: AlienLogo,
+    // Wide-tracked wordmark (poster black box + German subtitle stripped) →
+    // white silhouette so it reads on the dark chip.
+    badgeSize: { width: 62, height: 12 },
+    logoTint: '#FFFFFF',
   },
   {
     slug: 'predator',
@@ -481,6 +533,10 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['predator'],
     color: '#B5471E',
     colorDark: '#63270F',
+    logo: PredatorLogo,
+    // Distressed red wordmark (poster black box stripped, viewBox tightened) —
+    // keeps its own red ink; reads on the dark chip.
+    badgeSize: { width: 56, height: 15 },
   },
   {
     slug: 'indiana-jones',
@@ -489,6 +545,12 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['indiana jones'],
     color: '#9C6B2E',
     colorDark: '#5A3D18',
+    // PNG, not SVG: the source vector had 24 gradients + 100 clipPaths that
+    // react-native-svg-transformer mangles (the 3D gold breaks). Rasterized to a
+    // transparent PNG (like Marvel/DC/Star Wars) so the gradient renders faithfully.
+    logo: require('../../assets/brands/indiana-jones.png'),
+    // Full-colour 3D wordmark (yellow/red) — reads on dark and light as-is.
+    badgeSize: { width: 52, height: 16 },
   },
   {
     slug: 'jurassic-park',
@@ -497,6 +559,9 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['jurassic'],
     color: '#B5402E',
     colorDark: '#62211A',
+    logo: JurassicParkLogo,
+    // Red wordmark with white keyline — reads on the dark chip; keeps own ink.
+    badgeSize: { width: 60, height: 14 },
   },
 
   // ── Legacy publishers from the original SuperheroAPI import ───────────────
@@ -641,6 +706,11 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['kodansha'],
     color: '#1C8A4C',
     colorDark: '#0E4D2A',
+    logo: KodanshaLogo,
+    // Corporate mark + wordmark (monochrome) → white silhouette on the dark chip
+    // (matches Shueisha, the other manga publisher). Wide lockup (~3.6:1).
+    badgeSize: { width: 40, height: 11 },
+    logoTint: '#FFFFFF',
   },
   // Inert until a hero carries a "Warner Bros" publisher (0 today); logo is a
   // colorless shield silhouette → white tint.
