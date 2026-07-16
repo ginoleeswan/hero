@@ -4,6 +4,7 @@ export { Button, IconButton, type ButtonTone } from './Button';
 export { PillGroup, type PillOption } from './PillGroup';
 export { LoadMore } from './LoadMore';
 export { EmptyState } from './EmptyState';
+export { LoadFailed } from './LoadFailed';
 export { StatTile } from './StatTile';
 export { Well } from './Well';
 export { CardGrid } from './CardGrid';

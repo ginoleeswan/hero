@@ -65,7 +65,7 @@ export function CommandShell({
 }: {
   domain: DomainKey;
   onDomain: (k: DomainKey) => void;
-  overall: number;
+  overall: number | null;
   badges: Partial<Record<DomainKey, number>>;
   refreshing: boolean;
   onRefresh: () => void;
@@ -111,7 +111,7 @@ export function CommandShell({
                   <Ionicons name="refresh" size={15} color="rgba(255,255,255,0.85)" />
                 )}
               </Pressable>
-              <Gauge value={overall} size={46} />
+              {overall != null && <Gauge value={overall} size={46} />}
             </View>
           </View>
         </LinearGradient>

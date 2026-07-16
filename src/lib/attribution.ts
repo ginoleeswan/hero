@@ -39,15 +39,30 @@ function clean(v: string | null | undefined): string | null {
   return t ? t.slice(0, 120) : null;
 }
 
+// UTM values are analytic tokens under the slug convention (see slugifyCampaign
+// in marketing/adLinks). Hand-typed or mangled URLs still arrive with stray
+// characters — a pasted backtick once minted a phantom "bio`" campaign bucket
+// in Acquisition. Normalise to the convention; dots survive for hostname-ish
+// values. Referrer hosts and landing paths keep plain clean() — never this.
+function token(v: string | null | undefined): string | null {
+  const t = clean(v);
+  if (!t) return null;
+  const s = t
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/^[-.]+|[-.]+$/g, '');
+  return s || null;
+}
+
 /** Parse the five UTM params out of a URL query string (`?a=b&…`). Pure. */
 export function parseUtm(search: string): Utm {
   const p = new URLSearchParams(search || '');
   return {
-    source: clean(p.get('utm_source')),
-    medium: clean(p.get('utm_medium')),
-    campaign: clean(p.get('utm_campaign')),
-    content: clean(p.get('utm_content')),
-    term: clean(p.get('utm_term')),
+    source: token(p.get('utm_source')),
+    medium: token(p.get('utm_medium')),
+    campaign: token(p.get('utm_campaign')),
+    content: token(p.get('utm_content')),
+    term: token(p.get('utm_term')),
   };
 }
 

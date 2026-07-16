@@ -42,11 +42,18 @@ export function TrafficTrendChart({
   const xCenter = (i: number) => PAD_L + (i + 0.5) * colW;
   const yOf = (v: number) => PAD_T + (1 - v / maxV) * plotH;
 
-  // ~5 evenly-spaced date ticks, always including the last day.
+  // ~5 evenly-spaced date ticks, always including the last day. The last label
+  // is clamped off the right edge, which on narrow widths drags it left onto its
+  // step neighbour ("Jul 11Jul 16") — cull any tick the clamped label would cover.
   const step = Math.max(1, Math.ceil(n / 5));
   const tickIdx = new Set<number>();
   for (let i = 0; i < n; i += step) tickIdx.add(i);
   if (n > 0) tickIdx.add(n - 1);
+  const tickLeft = (i: number) => Math.max(PAD_L, Math.min(w - 54, xCenter(i) - 27));
+  const lastTickLeft = n > 0 ? tickLeft(n - 1) : 0;
+  const ticks = Array.from(tickIdx)
+    .sort((a, b) => a - b)
+    .filter((i) => i === n - 1 || lastTickLeft - tickLeft(i) >= 50);
 
   const gridVals = [0, 0.5, 1].map((f) => Math.round(maxV * f));
   const visitorLine = series
@@ -174,16 +181,11 @@ export function TrafficTrendChart({
       {/* X date ticks */}
       {w > 0 && (
         <View style={styles.ticks} pointerEvents="none">
-          {Array.from(tickIdx)
-            .sort((a, b) => a - b)
-            .map((i) => {
-              const left = Math.max(PAD_L, Math.min(w - 54, xCenter(i) - 27));
-              return (
-                <Text key={i} style={[styles.tick, { left }]}>
-                  {fmtDay(series[i].day)}
-                </Text>
-              );
-            })}
+          {ticks.map((i) => (
+            <Text key={i} style={[styles.tick, { left: tickLeft(i) }]}>
+              {fmtDay(series[i].day)}
+            </Text>
+          ))}
         </View>
       )}
     </View>

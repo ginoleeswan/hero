@@ -550,14 +550,22 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
     color: COLORS.navy,
   },
-  platNums: { alignItems: 'flex-end', gap: 1 },
+  // minWidth 0 + shrink: the stats line ("♥ 145 · 💬 29 · 7 posts") otherwise
+  // sets the row's min-content width and pushes the panel past 390px viewports;
+  // with shrink it wraps to a second line instead.
+  platNums: { alignItems: 'flex-end', gap: 1, flexShrink: 1, minWidth: 0 },
   platViews: {
     fontFamily: 'Flame-Regular',
     fontSize: 15,
     color: COLORS.navy,
     fontVariant: ['tabular-nums'],
   },
-  platSub: { fontFamily: 'Nunito_600SemiBold', fontSize: 10.5, color: 'rgba(41,60,67,0.5)' },
+  platSub: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 10.5,
+    color: 'rgba(41,60,67,0.5)',
+    textAlign: 'right',
+  },
   footNote: {
     fontFamily: 'Nunito_600SemiBold',
     fontSize: 11,

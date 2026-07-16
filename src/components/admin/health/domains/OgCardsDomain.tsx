@@ -47,14 +47,15 @@ function OgPreview({ label, hint, path }: { label: string; hint: string; path: s
           {hint}
         </Text>
       </View>
-      <View style={s.frame}>
-        {failed ? (
-          <View style={s.fallback}>
-            <Text style={s.fallbackText}>
-              Preview unavailable here — /api/og only renders on the deployed site.
-            </Text>
-          </View>
-        ) : (
+      {failed ? (
+        // No inline render (e.g. /api/og is deploy-only) — collapse to a slim
+        // strip instead of holding the full 1200:630 frame as a dead dark box
+        // (three of those buried the mobile page in ~550px of empty ink).
+        <View style={s.fallbackRow}>
+          <Text style={s.fallbackText}>Preview can’t render inline — Open ↗ shows the live card.</Text>
+        </View>
+      ) : (
+        <View style={s.frame}>
           <Image
             // 1200×630 OG canvas, scaled to the frame width.
             source={{ uri: path }}
@@ -62,8 +63,8 @@ function OgPreview({ label, hint, path }: { label: string; hint: string; path: s
             resizeMode="cover"
             onError={() => setFailed(true)}
           />
-        )}
-      </View>
+        </View>
+      )}
       <View style={s.actions}>
         <Pressable onPress={open} style={s.actionBtn}>
           <Text style={s.actionText}>Open ↗</Text>
@@ -177,12 +178,18 @@ const s = StyleSheet.create({
     backgroundColor: '#0b1820',
   },
   img: { width: '100%', height: '100%' },
-  fallback: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
+  fallbackRow: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(20,32,40,0.12)',
+    backgroundColor: '#0b1820',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   fallbackText: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
     color: '#9db4c4',
-    textAlign: 'center',
   },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   actionBtn: {

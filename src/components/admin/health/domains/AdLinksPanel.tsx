@@ -251,8 +251,13 @@ const s = StyleSheet.create({
   },
   pickedName: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  // minWidth 0 + break-all: without them, web flexbox sizes the flex child to
+  // the UNBREAKABLE URL's min-content width (min-width:auto), shoving the Copy
+  // button ~50px off-screen at 390px. The URL may break anywhere — it's a link,
+  // not prose.
   linkText: {
     flex: 1,
+    minWidth: 0,
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
     color: COLORS.navy,
@@ -260,7 +265,8 @@ const s = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
-  },
+    wordBreak: 'break-all',
+  } as object,
   copyBtn: {
     flexDirection: 'row',
     alignItems: 'center',

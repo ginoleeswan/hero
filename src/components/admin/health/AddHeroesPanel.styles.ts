@@ -1,9 +1,16 @@
 import { StyleSheet } from 'react-native';
 import { COLORS } from '../../../constants/colors';
+import { DENSITY } from './format';
 
 export const styles = StyleSheet.create({
   // contentContainerStyle for a horizontal ScrollView — single no-wrap row of chips.
-  modeRow: { flexDirection: 'row', gap: 6, marginBottom: 10, paddingRight: 4 },
+  // The scroller bleeds through the Panel's inner padding to the card edges
+  // (modeScroll* below), so the panel pad moves into the content padding here:
+  // a chip row that clips mid-gutter reads as broken, not scrollable.
+  modeRow: { flexDirection: 'row', gap: 6, marginBottom: 10, paddingHorizontal: DENSITY.panelPad },
+  modeRowNarrow: { paddingHorizontal: DENSITY.panelPadNarrow },
+  modeScroll: { marginHorizontal: -DENSITY.panelPad, flexGrow: 0 },
+  modeScrollNarrow: { marginHorizontal: -DENSITY.panelPadNarrow },
   modePill: {
     paddingHorizontal: 12,
     paddingVertical: 6,
