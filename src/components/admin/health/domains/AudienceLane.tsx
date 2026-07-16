@@ -8,13 +8,14 @@ import { useUrlTabState } from '../../../../hooks/useUrlTabState';
 import { useQuery } from '@tanstack/react-query';
 import { SubTabs } from '../SubTabs';
 import { TrafficDomain } from './TrafficDomain';
+import { AcquisitionDomain } from './AcquisitionDomain';
 import { CommunityDomain } from './CommunityDomain';
 import { ErrorsDomain } from './ErrorsDomain';
 import { fetchTrafficOverview } from '../../../../lib/db/traffic';
 import { fetchCommunityOverview } from '../../../../lib/db/community';
 import { fetchClientErrorOverview } from '../../../../lib/db/clientErrors';
 
-export type AudienceSub = 'traffic' | 'community' | 'errors';
+export type AudienceSub = 'traffic' | 'acquisition' | 'community' | 'errors';
 
 export function AudienceLane({
   narrow,
@@ -25,15 +26,18 @@ export function AudienceLane({
 }) {
   const [sub, setSub] = useUrlTabState<AudienceSub>('sub', 'traffic', [
     'traffic',
+    'acquisition',
     'community',
     'errors',
   ] as const);
   const [trafficDays, setTrafficDays] = useState(28);
 
+  // Traffic and Acquisition both read admin_traffic_overview() — one shared query
+  // (same key) powers both sub-tabs, so switching between them is instant.
   const trafficQ = useQuery({
     queryKey: ['trafficOverview', trafficDays],
     queryFn: () => fetchTrafficOverview(trafficDays),
-    enabled: sub === 'traffic',
+    enabled: sub === 'traffic' || sub === 'acquisition',
     staleTime: 5 * 60_000,
     placeholderData: (prev) => prev, // keep the chart up while switching ranges
   });
@@ -55,6 +59,7 @@ export function AudienceLane({
       <SubTabs<AudienceSub>
         tabs={[
           { key: 'traffic', label: 'Traffic', icon: 'trending-up-outline' },
+          { key: 'acquisition', label: 'Acquisition', icon: 'magnet-outline' },
           { key: 'community', label: 'Community', icon: 'people-outline' },
           { key: 'errors', label: 'Errors', icon: 'bug-outline' },
         ]}
@@ -63,6 +68,15 @@ export function AudienceLane({
       />
       {sub === 'traffic' ? (
         <TrafficDomain
+          data={trafficQ.data ?? null}
+          loading={trafficQ.isLoading}
+          narrow={narrow}
+          days={trafficDays}
+          onDaysChange={setTrafficDays}
+        />
+      ) : null}
+      {sub === 'acquisition' ? (
+        <AcquisitionDomain
           data={trafficQ.data ?? null}
           loading={trafficQ.isLoading}
           narrow={narrow}
