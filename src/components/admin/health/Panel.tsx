@@ -8,6 +8,7 @@ import {
   StyleSheet,
   useWindowDimensions,
   type ViewStyle,
+  type StyleProp,
 } from 'react-native';
 import { type ReactNode } from 'react';
 import { COLORS } from '../../../constants/colors';
@@ -26,7 +27,7 @@ export function Panel({
   hint?: string;
   action?: ReactNode;
   children?: ReactNode;
-  style?: ViewStyle | ViewStyle[];
+  style?: StyleProp<ViewStyle>;
   // Height-filling dashboard cell: stretch to the row's height and clip, so the
   // body can scroll internally instead of growing the page. The single source of
   // truth for the desktop "divide the viewport" layout.
@@ -47,7 +48,7 @@ export function Panel({
         styles.panel,
         narrow && styles.panelNarrow,
         fill && styles.fill,
-        style as ViewStyle,
+        style,
         // Mobile stacks panels vertically, so any `flex`/`flex:1.5` a domain passes
         // (for desktop side-by-side width ratios) must be neutralised — otherwise a
         // flex-basis:0% panel gets sized by flex instead of its content and a tall

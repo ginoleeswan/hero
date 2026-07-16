@@ -118,3 +118,8 @@ supabase/.temp/
 reference-portraits/
 out/
 assets/silhouettes/raw/
+
+# Design-audit snapshots — full-page admin screenshots contain LIVE business
+# data (traffic, revenue, member counts). This repo is public: never commit
+# them. Keep snapshots in a private store. See scripts/design-audit/README.md.
+scripts/design-audit/history/
