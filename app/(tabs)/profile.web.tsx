@@ -372,6 +372,7 @@ export default function WebProfileScreen() {
     votes: battle?.total ?? 0,
     streak: battle?.streak ?? 0,
     topPublisher: taste?.publishers[0]?.name ?? null,
+    isSupporter: profile?.is_supporter ?? false,
   });
   const badgesEarned = earnedCount(badges);
 
@@ -889,7 +890,7 @@ export default function WebProfileScreen() {
         {universeCard}
         <Toast message={toast.message} visible={toast.visible} />
         <DonateNudge
-          visible={nudge.visible}
+          visible={nudge.visible && !profile?.is_supporter}
           onConvert={nudge.onConvert}
           onDismiss={nudge.onDismiss}
         />
@@ -1271,7 +1272,7 @@ export default function WebProfileScreen() {
       {universeCard}
       <Toast message={toast.message} visible={toast.visible} />
       <DonateNudge
-        visible={nudge.visible}
+        visible={nudge.visible && !profile?.is_supporter}
         onConvert={nudge.onConvert}
         onDismiss={nudge.onDismiss}
       />

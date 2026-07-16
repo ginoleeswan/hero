@@ -1976,7 +1976,9 @@ export type Database = {
           display_name: string | null
           id: string
           is_admin: boolean
+          is_supporter: boolean
           last_seen_at: string | null
+          supporter_since: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1985,7 +1987,9 @@ export type Database = {
           display_name?: string | null
           id: string
           is_admin?: boolean
+          is_supporter?: boolean
           last_seen_at?: string | null
+          supporter_since?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -1994,7 +1998,9 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_admin?: boolean
+          is_supporter?: boolean
           last_seen_at?: string | null
+          supporter_since?: string | null
         }
         Relationships: []
       }
@@ -2127,6 +2133,10 @@ export type Database = {
         Returns: undefined
       }
       admin_set_drain_cron: { Args: { p_enabled: boolean }; Returns: string }
+      admin_set_supporter: {
+        Args: { p_on: boolean; p_user_id: string }
+        Returns: undefined
+      }
       admin_set_universe: {
         Args: { p_hero_id: string; p_publisher: string }
         Returns: Json
