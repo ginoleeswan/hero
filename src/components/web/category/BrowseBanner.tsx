@@ -97,6 +97,11 @@ export function BrowseBanner({
   const { width: winW } = useWindowDimensions();
   const BODY_MAX = 1680;
   const sideGutter = Math.max(0, (winW - BODY_MAX) / 2);
+  // Montage width as a fraction of the content column (not the viewport), so on
+  // wide screens the roster stays the same size and framed to the 1680 column
+  // rather than stretching toward the far right edge. Matches the old 78%-of-
+  // padding-box size at 1680 (≈0.75 of the column).
+  const montageW = Math.round(Math.min(winW, BODY_MAX) * 0.75);
 
   const hasLogo = logoW > 0;
   // Light logos (white-tinted) vanish on the beige canvas once parked, so they
@@ -215,7 +220,15 @@ export function BrowseBanner({
               style={
                 [
                   styles.montage,
-                  { maskImage: 'linear-gradient(to left, #000 30%, transparent 100%)' },
+                  {
+                    maskImage: 'linear-gradient(to left, #000 30%, transparent 100%)',
+                    // Frame the roster to the centred 1680 content column (like the
+                    // grid) instead of the viewport edge, so it doesn't drift into
+                    // the margin on wide screens and the composition stays constant
+                    // at every width. The brand wash/scrim behind stays full-bleed.
+                    width: montageW,
+                    right: sideGutter - 16,
+                  },
                 ] as object
               }
               pointerEvents="none"
@@ -323,13 +336,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as object,
   montage: {
+    // width + right are set inline (framed to the content column); the strip
+    // bleeds 16px past the column's right edge so the last portrait runs out of
+    // frame, balancing the soft left fade (banner overflow:hidden clips it).
     position: 'absolute',
     top: 0,
     bottom: 0,
-    // Bleed the strip slightly off the right edge so the last portrait runs out
-    // of frame — balances the soft left fade (banner overflow:hidden clips it).
-    right: -16,
-    width: '78%' as unknown as number,
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'stretch',
