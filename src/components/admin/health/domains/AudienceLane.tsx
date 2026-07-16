@@ -20,9 +20,12 @@ export type AudienceSub = 'traffic' | 'acquisition' | 'community' | 'errors';
 export function AudienceLane({
   narrow,
   onOpenReview,
+  onOpenPromote,
 }: {
   narrow: boolean;
   onOpenReview: () => void;
+  /** Jump to Publish → Promote (the ad-link builder) from Acquisition. */
+  onOpenPromote?: () => void;
 }) {
   const [sub, setSub] = useUrlTabState<AudienceSub>('sub', 'traffic', [
     'traffic',
@@ -82,6 +85,7 @@ export function AudienceLane({
           narrow={narrow}
           days={trafficDays}
           onDaysChange={setTrafficDays}
+          onOpenPromote={onOpenPromote}
         />
       ) : null}
       {sub === 'community' ? (

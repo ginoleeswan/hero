@@ -85,6 +85,14 @@ export default function AdminHealthScreen() {
     },
     [router],
   );
+  // Cross-lane deep jump — lands on a specific sub-tab (e.g. Acquisition →
+  // "Build ad links" → Publish › Promote, and back for results).
+  const jumpTo = useCallback(
+    (d: DomainKey, sub: string) => {
+      router.setParams({ tab: d, sub } as Record<string, string>);
+    },
+    [router],
+  );
   // The active Build sub-tab from the URL, so heavy Build queries can gate on it.
   const rawSub = useLocalSearchParams().sub;
   const buildSub = typeof rawSub === 'string' ? rawSub : undefined;
@@ -427,9 +435,15 @@ export default function AdminHealthScreen() {
             ) : null)}
           {domain === 'inbox' && <InboxLane jump={inboxJump} flash={flash} />}
           {domain === 'audience' && (
-            <AudienceLane narrow={narrow} onOpenReview={() => jumpInbox('review')} />
+            <AudienceLane
+              narrow={narrow}
+              onOpenReview={() => jumpInbox('review')}
+              onOpenPromote={() => jumpTo('publish', 'promote')}
+            />
           )}
-          {domain === 'publish' && <PublishLane />}
+          {domain === 'publish' && (
+            <PublishLane onOpenAcquisition={() => jumpTo('audience', 'acquisition')} />
+          )}
         </CommandShell>
       </SkeletonProvider>
       {/* Foreground Build board lives at page level so the top-strip Stop can halt it. */}
