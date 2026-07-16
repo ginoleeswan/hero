@@ -3,7 +3,7 @@
 // "which campaigns bring visitors, and which of those become accounts?" off the
 // same admin_traffic_overview() payload the Traffic tab reads, so it adds no
 // extra query.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';
@@ -11,7 +11,6 @@ import { Bento } from '../Bento';
 import { EmptyState, PillGroup } from '../ui';
 import { TrafficSkeleton } from '../skeletons';
 import { TrafficKpi } from './traffic/TrafficKpi';
-import { AdLinksPanel } from './AdLinksPanel';
 import type { TrafficOverview, AcquisitionRow } from '../../../../lib/db/traffic';
 
 const RANGES = [
@@ -49,12 +48,15 @@ export function AcquisitionDomain({
   narrow,
   days,
   onDaysChange,
+  onOpenPromote,
 }: {
   data: TrafficOverview | null;
   loading: boolean;
   narrow: boolean;
   days: number;
   onDaysChange: (d: number) => void;
+  /** Jump to Publish → Promote — where ad links are built. */
+  onOpenPromote?: () => void;
 }) {
   if (loading && !data) {
     return <TrafficSkeleton narrow={narrow} />;
@@ -117,7 +119,7 @@ export function AcquisitionDomain({
         action={<PillGroup options={RANGES} value={days} onChange={onDaysChange} />}
       >
         {rows.length === 0 ? (
-          <EmptyState text="No tagged campaigns yet. Tag your TikTok destination URL / bio link with utm_* params — see docs/marketing/utm-attribution.md." />
+          <EmptyState text="No tagged campaigns yet. Build a tagged link in Publish → Promote and use it as the promote's destination URL." />
         ) : (
           <View style={s.barList}>
             {rows.map((r, i) => (
@@ -125,10 +127,13 @@ export function AcquisitionDomain({
             ))}
           </View>
         )}
+        {onOpenPromote ? (
+          <Pressable style={s.promoteBtn} onPress={onOpenPromote}>
+            <Ionicons name="rocket-outline" size={13} color="#fff" />
+            <Text style={s.promoteText}>Build ad links · Publish → Promote</Text>
+          </Pressable>
+        ) : null}
       </Panel>
-
-      {/* The link builder — the exact URL to paste behind a promote or post */}
-      <AdLinksPanel />
     </Bento>
   );
 }
@@ -144,6 +149,19 @@ const s = StyleSheet.create({
   barTrack: { height: 6, borderRadius: 999, backgroundColor: '#efe6d6', overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 999, backgroundColor: COLORS.orange },
   acqCap: { fontFamily: 'Nunito_400Regular', fontSize: 10.5, color: COLORS.grey },
+  promoteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.navy,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginTop: 12,
+  },
+  promoteText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
   locked: { alignItems: 'center', gap: 8, paddingVertical: 24 },
   lockedText: {
     fontFamily: 'Nunito_400Regular',

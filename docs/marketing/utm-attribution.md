@@ -9,9 +9,11 @@ This doc is the link-tagging convention that makes that measurement work. Tag a
 link once and every visit, event and signup it produces is bucketed by campaign
 in the admin **Audience → Acquisition** tab.
 
-> **Shortcut:** you rarely need to hand-assemble these links. The **Ad links**
-> panel (admin → Audience → Acquisition) builds them — pick source/medium, type
-> a campaign name, optionally pick two fighters for a battle link, tap Copy.
+> **Shortcut:** you rarely need to hand-assemble these links. The **Publish →
+> Promote** tab (admin command center) has the whole boost flow — the four-step
+> checklist and the Ad links builder: pick source/medium, type a campaign name,
+> optionally pick two fighters for a battle link, tap Copy. Results land in
+> **Audience → Acquisition**, which cross-links back.
 
 ## Why this matters (from the July promotes)
 
