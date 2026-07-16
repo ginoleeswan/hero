@@ -101,6 +101,10 @@
       ],
       "destination": "/api/bot-page?kind=franchise&slug=:slug"
     },
+    {
+      "source": "/battle/:a/:b",
+      "destination": "/api/battle?a=:a&b=:b"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

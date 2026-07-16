@@ -36,6 +36,8 @@ export interface AcquisitionRow {
   campaign: string | null;
   /** Distinct sessions first seen in the window from this bucket. */
   visitors: number;
+  /** Of those, sessions with ≥2 page views — they stayed past the landing. */
+  engaged: number;
   /** How many of those sessions were signed in on any page view. */
   signups: number;
 }
@@ -100,6 +102,7 @@ export async function fetchTrafficOverview(days = 28): Promise<TrafficOverview |
     devices: json.devices,
     topHeroes: json.topHeroes ?? [],
     live: json.live ?? [],
-    acquisition: json.acquisition ?? [],
+    // `engaged` arrives with overview v4 — default 0 while v3 is still deployed.
+    acquisition: (json.acquisition ?? []).map((r) => ({ ...r, engaged: r.engaged ?? 0 })),
   };
 }

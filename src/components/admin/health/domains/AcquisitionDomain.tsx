@@ -11,6 +11,7 @@ import { Bento } from '../Bento';
 import { EmptyState, PillGroup } from '../ui';
 import { TrafficSkeleton } from '../skeletons';
 import { TrafficKpi } from './traffic/TrafficKpi';
+import { AdLinksPanel } from './AdLinksPanel';
 import type { TrafficOverview, AcquisitionRow } from '../../../../lib/db/traffic';
 
 const RANGES = [
@@ -35,7 +36,8 @@ function AcqRow({ row, max }: { row: AcquisitionRow; max: number }) {
         <View style={[s.barFill, { width: `${pct}%` }]} />
       </View>
       <Text style={s.acqCap} numberOfLines={1}>
-        {row.visitors.toLocaleString()} visitors · {row.signups.toLocaleString()} signed in
+        {row.visitors.toLocaleString()} visitors · {row.engaged.toLocaleString()} engaged ·{' '}
+        {row.signups.toLocaleString()} signed in
       </Text>
     </View>
   );
@@ -73,7 +75,9 @@ export function AcquisitionDomain({
   const rows = data.acquisition;
   const max = Math.max(1, ...rows.map((r) => r.visitors));
   const totalVisitors = rows.reduce((n, r) => n + r.visitors, 0);
+  const totalEngaged = rows.reduce((n, r) => n + r.engaged, 0);
   const totalSignups = rows.reduce((n, r) => n + r.signups, 0);
+  const engagedPct = totalVisitors > 0 ? Math.round((totalEngaged / totalVisitors) * 100) : 0;
   const convPct = totalVisitors > 0 ? Math.round((totalSignups / totalVisitors) * 100) : 0;
 
   return (
@@ -85,6 +89,12 @@ export function AcquisitionDomain({
           value={totalVisitors.toLocaleString()}
           tint={COLORS.navy}
           footer={<Text style={s.kpiFoot}>tagged first-touch · {data.rangeDays}d</Text>}
+        />
+        <TrafficKpi
+          label="Engaged"
+          value={totalEngaged.toLocaleString()}
+          tint={COLORS.blue}
+          footer={<Text style={s.kpiFoot}>{engagedPct}% stayed past the landing</Text>}
         />
         <TrafficKpi
           label="Signups"
@@ -116,6 +126,9 @@ export function AcquisitionDomain({
           </View>
         )}
       </Panel>
+
+      {/* The link builder — the exact URL to paste behind a promote or post */}
+      <AdLinksPanel />
     </Bento>
   );
 }

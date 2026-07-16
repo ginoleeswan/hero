@@ -120,7 +120,7 @@ Stored in `.env.local` (gitignored). See `.env.example` for required keys.
 
 - Authenticated landing on an auth screen or the root → `/explore`
 
-The app is **not** fully auth-gated: logged-out users can browse `/explore` and the rest of the catalogue. Actions that write per-user data (e.g. matchup votes, favourites) must check `useAuth().user` themselves and route to `/(auth)/login` when absent — the RLS-locked RPCs reject anon and otherwise fail silently.
+The app is **not** fully auth-gated: logged-out users can browse `/explore` and the rest of the catalogue. **Matchup votes are anon-friendly**: `cast_matchup_vote_v2` / `get_matchup_tally_v2` are granted to `anon` and dedupe by a per-device voter key (`src/lib/voterKey.ts`) — no login wall at the vote moment (`useMatchupVote`). Other per-user writes (favourites, takes, profile edits) still require auth: check `useAuth().user` and route to `/(auth)/login` when absent — those RLS-locked RPCs reject anon and otherwise fail silently.
 
 ## Testing
 
@@ -164,14 +164,14 @@ the hook. When adding a screen with a web variant, both `foo.tsx` and
 
 ## Map: where things live
 
-| Concern | Path |
-| --- | --- |
-| Screens / routes | `app/` (expo-router file-based) |
-| Reusable hooks | `src/hooks/` |
-| React-Query data hooks + cache | `src/lib/query/` |
-| DB access (per-table modules) | `src/lib/db/` |
-| External REST APIs | `src/lib/api.ts` |
-| UI components | `src/components/` (admin → `admin/`, web-only → `web/`) |
-| Types | `src/types/index.ts` (app) · `database.generated.ts` (generated) |
-| Palette / constants | `src/constants/` |
-| SQL migrations | `supabase/migrations/` |
+| Concern                        | Path                                                             |
+| ------------------------------ | ---------------------------------------------------------------- |
+| Screens / routes               | `app/` (expo-router file-based)                                  |
+| Reusable hooks                 | `src/hooks/`                                                     |
+| React-Query data hooks + cache | `src/lib/query/`                                                 |
+| DB access (per-table modules)  | `src/lib/db/`                                                    |
+| External REST APIs             | `src/lib/api.ts`                                                 |
+| UI components                  | `src/components/` (admin → `admin/`, web-only → `web/`)          |
+| Types                          | `src/types/index.ts` (app) · `database.generated.ts` (generated) |
+| Palette / constants            | `src/constants/`                                                 |
+| SQL migrations                 | `supabase/migrations/`                                           |

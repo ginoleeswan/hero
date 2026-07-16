@@ -7,7 +7,11 @@ profile, how many reached the app and signed up. That step happens on
 
 This doc is the link-tagging convention that makes that measurement work. Tag a
 link once and every visit, event and signup it produces is bucketed by campaign
-in the admin **Traffic → Acquisition** panel.
+in the admin **Audience → Acquisition** tab.
+
+> **Shortcut:** you rarely need to hand-assemble these links. The **Ad links**
+> panel (admin → Audience → Acquisition) builds them — pick source/medium, type
+> a campaign name, optionally pick two fighters for a battle link, tap Copy.
 
 ## Why this matters (from the July promotes)
 
@@ -56,13 +60,22 @@ https://mythique.app/?utm_source=tiktok&utm_medium=social&utm_campaign=bio
 
 When a specific post or Promote drives to a specific place, give it its own
 `utm_campaign` so you can compare creatives. Match the campaign name to the
-creative:
+creative.
+
+**For paid matchup creatives, prefer the `/battle` landing** — a few-KB static
+page (portraits + live tally + tap-to-vote) that paints instantly in TikTok's
+in-app browser, registers a real anonymous vote, then funnels into the app with
+the tags carried through. The full SPA is too heavy for a cold paid click
+(measured ~5% click→arrival on the July promotes):
 
 ```
-# "Name ONE who beats Aquaman" — deep-link straight into the matchup
+# "Name ONE who beats Aquaman" — instant-paint battle landing (best for ads)
+https://mythique.app/battle/<aquaman-id>/<opponent-id>?utm_source=tiktok&utm_medium=paid&utm_campaign=aquaman-challenge
+
+# Deep-link into the app's compare page (fine for X / Story links)
 https://mythique.app/compare/<aquaman-id>/<opponent-id>?utm_source=tiktok&utm_medium=paid&utm_campaign=aquaman-challenge
 
-# "Top 10 Most Famous Villains" ranking
+# "Top 10 Most Famous Villains" ranking → homepage
 https://mythique.app/?utm_source=tiktok&utm_medium=paid&utm_campaign=villains-top10
 ```
 
@@ -80,9 +93,10 @@ for organic posts — so you can separate paid from organic acquisition at a gla
 
 ## Reading the results
 
-- **Admin → Traffic → Acquisition** — first-touch visitors and how many signed in,
-  per campaign. This is the money view: `aquaman-challenge → 120 visitors, 14
-signed in`.
+- **Admin → Audience → Acquisition** — first-touch visitors, how many engaged
+  (≥2 page views — they stayed past the landing), and how many signed in, per
+  campaign. This is the money view: `aquaman-challenge → 120 visitors · 41
+engaged · 14 signed in`.
 - **Top referrers** (same tab) still catches untagged organic clicks by host.
 - Keep the campaign vocabulary small and consistent — every distinct spelling is
   a separate row.
