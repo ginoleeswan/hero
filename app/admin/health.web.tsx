@@ -46,6 +46,7 @@ import { getReviewQueue } from '../../src/lib/db/contributions';
 import { fetchTrafficOverview } from '../../src/lib/db/traffic';
 import { fetchCommunityOverview } from '../../src/lib/db/community';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
+import { LoadFailed } from '../../src/components/admin/health/ui';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import {
   CommandHomeSkeleton,
@@ -226,7 +227,8 @@ export default function AdminHealthScreen() {
 
   // Catalog completeness = mean of the five tracked metric percentages.
   const overall = useMemo(() => {
-    if (!h || h.total === 0) return 0;
+    if (!h) return null; // no data yet — CommandShell hides the gauge (0% read as a real score)
+    if (h.total === 0) return 0;
     const ps = METRICS.map((m) => pct(h.metrics[m.key], h.total));
     return Math.round(ps.reduce((a, b) => a + b, 0) / ps.length);
   }, [h]);
@@ -346,7 +348,7 @@ export default function AdminHealthScreen() {
             (h ? (
               <CommandHome
                 h={h}
-                overall={overall}
+                overall={overall ?? 0}
                 spend={spendQ.data}
                 progress={enrichProgressQ.data}
                 traffic={trafficQ.data ?? null}
@@ -364,6 +366,8 @@ export default function AdminHealthScreen() {
                 onRunDrain={onRunDrain}
                 draining={busy === 'drain'}
               />
+            ) : healthQ.isError ? (
+              <LoadFailed what="the overview" onRetry={() => healthQ.refetch()} />
             ) : showHealthSkeleton ? (
               <CommandHomeSkeleton narrow={narrow} />
             ) : null)}
@@ -382,6 +386,8 @@ export default function AdminHealthScreen() {
                   jump={catalogJump}
                 />
               </Bento>
+            ) : healthQ.isError ? (
+              <LoadFailed what="the catalog" onRetry={() => healthQ.refetch()} />
             ) : showHealthSkeleton ? (
               <CatalogSkeleton narrow={narrow} />
             ) : null)}
@@ -430,6 +436,8 @@ export default function AdminHealthScreen() {
                 controls={{ buildIds, setBuildIds, busy, batchSize, setBatchSize, narrow }}
                 jump={buildJump}
               />
+            ) : healthQ.isError ? (
+              <LoadFailed what="the build board" onRetry={() => healthQ.refetch()} />
             ) : showHealthSkeleton ? (
               <PipelinesSkeleton narrow={narrow} />
             ) : null)}

@@ -11,12 +11,16 @@ import { SkPanel, SkTiles, SkBars, SkBarList, SkRows, SkLine } from './kit';
 
 export { SkPanel, SkTiles, SkBars, SkBarList, SkRows, SkLine } from './kit';
 
-/** A row of pill placeholders (sub-tabs, status filters). */
+/** A row of pill placeholders (sub-tabs, status filters). Flexible widths —
+ *  4 × fixed 92px overflowed a 390px viewport (the pills poked past the edge
+ *  and let the whole page pan sideways while loading). */
 function SkPills({ n = 4 }: { n?: number }) {
   return (
     <View style={s.pills}>
       {Array.from({ length: n }).map((_, i) => (
-        <Skeleton key={i} width={92} height={30} borderRadius={9} />
+        <View key={i} style={s.pillFlex}>
+          <Skeleton width="100%" height={30} borderRadius={9} />
+        </View>
       ))}
     </View>
   );
@@ -273,6 +277,7 @@ const s = StyleSheet.create({
   },
   pulseGrow: { flex: 1 },
   pills: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  pillFlex: { flex: 1, maxWidth: 110, minWidth: 0 },
   chipRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
   gapAbove: { marginTop: 6, marginBottom: 12 },
   gap12: { marginTop: 12 },
