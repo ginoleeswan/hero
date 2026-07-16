@@ -41,6 +41,7 @@ import { PublisherPods } from '../../src/components/web/home/PublisherPods';
 import { CategoryBrowseGrid } from '../../src/components/web/home/CategoryBrowseGrid';
 import { HallOfFame } from '../../src/components/web/home/HallOfFame';
 import { FeaturedRivalry } from '../../src/components/web/home/FeaturedRivalry';
+import { SponsorSlot } from '../../src/components/SponsorSlot';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROW_CARD_HEIGHT = 310;
@@ -1467,6 +1468,15 @@ export default function WebHomeScreen() {
                 heroes={homeData.newlyAdded ?? []}
                 onPress={handlePress}
               />
+            </Reveal>
+
+            {/* ── The sponsor slot — the page's ONE promo unit (house content
+                 today; see the tasteful-sponsorship playbook). Supporters see
+                 nothing here. ─────────────────────────────────────────────── */}
+            <Reveal>
+              <View style={{ paddingHorizontal: gutter } as object}>
+                <SponsorSlot placement="explore-feed" />
+              </View>
             </Reveal>
 
             {/* ── The Arena — one featured rivalry leads; the rest live in /versus. */}

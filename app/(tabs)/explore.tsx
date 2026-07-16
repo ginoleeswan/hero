@@ -49,6 +49,7 @@ import { CategoryPodGrid, BROWSE_PODS } from '../../src/components/home/Category
 import { PublisherGrid } from '../../src/components/home/PublisherGrid';
 import { PulseTicker } from '../../src/components/home/PulseTicker';
 import { DailyChallengeBanner } from '../../src/components/game/DailyChallengeBanner';
+import { SponsorSlot } from '../../src/components/SponsorSlot';
 import { useExploreData } from '../../src/lib/query/exploreQueries';
 import type { FavouriteHero } from '../../src/types';
 
@@ -68,6 +69,7 @@ type FeedRow =
   | { type: 'ticker'; heroCount: number; newlyAddedCount: number }
   | { type: 'recent'; heroes: RowHero[] }
   | { type: 'foryou'; heroes: RowHero[] }
+  | { type: 'sponsorslot' }
   | { type: 'favourites'; heroes: RowHero[] }
   | {
       type: 'rightnow';
@@ -276,6 +278,8 @@ export default function HomeScreen() {
         title: 'Newly Added',
         heroes: newlyAdded,
       });
+    // The page's ONE promo unit (house content; see the sponsorship playbook).
+    out.push({ type: 'sponsorslot' });
 
     // The Arena — a featured rivalry leads; the rest live in /versus.
     if (rivalries.length > 0) {
@@ -380,6 +384,12 @@ export default function HomeScreen() {
                 onPress={handlePress}
                 disabled={navigating}
               />
+            );
+          case 'sponsorslot':
+            return (
+              <View style={styles.sponsorWrap}>
+                <SponsorSlot placement="explore-feed" />
+              </View>
             );
           case 'rightnow':
             return (
@@ -519,6 +529,7 @@ const styles = StyleSheet.create({
   // Deep navy so the overscroll rubber-band reveals the same dark as the stage
   // (no lighter-navy band behind the zooming portrait).
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
+  sponsorWrap: { paddingHorizontal: 16, paddingVertical: 6 },
   // Transparent so the dark navy root shows under the status bar and on
   // overscroll (matching the spotlight) instead of a beige band.
   scroll: { flex: 1, backgroundColor: 'transparent' },
