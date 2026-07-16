@@ -24,6 +24,7 @@ import { type Hero } from '../../src/lib/db/heroes';
 import { loginHref } from '../../src/lib/loginRedirect';
 import { RightNowBand } from '../../src/components/web/home/RightNowBand';
 import { useExploreData } from '../../src/lib/query/exploreQueries';
+import { prefersReducedMotion } from '../../src/lib/motion';
 import type { FavouriteHero } from '../../src/types';
 import { RankingCard } from '../../src/components/web/home/RankingCard';
 import { HomeFooter } from '../../src/components/web/home/HomeFooter';
@@ -281,12 +282,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   // mid-read) and disabled entirely under prefers-reduced-motion.
   useEffect(() => {
     if (heroes.length <= 1 || paused) return;
-    if (
-      typeof window !== 'undefined' &&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    ) {
-      return;
-    }
+    if (prefersReducedMotion()) return;
     const timer = setInterval(() => setActiveIndex((i) => (i + 1) % heroes.length), 6000);
     return () => clearInterval(timer);
   }, [heroes.length, paused]);
@@ -300,7 +296,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   const [backdrop, setBackdrop] = useState({ name: heroName, on: true });
   useEffect(() => {
     if (!heroName || heroName === backdrop.name) return;
-    const reduce = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const reduce = prefersReducedMotion();
     const fadeOut = reduce ? null : setTimeout(() => setBackdrop((b) => ({ ...b, on: false })), 0);
     const swapIn = setTimeout(() => setBackdrop({ name: heroName, on: true }), reduce ? 0 : 320);
     return () => {
@@ -342,27 +338,34 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
         } as object)}
       >
         {/* Atmospheric orbs — decorative, no interaction. Orb A carries the
-            featured hero's publisher tint. */}
+            featured hero's publisher tint. These bloom freely: the wrap no
+            longer clips (it used to shear the blurred glow flat at the stage's
+            top edge — a hard line on a soft bloom). The two things that DO need
+            clipping keep their own: the giant ghost name (ambientClip) and the
+            accordion card slivers (the strip's own overflow). */}
         <View style={[pss.orbA, { backgroundColor: brandGlow }] as object} />
         <View style={pss.orbB as object} />
 
-        {/* Type as scenery — the splash-page title behind the portraits. */}
-        <Text
-          style={
-            [
-              pss.backdropName,
-              {
-                fontSize: backdropSize,
-                lineHeight: Math.round(backdropSize * 1.05),
-                opacity: backdrop.on ? 1 : 0,
-              },
-            ] as object
-          }
-          numberOfLines={1}
-          aria-hidden
-        >
-          {backdrop.name.toUpperCase()}
-        </Text>
+        {/* Type as scenery — the splash-page title behind the portraits, cropped
+            to the stage by its own clip layer (was cropped by the wrap). */}
+        <View style={pss.ambientClip as object} pointerEvents="none">
+          <Text
+            style={
+              [
+                pss.backdropName,
+                {
+                  fontSize: backdropSize,
+                  lineHeight: Math.round(backdropSize * 1.05),
+                  opacity: backdrop.on ? 1 : 0,
+                },
+              ] as object
+            }
+            numberOfLines={1}
+            aria-hidden
+          >
+            {backdrop.name.toUpperCase()}
+          </Text>
+        </View>
 
         <View style={pss.strip}>
           {heroes.map((h, index) => {
@@ -565,8 +568,19 @@ const pss = StyleSheet.create({
     alignItems: 'stretch',
     gap: 16,
     position: 'relative',
-    overflow: 'hidden',
+    // No overflow clip here — it sheared the orb glow flat at the top edge.
+    // The ghost name and the card slivers clip themselves (ambientClip / strip).
     marginBottom: 24,
+  } as object,
+  // Clips only the giant ghost name to the stage bounds; sits behind the strip
+  // and the glass panel, never intercepts pointer events.
+  ambientClip: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
   } as object,
   strip: {
     flexDirection: 'row',
@@ -575,8 +589,9 @@ const pss = StyleSheet.create({
     contain: 'layout style',
     height: '100%',
     // Yield to the glass panel if the fixed card widths ever exceed the band:
-    // the rightmost accordion slivers clip (via the wrap's overflow) instead of
-    // the panel's edge getting sheared.
+    // the rightmost accordion slivers clip here (the strip owns this now that
+    // the wrap no longer clips) instead of the panel's edge getting sheared.
+    overflow: 'hidden',
     flexShrink: 1,
     minWidth: 0,
   } as object,

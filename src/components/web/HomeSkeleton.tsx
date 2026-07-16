@@ -40,7 +40,10 @@ function SpotlightSkeleton({ opacity, dark }: { opacity: Opacity; dark: boolean 
     );
   }
 
-  const contentHeight = Math.min(460, height * 0.58);
+  // Mirror the real stage height formula (PortraitStripSpotlight): max(440,
+  // min(500, h*0.62)). The old min(460, h*0.58) ran ~40px short, so the page
+  // nudged down when the spotlight swapped in.
+  const contentHeight = Math.max(440, Math.min(500, height * 0.62));
   return (
     <View
       style={{
@@ -51,8 +54,10 @@ function SpotlightSkeleton({ opacity, dark }: { opacity: Opacity; dark: boolean 
         paddingHorizontal: pagePad,
       }}
     >
-      {/* Accordion strip — mirror the large scale breakpoint widths */}
-      {[280, 140, 100, 76].map((w, i) => (
+      {/* Accordion strip — mirror the large-scale ACCORDION_SCALES widths
+          (active card + the thin slivers) so the strip and the glass panel land
+          where the real ones do. */}
+      {[280, 140, 100, 76, 54, 40, 28].map((w, i) => (
         <SkeletonBlock
           key={i}
           opacity={opacity}
@@ -270,6 +275,12 @@ export function WebHomeSkeleton() {
       {/* Dark-stage skeleton at all widths — mirrors the unified dark stage
           so there's no beige flash on refresh. */}
       <View style={[skel.darkStage, isMobile && (skel.darkStageMobile as object)] as object}>
+        {/* Masthead dateline — the real stage opens with "THURSDAY, JULY 16"
+            above the spotlight; reserve it so the strip doesn't sit too high
+            and shove the page down on load. */}
+        <View style={{ paddingHorizontal: pagePad, marginBottom: 14 }}>
+          <SkeletonBlock opacity={opacity} dark width={150} height={10} borderRadius={3} />
+        </View>
         <SpotlightSkeleton opacity={opacity} dark />
         <StatPodsSkeleton opacity={opacity} pagePad={pagePad} />
         <EngageSkeleton opacity={opacity} pagePad={pagePad} isMobile={isMobile} />
