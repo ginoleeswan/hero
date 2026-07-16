@@ -380,7 +380,9 @@ export default function WebCategoryScreen() {
         const j = Math.floor(Math.random() * (i + 1));
         [pool[i], pool[j]] = [pool[j], pool[i]];
       }
-      return [rows[0], ...pool.slice(0, 5)]
+      // Supply up to 12 (lead + 11); the banner renders only as many as fit its
+      // width (wider screens show more), so unrendered ones never load.
+      return [rows[0], ...pool.slice(0, 11)]
         .map((h) => ({ uri: h.portrait_url ?? h.image_url, blurhash: h.portrait_blurhash }))
         .filter((m): m is { uri: string; blurhash: string | null } => !!m.uri);
     },

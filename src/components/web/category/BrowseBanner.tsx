@@ -97,11 +97,14 @@ export function BrowseBanner({
   const { width: winW } = useWindowDimensions();
   const BODY_MAX = 1680;
   const sideGutter = Math.max(0, (winW - BODY_MAX) / 2);
-  // Montage width as a fraction of the content column (not the viewport), so on
-  // wide screens the roster stays the same size and framed to the 1680 column
-  // rather than stretching toward the far right edge. Matches the old 78%-of-
-  // padding-box size at 1680 (≈0.75 of the column).
-  const montageW = Math.round(Math.min(winW, BODY_MAX) * 0.75);
+  // Roster width scales with the viewport — more screen, more space, more
+  // portraits — but the RIGHT edge stays framed to the content column (below)
+  // and both ends fade, so it never reads as hard-anchored or drifting. Capped
+  // so it doesn't sprawl on 4K+.
+  const montageW = Math.round(Math.min(winW, 2800) * 0.65);
+  // Show as many portraits as fill that width (≈185px per tile after the −44
+  // overlap), clamped so a narrow desktop isn't crammed and 4K isn't sparse.
+  const montageCount = Math.max(4, Math.min(12, Math.ceil((montageW - 44) / 185)));
 
   const hasLogo = logoW > 0;
   // Light logos (white-tinted) vanish on the beige canvas once parked, so they
@@ -223,12 +226,13 @@ export function BrowseBanner({
                   {
                     // Fade BOTH ends of the strip so it dissolves into the wash on
                     // the left (toward the logo) AND the right (into the margin) —
-                    // no hard edge on the last portrait. Long left fade (to ~66%),
-                    // short right fade (from ~86%).
+                    // no hard edge on the last portrait. Long left fade (to ~66%);
+                    // just a soft right edge (from ~92%) so the last face stays
+                    // mostly visible, not washed out.
                     maskImage:
-                      'linear-gradient(to right, transparent 0%, #000 66%, #000 86%, transparent 100%)',
+                      'linear-gradient(to right, transparent 0%, #000 66%, #000 92%, transparent 100%)',
                     WebkitMaskImage:
-                      'linear-gradient(to right, transparent 0%, #000 66%, #000 86%, transparent 100%)',
+                      'linear-gradient(to right, transparent 0%, #000 66%, #000 92%, transparent 100%)',
                     // Frame the roster to the centred 1680 content column (like the
                     // grid) instead of the viewport edge, so it doesn't drift into
                     // the margin on wide screens and the composition stays constant
@@ -240,7 +244,7 @@ export function BrowseBanner({
               }
               pointerEvents="none"
             >
-              {montage.slice(0, 6).map(({ uri, blurhash }, i, arr) => (
+              {montage.slice(0, montageCount).map(({ uri, blurhash }, i, arr) => (
                 <Image
                   key={`${uri}-${i}`}
                   source={{ uri: montageUri(uri) }}
