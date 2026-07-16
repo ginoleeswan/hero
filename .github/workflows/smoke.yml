@@ -1,0 +1,32 @@
+# Nightly e2e smoke over the DEPLOYED site (plus on-demand via workflow_dispatch).
+# Read-only real-browser flows — see scripts/smoke/e2e-smoke.mjs. Runs at 06:30
+# UTC, after the 00:05 daily-debate roll and the 15:00-prior deploys have long
+# settled, so a red run means the SITE broke, not a race.
+name: Smoke (prod)
+
+on:
+  schedule:
+    - cron: '30 6 * * *'
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Base URL to smoke (default: production)'
+        required: false
+        default: 'https://mythique.app'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: yarn install --immutable
+      - name: Run smoke flows
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://mythique.app' }}
+          # ubuntu-latest ships Chrome; playwright-core launches it via channel:'chrome'
+        run: node scripts/smoke/e2e-smoke.mjs

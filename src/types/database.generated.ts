@@ -2043,6 +2043,7 @@ export type Database = {
       }
       admin_community_overview: { Args: never; Returns: Json }
       admin_cron_status: { Args: never; Returns: Json }
+      admin_data_quality: { Args: never; Returns: Json }
       admin_delete_campaign: { Args: { p_id: string }; Returns: number }
       admin_delete_hero: { Args: { p_hero_id: string }; Returns: number }
       admin_edit_hero: {
