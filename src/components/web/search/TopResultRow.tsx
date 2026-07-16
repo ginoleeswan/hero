@@ -189,6 +189,7 @@ function describe(top: TopResult): {
                 source={{ uri: t.poster_url }}
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
+                transition={200}
               />
             ) : null}
           </View>

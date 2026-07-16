@@ -85,9 +85,7 @@ export function InboxLane({
       ) : (
         <ComicvineReview
           flash={flash}
-          onChanged={() =>
-            queryClient.invalidateQueries({ queryKey: ['comicvineReviewCount'] })
-          }
+          onChanged={() => queryClient.invalidateQueries({ queryKey: ['comicvineReviewCount'] })}
         />
       )}
     </>

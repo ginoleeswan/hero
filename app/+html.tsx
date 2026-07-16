@@ -146,6 +146,34 @@ html, body { background-color: #0b1820; overscroll-behavior-y: none; }
    the very first paint — the runtime copy in _layout.web.tsx is the belt, this
    is the suspenders. */
 input, textarea, select { font-size: max(16px, 1em) !important; }
+/* Root view-transition pacing: a quick cross-fade between routes, not the
+   browser's slower default. Named-element morphs (portrait → detail portrait,
+   compare pick → arena) run their own animations; this only tunes the
+   full-page fade underneath them. */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 220ms; }
+/* Let height: auto animate for user-driven expanders (read-more, filter
+   panels). Chromium-only; elsewhere the expand is instant. */
+:root { interpolate-size: allow-keywords; }
+/* Honour the OS reduced-motion setting for every view transition. The
+   JS-driven animations opt out individually via prefersReducedMotion(); this
+   covers the CSS-only view-transition layer. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+/* Command-palette entrance (search overlay): fade the backdrop and rise+settle
+   the panel on first mount via @starting-style — no mount-then-add-class dance.
+   Chromium-only; elsewhere the overlay simply appears instantly. */
+[data-anim="palette-backdrop"] { transition: opacity 160ms ease; }
+[data-anim="palette-panel"] {
+  transition: opacity 200ms cubic-bezier(0.16,1,0.3,1), transform 200ms cubic-bezier(0.16,1,0.3,1);
+}
+@starting-style {
+  [data-anim="palette-backdrop"] { opacity: 0; }
+  [data-anim="palette-panel"] { opacity: 0; transform: translateY(-8px) scale(0.98); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-anim="palette-backdrop"], [data-anim="palette-panel"] { transition: none; }
+}
 `;
 
 // Registers /sw.js after load. Guarded for SSR/unsupported browsers. Registration

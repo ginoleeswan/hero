@@ -1,13 +1,7 @@
 // src/constants/powerIcons.ts
 
 export type PowerCategory =
-  | 'physical'
-  | 'combat'
-  | 'mental'
-  | 'energy'
-  | 'tech'
-  | 'mystic'
-  | 'other';
+  'physical' | 'combat' | 'mental' | 'energy' | 'tech' | 'mystic' | 'other';
 
 export interface PowerIconDef {
   icon: string;

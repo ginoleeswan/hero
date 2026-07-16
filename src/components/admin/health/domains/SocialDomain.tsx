@@ -42,15 +42,7 @@ function batchLabel(batch: string): string {
 }
 
 type Filter =
-  | 'all'
-  | 'matchup'
-  | 'ranking'
-  | 'guess'
-  | 'fact'
-  | 'lore'
-  | 'brand'
-  | 'reel'
-  | 'carousel';
+  'all' | 'matchup' | 'ranking' | 'guess' | 'fact' | 'lore' | 'brand' | 'reel' | 'carousel';
 
 // The tab is organized by JOB, not by batch: Queue = what do I post now,
 // Boost = what can I put money behind, Library = browse everything.

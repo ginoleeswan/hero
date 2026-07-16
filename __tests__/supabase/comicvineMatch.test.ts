@@ -4,12 +4,7 @@ import {
   type CvCandidate,
 } from '../../supabase/functions/_shared/comicvineMatch';
 
-const cand = (
-  id: number,
-  name: string,
-  issues: number,
-  publisher?: string,
-): CvCandidate => ({
+const cand = (id: number, name: string, issues: number, publisher?: string): CvCandidate => ({
   id,
   name,
   count_of_issue_appearances: issues,

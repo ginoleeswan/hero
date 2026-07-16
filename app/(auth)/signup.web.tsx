@@ -72,7 +72,10 @@ export default function WebSignupScreen() {
         <Text style={styles.pendingEmail}>{pendingEmail}</Text>
       </Text>
       <Text style={styles.pendingHint}>Can’t find it? Check your Spam or Junk folder.</Text>
-      <Pressable onPress={() => router.push(loginHref(returnTo))} style={styles.pendingCta as object}>
+      <Pressable
+        onPress={() => router.push(loginHref(returnTo))}
+        style={styles.pendingCta as object}
+      >
         <Text style={styles.pendingCtaText}>Back to Sign In</Text>
       </Pressable>
       <Pressable
@@ -200,7 +203,10 @@ export default function WebSignupScreen() {
         .
       </Text>
 
-      <Pressable onPress={() => router.push(loginHref(returnTo))} style={styles.switchRow as object}>
+      <Pressable
+        onPress={() => router.push(loginHref(returnTo))}
+        style={styles.switchRow as object}
+      >
         <Text style={styles.switchText}>Already have an account? </Text>
         <Text style={styles.switchLink}>Sign in</Text>
       </Pressable>

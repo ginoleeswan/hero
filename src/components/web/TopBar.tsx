@@ -436,6 +436,11 @@ const c = StyleSheet.create({
     // a dedicated GPU compositing layer and keeps the bar reliably pinned.
     transform: 'translateZ(0)',
     willChange: 'transform',
+    // Persistent chrome: give the bar its own view-transition snapshot so the
+    // root cross-fade (and the portrait morph) plays out *beneath* it instead
+    // of re-fading the bar itself — it reads as bolted to the glass while the
+    // page changes underneath. Reinforces the constant-ink chrome rule.
+    viewTransitionName: 'vt-topbar',
   } as object,
   // Dark scrim: holds near-solid navy across the status-bar inset + icon row (so
   // it fuses with the navy status-bar cover and bright hero art never bleeds

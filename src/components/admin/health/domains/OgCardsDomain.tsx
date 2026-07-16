@@ -52,7 +52,9 @@ function OgPreview({ label, hint, path }: { label: string; hint: string; path: s
         // strip instead of holding the full 1200:630 frame as a dead dark box
         // (three of those buried the mobile page in ~550px of empty ink).
         <View style={s.fallbackRow}>
-          <Text style={s.fallbackText}>Preview can’t render inline — Open ↗ shows the live card.</Text>
+          <Text style={s.fallbackText}>
+            Preview can’t render inline — Open ↗ shows the live card.
+          </Text>
         </View>
       ) : (
         <View style={s.frame}>

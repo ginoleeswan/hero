@@ -24,7 +24,13 @@ export async function listComicvineNeedsReview(limit = 25): Promise<ComicvineRev
     .limit(limit);
   if (error || !data) return [];
   return (
-    data as { id: string; name: string; publisher: string | null; image_md_url: string | null; image_url: string | null }[]
+    data as {
+      id: string;
+      name: string;
+      publisher: string | null;
+      image_md_url: string | null;
+      image_url: string | null;
+    }[]
   ).map((r) => ({
     id: r.id,
     name: r.name,

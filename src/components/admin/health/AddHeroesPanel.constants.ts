@@ -18,14 +18,7 @@ export const STAGE_BADGE: Record<BuildStage, { label: string; color: string }> =
 };
 
 export type Mode =
-  | 'name'
-  | 'popular'
-  | 'team'
-  | 'volume'
-  | 'person'
-  | 'movie'
-  | 'publisher'
-  | 'power';
+  'name' | 'popular' | 'team' | 'volume' | 'person' | 'movie' | 'publisher' | 'power';
 export type Flash = (msg: string, tone?: 'info' | 'success' | 'error' | 'pending') => void;
 export const MODES: { key: Mode; label: string }[] = [
   { key: 'popular', label: '★ Popular gaps' },

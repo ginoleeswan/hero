@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { prefersReducedMotion } from '../../../lib/motion';
+import { useInViewOnce } from '../../../hooks/useInViewOnce';
 
 /** Eased (cubic ease-out) count-up mapping: progress 0→1 becomes 0→target. */
 export function statDisplayValue(progress: number, target: number): number {
@@ -9,41 +11,7 @@ export function statDisplayValue(progress: number, target: number): number {
 
 const DURATION_MS = 750;
 
-const reducedMotion = () =>
-  typeof window === 'undefined' ||
-  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
-
-/** Fires once when the ref'd element scrolls into view; immediate under
- *  reduced motion / SSR / no IntersectionObserver. */
-function usePlayOnce(): [React.RefObject<View | null>, boolean] {
-  const ref = useRef<View>(null);
-  const [play, setPlay] = useState(
-    () =>
-      typeof window === 'undefined' ||
-      typeof IntersectionObserver === 'undefined' ||
-      reducedMotion(),
-  );
-  useEffect(() => {
-    if (play) return;
-    const el = ref.current as unknown as HTMLElement | null;
-    if (!el) {
-      setPlay(true);
-      return;
-    }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setPlay(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.4 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [play]);
-  return [ref, play];
-}
+const reducedMotion = () => typeof window === 'undefined' || prefersReducedMotion();
 
 // One Power Profile stat: big Flame number counts up while the bar sweeps to
 // its fill, both on first scroll-into-view. Median tick marks the catalog
@@ -62,7 +30,11 @@ export function PowerStatCell({
   /** Stagger (ms) so a grid of cells cascades instead of firing at once. */
   delay?: number;
 }) {
-  const [ref, play] = usePlayOnce();
+  const ref = useRef<View>(null);
+  // Fires once when the cell scrolls into view (immediate under reduced motion /
+  // SSR / no IntersectionObserver). threshold 0.4 + no bottom margin preserves
+  // the cell's original trigger point.
+  const play = useInViewOnce(ref, { threshold: 0.4, rootMargin: '0px' });
   const target = value ?? 0;
   const fill = Math.min(target, 100);
   const [display, setDisplay] = useState(0);

@@ -260,6 +260,7 @@ function WhatsHot({
                   source={{ uri: posterUri }}
                   contentFit="cover"
                   style={{ position: 'absolute', inset: 0 } as object}
+                  transition={200}
                 />
               ) : null}
             </View>
@@ -388,6 +389,7 @@ function ComicCoverRail({
                   contentFit="cover"
                   contentPosition="top"
                   style={{ position: 'absolute', inset: 0 } as object}
+                  transition={200}
                 />
               ) : null}
               <View style={ccr.overlay as object} />
