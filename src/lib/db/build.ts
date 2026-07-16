@@ -78,6 +78,30 @@ export async function getBuildHeroes(ids: string[]): Promise<BuildHero[]> {
   }));
 }
 
+// Newest catalogue entries with their live build stage — fills the Add tab with
+// useful context (what just came in, how far it got) at zero ComicVine cost.
+export async function getRecentlyAddedHeroes(
+  limit = 8,
+): Promise<(BuildHero & { createdAt: string })[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select(
+      'id, name, publisher, image_md_url, image_url, portrait_url, comicvine_status, wikidata_status, wikidata_enriched_at, wikidata_candidates, added_at',
+    )
+    .order('added_at', { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  return (data as (HeroRow & { added_at: string })[]).map((h) => ({
+    id: h.id,
+    name: h.name,
+    image: h.portrait_url ?? h.image_md_url ?? h.image_url,
+    stage: stageOf(h),
+    publisher: h.publisher,
+    candidates: h.wikidata_candidates ?? [],
+    createdAt: h.added_at,
+  }));
+}
+
 async function invoke(fn: string, body: Record<string, unknown>): Promise<void> {
   const { error } = await supabase.functions.invoke(fn, { body });
   if (error) throw error;

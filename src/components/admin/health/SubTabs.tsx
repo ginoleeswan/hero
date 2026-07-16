@@ -72,9 +72,12 @@ export function SubTabs<T extends string>({
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
-  // Mobile strip: the ScrollView owns the width; pills never squeeze.
-  scroll: { marginBottom: 12, flexGrow: 0 },
-  scrollContent: { flexDirection: 'row', gap: 6, paddingRight: 16 },
+  // Mobile strip: the ScrollView owns the width; pills never squeeze. Bleeds
+  // through the shell's 12px body gutter to the screen edges — a scroller that
+  // clips at the gutter reads as a broken layout, not a scrollable one. The
+  // gutter moves into the content padding so the first pill still aligns.
+  scroll: { marginBottom: 12, marginHorizontal: -12, flexGrow: 0 },
+  scrollContent: { flexDirection: 'row', gap: 6, paddingHorizontal: 12 },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',

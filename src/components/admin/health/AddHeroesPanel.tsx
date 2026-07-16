@@ -3,7 +3,15 @@
 // roster filter, a duplicate guard, and a one-click "enrich now" to close the
 // loop. Added heroes enter as 'pending' and flow into step 1.
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  ScrollView,
+  useWindowDimensions,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { Panel } from './Panel';
@@ -50,6 +58,10 @@ export function AddHeroesPanel({
   // Default to "By name" so the panel opens without firing any ComicVine request —
   // discovery modes (Popular gaps) fetch on entry, which isn't always wanted.
   const [mode, setMode] = useState<Mode>('name');
+  // Same breakpoint as CommandShell/Panel — the mode-chip scroller bleeds to the
+  // card edge, and the bleed must match the panel pad in force at this width.
+  const { width } = useWindowDimensions();
+  const narrow = width < 760;
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -363,11 +375,13 @@ export function AddHeroesPanel({
       }
     >
       {/* Mode + live search. One horizontally-scrollable row so the 8 chips never
-          wrap to a second line (esp. on mobile). */}
+          wrap to a second line (esp. on mobile). Bleeds to the card edges so the
+          cut-off chip signals "scroll me" instead of looking clipped. */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.modeRow}
+        style={[styles.modeScroll, narrow && styles.modeScrollNarrow]}
+        contentContainerStyle={[styles.modeRow, narrow && styles.modeRowNarrow]}
       >
         {MODES.map((m) => (
           <Pressable

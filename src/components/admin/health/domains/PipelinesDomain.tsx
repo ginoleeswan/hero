@@ -34,6 +34,7 @@ import {
 } from '../format';
 import { COLORS } from '../../../../constants/colors';
 import type { PipelinesData, PipelinesActions, PipelinesControls } from './pipelinesTypes';
+import { RecentlyAddedPanel } from './RecentlyAddedPanel';
 
 const BATCH_OPTIONS = [10, 25, 50];
 
@@ -273,14 +274,24 @@ export function PipelinesDomain({
         onChange={setSub}
       />
 
-      {/* Add — bring new characters in (scrolls within its area if tall). */}
+      {/* Add — bring new characters in (scrolls within its area if tall), with
+          the newest catalogue entries beneath (the search panel is empty until
+          you type; alone it left most of the page as dead ink). */}
       {sub === 'add' ? (
         fill ? (
-          <ScrollView style={styles.subFill} nestedScrollEnabled>
+          <ScrollView
+            style={styles.subFill}
+            contentContainerStyle={styles.subStack}
+            nestedScrollEnabled
+          >
             <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} onBuild={setBuildIds} />
+            <RecentlyAddedPanel />
           </ScrollView>
         ) : (
-          <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} onBuild={setBuildIds} />
+          <>
+            <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} onBuild={setBuildIds} />
+            <RecentlyAddedPanel />
+          </>
         )
       ) : null}
 
@@ -506,6 +517,7 @@ export function PipelinesDomain({
 const styles = StyleSheet.create({
   flex15: { flex: 1.5 },
   subFill: { flex: 1, minHeight: 0 } as object,
+  subStack: { gap: 10 },
 
   // Primary action row: Build next N + size selector + retry.
   primary: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 16 },

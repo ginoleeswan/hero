@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';
 import { InfoTip } from '../InfoTip';
-import { HeroThumb, LoadMore, EmptyState } from '../ui';
+import { HeroThumb, LoadMore } from '../ui';
 import {
   listComicvineNeedsReview,
   countComicvineNeedsReview,
@@ -154,7 +154,17 @@ export function ComicvineReview({ flash, onChanged }: { flash: Flash; onChanged:
       }
     >
       {heroes.length === 0 ? (
-        <EmptyState text="All clear — no collisions waiting on you." />
+        // A bare one-liner left the page looking unfinished — say what this
+        // queue is for so the emptiness reads as a good sign, not a dead end.
+        <View style={styles.allClear}>
+          <Ionicons name="shield-checkmark-outline" size={22} color={COLORS.green} />
+          <Text style={styles.allClearTitle}>All clear — no collisions waiting on you.</Text>
+          <Text style={styles.allClearSub}>
+            When an enrichment’s name-match hits a publisher conflict or several same-name
+            characters, the hero lands here for a human call. Empty means every match resolved
+            cleanly.
+          </Text>
+        </View>
       ) : (
         <View style={styles.list}>
           {heroes.map((hero) => {
@@ -281,6 +291,15 @@ export function ComicvineReview({ flash, onChanged }: { flash: Flash; onChanged:
 
 const styles = StyleSheet.create({
   spin: { marginVertical: 10 },
+  allClear: { alignItems: 'flex-start', gap: 6, paddingVertical: 6 },
+  allClearTitle: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.black },
+  allClearSub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    lineHeight: 17,
+    maxWidth: 520,
+  },
   candSpin: { alignSelf: 'flex-start', marginVertical: 4 },
   list: { gap: 4 },
   dim: { opacity: 0.4 },
