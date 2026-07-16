@@ -10,6 +10,7 @@
     "test": "jest --watchAll",
     "test:ci": "jest --ci",
     "test:social": "node --test \"scripts/social/**/*.test.mjs\"",
+    "smoke": "node scripts/smoke/e2e-smoke.mjs",
     "social": "node scripts/social/studio.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

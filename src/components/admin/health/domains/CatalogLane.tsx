@@ -12,6 +12,7 @@ import { CatalogDomain } from './CatalogDomain';
 import { SourcesDomain } from './SourcesDomain';
 import { HeroConsole } from '../HeroConsole';
 import { DuplicatesPanel } from '../DuplicatesPanel';
+import { IntegrityPanel } from './IntegrityPanel';
 import { UniverseGapsPanel } from '../UniverseGapsPanel';
 import { SourcesSkeleton } from '../skeletons';
 import {
@@ -148,6 +149,9 @@ export function CatalogLane({
             busy={busy}
             onReenrich={onReenrich}
           />
+          <View style={styles.gapTop}>
+            <IntegrityPanel />
+          </View>
           <View style={styles.gapTop}>
             <DuplicatesPanel
               flash={flash}
