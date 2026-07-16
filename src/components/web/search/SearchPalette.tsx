@@ -113,8 +113,13 @@ export function SearchPalette() {
 
   const overlay = (
     <View style={styles.overlay as object}>
-      <Pressable style={styles.backdrop as object} onPress={close} aria-label="Close search" />
-      <View style={styles.panel as object}>
+      <Pressable
+        style={styles.backdrop as object}
+        onPress={close}
+        aria-label="Close search"
+        {...({ dataSet: { anim: 'palette-backdrop' } } as object)}
+      />
+      <View style={styles.panel as object} {...({ dataSet: { anim: 'palette-panel' } } as object)}>
         <View style={styles.inputRow}>
           <Ionicons name="search" size={20} color="rgba(245,235,220,0.5)" />
           <TextInput

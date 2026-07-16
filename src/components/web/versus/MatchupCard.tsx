@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { VsBadge } from '../../compare/VsBadge';
 import { FACTION_A, FACTION_B } from '../../versus/factionColors';
 import { COLORS } from '../../../constants/colors';
+import { pressTransform } from '../pressStyles';
 
 interface Side {
   name: string;
@@ -27,7 +28,12 @@ export function MatchupCard({ a, b, onOpen, fit = 'cover', large = false }: Prop
     <Pressable
       onPress={onOpen}
       style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
-        [s.card, { width: pw * 2 + 2 }, (hovered || pressed) && (s.cardHover as object)] as object
+        [
+          s.card,
+          { width: pw * 2 + 2 },
+          hovered && !pressed && (s.cardHover as object),
+          pressTransform({ hovered, pressed }),
+        ] as object
       }
     >
       <View style={s.duo}>

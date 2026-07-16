@@ -28,6 +28,10 @@ import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
+import { MOTION, prefersReducedMotion } from '../../src/lib/motion';
+import { VT_PORTRAIT, consumeMorphArrival } from '../../src/lib/viewTransition';
+import { HeartPop } from '../../src/components/web/HeartPop';
+import { PRESS_TRANSITION, pressTransform } from '../../src/components/web/pressStyles';
 import { PullQuoteBio } from '../../src/components/character/PullQuoteBio';
 import { LegendBand } from '../../src/components/web/character/LegendBand';
 import { PowerStatCell, statDisplayValue } from '../../src/components/web/character/PowerStatCell';
@@ -480,9 +484,7 @@ function FactTile({
 // The hero vitals count up on arrival — the page's opening beat. Reduced
 // motion (and SSR) renders the final value immediately.
 function VitalCount({ value, style }: { value: number; style?: object }) {
-  const reduced =
-    typeof window === 'undefined' ||
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+  const reduced = typeof window === 'undefined' || prefersReducedMotion();
   const [display, setDisplay] = useState(reduced ? value : 0);
   useEffect(() => {
     if (reduced) {
@@ -596,6 +598,19 @@ export default function WebCharacterScreen() {
   // Measured desktop stage height — lets the overlapping portrait anchor to a
   // constant top position regardless of how much identity content the stage has.
   const [stageHeight, setStageHeight] = useState(0);
+
+  // Portrait morph arrival: if we got here by tapping a hero card, tag this
+  // page's portrait with the shared name so the card art morphs into it. Read
+  // the latch once on mount, then drop the name shortly after the morph settles
+  // — a lingering view-transition-name would hijack the next navigation (e.g. a
+  // related-character link) into a nonsense morph.
+  const [portraitMorph, setPortraitMorph] = useState(() => consumeMorphArrival(String(id)));
+  useEffect(() => {
+    if (!portraitMorph) return undefined;
+    const t = setTimeout(() => setPortraitMorph(false), MOTION.entrance);
+    return () => clearTimeout(t);
+  }, [portraitMorph]);
+  const portraitVT = portraitMorph ? ({ viewTransitionName: VT_PORTRAIT } as object) : null;
 
   // Priority: Supabase portrait → local bundled → API image → CDN
   const heroImage = id
@@ -1551,6 +1566,7 @@ export default function WebCharacterScreen() {
                           // Depth shadow + the character's accent halo.
                           boxShadow: `0 24px 52px rgba(11,24,32,0.30), 0 0 0 1px ${theme.accent}33, 0 18px 60px -18px ${theme.accentDeep}bb`,
                         },
+                        portraitVT,
                       ] as object
                     }
                   >
@@ -1587,18 +1603,15 @@ export default function WebCharacterScreen() {
                         onPress={toggleFavourite}
                         disabled={favLoading}
                         aria-label={favourited ? 'Remove favourite' : 'Add favourite'}
-                        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                        style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
                           [
                             styles.portraitFav,
-                            hovered && (styles.portraitFavHover as object),
+                            hovered && !pressed && (styles.portraitFavHover as object),
+                            pressTransform({ hovered, pressed }),
                           ] as object
                         }
                       >
-                        <Ionicons
-                          name={favourited ? 'heart' : 'heart-outline'}
-                          size={20}
-                          color={favourited ? COLORS.red : COLORS.beige}
-                        />
+                        <HeartPop favourited={favourited} size={20} />
                       </Pressable>
                     ) : null}
                   </View>
@@ -1769,7 +1782,7 @@ export default function WebCharacterScreen() {
             /* ── Mobile: native-style immersive single scroll ── */
             <View>
               {/* Immersive portrait header */}
-              <View style={[styles.mHero, { height: mHeroHeight }]}>
+              <View style={[styles.mHero, { height: mHeroHeight }, portraitVT] as object}>
                 <HeroImage
                   id={id}
                   name={stats.name}
@@ -3313,7 +3326,7 @@ const styles = StyleSheet.create({
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     cursor: 'pointer',
-    transition: 'background-color 150ms ease, border-color 150ms ease',
+    transition: `${PRESS_TRANSITION}, background-color 150ms ease, border-color 150ms ease`,
   } as object,
   portraitFavHover: {
     backgroundColor: 'rgba(11,24,32,0.55)',

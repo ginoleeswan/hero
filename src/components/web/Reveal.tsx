@@ -1,69 +1,52 @@
 // Scroll-entrance wrapper (web): children rise ~14px and fade in the first
 // time the section enters the viewport, so the long chaptered page reveals
-// itself with pacing instead of existing all at once. One IntersectionObserver
-// per section; fires once, then disconnects. Under prefers-reduced-motion the
-// content renders visible immediately with no transition.
+// itself with pacing instead of existing all at once. Viewport detection lives
+// in useInViewOnce; this component owns the visual rise + the post-landing
+// teardown. Under prefers-reduced-motion (or SSR) the hook reports "seen"
+// immediately, so content renders settled with no transition.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
+import { useInViewOnce } from '../../hooks/useInViewOnce';
+import { EASE_OUT_EXPO, MOTION } from '../../lib/motion';
 
-type Phase = 'hidden' | 'shown' | 'landed' | 'instant';
-
-export function Reveal({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+export function Reveal({
+  children,
+  style,
+  delay = 0,
+}: {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  /** Stagger offset (ms) — for cascading a row/grid of Reveals. */
+  delay?: number;
+}) {
   const ref = useRef<View>(null);
-  const [phase, setPhase] = useState<Phase>(() =>
-    typeof window === 'undefined' ||
-    typeof IntersectionObserver === 'undefined' ||
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-      ? 'instant'
-      : 'hidden',
-  );
-
-  useEffect(() => {
-    if (phase !== 'hidden') return;
-    // RNW renders View as a DOM element at runtime.
-    const el = ref.current as unknown as HTMLElement | null;
-    if (!el) {
-      // Shouldn't happen, but never leave content invisible.
-      const t = setTimeout(() => setPhase('instant'), 0);
-      return () => clearTimeout(t);
-    }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setPhase('shown');
-          io.disconnect();
-        }
-      },
-      { rootMargin: '0px 0px -8% 0px', threshold: 0.05 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [phase]);
+  const visible = useInViewOnce(ref);
+  // If the very first render is already "seen" (reduced motion / SSR / no IO)
+  // there is nothing to animate, so start landed — settled, no transition.
+  const [landed, setLanded] = useState(visible);
 
   // Once the rise finishes, drop the opacity/transform/transition styles
   // entirely: a settled translateY(0) still holds a composited layer, and iOS
   // Safari clips composited layers to the layout viewport while the bottom
   // toolbar collapses — content in the under-toolbar band went unpainted.
   useEffect(() => {
-    if (phase !== 'shown') return;
-    const t = setTimeout(() => setPhase('landed'), 650); // transition is 600ms
+    if (!visible || landed) return;
+    const t = setTimeout(() => setLanded(true), MOTION.entrance + delay + 50);
     return () => clearTimeout(t);
-  }, [phase]);
+  }, [visible, landed, delay]);
 
-  const settled = phase === 'landed' || phase === 'instant';
-  const visible = phase !== 'hidden';
   return (
     <View
       ref={ref}
       style={
         [
-          settled
+          landed
             ? null
             : ({
                 opacity: visible ? 1 : 0,
                 transform: [{ translateY: visible ? 0 : 14 }],
-                transition:
-                  'opacity 600ms cubic-bezier(0.16, 1, 0.3, 1), transform 600ms cubic-bezier(0.16, 1, 0.3, 1)',
+                transition: `opacity ${MOTION.entrance}ms ${EASE_OUT_EXPO}, transform ${MOTION.entrance}ms ${EASE_OUT_EXPO}`,
+                transitionDelay: delay ? `${delay}ms` : undefined,
               } as object),
           style,
         ] as object

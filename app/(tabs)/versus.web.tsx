@@ -20,6 +20,7 @@ import { YesterdayStrip } from '../../src/components/web/versus/YesterdayStrip';
 import { useDiscoveryRows } from '../../src/hooks/useDiscoveryRows';
 import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
 import { Reveal } from '../../src/components/web/Reveal';
+import { MOTION } from '../../src/lib/motion';
 import { TodaysDailies } from '../../src/components/game/TodaysDailies';
 
 export default function VersusHubWeb() {
@@ -238,7 +239,7 @@ export default function VersusHubWeb() {
             )}
 
             {rows.dream.length > 0 && (
-              <Reveal>
+              <Reveal delay={MOTION.stagger}>
                 <MatchupRow
                   bleed={isDesktop ? 0 : contentPad}
                   icon="star-four-points"
@@ -261,7 +262,7 @@ export default function VersusHubWeb() {
             )}
 
             {rows.goliath.length > 0 && (
-              <Reveal>
+              <Reveal delay={MOTION.stagger * 2}>
                 <MatchupRow
                   bleed={isDesktop ? 0 : contentPad}
                   icon="scale-unbalanced"
@@ -284,7 +285,7 @@ export default function VersusHubWeb() {
             )}
 
             {rows.teams.length > 0 && (
-              <Reveal>
+              <Reveal delay={MOTION.stagger * 3}>
                 <MatchupRow
                   bleed={isDesktop ? 0 : contentPad}
                   icon="account-group"
@@ -308,7 +309,7 @@ export default function VersusHubWeb() {
             )}
 
             {/* Public Enemies — flush so it aligns with the matchup rows above. */}
-            <Reveal>
+            <Reveal delay={MOTION.stagger * 3}>
               <HallOfInfamy villains={mostFeared} flush bleed={contentPad} />
             </Reveal>
           </View>

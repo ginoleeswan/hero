@@ -3,6 +3,9 @@ import { COLORS } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
 import { brandForPublisher } from '../../constants/publishers';
 import { BrandLogoView } from '../PublisherBadge';
+import { PRESS_TRANSITION, pressTransform } from './pressStyles';
+import { EASE_OUT_EXPO, MOTION } from '../../lib/motion';
+import { useHeroMorph } from '../../hooks/useHeroMorph';
 
 // Logo height used on the featured card; width follows the art's aspect ratio.
 const LOGO_H = 22;
@@ -15,6 +18,9 @@ interface WebHeroCardProps {
   featured?: boolean;
   publisher?: string;
   onPress: () => void;
+  /** Morph the card art into the detail portrait on tap. Default true; opt out
+   *  for cards that don't navigate to /character (or inside modals). */
+  morph?: boolean;
 }
 
 export function WebHeroCard({
@@ -25,30 +31,42 @@ export function WebHeroCard({
   featured = false,
   publisher,
   onPress,
+  morph = true,
 }: WebHeroCardProps) {
   const brand = featured ? brandForPublisher(publisher) : undefined;
   const logoWidth =
     brand?.logo && brand.badgeSize ? LOGO_H * (brand.badgeSize.width / brand.badgeSize.height) : 0;
+  const { morphName, run } = useHeroMorph(id, morph);
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => run(onPress)}
       style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
         [
           styles.card,
           featured && (styles.featured as object),
-          (hovered || pressed) && (styles.cardHover as object),
+          hovered && !pressed && (styles.cardHover as object),
+          pressTransform({ hovered, pressed }),
         ] as object
       }
     >
-      <HeroImage
-        id={id}
-        name={name}
-        imageUrl={imageUrl}
-        portraitUrl={portraitUrl}
-        contentFit="cover"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        recyclingKey={id}
-      />
+      <View
+        style={
+          [
+            styles.imageWrap,
+            morphName ? ({ viewTransitionName: morphName } as object) : null,
+          ] as object
+        }
+      >
+        <HeroImage
+          id={id}
+          name={name}
+          imageUrl={imageUrl}
+          portraitUrl={portraitUrl}
+          contentFit="cover"
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          recyclingKey={id}
+        />
+      </View>
       <View style={[styles.overlay, featured && (styles.overlayFeatured as object)] as object} />
       {featured && (
         <View style={styles.badge}>
@@ -88,12 +106,20 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     height: 180,
     cursor: 'pointer',
-    transition: 'transform 180ms ease, box-shadow 180ms ease',
+    transition: `${PRESS_TRANSITION}, box-shadow ${MOTION.base}ms ${EASE_OUT_EXPO}`,
   } as object,
   cardHover: {
-    transform: [{ scale: 1.025 }],
     boxShadow: '0 12px 40px rgba(0,0,0,0.22)',
     zIndex: 1,
+  } as object,
+  // Isolates the portrait art as the morph target — only the image is
+  // snapshotted, so the overlay gradient and name don't smear during the morph.
+  imageWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   } as object,
   featured: {
     gridColumn: 'span 2',

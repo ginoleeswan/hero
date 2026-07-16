@@ -11,6 +11,7 @@ import { HeroImage } from '../../HeroImage';
 import { COLORS } from '../../../constants/colors';
 import { BROWSE_PODS } from '../../home/CategoryPodGrid';
 import type { BrowseCover } from '../../../lib/db/heroes';
+import { pressTransform } from '../pressStyles';
 
 type Pod = (typeof BROWSE_PODS)[number];
 
@@ -31,8 +32,13 @@ function PodTile({
   return (
     <Pressable
       onPress={() => onPress(pod.slug)}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [t.tile, { height }, hovered && (t.tileHover as object)] as object
+      style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+        [
+          t.tile,
+          { height },
+          hovered && !pressed && (t.tileHover as object),
+          pressTransform({ hovered, pressed }),
+        ] as object
       }
     >
       <HeroImage

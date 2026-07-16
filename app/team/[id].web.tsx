@@ -36,6 +36,8 @@ import { COLORS, SURFACE } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { SeoHead } from '../../src/components/web/SeoHead';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
+import { pressTransform } from '../../src/components/web/pressStyles';
+import { useHeroMorph } from '../../src/hooks/useHeroMorph';
 
 // Teams with no recognised publisher fall back to a warm orange stage.
 const FALLBACK_COLOR = COLORS.orange;
@@ -63,31 +65,45 @@ function HeroCard({
   onPress: () => void;
   onInfo: () => void;
 }) {
+  const { morphName, run } = useHeroMorph(String(hero.id));
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => run(onPress)}
       onLongPress={onInfo}
       delayLongPress={300}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [card.wrap, hovered && (card.wrapHover as object)] as object
+      style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+        [
+          card.wrap,
+          hovered && !pressed && (card.wrapHover as object),
+          pressTransform({ hovered, pressed }),
+        ] as object
       }
     >
       {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
         <>
-          <HeroImage
-            id={String(hero.id)}
-            name={hero.name}
-            imageUrl={hero.image_url}
-            portraitUrl={hero.portrait_url}
-            imageMdUrl={hero.image_md_url}
-            blurhash={hero.portrait_blurhash}
-            grid
-            contentFit="cover"
-            contentPosition={{ top: 0, left: '50%' }}
-            style={StyleSheet.absoluteFill}
-            recyclingKey={String(hero.id)}
-            transition={150}
-          />
+          <View
+            style={
+              [
+                card.imageWrap,
+                morphName ? ({ viewTransitionName: morphName } as object) : null,
+              ] as object
+            }
+          >
+            <HeroImage
+              id={String(hero.id)}
+              name={hero.name}
+              imageUrl={hero.image_url}
+              portraitUrl={hero.portrait_url}
+              imageMdUrl={hero.image_md_url}
+              blurhash={hero.portrait_blurhash}
+              grid
+              contentFit="cover"
+              contentPosition={{ top: 0, left: '50%' }}
+              style={StyleSheet.absoluteFill}
+              recyclingKey={String(hero.id)}
+              transition={150}
+            />
+          </View>
           <View style={card.overlay as object} />
           <View style={card.bottom}>
             <Text style={card.name as object} numberOfLines={2}>
@@ -124,9 +140,16 @@ const card = StyleSheet.create({
     aspectRatio: '3 / 4',
   } as object,
   wrapHover: {
-    transform: [{ scale: 1.04 }],
     boxShadow: '0 20px 56px rgba(0,0,0,0.32)',
     zIndex: 2,
+  } as object,
+  // Portrait-only morph target (see WebHeroCard.imageWrap).
+  imageWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   } as object,
   overlay: {
     position: 'absolute',

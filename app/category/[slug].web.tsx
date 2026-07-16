@@ -47,6 +47,8 @@ import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { SEARCH_CHIP } from '../../src/components/web/searchChip';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { BrowseBanner } from '../../src/components/web/category/BrowseBanner';
+import { pressTransform } from '../../src/components/web/pressStyles';
+import { useHeroMorph } from '../../src/hooks/useHeroMorph';
 
 // Publishers (marvel/dc/image/dark-horse) are NOT here — they're universes now,
 // served by /universe/[slug] (this same screen, resolved via the registry).
@@ -114,33 +116,47 @@ const HeroCard = memo(function HeroCard({
   onPeek?: (hero: Hero) => void;
 }) {
   const onInfo = onPeek ? () => onPeek(hero) : undefined;
+  const { morphName, run } = useHeroMorph(String(hero.id));
   return (
     <Pressable
-      onPress={() => onPress(String(hero.id))}
+      onPress={() => run(() => onPress(String(hero.id)))}
       onLongPress={onInfo}
       delayLongPress={300}
       style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [card.wrap, (hovered || pressed) && (card.wrapHover as object)] as object
+        [
+          card.wrap,
+          hovered && !pressed && (card.wrapHover as object),
+          pressTransform({ hovered, pressed }),
+        ] as object
       }
     >
       {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
         <>
-          <HeroImage
-            id={String(hero.id)}
-            name={hero.name}
-            imageUrl={hero.image_url}
-            portraitUrl={hero.portrait_url}
-            imageMdUrl={hero.image_md_url}
-            blurhash={hero.portrait_blurhash}
-            grid
-            gridWidth={gridWidth}
-            contentFit="cover"
-            contentPosition={{ top: 0, left: '50%' }}
-            style={StyleSheet.absoluteFill}
-            recyclingKey={String(hero.id)}
-            transition={150}
-            priority={priority}
-          />
+          <View
+            style={
+              [
+                card.imageWrap,
+                morphName ? ({ viewTransitionName: morphName } as object) : null,
+              ] as object
+            }
+          >
+            <HeroImage
+              id={String(hero.id)}
+              name={hero.name}
+              imageUrl={hero.image_url}
+              portraitUrl={hero.portrait_url}
+              imageMdUrl={hero.image_md_url}
+              blurhash={hero.portrait_blurhash}
+              grid
+              gridWidth={gridWidth}
+              contentFit="cover"
+              contentPosition={{ top: 0, left: '50%' }}
+              style={StyleSheet.absoluteFill}
+              recyclingKey={String(hero.id)}
+              transition={150}
+              priority={priority}
+            />
+          </View>
           <View style={card.overlay as object} />
           <View style={card.bottom}>
             <Text style={card.name as object} numberOfLines={2}>
@@ -180,9 +196,16 @@ const card = StyleSheet.create({
     aspectRatio: '3 / 4',
   } as object,
   wrapHover: {
-    transform: [{ scale: 1.04 }],
     boxShadow: '0 20px 56px rgba(0,0,0,0.32)',
     zIndex: 2,
+  } as object,
+  // Portrait-only morph target (see WebHeroCard.imageWrap).
+  imageWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   } as object,
   overlay: {
     position: 'absolute',

@@ -18,6 +18,8 @@ import {
 import { useAuth } from '../../src/hooks/useAuth';
 import { brandForPublisher } from '../../src/constants/publishers';
 import { Reveal } from '../../src/components/web/Reveal';
+import { pressTransform } from '../../src/components/web/pressStyles';
+import { useHeroMorph } from '../../src/hooks/useHeroMorph';
 import { HeroImage } from '../../src/components/HeroImage';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
 import { type Hero } from '../../src/lib/db/heroes';
@@ -77,27 +79,41 @@ function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () =>
   // don't carry these fields; the line simply stays absent there.
   const full = hero as Partial<Hero>;
   const fact = [full.publisher, alignmentLabel(full.alignment)].filter(Boolean).join(' · ');
+  const { morphName, run } = useHeroMorph(String(hero.id));
   return (
     <Pressable
-      onPress={onPress}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [rc.wrap, hovered && (rc.wrapHover as object)] as object
+      onPress={() => run(onPress)}
+      style={({ hovered, pressed }: { pressed: boolean; hovered?: boolean }) =>
+        [
+          rc.wrap,
+          hovered && !pressed && (rc.wrapHover as object),
+          pressTransform({ hovered, pressed }),
+        ] as object
       }
     >
       {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
         <>
-          <HeroImage
-            id={String(hero.id)}
-            name={hero.name}
-            imageUrl={hero.image_url}
-            portraitUrl={hero.portrait_url}
-            imageMdUrl={'image_md_url' in hero ? (hero.image_md_url ?? null) : null}
-            grid
-            contentFit="cover"
-            contentPosition="top"
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
-            recyclingKey={String(hero.id)}
-          />
+          <View
+            style={
+              [
+                rc.imageWrap,
+                morphName ? ({ viewTransitionName: morphName } as object) : null,
+              ] as object
+            }
+          >
+            <HeroImage
+              id={String(hero.id)}
+              name={hero.name}
+              imageUrl={hero.image_url}
+              portraitUrl={hero.portrait_url}
+              imageMdUrl={'image_md_url' in hero ? (hero.image_md_url ?? null) : null}
+              grid
+              contentFit="cover"
+              contentPosition="top"
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
+              recyclingKey={String(hero.id)}
+            />
+          </View>
           <View style={rc.overlay as object} />
           <View style={rc.bottom}>
             <Text style={rc.name as object} numberOfLines={2}>
@@ -132,6 +148,14 @@ const rc = StyleSheet.create({
     transform: [{ translateY: -6 }],
     boxShadow: ELEVATION.hover,
     zIndex: 2,
+  } as object,
+  // Portrait-only morph target (see WebHeroCard.imageWrap).
+  imageWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   } as object,
   seam: {
     position: 'absolute',
