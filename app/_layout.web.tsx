@@ -224,12 +224,25 @@ export default function WebRootLayout() {
     };
   }, []);
 
+  // Fonts load in two passes so the cold-start boot gate opens sooner WITHOUT any
+  // flash of fallback text on visible content:
+  //   • Critical (blocking) — every font used above the fold on the boot screen
+  //     and first content paint: the brand Flame faces + the two common Nunito
+  //     weights. The gate below waits on these, so visible text is never unstyled.
+  //   • Deferred (non-blocking) — the heavy display weights + Righteous, used
+  //     ONLY on detail pages, filter controls, the footer and admin — never above
+  //     the fold on entry. Loading them in a second, un-awaited pass keeps ~300 KB
+  //     of font bytes off the critical path (it matters on cellular); they resolve
+  //     long before a visitor reaches a surface that uses them, so no swap shows.
   const [fontsLoaded, fontError] = useFonts({
     'FlameSans-Regular': require('../assets/fonts/FlameSans-Regular.ttf'),
     'Flame-Regular': require('../assets/fonts/Flame-Regular.ttf'),
     'Flame-Bold': require('../assets/fonts/Flame-Bold.ttf'),
     Nunito_400Regular,
     Nunito_700Bold,
+  });
+  // Deliberately not awaited by the boot gate — see note above.
+  useFonts({
     Nunito_800ExtraBold,
     Nunito_900Black,
     Righteous_400Regular,
