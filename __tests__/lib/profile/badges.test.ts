@@ -19,6 +19,12 @@ describe('computeBadges', () => {
     expect(find({ accountCreatedAt: null }, 'day-one').earned).toBe(false);
   });
 
+  it('earns Supporter only from the stored flag (and defaults locked)', () => {
+    expect(find({ isSupporter: true }, 'supporter').earned).toBe(true);
+    expect(find({ isSupporter: false }, 'supporter').earned).toBe(false);
+    expect(find({}, 'supporter').earned).toBe(false); // omitted → locked
+  });
+
   it('earns Veteran only after 180 days of tenure', () => {
     expect(find({ accountCreatedAt: '2026-06-01T00:00:00Z' }, 'veteran').earned).toBe(false);
     expect(find({ accountCreatedAt: '2025-01-01T00:00:00Z' }, 'veteran').earned).toBe(true);

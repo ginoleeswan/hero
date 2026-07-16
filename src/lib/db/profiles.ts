@@ -10,6 +10,9 @@ export interface UserProfile {
   cover_url: string | null;
   created_at: string | null;
   is_admin: boolean | null;
+  /** Ko-fi supporter recognition flag (admin-set; see admin_set_supporter). */
+  is_supporter: boolean | null;
+  supporter_since: string | null;
 }
 
 export async function getProfile(userId: string): Promise<UserProfile | null> {

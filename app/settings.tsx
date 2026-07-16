@@ -187,9 +187,22 @@ export default function SettingsScreen() {
         )}
 
         <SectionShell title="Support">
-          <Text style={styles.supportBlurb}>
-            Mythique is a free, unofficial fan project. If you enjoy it, a coffee keeps it going.
-          </Text>
+          {profile?.is_supporter ? (
+            <SettingRow
+              icon="star"
+              label="You’re a supporter — thank you"
+              value={
+                profile.supporter_since
+                  ? `since ${new Date(profile.supporter_since).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })}`
+                  : undefined
+              }
+              tone="orange"
+            />
+          ) : (
+            <Text style={styles.supportBlurb}>
+              Mythique is a free, unofficial fan project. If you enjoy it, a coffee keeps it going.
+            </Text>
+          )}
           <SettingRow
             icon="information-circle-outline"
             label="About supporting"

@@ -14,6 +14,9 @@ export interface BadgeInput {
   streak: number;
   /** Short top-publisher name from the taste profile, or null. */
   topPublisher: string | null;
+  /** user_profiles.is_supporter — the one stored-flag badge (Ko-fi supporters,
+   *  set by an admin). Optional so older call sites/tests need no change. */
+  isSupporter?: boolean;
 }
 
 export interface Badge {
@@ -50,10 +53,17 @@ function loyaltyLabel(pub: string | null): string {
  * `now` is injectable so tenure badges are deterministic in tests.
  */
 export function computeBadges(input: BadgeInput, now: number = Date.now()): Badge[] {
-  const { accountCreatedAt, favourites, votes, streak, topPublisher } = input;
+  const { accountCreatedAt, favourites, votes, streak, topPublisher, isSupporter } = input;
   const days = tenureDays(accountCreatedAt, now);
 
   const badges: Badge[] = [
+    {
+      id: 'supporter',
+      label: 'Supporter',
+      description: 'Keeps Mythique free for everyone',
+      icon: 'star',
+      earned: !!isSupporter,
+    },
     {
       id: 'day-one',
       label: 'Day One',
