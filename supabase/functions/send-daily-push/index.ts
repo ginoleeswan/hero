@@ -62,6 +62,19 @@ Deno.serve(async () => {
       }
     }
 
+    // Streak-at-risk overrides beat the favourite line: a user whose daily
+    // streak (>=3) ended yesterday with nothing today gets the sharper nudge.
+    // Service-role-only RPC; empty map on any failure.
+    const streakByUser = new Map<string, number>();
+    try {
+      const { data: atRisk } = await supabase.rpc('get_streaks_at_risk', { p_min: 3 });
+      for (const r of (atRisk ?? []) as { user_id: string; streak: number }[]) {
+        streakByUser.set(r.user_id, r.streak);
+      }
+    } catch {
+      /* streak nudge is best-effort */
+    }
+
     const { data: subs } = await supabase
       .from('push_subscriptions')
       .select('id, user_id, endpoint, p256dh, auth');
@@ -71,11 +84,20 @@ Deno.serve(async () => {
     let pruned = 0;
     let failed = 0;
     for (const s of subs as SubRow[]) {
-      const payload = JSON.stringify({
-        title: favTitleByUser.get(s.user_id) ?? genericTitle,
-        body,
-        url: '/versus',
-      });
+      const atRiskStreak = streakByUser.get(s.user_id);
+      const payload = JSON.stringify(
+        atRiskStreak
+          ? {
+              title: `Your ${atRiskStreak}-day streak is on the line`,
+              body: 'Play any of today’s dailies to keep it alive',
+              url: '/versus',
+            }
+          : {
+              title: favTitleByUser.get(s.user_id) ?? genericTitle,
+              body,
+              url: '/versus',
+            },
+      );
       try {
         await webpush.sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
