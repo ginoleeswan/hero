@@ -1530,6 +1530,42 @@ export type Database = {
           },
         ]
       }
+      session_attribution: {
+        Row: {
+          first_seen: string
+          landing_path: string | null
+          referrer: string | null
+          session_id: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          first_seen?: string
+          landing_path?: string | null
+          referrer?: string | null
+          session_id: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          first_seen?: string
+          landing_path?: string | null
+          referrer?: string | null
+          session_id?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
       social_post_results: {
         Row: {
           comments: number | null
