@@ -296,7 +296,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   heroes: Hero[];
   onViewProfile: (heroId: string) => void;
 }) {
-  const { width, height: windowHeight } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -347,15 +347,17 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
           : ACCORDION_SCALES.small;
 
   if (isDesktop) {
-    // Floor + ceiling, used as a *minimum* (not a hard height): the portrait
-    // strip wants to be tall on big screens, but the glass panel's stacked
-    // content must never be clipped, so the stage grows to fit it on short
-    // windows instead of cropping the name / first-appearance lines.
-    const stageHeight = Math.max(440, Math.min(500, windowHeight * 0.62));
+    // FIXED height (not minHeight): the glass panel's content varies per hero
+    // (name 1↔2 lines, real-name line present/absent, summary length), so a
+    // minHeight let the stage grow to fit the tallest — and the whole billboard
+    // (and everything below it) jumped 12px as the carousel rotated. 516 clears
+    // the tallest measured content (≈512); the summary flexes (below) as a
+    // safety so nothing clips even if a hero runs longer.
+    const stageHeight = 516;
 
     return (
       <View
-        style={[pss.wrap, { paddingHorizontal: pagePad, minHeight: stageHeight }] as object}
+        style={[pss.wrap, { paddingHorizontal: pagePad, height: stageHeight }] as object}
         {...({
           onMouseEnter: () => setPaused(true),
           onMouseLeave: () => setPaused(false),
@@ -796,6 +798,10 @@ const pss = StyleSheet.create({
     color: INK_TEXT.muted,
     lineHeight: 22,
     marginBottom: 20,
+    // Absorbs any content that would exceed the fixed stage height, so the
+    // panel never overflows/clips regardless of hero.
+    flexShrink: 1,
+    minHeight: 0,
   } as object,
   statPills: {
     flexDirection: 'row',
