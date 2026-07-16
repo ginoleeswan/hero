@@ -221,7 +221,14 @@ export function BrowseBanner({
                 [
                   styles.montage,
                   {
-                    maskImage: 'linear-gradient(to left, #000 30%, transparent 100%)',
+                    // Fade BOTH ends of the strip so it dissolves into the wash on
+                    // the left (toward the logo) AND the right (into the margin) —
+                    // no hard edge on the last portrait. Long left fade (to ~66%),
+                    // short right fade (from ~86%).
+                    maskImage:
+                      'linear-gradient(to right, transparent 0%, #000 66%, #000 86%, transparent 100%)',
+                    WebkitMaskImage:
+                      'linear-gradient(to right, transparent 0%, #000 66%, #000 86%, transparent 100%)',
                     // Frame the roster to the centred 1680 content column (like the
                     // grid) instead of the viewport edge, so it doesn't drift into
                     // the margin on wide screens and the composition stays constant
