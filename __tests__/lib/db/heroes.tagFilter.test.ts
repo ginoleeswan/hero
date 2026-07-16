@@ -62,8 +62,6 @@ describe('getCategoryPage tag filter', () => {
       page: 0,
     });
     const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
-    expect(orArg).toBe(
-      'name.ilike."%Spider-Man (2099)%",full_name.ilike."%Spider-Man (2099)%"',
-    );
+    expect(orArg).toBe('name.ilike."%Spider-Man (2099)%",full_name.ilike."%Spider-Man (2099)%"');
   });
 });

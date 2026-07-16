@@ -48,7 +48,9 @@ export function Gauge({ value, size = 150 }: { value: number; size?: number }) {
             {value}
           </Text>
           {/* At bezel sizes the % glyph crowds the ring — the ring IS the percent. */}
-          {!small && <Text style={[styles.gaugePct, { fontSize: Math.round(numSize * 0.42) }]}>%</Text>}
+          {!small && (
+            <Text style={[styles.gaugePct, { fontSize: Math.round(numSize * 0.42) }]}>%</Text>
+          )}
         </View>
         {!small && <Text style={[styles.gaugeCaption, { color: tint }]}>complete</Text>}
       </View>

@@ -54,7 +54,11 @@ export function SponsorSlot({ placement }: { placement: string }) {
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
       <View style={styles.iconWrap}>
-        <Ionicons name={promo.icon as keyof typeof Ionicons.glyphMap} size={20} color={COLORS.orange} />
+        <Ionicons
+          name={promo.icon as keyof typeof Ionicons.glyphMap}
+          size={20}
+          color={COLORS.orange}
+        />
       </View>
       <View style={styles.body}>
         <Text style={styles.eyebrow}>{promo.eyebrow}</Text>

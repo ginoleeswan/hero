@@ -93,7 +93,9 @@ export default function NativeCompareScreen() {
         <StatusBar style="light" />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity
-          onPress={() => (router.canGoBack() ? router.back() : router.replace(`/character/${hero}`))}
+          onPress={() =>
+            router.canGoBack() ? router.back() : router.replace(`/character/${hero}`)
+          }
           activeOpacity={0.7}
           style={styles.retryBtn}
         >

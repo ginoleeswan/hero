@@ -1463,7 +1463,12 @@ export default function WebHomeScreen() {
                  affinity (get_my_for_you). Hidden when logged out / signal-less
                  (HomeRow nulls on empty). ─────────────────────────────────── */}
             <Reveal>
-              <HomeRow label="Discover" title="Picked For You" heroes={forYou} onPress={handlePress} />
+              <HomeRow
+                label="Discover"
+                title="Picked For You"
+                heroes={forYou}
+                onPress={handlePress}
+              />
             </Reveal>
 
             {/* ── Hall of Fame — Most Iconic, authored: a chosen #1 + ranked list

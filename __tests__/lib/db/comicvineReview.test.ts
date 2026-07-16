@@ -33,8 +33,20 @@ describe('listComicvineNeedsReview', () => {
   it('maps rows and prefers image_md_url over image_url', async () => {
     mockResult = {
       data: [
-        { id: 'h1', name: 'Aragorn', publisher: 'Marvel', image_md_url: 'md.jpg', image_url: 'x.jpg' },
-        { id: 'h2', name: 'Baymax', publisher: 'DC Comics', image_md_url: null, image_url: 'fallback.jpg' },
+        {
+          id: 'h1',
+          name: 'Aragorn',
+          publisher: 'Marvel',
+          image_md_url: 'md.jpg',
+          image_url: 'x.jpg',
+        },
+        {
+          id: 'h2',
+          name: 'Baymax',
+          publisher: 'DC Comics',
+          image_md_url: null,
+          image_url: 'fallback.jpg',
+        },
       ],
       error: null,
     };

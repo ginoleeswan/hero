@@ -126,7 +126,10 @@ export default function SignupScreen() {
                 <Text style={styles.pendingHint}>
                   Can’t find it? Check your Spam or Junk folder.
                 </Text>
-                <Pressable onPress={() => router.push(loginHref(returnTo))} style={styles.pendingCta}>
+                <Pressable
+                  onPress={() => router.push(loginHref(returnTo))}
+                  style={styles.pendingCta}
+                >
                   <Text style={styles.pendingCtaText}>Back to Sign In</Text>
                 </Pressable>
                 <Pressable
@@ -259,7 +262,10 @@ export default function SignupScreen() {
                   .
                 </Text>
 
-                <Pressable onPress={() => router.push(loginHref(returnTo))} style={styles.switchRow}>
+                <Pressable
+                  onPress={() => router.push(loginHref(returnTo))}
+                  style={styles.switchRow}
+                >
                   <Text style={styles.switchText}>Already have an account? </Text>
                   <Text style={styles.switchLink}>Sign in</Text>
                 </Pressable>

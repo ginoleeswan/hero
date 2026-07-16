@@ -340,7 +340,13 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3, flexWrap: 'wrap' },
   noneBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 5 },
   noneText: { fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: COLORS.grey },
-  manualBox: { flexDirection: 'row', alignItems: 'stretch', gap: 1, flex: 1, justifyContent: 'flex-end' },
+  manualBox: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 1,
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
   manualInput: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,

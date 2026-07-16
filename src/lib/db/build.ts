@@ -1,13 +1,7 @@
 import { supabase } from '../supabase';
 
 export type BuildStage =
-  | 'comicvine'
-  | 'resolve'
-  | 'appearances'
-  | 'review'
-  | 'unresolved'
-  | 'failed'
-  | 'done';
+  'comicvine' | 'resolve' | 'appearances' | 'review' | 'unresolved' | 'failed' | 'done';
 export const ACTIONABLE: BuildStage[] = ['comicvine', 'resolve', 'appearances'];
 
 export interface BuildHero {
