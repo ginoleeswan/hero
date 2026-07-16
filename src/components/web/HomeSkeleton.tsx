@@ -1,6 +1,6 @@
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from './Skeleton';
-import { COLORS } from '../../constants/colors';
+import { COLORS, pageGutter } from '../../constants/colors';
 import { TOPBAR_HEIGHT } from './TopBar';
 
 const ROW_CARD_WIDTH = 220;
@@ -11,7 +11,10 @@ type Opacity = ReturnType<typeof useSkeletonAnim>;
 function SpotlightSkeleton({ opacity, dark }: { opacity: Opacity; dark: boolean }) {
   const { width, height } = useWindowDimensions();
   const isMobile = width < 640;
-  const pagePad = isMobile ? 16 : 32;
+  // Same gutter as the real stage (pageGutter): caps content at CONTENT_MAX_WIDTH
+  // and centres it. A hardcoded 32 let the skeleton sprawl edge-to-edge on
+  // >1504px displays while the loaded content stayed 1440 wide.
+  const pagePad = pageGutter(width);
 
   if (isMobile) {
     const contentHeight = 240;
@@ -266,7 +269,7 @@ export function WebHomeSkeleton() {
   const opacity = useSkeletonAnim();
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
-  const pagePad = width < 640 ? 16 : 32;
+  const pagePad = pageGutter(width);
 
   return (
     // Plain View (not a nested ScrollView) so the skeleton matches the loaded
