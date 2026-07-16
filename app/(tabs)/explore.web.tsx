@@ -79,7 +79,16 @@ function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () =>
   // don't carry these fields; the line simply stays absent there.
   const full = hero as Partial<Hero>;
   const fact = [full.publisher, alignmentLabel(full.alignment)].filter(Boolean).join(' · ');
-  const { morphName, run } = useHeroMorph(String(hero.id));
+  const { morphName, run } = useHeroMorph({
+    id: String(hero.id),
+    name: hero.name,
+    image_url: hero.image_url,
+    portrait_url: hero.portrait_url,
+    blurhash: 'portrait_blurhash' in hero ? hero.portrait_blurhash : null,
+    publisher: full.publisher ?? null,
+    image_md_url: 'image_md_url' in hero ? (hero.image_md_url ?? null) : null,
+    grid: true,
+  });
   return (
     <Pressable
       onPress={() => run(onPress)}
@@ -422,14 +431,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
                     card's rounded overflow clip in WebKit, poking square corners
                     past the radius. The wrapper carries its own border-radius +
                     overflow so the composited layer is itself rounded. */}
-                <View
-                  style={
-                    [
-                      pss.imgLayer,
-                      { opacity: isActive ? 1 : 0.4 },
-                    ] as object
-                  }
-                >
+                <View style={[pss.imgLayer, { opacity: isActive ? 1 : 0.4 }] as object}>
                   <HeroImage
                     id={String(h.id)}
                     name={h.name}

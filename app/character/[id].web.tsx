@@ -24,7 +24,7 @@ import {
   STAT_FIELDS,
   type EditableFieldDef,
 } from '../../src/lib/db/contributions';
-import { heroImageSource } from '../../src/constants/heroImages';
+import { heroImageSource, heroGridImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
@@ -557,14 +557,24 @@ export default function WebCharacterScreen() {
     teammateNames,
   } = useHeroDetail({ id });
 
+  // Portrait morph arrival: if we got here by tapping a hero card, the card
+  // stashed its art here so we can paint the portrait immediately — even in the
+  // skeleton state before stats load — and tag it with the shared name so the
+  // card art morphs into it. Read once on mount.
+  const [morphArt] = useState(() => consumeMorphArrival(String(id)));
+
   // Ambient per-character palette — blurhash average color → publisher → teal.
+  // On a morph arrival the card's stashed blurhash/publisher seed the SAME
+  // derivation before heroRow loads, so the skeleton stage wears the
+  // character's own colours and the crossfade doesn't shift the atmosphere.
   const theme = useMemo(
     () =>
       deriveCharacterTheme({
-        portrait_blurhash: heroRow?.portrait_blurhash,
-        publisher: heroRow?.publisher ?? data?.stats.biography.publisher ?? null,
+        portrait_blurhash: heroRow?.portrait_blurhash ?? morphArt?.blurhash,
+        publisher:
+          heroRow?.publisher ?? data?.stats.biography.publisher ?? morphArt?.publisher ?? null,
       }),
-    [heroRow, data],
+    [heroRow, data, morphArt],
   );
 
   // Cold-load choreography (mirrors the title page): a single `loading` flag drives
@@ -575,6 +585,8 @@ export default function WebCharacterScreen() {
   //   crossfade — data arrived after the skeleton showed: render the real page and
   //               dissolve the skeleton out on top of it (placeholders resolve in
   //               place), so the body never hard-cuts.
+  // Morph arrivals never see this skeleton machine — they render the real page
+  // immediately (progressive hydration, below); this drives plain cold loads.
   const coldPhase = useSkeletonTransition(!data);
 
   // View-only UI state (edit affordances, first-issue modal, tabs, lightbox, stage).
@@ -599,22 +611,40 @@ export default function WebCharacterScreen() {
   // constant top position regardless of how much identity content the stage has.
   const [stageHeight, setStageHeight] = useState(0);
 
-  // Portrait morph arrival: if we got here by tapping a hero card, tag this
-  // page's portrait with the shared name so the card art morphs into it. Read
-  // the latch once on mount, then drop the name shortly after the morph settles
-  // — a lingering view-transition-name would hijack the next navigation (e.g. a
-  // related-character link) into a nonsense morph.
-  const [portraitMorph, setPortraitMorph] = useState(() => consumeMorphArrival(String(id)));
+  // A morph arrival owns the entrance choreography: the portrait morph + the
+  // skeleton crossfade ARE the entrance, so per-section Reveal rises would read
+  // as content jumping underneath them — render those settled instead.
+  const arrivedViaMorph = !!morphArt;
+  const [portraitTagged, setPortraitTagged] = useState(arrivedViaMorph);
   useEffect(() => {
-    if (!portraitMorph) return undefined;
-    const t = setTimeout(() => setPortraitMorph(false), MOTION.entrance);
+    if (!portraitTagged) return undefined;
+    const t = setTimeout(() => setPortraitTagged(false), MOTION.entrance);
     return () => clearTimeout(t);
-  }, [portraitMorph]);
-  const portraitVT = portraitMorph ? ({ viewTransitionName: VT_PORTRAIT } as object) : null;
+  }, [portraitTagged]);
+  const portraitVT = portraitTagged ? ({ viewTransitionName: VT_PORTRAIT } as object) : null;
+  // The exact (already-cached) image the card was showing — used as the content
+  // portrait's placeholder so, on a morph arrival, it paints crisp immediately
+  // and upgrades to full-res without flashing through a blur.
+  const morphGridUri = morphArt
+    ? (morphArt.grid
+        ? heroGridImageSource(
+            morphArt.id,
+            morphArt.image_url,
+            morphArt.portrait_url,
+            morphArt.image_md_url,
+            morphArt.gridWidth,
+          )
+        : heroImageSource(morphArt.id, morphArt.image_url, morphArt.portrait_url)
+      ).uri || undefined
+    : undefined;
 
   // Priority: Supabase portrait → local bundled → API image → CDN
   const heroImage = id
-    ? heroImageSource(id, data?.stats.image.url ?? null, data?.stats.image.portraitUrl ?? null)
+    ? heroImageSource(
+        id,
+        data?.stats.image.url ?? morphArt?.image_url ?? null,
+        data?.stats.image.portraitUrl ?? morphArt?.portrait_url ?? null,
+      )
     : null;
 
   // Once the stage (with the big hero name) has scrolled out of view, fade the
@@ -672,19 +702,50 @@ export default function WebCharacterScreen() {
     );
   }
 
-  if (!data) {
-    // deepNavy shell so the `pre` window (and a web refresh) fuses with the boot
-    // LogoLoader and the skeleton's dark stage — no beige flash in between.
+  // Progressive hydration (morph arrivals): render the REAL page from the very
+  // first frame using a synthetic CharacterData built from the card's stashed
+  // art — name, portrait, publisher and theme are all already known, so the
+  // page structure, stage and portrait are pixel-identical from the start and
+  // the morph lands directly on the live portrait. Regions whose data hasn't
+  // arrived yet render their own inline placeholders (gated on `hydrating`)
+  // and resolve in place — there is no page-level skeleton swap at all.
+  const view =
+    data ??
+    (morphArt
+      ? heroRowToCharacterData({
+          id: morphArt.id,
+          name: morphArt.name ?? '',
+          image_url: morphArt.image_url ?? null,
+          portrait_url: morphArt.portrait_url ?? null,
+          image_md_url: morphArt.image_md_url ?? null,
+          publisher: morphArt.publisher ?? null,
+          portrait_blurhash: morphArt.blurhash ?? null,
+        } as unknown as Parameters<typeof heroRowToCharacterData>[0])
+      : null);
+  const hydrating = !data && !!morphArt;
+
+  if (!view) {
+    // Plain cold load (no morph): deepNavy shell so the `pre` window (and a web
+    // refresh) fuses with the boot LogoLoader and the skeleton's dark stage —
+    // no beige flash in between.
     return (
       <View style={styles.loadingShell}>
         {coldPhase === 'skeleton' ? (
-          <CharacterSkeleton isDesktop={isDesktop} showHeart={!!user} />
+          <CharacterSkeleton
+            isDesktop={isDesktop}
+            showHeart={!!user}
+            // Seed the page-owned stage measurement so the real page (and the
+            // crossfade overlay) mount with the portrait already anchored where
+            // the skeleton put it — no fallback-frame jump at the handoff.
+            stageHeight={stageHeight}
+            onStageHeight={setStageHeight}
+          />
         ) : null}
       </View>
     );
   }
 
-  const { stats, details } = data;
+  const { stats, details } = view;
 
   // Per-page SEO: title from name + publisher, description from the bio (HTML
   // stripped + truncated), OG image from the hero's portrait.
@@ -825,6 +886,9 @@ export default function WebCharacterScreen() {
                 // element (largest paint) over the foreground portrait — keep it
                 // high-priority too. Shares the source URI, so no extra fetch.
                 priority="high"
+                // Ease in rather than pop — on a cold load this lands after the
+                // stage has already painted.
+                transition={250}
               />
             ) : null}
             {/* Gradient scrim keeps the identity text legible over the backdrop */}
@@ -878,11 +942,41 @@ export default function WebCharacterScreen() {
                     >
                       {stats.name}
                     </Text>
-                    {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
+                    {hydrating ? (
+                      // Most characters carry a full-name alias — reserve its
+                      // line so the chips below don't shift when it lands.
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        width={170}
+                        height={16}
+                        borderRadius={4}
+                        dark
+                        style={{ marginTop: 6 }}
+                      />
+                    ) : alias ? (
+                      <Text style={styles.heroAlias}>{alias}</Text>
+                    ) : null}
 
                     {/* Theme trait chips — inside the title block so the meta
-                        pills keep bottom-aligning with the identity content */}
-                    {narrative && narrative.tags.length > 0 ? (
+                        pills keep bottom-aligning with the identity content.
+                        While hydrating, reserve one pill row at the exact chip
+                        height so the stage doesn't grow when the tags land. */}
+                    {hydrating ? (
+                      <View
+                        style={[styles.stageTraits, { flexDirection: 'row', gap: 8 }] as object}
+                      >
+                        {[86, 110, 78].map((w, i) => (
+                          <SkeletonBlock
+                            key={i}
+                            opacity={skeletonOpacity}
+                            width={w}
+                            height={28}
+                            borderRadius={14}
+                            dark
+                          />
+                        ))}
+                      </View>
+                    ) : narrative && narrative.tags.length > 0 ? (
                       <View style={styles.stageTraits}>
                         <TraitBand tags={narrative.tags} onInk />
                       </View>
@@ -906,7 +1000,28 @@ export default function WebCharacterScreen() {
                     ) : null}
 
                     <View style={styles.metaRow}>
-                      {alignmentLabel ? (
+                      {/* Hydrating: reserve the pill row (alignment chip + stat
+                          strip footprint) so the meta band doesn't reflow when
+                          the data lands. */}
+                      {hydrating ? (
+                        <>
+                          <SkeletonBlock
+                            opacity={skeletonOpacity}
+                            width={64}
+                            height={30}
+                            borderRadius={20}
+                            dark
+                          />
+                          <SkeletonBlock
+                            opacity={skeletonOpacity}
+                            width={150}
+                            height={44}
+                            borderRadius={999}
+                            dark
+                          />
+                        </>
+                      ) : null}
+                      {!hydrating && alignmentLabel ? (
                         <View
                           style={[
                             styles.alignChip,
@@ -921,7 +1036,7 @@ export default function WebCharacterScreen() {
                           </Text>
                         </View>
                       ) : null}
-                      {powerScore !== null || (details.issueCount ?? 0) > 0 ? (
+                      {!hydrating && (powerScore !== null || (details.issueCount ?? 0) > 0) ? (
                         <View
                           style={[styles.statStrip, { borderColor: theme.accent + '44' }] as object}
                         >
@@ -1010,7 +1125,7 @@ export default function WebCharacterScreen() {
                     <View style={styles.statCardHeader}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Profile</Text>
-                        {data.statsSource === 'ai' ? (
+                        {view.statsSource === 'ai' ? (
                           <View style={styles.aiBadge}>
                             <Text style={styles.aiBadgeText}>AI</Text>
                           </View>
@@ -1088,7 +1203,7 @@ export default function WebCharacterScreen() {
                     ) : (
                       <View style={styles.statBand}>
                         {STAT_CONFIG.map(({ key, label, color }, si) => {
-                          if (statsGenerating) {
+                          if (statsGenerating || hydrating) {
                             return (
                               <View key={key} style={styles.bandCell}>
                                 <SkeletonBlock
@@ -1167,7 +1282,7 @@ export default function WebCharacterScreen() {
                   </View>
 
                   {/* Story */}
-                  {comicVineLoading && !details.summary ? (
+                  {(comicVineLoading || hydrating) && !details.summary ? (
                     <View style={styles.summaryBox}>
                       <SkeletonBlock
                         opacity={skeletonOpacity}
@@ -1183,7 +1298,7 @@ export default function WebCharacterScreen() {
                       <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
                     </View>
                   ) : details.summary || details.description ? (
-                    <Reveal>
+                    <Reveal instant={arrivedViaMorph}>
                       <PullQuoteBio
                         summary={details.summary ?? ''}
                         accent={theme.accent}
@@ -1198,7 +1313,7 @@ export default function WebCharacterScreen() {
 
                   {/* Abilities — power explainers fold in as the "Decoded" strip */}
                   <View nativeID="sec-abilities">
-                    <Reveal>
+                    <Reveal instant={arrivedViaMorph}>
                       <WebAbilitiesCard
                         powers={details.powers}
                         loading={comicVineLoading}
@@ -1249,7 +1364,7 @@ export default function WebCharacterScreen() {
                     allyNames.length ||
                     teammateNames.length ||
                     affiliations.length ? (
-                    <Reveal>
+                    <Reveal instant={arrivedViaMorph}>
                       <View nativeID="sec-relations" style={styles.card}>
                         <Text style={styles.cardTitle}>Enemies, Allies &amp; Teams</Text>
                         <View style={styles.cardDivider} />
@@ -1380,7 +1495,7 @@ export default function WebCharacterScreen() {
                     (() => {
                       const groups = groupTitlesByMedia(titles);
                       return (
-                        <Reveal>
+                        <Reveal instant={arrivedViaMorph}>
                           <View style={styles.card}>
                             {groups.film.length > 0 ? (
                               <>
@@ -1418,17 +1533,17 @@ export default function WebCharacterScreen() {
 
                   {/* Legend — debut, trivia, portrayals on one timeline */}
                   <View nativeID="sec-legend">
-                    <Reveal>
+                    <Reveal instant={arrivedViaMorph}>
                       <LegendBand
                         accent={theme.accent}
                         accentWash={theme.accentWash}
-                        firstIssue={data.firstIssue ?? null}
+                        firstIssue={view.firstIssue ?? null}
                         facts={narrative?.didYouKnow ?? []}
                         portrayals={portrayals}
                         onPressDebut={() =>
-                          data.firstIssue &&
+                          view.firstIssue &&
                           router.push(
-                            `/issue/cvi:${data.firstIssue.id}` as Parameters<typeof router.push>[0],
+                            `/issue/cvi:${view.firstIssue.id}` as Parameters<typeof router.push>[0],
                           )
                         }
                       />
@@ -1467,13 +1582,13 @@ export default function WebCharacterScreen() {
                       </View>
                     </View>
                   ) : newIssues.length > 0 || (galleryImages && galleryImages.length > 0) ? (
-                    <Reveal>
+                    <Reveal instant={arrivedViaMorph}>
                       <View nativeID="sec-print" style={styles.card}>
                         <View style={styles.inPrintHeader}>
                           <Text style={styles.cardTitle}>In Print</Text>
-                          {data.firstIssue?.coverDate ? (
+                          {view.firstIssue?.coverDate ? (
                             <Text style={styles.inPrintSince}>
-                              Since {data.firstIssue.coverDate.slice(0, 4)}
+                              Since {view.firstIssue.coverDate.slice(0, 4)}
                             </Text>
                           ) : null}
                         </View>
@@ -1547,7 +1662,7 @@ export default function WebCharacterScreen() {
 
                   {/* Elsewhere — external links drop to a quiet footer register */}
                   {heroLinksHasContent(links) ? (
-                    <Reveal>
+                    <Reveal instant={arrivedViaMorph}>
                       <View style={styles.linksFooter}>
                         <Text style={styles.linksFooterLabel}>Elsewhere</Text>
                         <HeroLinksRow links={links!} contentInset={0} />
@@ -1579,6 +1694,11 @@ export default function WebCharacterScreen() {
                       contentPosition={{ top: 0, left: '50%' }}
                       style={StyleSheet.absoluteFill}
                       recyclingKey={id}
+                      // On a morph arrival, show the card's cached grid image
+                      // (crisp) while the full-res loads; otherwise the blurhash
+                      // covers a cold load. Either way the portrait never blanks.
+                      placeholderUri={morphGridUri}
+                      blurhash={heroRow?.portrait_blurhash}
                       // The portrait is the above-the-fold LCP element on the
                       // most-trafficked SEO page — fetch it at high priority so
                       // it isn't queued behind lazy/below-the-fold requests.
@@ -1792,6 +1912,11 @@ export default function WebCharacterScreen() {
                   contentPosition="top"
                   style={StyleSheet.absoluteFill}
                   recyclingKey={id}
+                  // On a morph arrival, show the card's cached grid image (crisp)
+                  // while the full-res loads; blurhash covers a cold load.
+                  placeholderUri={morphGridUri}
+                  blurhash={heroRow?.portrait_blurhash}
+                  priority="high"
                 />
                 <View style={[styles.mScrimTop, { pointerEvents: 'none' }] as object} />
                 <View style={[styles.mScrimBottom, { pointerEvents: 'none' }] as object} />
@@ -1843,17 +1968,59 @@ export default function WebCharacterScreen() {
                     textStyle={styles.mEyebrow}
                   />
                   <Text style={styles.mName}>{stats.name}</Text>
-                  {alias ? <Text style={styles.mAlias}>{alias}</Text> : null}
+                  {hydrating ? (
+                    <SkeletonBlock
+                      opacity={skeletonOpacity}
+                      width={150}
+                      height={14}
+                      borderRadius={4}
+                      dark
+                      style={{ marginTop: 4 }}
+                    />
+                  ) : alias ? (
+                    <Text style={styles.mAlias}>{alias}</Text>
+                  ) : null}
 
-                  {/* Theme trait chips — identity, so they live with the name */}
-                  {narrative && narrative.tags.length > 0 ? (
+                  {/* Theme trait chips — identity, so they live with the name.
+                      While hydrating, reserve one compact pill row so the
+                      header doesn't grow when the tags land. */}
+                  {hydrating ? (
+                    <View style={[styles.mStageTraits, { flexDirection: 'row', gap: 8 }] as object}>
+                      {[72, 94, 64].map((w, i) => (
+                        <SkeletonBlock
+                          key={i}
+                          opacity={skeletonOpacity}
+                          width={w}
+                          height={23}
+                          borderRadius={12}
+                          dark
+                        />
+                      ))}
+                    </View>
+                  ) : narrative && narrative.tags.length > 0 ? (
                     <View style={styles.mStageTraits}>
                       <TraitBand tags={narrative.tags} onInk compact />
                     </View>
                   ) : null}
 
                   <View style={styles.mVitals}>
-                    {powerTotal > 0 ? (
+                    {hydrating ? (
+                      // Reserve the vitals row footprint (numbers count up when
+                      // the real values land).
+                      <>
+                        {[64, 88, 60].map((w, i) => (
+                          <SkeletonBlock
+                            key={i}
+                            opacity={skeletonOpacity}
+                            width={w}
+                            height={34}
+                            borderRadius={6}
+                            dark
+                          />
+                        ))}
+                      </>
+                    ) : null}
+                    {!hydrating && powerTotal > 0 ? (
                       <View style={styles.mVitalItem}>
                         <VitalCount value={powerTotal} style={styles.mVitalVal as object} />
                         <Text style={styles.mVitalLabel}>Power</Text>
@@ -1925,7 +2092,7 @@ export default function WebCharacterScreen() {
                   ] as object
                 }
               >
-                {comicVineLoading && !details.summary ? (
+                {(comicVineLoading || hydrating) && !details.summary ? (
                   <View style={styles.mBlock}>
                     <SkeletonBlock
                       opacity={skeletonOpacity}
@@ -1959,7 +2126,7 @@ export default function WebCharacterScreen() {
                 <View style={[styles.mBlock, styles.mPowerBand] as object}>
                   <View style={styles.mStatTitleRow}>
                     <Text style={styles.mSectionTitle}>Power Profile</Text>
-                    {data.statsSource === 'ai' ? (
+                    {view.statsSource === 'ai' ? (
                       <View style={styles.aiBadge}>
                         <Text style={styles.aiBadgeText}>AI</Text>
                       </View>
@@ -1987,7 +2154,7 @@ export default function WebCharacterScreen() {
                       {[STAT_CONFIG.slice(0, 3), STAT_CONFIG.slice(3)].map((row, ri) => (
                         <View key={ri} style={styles.statBand}>
                           {row.map(({ key, label, color }, ci) => {
-                            if (statsGenerating) {
+                            if (statsGenerating || hydrating) {
                               return (
                                 <View key={key} style={styles.bandCell}>
                                   <SkeletonBlock
@@ -2110,7 +2277,7 @@ export default function WebCharacterScreen() {
                 {/* Signature tier headlines; AbilitiesSection (shared with
                     native) keeps the full categorized grid below */}
                 {!comicVineLoading && details.powers && details.powers.length > 0 ? (
-                  <Reveal>
+                  <Reveal instant={arrivedViaMorph}>
                     <View style={styles.mBlock}>
                       <SignaturePowerTiles
                         powers={details.powers}
@@ -2136,19 +2303,19 @@ export default function WebCharacterScreen() {
                 />
 
                 {/* Legend — debut, trivia, portrayals on one timeline */}
-                <Reveal>
+                <Reveal instant={arrivedViaMorph}>
                   <View style={styles.mBlock}>
                     <LegendBand
                       flat
                       accent={theme.accent}
                       accentWash={theme.accentWash}
-                      firstIssue={data.firstIssue ?? null}
+                      firstIssue={view.firstIssue ?? null}
                       facts={narrative?.didYouKnow ?? []}
                       portrayals={portrayals}
                       onPressDebut={() =>
-                        data.firstIssue &&
+                        view.firstIssue &&
                         router.push(
-                          `/issue/cvi:${data.firstIssue.id}` as Parameters<typeof router.push>[0],
+                          `/issue/cvi:${view.firstIssue.id}` as Parameters<typeof router.push>[0],
                         )
                       }
                     />
@@ -2169,7 +2336,7 @@ export default function WebCharacterScreen() {
                 {/* Enemies & Allies */}
                 {!comicVineLoading &&
                 (enemyNames.length || allyNames.length || teammateNames.length) ? (
-                  <Reveal>
+                  <Reveal instant={arrivedViaMorph}>
                     <View style={styles.mSection}>
                       <View style={styles.mSectionHead}>
                         <Text style={styles.mSectionTitle}>Enemies, Allies &amp; Teams</Text>
@@ -2344,7 +2511,7 @@ export default function WebCharacterScreen() {
 
                 {/* Elsewhere — external links drop to a quiet footer register */}
                 {heroLinksHasContent(links) ? (
-                  <Reveal>
+                  <Reveal instant={arrivedViaMorph}>
                     <View style={[styles.mBlock, styles.linksFooter] as object}>
                       <Text style={styles.linksFooterLabel}>Elsewhere</Text>
                       <HeroLinksRow links={links!} contentInset={0} />
@@ -2447,9 +2614,10 @@ export default function WebCharacterScreen() {
           skeleton dissolves off the top of it — so placeholders resolve in place
           instead of the body hard-cutting in. Only mounts the one transition tick
           after data lands (and only if the skeleton was actually shown). */}
-      {coldPhase === 'crossfade' ? (
+      {/* Plain cold loads only — morph arrivals hydrate in place, no overlay. */}
+      {coldPhase === 'crossfade' && !morphArt ? (
         <FadeOutSkeleton>
-          <CharacterSkeleton isDesktop={isDesktop} showHeart={!!user} />
+          <CharacterSkeleton isDesktop={isDesktop} showHeart={!!user} stageHeight={stageHeight} />
         </FadeOutSkeleton>
       ) : null}
     </>
@@ -2558,7 +2726,22 @@ function WebAbilitiesCard({
 }
 
 // ── Character page skeleton ──────────────────────────────────────────────────
-function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showHeart: boolean }) {
+function CharacterSkeleton({
+  isDesktop,
+  showHeart,
+  stageHeight: stageHeightProp,
+  onStageHeight,
+}: {
+  isDesktop: boolean;
+  showHeart: boolean;
+  /** Parent-owned stage measurement. Sharing one value across the loading
+   *  skeleton, the real page, and the crossfade overlay keeps the overlapping
+   *  portrait anchored to the SAME top at every handoff — three independent
+   *  measurements each spend their first frame at the fallback offset and the
+   *  portrait visibly jumps. */
+  stageHeight?: number;
+  onStageHeight?: (h: number) => void;
+}) {
   const opacity = useSkeletonAnim();
   const { height: winH } = useWindowDimensions();
   const heroH = Math.round(winH * M_HERO_RATIO);
@@ -2566,7 +2749,10 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
 
   // Measure the stage so the overlapping side portrait anchors to the same
   // constant top the real page uses — keeps the skeleton→content swap seamless.
-  const [stageHeight, setStageHeight] = useState(0);
+  // Prefer the parent-owned measurement (shared with the real page) so every
+  // instance agrees; the local state is the standalone fallback.
+  const [localStageHeight, setLocalStageHeight] = useState(0);
+  const stageHeight = stageHeightProp || localStageHeight;
   const portraitOverlap = stageHeight
     ? -Math.min(300, Math.max(0, stageHeight - (TOPBAR_HEIGHT + 8)))
     : -300;
@@ -2680,7 +2866,10 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
       {/* Desktop: identity stage. Mobile uses an immersive portrait skeleton. */}
       {isDesktop ? (
         <View
-          onLayout={(e) => setStageHeight(e.nativeEvent.layout.height)}
+          onLayout={(e) => {
+            setLocalStageHeight(e.nativeEvent.layout.height);
+            onStageHeight?.(e.nativeEvent.layout.height);
+          }}
           style={[sk.stage, { paddingTop: TOPBAR_HEIGHT + 32, paddingBottom: 26 }]}
         >
           <View style={[sk.stageInner, { paddingHorizontal: 24 }]}>
@@ -2752,7 +2941,7 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
       ) : (
         // Mobile: native-style immersive skeleton (portrait header → beige sheet)
         <View style={sk.bodyWrap}>
-          <View style={[sk.mHero, { height: heroH }]}>
+          <View style={[sk.mHero, { height: heroH }] as object}>
             <View style={sk.mIdentitySkel}>
               <SkeletonBlock
                 opacity={opacity}

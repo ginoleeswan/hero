@@ -19,16 +19,26 @@ interface Options {
   delay?: number;
   /** How long the skeleton dissolves over the loaded content (match the visual fade). */
   crossfade?: number;
+  /**
+   * Skip the `pre` window: show the skeleton on the very first frame AND
+   * guarantee the crossfade when data lands (even if it lands inside `delay`).
+   * For arrivals where the skeleton is itself part of the choreography — e.g. a
+   * card→detail view-transition morph lands on the skeleton's portrait, so it
+   * must be painted at snapshot time and must dissolve out, never hard-cut.
+   */
+  immediate?: boolean;
 }
 
 export function useSkeletonTransition(
   loading: boolean,
-  { delay = 150, crossfade = 320 }: Options = {},
+  { delay = 150, crossfade = 320, immediate = false }: Options = {},
 ): SkeletonPhase {
-  const [phase, setPhase] = useState<SkeletonPhase>(loading ? 'pre' : 'content');
+  const [phase, setPhase] = useState<SkeletonPhase>(
+    loading ? (immediate ? 'skeleton' : 'pre') : 'content',
+  );
   // Whether the skeleton actually reached the screen this loading spell — decides
   // crossfade (dissolve it out) vs. straight-to-content (it never showed).
-  const shown = useRef(false);
+  const shown = useRef(immediate && loading);
 
   // Layout effect so the loaded→crossfade switch lands BEFORE paint — otherwise
   // the first content frame would flash bare for a tick before the overlay mounts.
@@ -36,6 +46,12 @@ export function useSkeletonTransition(
   // so the transitions genuinely belong in a (layout) effect.
   useLayoutEffect(() => {
     if (loading) {
+      if (immediate) {
+        shown.current = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setPhase('skeleton');
+        return;
+      }
       shown.current = false;
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPhase('pre');
@@ -51,7 +67,7 @@ export function useSkeletonTransition(
       return () => clearTimeout(t);
     }
     setPhase('content');
-  }, [loading, delay, crossfade]);
+  }, [loading, delay, crossfade, immediate]);
 
   return phase;
 }

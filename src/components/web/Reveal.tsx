@@ -13,16 +13,22 @@ export function Reveal({
   children,
   style,
   delay = 0,
+  instant = false,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   /** Stagger offset (ms) — for cascading a row/grid of Reveals. */
   delay?: number;
+  /** Render settled with no entrance — for arrivals whose choreography is
+   *  already owned by something else (e.g. a view-transition morph), where a
+   *  rise would read as content jumping. */
+  instant?: boolean;
 }) {
   const ref = useRef<View>(null);
-  const visible = useInViewOnce(ref);
-  // If the very first render is already "seen" (reduced motion / SSR / no IO)
-  // there is nothing to animate, so start landed — settled, no transition.
+  const visible = useInViewOnce(ref) || instant;
+  // If the very first render is already "seen" (reduced motion / SSR / no IO /
+  // instant) there is nothing to animate, so start landed — settled, no
+  // transition.
   const [landed, setLanded] = useState(visible);
 
   // Once the rise finishes, drop the opacity/transform/transition styles

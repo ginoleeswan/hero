@@ -116,7 +116,17 @@ const HeroCard = memo(function HeroCard({
   onPeek?: (hero: Hero) => void;
 }) {
   const onInfo = onPeek ? () => onPeek(hero) : undefined;
-  const { morphName, run } = useHeroMorph(String(hero.id));
+  const { morphName, run } = useHeroMorph({
+    id: String(hero.id),
+    name: hero.name,
+    image_url: hero.image_url,
+    portrait_url: hero.portrait_url,
+    blurhash: hero.portrait_blurhash,
+    publisher: hero.publisher,
+    image_md_url: hero.image_md_url,
+    grid: true,
+    gridWidth,
+  });
   return (
     <Pressable
       onPress={() => run(() => onPress(String(hero.id)))}

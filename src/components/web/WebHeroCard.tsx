@@ -36,7 +36,10 @@ export function WebHeroCard({
   const brand = featured ? brandForPublisher(publisher) : undefined;
   const logoWidth =
     brand?.logo && brand.badgeSize ? LOGO_H * (brand.badgeSize.width / brand.badgeSize.height) : 0;
-  const { morphName, run } = useHeroMorph(id, morph);
+  const { morphName, run } = useHeroMorph(
+    { id, name, image_url: imageUrl, portrait_url: portraitUrl, publisher },
+    morph,
+  );
   return (
     <Pressable
       onPress={() => run(onPress)}

@@ -31,6 +31,11 @@ interface HeroImageProps {
   transition?: number | null;
   /** BlurHash placeholder shown instantly while the portrait loads (LQIP). */
   blurhash?: string | null;
+  /** A lower-res image URI to show while the main source loads — e.g. the
+   *  already-cached grid derivative during a card→detail morph, so the portrait
+   *  upgrades crisp→crisp instead of flashing through a blur. Takes precedence
+   *  over `blurhash`. */
+  placeholderUri?: string | null;
   /** Gaussian blur radius for the portrait (used by the daily reveal game). */
   blurRadius?: number;
   /** Fires when the portrait loads, or immediately when the monogram is shown. */
@@ -60,6 +65,7 @@ export function HeroImage({
   recyclingKey,
   transition,
   blurhash,
+  placeholderUri,
   blurRadius,
   onLoad,
   priority,
@@ -77,6 +83,14 @@ export function HeroImage({
     return <HeroMonogram seed={id} name={name} style={style} onLoad={onLoad} />;
   }
 
+  // A cached lower-res URI wins over the blurhash (crisp, not blurred); either
+  // shows instantly while the full source loads.
+  const placeholder = placeholderUri
+    ? { uri: placeholderUri }
+    : blurhash
+      ? { blurhash }
+      : undefined;
+
   return (
     <Image
       priority={priority}
@@ -87,7 +101,7 @@ export function HeroImage({
       cachePolicy={cachePolicy}
       recyclingKey={recyclingKey ?? String(id)}
       transition={transition ?? 200}
-      placeholder={blurhash ? { blurhash } : undefined}
+      placeholder={placeholder}
       placeholderContentFit={contentFit}
       blurRadius={blurRadius}
       onLoad={onLoad}

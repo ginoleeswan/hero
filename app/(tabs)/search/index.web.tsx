@@ -81,7 +81,18 @@ const HeroCard = memo(function HeroCard({
   onSelect: (id: string) => void;
   onPeek: (hero: HeroSearchResult) => void;
 }) {
-  const { morphName, run } = useHeroMorph(hero.id);
+  const { morphName, run } = useHeroMorph({
+    id: hero.id,
+    name: hero.name,
+    image_url: hero.image_url,
+    portrait_url: hero.portrait_url,
+    // HeroSearchResult carries no blurhash; the detail portrait's own blurhash
+    // covers the final render.
+    blurhash: null,
+    publisher: hero.publisher,
+    image_md_url: hero.image_md_url,
+    grid: true,
+  });
   return (
     <Pressable
       onPress={() => run(() => onSelect(hero.id))}

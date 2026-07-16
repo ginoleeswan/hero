@@ -65,7 +65,16 @@ function HeroCard({
   onPress: () => void;
   onInfo: () => void;
 }) {
-  const { morphName, run } = useHeroMorph(String(hero.id));
+  const { morphName, run } = useHeroMorph({
+    id: String(hero.id),
+    name: hero.name,
+    image_url: hero.image_url,
+    portrait_url: hero.portrait_url,
+    blurhash: hero.portrait_blurhash,
+    publisher: hero.publisher,
+    image_md_url: hero.image_md_url,
+    grid: true,
+  });
   return (
     <Pressable
       onPress={() => run(onPress)}

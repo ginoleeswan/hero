@@ -10,9 +10,16 @@
 // plain navigation there, and `morphName` simply never activates.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { VT_PORTRAIT, markMorphDeparture, withViewTransition } from '../lib/viewTransition';
+import { Image } from 'expo-image';
+import {
+  VT_PORTRAIT,
+  type MorphArt,
+  markMorphDeparture,
+  withViewTransition,
+} from '../lib/viewTransition';
+import { heroImageSource } from '../constants/heroImages';
 
-export function useHeroMorph(id: string, enabled = true) {
+export function useHeroMorph(art: MorphArt, enabled = true) {
   const [morphing, setMorphing] = useState(false);
   const alive = useRef(true);
   useEffect(() => {
@@ -28,7 +35,15 @@ export function useHeroMorph(id: string, enabled = true) {
         navigate();
         return;
       }
-      markMorphDeparture(id);
+      // Stash the art so the detail page can paint this portrait immediately —
+      // otherwise a cache-miss detail page is all skeleton and the morph has no
+      // target in the new snapshot.
+      markMorphDeparture(art);
+      // Warm the full-res detail image now, while the morph plays and stats
+      // load, so the settled portrait upgrades from the card's cached grid image
+      // without a visible gap on a first (cold) visit.
+      const fullUri = heroImageSource(art.id, art.image_url, art.portrait_url).uri;
+      if (fullUri) Image.prefetch(fullUri, { cachePolicy: 'memory-disk' }).catch(() => {});
       // Commit the name into the DOM before the transition captures the old
       // snapshot.
       flushSync(() => setMorphing(true));
@@ -44,7 +59,8 @@ export function useHeroMorph(id: string, enabled = true) {
         clear();
       }
     },
-    [id, enabled],
+    // art is a fresh object each render; depend on its fields, not identity.
+    [art.id, art.name, art.image_url, art.portrait_url, enabled],
   );
 
   return { morphName: morphing ? VT_PORTRAIT : undefined, run };
