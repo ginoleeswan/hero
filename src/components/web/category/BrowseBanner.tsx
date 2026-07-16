@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '../../../constants/colors';
 import { withCloudinaryTransform, withComicVineScale } from '../../../constants/heroImages';
@@ -89,6 +89,15 @@ export function BrowseBanner({
       logoH = logoW / aspect;
     }
   }
+  // Align the text to the body's centred 1680 column (headerInner in the
+  // category screen): pad the left by the same gutter so the headline lines up
+  // with the grid/filters on wide screens. Content still stretches to its own
+  // max-width as a direct banner child — the stage art stays full-bleed. Below
+  // ~1744px the gutter is 0 and it matches the flat 32px it always used.
+  const { width: winW } = useWindowDimensions();
+  const BODY_MAX = 1680;
+  const sideGutter = Math.max(0, (winW - BODY_MAX) / 2);
+
   const hasLogo = logoW > 0;
   // Light logos (white-tinted) vanish on the beige canvas once parked, so they
   // get darkened to a silhouette on park — same idea as recolouring text to navy.
@@ -177,7 +186,11 @@ export function BrowseBanner({
             {
               minHeight: compact ? 170 : 292,
               paddingBottom: compact ? 40 : 32,
-              paddingHorizontal: compact ? 16 : 32,
+              // Left pad = base gutter + the centred-column side gutter, so the
+              // headline aligns with the 1680 body column on wide screens. Right
+              // pad stays at the base — the montage bleeds past it (right: -16).
+              paddingLeft: (compact ? 16 : 32) + sideGutter,
+              paddingRight: compact ? 16 : 32,
               paddingTop: compact ? 66 : 70,
               // Brand radial wash (universe) OR a calm ink→navy gallery surface
               // (editorial categories — no brand hue; the roster carries colour).
@@ -263,8 +276,16 @@ export function BrowseBanner({
             seamlessly into the gallery floor with no edge. */}
         <View style={styles.bottomFade as object} pointerEvents="none" />
         <View style={styles.content}>
-          {/* Slot reserves the headline's space; invisible when it detaches. */}
-          <View ref={slotRef} style={detach ? (styles.hiddenSlot as object) : undefined}>
+          {/* Slot reserves the headline's space; invisible when it detaches.
+              alignSelf stretch: content aligns its children flex-start, and a
+              line-clamped (-webkit-line-clamp) title reports min-content there,
+              collapsing the slot to the longest word so the headline wrapped.
+              Stretching the slot to content's full width lets it lay out on one
+              line. */}
+          <View
+            ref={slotRef}
+            style={[styles.slot, detach && (styles.hiddenSlot as object)] as object}
+          >
             {renderHeadline(false)}
           </View>
           {/* Editorial thesis line — the category's description, set as a real
@@ -355,6 +376,7 @@ const styles = StyleSheet.create({
     backgroundImage: `linear-gradient(180deg, transparent 42%, ${COLORS.deepNavy} 100%)`,
   } as object,
   content: { position: 'relative', maxWidth: 820, alignItems: 'flex-start' },
+  slot: { alignSelf: 'stretch' },
   hiddenSlot: { opacity: 0 },
   detach: {
     position: 'fixed',

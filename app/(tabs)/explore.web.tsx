@@ -1675,7 +1675,11 @@ const styles = StyleSheet.create({
   } as object,
 
   // "Browse the Universe" chapter break between the dynamic zone and the library.
-  browseHead: { paddingBottom: 30, marginTop: -36 } as object,
+  // Positive top gap, not a negative pull-up: the section header sits below the
+  // sponsor slot (and, for supporters who see no slot, below the row above). The
+  // old marginTop:-36 was tuned for a since-changed predecessor and yanked
+  // "Greatest Rivalries" up over the sponsor card.
+  browseHead: { paddingBottom: 30, marginTop: 24 } as object,
   browseKicker: {
     ...EYEBROW,
     letterSpacing: 2.5,
