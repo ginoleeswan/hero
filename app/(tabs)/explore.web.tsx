@@ -1274,7 +1274,7 @@ export default function WebHomeScreen() {
   // Shared, platform-neutral data layer (see useExploreData). Web keeps reading
   // rows via `homeData.*`; these aliases preserve the existing render references.
   const homeData = useExploreData();
-  const { recentlyViewed, favourites } = homeData;
+  const { recentlyViewed, favourites, forYou } = homeData;
   const homeStarted = homeData.started;
   const totalHeroCount = homeData.heroCount;
   const handlePress = useCallback(
@@ -1416,6 +1416,14 @@ export default function WebHomeScreen() {
                 heroes={recentlyViewed}
                 onPress={handlePress}
               />
+            </Reveal>
+
+            {/* ── Picked For You — DISCOVERY: characters you haven't engaged
+                 with yet, from your favourites' relationship graph + taste
+                 affinity (get_my_for_you). Hidden when logged out / signal-less
+                 (HomeRow nulls on empty). ─────────────────────────────────── */}
+            <Reveal>
+              <HomeRow label="Discover" title="Picked For You" heroes={forYou} onPress={handlePress} />
             </Reveal>
 
             {/* ── Hall of Fame — Most Iconic, authored: a chosen #1 + ranked list
