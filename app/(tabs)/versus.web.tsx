@@ -20,6 +20,7 @@ import { YesterdayStrip } from '../../src/components/web/versus/YesterdayStrip';
 import { useDiscoveryRows } from '../../src/hooks/useDiscoveryRows';
 import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
 import { Reveal } from '../../src/components/web/Reveal';
+import { TodaysDailies } from '../../src/components/game/TodaysDailies';
 
 export default function VersusHubWeb() {
   // The page ends on the dark deck section — keep the canvas deep-navy so it
@@ -29,8 +30,17 @@ export default function VersusHubWeb() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const contentPad = width < 640 ? 16 : 32;
-  const { matchup, hookText, takesCount, yesterday, iconicPool, loading, feedSettled, mostFeared } =
-    useVersusHub();
+  const {
+    matchup,
+    hookText,
+    takesCount,
+    yesterday,
+    iconicPool,
+    loading,
+    feedSettled,
+    mostFeared,
+    teamBattle,
+  } = useVersusHub();
 
   const openArena = (a: FighterArt, b: FighterArt) => {
     stashFighters(a, b);
@@ -174,6 +184,24 @@ export default function VersusHubWeb() {
                 <Text style={s.actSub}>Random iconic clash</Text>
               </View>
             </Pressable>
+          </View>
+
+          {/* ── Today's Dailies — streak + the three daily surfaces ── */}
+          <View style={s.dailiesWrap}>
+            <TodaysDailies
+              onPuzzle={() => router.push('/play')}
+              onDebate={() => (matchup ? openArena(matchup.heroA, matchup.heroB) : undefined)}
+              onTeamBattle={
+                teamBattle
+                  ? () =>
+                      router.push(
+                        `/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}` as Parameters<
+                          typeof router.push
+                        >[0],
+                      )
+                  : undefined
+              }
+            />
           </View>
         </View>
       </View>
@@ -396,6 +424,7 @@ const s = StyleSheet.create({
     maxWidth: 560,
     justifyContent: 'center',
   },
+  dailiesWrap: { width: '100%', maxWidth: 560, marginTop: 14 },
   act: {
     flex: 1,
     flexDirection: 'row',

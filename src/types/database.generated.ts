@@ -1918,6 +1918,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_daily_completions: {
+        Row: {
+          created_at: string
+          day: string
+          surface: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          surface: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          surface?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_favourites: {
         Row: {
           created_at: string | null
@@ -2293,6 +2314,7 @@ export type Database = {
       }
       get_my_battle_record: { Args: never; Returns: Json }
       get_my_contributions: { Args: never; Returns: Json }
+      get_my_daily_streak: { Args: never; Returns: Json }
       get_my_taste_profile: { Args: never; Returns: Json }
       get_new_comics: {
         Args: {
@@ -2347,6 +2369,13 @@ export type Database = {
         }[]
       }
       get_source_coverage: { Args: never; Returns: Json }
+      get_streaks_at_risk: {
+        Args: { p_min?: number }
+        Returns: {
+          streak: number
+          user_id: string
+        }[]
+      }
       get_team_battle_tally: {
         Args: { p_a: string; p_b: string }
         Returns: Json
@@ -2491,6 +2520,10 @@ export type Database = {
       rebuild_hero_relationships: { Args: never; Returns: undefined }
       rebuild_teams: { Args: never; Returns: undefined }
       recompute_fame_scores: { Args: never; Returns: number }
+      record_daily_completion: {
+        Args: { p_surface: string }
+        Returns: undefined
+      }
       record_daily_result: {
         Args: { p_date: string; p_guesses: number; p_won: boolean }
         Returns: undefined

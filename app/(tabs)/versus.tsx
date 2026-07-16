@@ -18,6 +18,7 @@ import { ShowdownCards } from '../../src/components/versus/ShowdownCards';
 import { RivalriesRail } from '../../src/components/versus/RivalriesRail';
 import { HallOfInfamy } from '../../src/components/home/HallOfInfamy';
 import { YesterdayStrip } from '../../src/components/versus/YesterdayStrip';
+import { TodaysDailies } from '../../src/components/game/TodaysDailies';
 
 export default function VersusScreen() {
   const router = useRouter();
@@ -132,6 +133,24 @@ export default function VersusScreen() {
               </View>
             </Pressable>
           </View>
+
+          {/* ── Today's Dailies — streak + the three daily surfaces ── */}
+          <View style={styles.dailiesWrap}>
+            <TodaysDailies
+              onPuzzle={() => router.push('/play')}
+              onDebate={() => (matchup ? openArena(matchup.heroA, matchup.heroB) : undefined)}
+              onTeamBattle={
+                teamBattle
+                  ? () =>
+                      router.push(
+                        `/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}` as Parameters<
+                          typeof router.push
+                        >[0],
+                      )
+                  : undefined
+              }
+            />
+          </View>
         </LinearGradient>
 
         {/* ── Featured team battle ── */}
@@ -207,6 +226,7 @@ const styles = StyleSheet.create({
   },
 
   actions: { flexDirection: 'row', gap: 12, marginTop: 26, alignSelf: 'stretch' },
+  dailiesWrap: { alignSelf: 'stretch', marginTop: 14 },
   act: {
     flex: 1,
     flexDirection: 'row',

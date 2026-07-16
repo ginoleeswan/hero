@@ -13,6 +13,7 @@ import {
 import { getCachedTeamVerdict } from '../lib/db/teamVerdicts';
 import { generateTeamVerdict } from '../lib/api';
 import { resolveTeamBattle, type TeamSide, type TeamBattleResult } from '../lib/teamBattle';
+import { recordTeamBattleCompletionIfDaily } from '../lib/db/dailies';
 
 export interface UseTeamBattle {
   loading: boolean;
@@ -118,6 +119,9 @@ export function useTeamBattle(battleId?: string): UseTeamBattle {
       if (!b) return;
       const fresh = await castTeamBattleVote(b.aId, b.bId, teamId);
       if (fresh) qc.setQueryData(['teamTally', b.aId, b.bId], fresh);
+      // Daily-streak calendar: counts only when this pair IS today's battle
+      // (deep-linked/draft battles vote on arbitrary pairs — guard in the lib).
+      void recordTeamBattleCompletionIfDaily(b.aId, b.bId);
     },
     [b, qc],
   );
