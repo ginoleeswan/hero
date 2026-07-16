@@ -187,12 +187,29 @@ export function CommunitySkeleton({ narrow }: { narrow: boolean }) {
           <SkRows n={4} thumb />
         </SkPanel>
       </Bento.Row>
+      {/* Members roster */}
+      <SkPanel>
+        <SkRows n={5} thumb />
+      </SkPanel>
+      {/* Hero leaderboards — three compact columns */}
       <Bento.Row narrow={narrow}>
         <SkPanel style={s.flex1}>
           <SkRows n={5} thumb />
         </SkPanel>
         <SkPanel style={s.flex1}>
           <SkRows n={5} thumb />
+        </SkPanel>
+        <SkPanel style={s.flex1}>
+          <SkRows n={5} thumb />
+        </SkPanel>
+      </Bento.Row>
+      {/* Contributors + activity */}
+      <Bento.Row narrow={narrow}>
+        <SkPanel style={s.flex1}>
+          <SkRows n={4} thumb />
+        </SkPanel>
+        <SkPanel style={s.flex15}>
+          <SkRows n={6} thumb />
         </SkPanel>
       </Bento.Row>
     </Bento>

@@ -2086,6 +2086,7 @@ export type Database = {
         Args: { p_hero_id: string }
         Returns: undefined
       }
+      admin_member_detail: { Args: { p_user_id: string }; Returns: Json }
       admin_merge_heroes: {
         Args: { p_loser: string; p_winner: string }
         Returns: undefined

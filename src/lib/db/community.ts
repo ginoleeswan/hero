@@ -35,6 +35,10 @@ export interface ActivityItem {
 export interface OnlineMember {
   userId: string;
   displayName: string | null;
+  avatarUrl: string | null;
+  isAdmin: boolean;
+  isSupporter: boolean;
+  joinedAt: string;
   lastSeenAt: string;
   /** Seen within the last 5 minutes (computed server-side). */
   live: boolean;
@@ -51,6 +55,57 @@ export interface PresenceSummary {
   recent: OnlineMember[];
 }
 
+/** One row in the full member roster: profile + lifetime engagement counts. */
+export interface Member {
+  userId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  isAdmin: boolean;
+  isSupporter: boolean;
+  supporterSince: string | null;
+  /** Account creation date. */
+  joinedAt: string;
+  lastSeenAt: string | null;
+  /** Seen within the last 5 minutes (computed server-side). */
+  live: boolean;
+  /** Contributor tier (steward/curator/new) when they've submitted edits. */
+  contributorLevel: string | null;
+  favourites: number;
+  views: number;
+  votes: number;
+  contributions: number;
+}
+
+/** Full drill-down for one member — profile, counts, favourites, own activity. */
+export interface MemberDetail {
+  profile: {
+    userId: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+    coverUrl: string | null;
+    isAdmin: boolean;
+    isSupporter: boolean;
+    supporterSince: string | null;
+    joinedAt: string;
+    lastSeenAt: string | null;
+    live: boolean;
+    contributorLevel: string | null;
+    counts: {
+      favourites: number;
+      views: number;
+      votes: number;
+      contributions: number;
+      approved: number;
+      pending: number;
+      rejected: number;
+    };
+  };
+  /** Their most-recently favourited heroes (up to 12). */
+  favourites: HeroStat[];
+  /** Member-scoped newest-first activity feed (up to 15). */
+  recent: ActivityItem[];
+}
+
 export interface CommunityOverview {
   totals: {
     members: number;
@@ -61,6 +116,10 @@ export interface CommunityOverview {
     contributions: number;
   };
   online: PresenceSummary;
+  /** Members joined in the last 7 days. */
+  newThisWeek: number;
+  /** Full member roster (up to 60, richest-signal first). */
+  members: Member[];
   topViewed: HeroStat[];
   topFavourited: HeroStat[];
   topBacked: HeroStat[];
@@ -90,6 +149,8 @@ export async function fetchCommunityOverview(): Promise<CommunityOverview | null
   return {
     totals: json.totals,
     online: json.online,
+    newThisWeek: json.newThisWeek,
+    members: json.members,
     topViewed: json.topViewed,
     topFavourited: json.topFavourited,
     topBacked: json.topBacked,
@@ -97,4 +158,21 @@ export async function fetchCommunityOverview(): Promise<CommunityOverview | null
     contributionsByStatus: json.contributionsByStatus,
     recent: json.recent,
   };
+}
+
+type MemberDetailJson = ({ authorized: false } | ({ authorized: true } & MemberDetail)) | null;
+
+/**
+ * Fetch one member's full drill-down (profile, counts, favourites, activity).
+ * Returns `null` for non-admins or on error, mirroring the overview fetcher.
+ */
+export async function fetchMemberDetail(userId: string): Promise<MemberDetail | null> {
+  const { data, error } = await supabase.rpc('admin_member_detail', { p_user_id: userId });
+  if (error) {
+    console.warn('[fetchMemberDetail] error:', error.message);
+    return null;
+  }
+  const json = data as unknown as MemberDetailJson;
+  if (!json || json.authorized !== true) return null;
+  return { profile: json.profile, favourites: json.favourites, recent: json.recent };
 }
