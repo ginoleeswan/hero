@@ -2,8 +2,17 @@ import {
   parseUtm,
   deriveAttribution,
   attributionEventProps,
+  recordAttribution,
   type Attribution,
 } from '../../src/lib/attribution';
+
+jest.mock('../../src/lib/supabase', () => ({
+  supabase: { auth: { getSession: async () => ({ data: { session: null } }) } },
+}));
+jest.mock('../../src/lib/db/pageViews', () => ({
+  getSessionId: () => 'sid-123',
+  getReferrerHost: () => null,
+}));
 
 describe('parseUtm', () => {
   it('pulls all five UTM params from a query string', () => {
@@ -105,5 +114,112 @@ describe('attributionEventProps', () => {
       utm_source: 'www.google.com',
       utm_medium: 'referral',
     });
+  });
+});
+
+describe('recordAttribution', () => {
+  const STORE_KEY = 'mythique_attr';
+  const SENT_KEY = 'mythique_attr_sent';
+  const firstTouch: Attribution = {
+    source: 'tiktok',
+    medium: 'paid-social',
+    campaign: 'launch',
+    content: null,
+    term: null,
+    referrer: 'tiktok.com',
+    landing: '/explore',
+  };
+  const fetchMock = jest.fn();
+
+  // recordAttribution is web-only: it early-returns unless window + localStorage
+  // exist. This suite runs in the node env, so stub both.
+  const store: Record<string, string> = {};
+  const localStorageStub = {
+    getItem: (k: string) => (k in store ? store[k] : null),
+    setItem: (k: string, v: string) => {
+      store[k] = String(v);
+    },
+    removeItem: (k: string) => {
+      delete store[k];
+    },
+    clear: () => {
+      for (const k of Object.keys(store)) delete store[k];
+    },
+  };
+
+  beforeAll(() => {
+    (global as Record<string, unknown>).window = {};
+    (global as Record<string, unknown>).localStorage = localStorageStub;
+  });
+  afterAll(() => {
+    delete (global as Record<string, unknown>).window;
+    delete (global as Record<string, unknown>).localStorage;
+  });
+
+  beforeEach(() => {
+    localStorageStub.clear();
+    fetchMock.mockReset();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+    process.env.EXPO_PUBLIC_SUPABASE_KEY = 'anon-key';
+    localStorageStub.setItem(STORE_KEY, JSON.stringify(firstTouch));
+  });
+
+  const prefer = () =>
+    (fetchMock.mock.calls[0][1] as { headers: Record<string, string> }).headers.prefer;
+
+  // THE REGRESSION: `resolution=ignore-duplicates` puts PostgREST on its upsert
+  // (ON CONFLICT) path, which RLS rejects on this insert-only table (401/42501),
+  // so every attribution write silently failed. See src/lib/attribution.ts.
+  it('never sends resolution=ignore-duplicates (RLS rejects the upsert path)', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 201 });
+    await recordAttribution();
+    expect(prefer()).not.toContain('resolution=ignore-duplicates');
+    expect(prefer()).toBe('return=minimal');
+  });
+
+  it('posts the first-touch to session_attribution and marks it sent on 201', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 201 });
+    await recordAttribution();
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://example.supabase.co/rest/v1/session_attribution');
+    expect(JSON.parse((init as { body: string }).body)).toMatchObject({
+      session_id: 'sid-123',
+      utm_source: 'tiktok',
+      utm_campaign: 'launch',
+      referrer: 'tiktok.com',
+      landing_path: '/explore',
+    });
+    expect(localStorageStub.getItem(SENT_KEY)).toBe('1');
+  });
+
+  it('treats 409 (row already exists for this session) as done', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 409 });
+    await recordAttribution();
+    expect(localStorageStub.getItem(SENT_KEY)).toBe('1');
+  });
+
+  it('leaves the flag unset on failure so a later load retries', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 404 }); // e.g. before the migration lands
+    await recordAttribution();
+    expect(localStorageStub.getItem(SENT_KEY)).toBeNull();
+  });
+
+  it('writes once per browser — skips when already sent', async () => {
+    localStorageStub.setItem(SENT_KEY, '1');
+    await recordAttribution();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('does not write for direct visits (no stored first-touch)', async () => {
+    localStorageStub.removeItem(STORE_KEY);
+    await recordAttribution();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('never throws when the network fails', async () => {
+    fetchMock.mockRejectedValue(new Error('offline'));
+    await expect(recordAttribution()).resolves.toBeUndefined();
+    expect(localStorageStub.getItem(SENT_KEY)).toBeNull();
   });
 });

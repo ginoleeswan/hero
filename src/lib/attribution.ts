@@ -152,8 +152,14 @@ export async function recordAttribution(): Promise<void> {
         apikey: key,
         authorization: `Bearer ${session?.access_token ?? key}`,
         'content-type': 'application/json',
-        // Dedup on session_id if this ever runs twice for the same browser.
-        prefer: 'resolution=ignore-duplicates,return=minimal',
+        // Deliberately NOT `resolution=ignore-duplicates`. That flips PostgREST
+        // onto its upsert (ON CONFLICT) path, which under RLS also needs a
+        // SELECT policy to resolve the conflict — and this table is insert-only
+        // by design (reads go only through admin_traffic_overview). The upsert
+        // is therefore rejected with 401 / 42501 "new row violates row-level
+        // security policy", so EVERY write failed. A repeat write is instead a
+        // plain 409 on the session_id PK, handled below.
+        prefer: 'return=minimal',
       },
       body: JSON.stringify({
         session_id: sid,
@@ -166,8 +172,11 @@ export async function recordAttribution(): Promise<void> {
         landing_path: a.landing,
       }),
     });
-    // Only mark done on success, so pre-migration 404s retry until the table lands.
-    if (res.ok) localStorage.setItem(SENT_KEY, '1');
+    // Mark done on success, and on 409 — that means this session's row is
+    // already there (the session_id PK did its job), which is success for us.
+    // Anything else (404 before the migration lands, 5xx, network) leaves the
+    // flag unset so a later page load retries.
+    if (res.ok || res.status === 409) localStorage.setItem(SENT_KEY, '1');
   } catch {
     // fire-and-forget — attribution must never break the page
   }
