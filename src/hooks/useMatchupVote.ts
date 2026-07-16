@@ -14,6 +14,7 @@ import { matchupVoteKey, type MatchupSide } from '../lib/home/matchupVote';
 import { getMatchupTallyV2, castMatchupVoteV2, type MatchupTally } from '../lib/db/matchupVotes';
 import { getVoterKey } from '../lib/voterKey';
 import { trackEvent } from '../lib/analytics';
+import { recordDebateCompletionIfDaily } from '../lib/db/dailies';
 
 export interface MatchupVoteState {
   /** The picked hero id, or null before the user has voted. */
@@ -78,7 +79,12 @@ export function useMatchupVote(heroAId: string, heroBId: string): MatchupVoteSta
       trackEvent('matchup_vote', { authed: !!user });
       getVoterKey()
         .then((vk) => castMatchupVoteV2(heroAId, heroBId, picked, vk))
-        .then((t) => t && setTally(t))
+        .then((t) => {
+          if (t) setTally(t);
+          // Daily-streak calendar: counts only when this pair IS today's daily
+          // debate (the guard lives in the lib — this hook votes on any pair).
+          void recordDebateCompletionIfDaily(heroAId, heroBId);
+        })
         .catch(() => {});
     },
     [pickedId, user, key, heroAId, heroBId],

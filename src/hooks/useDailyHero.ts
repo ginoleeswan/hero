@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDailyHero, type DailyPuzzle } from '../lib/db/dailyHero';
 import { getDailyDistribution, recordDailyResult } from '../lib/db/dailyStats';
+import { recordDailyCompletion } from '../lib/db/dailies';
 import { blurForGuess, buildClues, visibleClues, type Clue } from '../lib/game/reveal';
 import { buildDossier } from '../lib/game/dossier';
 import { buildShareGrid } from '../lib/game/shareGrid';
@@ -127,6 +128,9 @@ export function useDailyHero() {
           AsyncStorage.setItem(STATS_KEY, JSON.stringify(updated)).catch(() => {});
           return updated;
         });
+        // Signed-in daily-streak calendar (playing counts, win or lose).
+        // Fire-and-forget; no-ops when logged out.
+        void recordDailyCompletion('puzzle');
       }
     },
     [puzzle, status, guesses],
