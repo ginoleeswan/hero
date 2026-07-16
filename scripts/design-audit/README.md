@@ -12,9 +12,14 @@ Two jobs:
    `report.json` names the offending elements. Run it after any command-center
    layout change.
 2. **Living history (Mobbin-style).** Each dated folder is a frozen snapshot of
-   every admin flow. Commit a snapshot whenever a design pass lands and you get
-   a browsable timeline of how the flows evolved — diff any two dates by eye.
-   (A proper viewer UI over these folders is a planned follow-up.)
+   every admin flow — a browsable timeline of how the flows evolved; diff any
+   two dates by eye. (A proper viewer UI over these folders is a planned
+   follow-up.)
+
+> ⚠️ **Never commit snapshots to this repo — it is public.** Full-page captures
+> show LIVE business data (traffic, acquisition, revenue, member counts).
+> `history/` is gitignored for exactly this reason. Keep the living history in a
+> private store (private bucket, private repo, or local), not here.
 
 ## Running
 

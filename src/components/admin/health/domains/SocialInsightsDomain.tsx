@@ -278,11 +278,11 @@ export function SocialInsightsDomain() {
       </Panel>
 
       {/* WORKSPACE — the decision tool (left) beside platform context (right rail) */}
-      <View style={styles.split}>
+      <View style={[styles.split, narrow && styles.splitNarrow]}>
         <Panel
           title="What's working"
           hint="Avg views per post, by format — this steers the next batch"
-          style={[styles.panel, styles.splitMain]}
+          style={[styles.panel, styles.splitMain, narrow && styles.splitItemNarrow]}
         >
           {angleRows.map((a, i) => (
             <View key={a.angle} style={styles.angleRow}>
@@ -310,7 +310,7 @@ export function SocialInsightsDomain() {
         <Panel
           title="By platform"
           hint="Where the attention lives"
-          style={[styles.panel, styles.splitRail]}
+          style={[styles.panel, styles.splitRail, narrow && styles.splitItemNarrow]}
         >
           {platformRows.map((p) => (
             <View key={p.platform} style={styles.platRow}>
@@ -485,6 +485,13 @@ const styles = StyleSheet.create({
   split: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' },
   splitMain: { flexGrow: 2, flexBasis: 460, minWidth: 0 },
   splitRail: { flexGrow: 1, flexBasis: 280, minWidth: 0 },
+  // Narrow: stack the two panels full-width instead of relying on flex-wrap +
+  // flexBasis math (RN defaults flexShrink to 0, so a 280/460 basis won't shrink
+  // to fit a 366px column — the rail spilled ~18px past the viewport). Column +
+  // stretch makes each panel exactly the content width; flexBasis:auto/grow:0
+  // stops the basis being read as a height in the column axis.
+  splitNarrow: { flexDirection: 'column', alignItems: 'stretch' },
+  splitItemNarrow: { flexBasis: 'auto', flexGrow: 0, width: '100%' },
 
   topRow: {
     flexDirection: 'row',
