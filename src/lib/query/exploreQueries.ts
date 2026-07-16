@@ -9,6 +9,7 @@ import {
 } from '../db/heroes';
 import { fetchExploreBundle, type ExploreBundle } from '../db/exploreBundle';
 import { getUserFavouriteHeroes } from '../db/favourites';
+import { getForYou } from '../db/forYou';
 import {
   getTrendingForUser,
   synthesizeCampaignFromPool,
@@ -62,6 +63,8 @@ export interface ExploreData {
   trendingForUser: TrendingTitleCharacter[];
   recentlyViewed: FavouriteHero[];
   favourites: FavouriteHero[];
+  /** Discovery: characters you HAVEN'T engaged with, from taste + graph. */
+  forYou: FavouriteHero[];
 }
 
 // Stable empty-array identity for the field fallbacks below, so the memoised
@@ -149,6 +152,11 @@ export function useExploreData(): ExploreData {
     queryFn: () => getTrendingForUser(userId!),
     enabled: !!userId,
   });
+  const forYou = useQuery({
+    queryKey: exploreKeys.forYou(userId ?? ''),
+    queryFn: () => getForYou(),
+    enabled: !!userId,
+  });
 
   // `started` flips once the bundle settles — either it has data (fresh or
   // cached) or its retries were exhausted. Either way the skeleton clears; a
@@ -176,6 +184,7 @@ export function useExploreData(): ExploreData {
       trendingForUser: userId ? (trendingForUser.data ?? EMPTY) : EMPTY,
       recentlyViewed: userId ? (recentlyViewed.data ?? EMPTY) : EMPTY,
       favourites: userId ? (favourites.data ?? EMPTY) : EMPTY,
+      forYou: userId ? (forYou.data ?? EMPTY) : EMPTY,
     }),
     [
       started,
@@ -189,6 +198,7 @@ export function useExploreData(): ExploreData {
       trendingForUser.data,
       recentlyViewed.data,
       favourites.data,
+      forYou.data,
     ],
   );
 }

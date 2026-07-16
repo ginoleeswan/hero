@@ -51,6 +51,7 @@ export const exploreKeys = {
   recentlyViewed: (userId: string) => ['explore', 'recentlyViewed', userId] as const,
   favourites: (userId: string) => ['explore', 'favourites', userId] as const,
   trendingForUser: (userId: string) => ['explore', 'trendingForUser', userId] as const,
+  forYou: (userId: string) => ['explore', 'forYou', userId] as const,
 };
 
 // Title (film/TV/game) detail-screen keys, under a 'titles' root so the whole

@@ -2315,6 +2315,15 @@ export type Database = {
       get_my_battle_record: { Args: never; Returns: Json }
       get_my_contributions: { Args: never; Returns: Json }
       get_my_daily_streak: { Args: never; Returns: Json }
+      get_my_for_you: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          image_url: string
+          name: string
+          portrait_url: string
+        }[]
+      }
       get_my_taste_profile: { Args: never; Returns: Json }
       get_new_comics: {
         Args: {

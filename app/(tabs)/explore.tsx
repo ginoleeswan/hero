@@ -67,6 +67,7 @@ type FeedRow =
   | { type: 'daily' }
   | { type: 'ticker'; heroCount: number; newlyAddedCount: number }
   | { type: 'recent'; heroes: RowHero[] }
+  | { type: 'foryou'; heroes: RowHero[] }
   | { type: 'favourites'; heroes: RowHero[] }
   | {
       type: 'rightnow';
@@ -135,6 +136,7 @@ export default function HomeScreen() {
     rivalries,
     recentlyViewed,
     favourites,
+    forYou,
     browseCovers,
   } = useExploreData();
   const spotlight = spotlightAll.slice(0, SPOTLIGHT_POOL);
@@ -258,6 +260,8 @@ export default function HomeScreen() {
     }
     if (recentlyViewed.length > 0)
       out.push({ type: 'recent', heroes: recentlyViewed.map(toRowHero) });
+    // Discovery: characters you haven't engaged with yet (taste + graph).
+    if (forYou.length > 0) out.push({ type: 'foryou', heroes: forYou.map(toRowHero) });
 
     // The Library — an authored canon feature, then the browse grid (the map that
     // replaces the old wall of category rails), then the one fresh rail.
@@ -288,6 +292,7 @@ export default function HomeScreen() {
     heroCount,
     recentlyViewed,
     favourites,
+    forYou,
     iconic,
     onScreen,
     comingSoon,
@@ -362,6 +367,16 @@ export default function HomeScreen() {
                 title="Recently Viewed"
                 heroes={item.heroes}
                 variant="thumb"
+                onPress={handlePress}
+                disabled={navigating}
+              />
+            );
+          case 'foryou':
+            return (
+              <HomeHeroRow
+                label="Discover"
+                title="Picked For You"
+                heroes={item.heroes}
                 onPress={handlePress}
                 disabled={navigating}
               />
