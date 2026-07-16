@@ -52,6 +52,13 @@ describe('parseUtm', () => {
     const long = 'x'.repeat(300);
     expect(parseUtm(`?utm_campaign=${long}`).campaign).toHaveLength(120);
   });
+
+  it('normalises UTM values to slug tokens (the phantom "bio`" bucket)', () => {
+    expect(parseUtm('?utm_campaign=bio%60').campaign).toBe('bio');
+    expect(parseUtm('?utm_campaign=Aquaman%20V2').campaign).toBe('aquaman-v2');
+    expect(parseUtm('?utm_source=News.YCombinator.com').source).toBe('news.ycombinator.com');
+    expect(parseUtm('?utm_campaign=%60%60').campaign).toBeNull();
+  });
 });
 
 describe('deriveAttribution', () => {
