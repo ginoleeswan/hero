@@ -151,6 +151,18 @@ input, textarea, select { font-size: max(16px, 1em) !important; }
    compare pick → arena) run their own animations; this only tunes the
    full-page fade underneath them. */
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 220ms; }
+/* Portrait morph (hero card → detail portrait): keep the portrait's rounded
+   corners as it GROWS, then release them to 0 exactly as it lands in the
+   full-bleed detail header — no square-off mid-morph, no snap at the end. The
+   radius animates on the image-pair (which has no UA animation of its own), so
+   it composes with the group's built-in size/position morph instead of
+   replacing it; the header itself stays square (edge-to-edge at rest). */
+@keyframes vt-hero-portrait-radius { from { border-radius: 22px; } to { border-radius: 0; } }
+::view-transition-group(vt-hero-portrait) { overflow: clip; animation-duration: 250ms; }
+::view-transition-image-pair(vt-hero-portrait) {
+  overflow: clip;
+  animation: vt-hero-portrait-radius 250ms cubic-bezier(0.2, 0, 0, 1) both;
+}
 /* Let height: auto animate for user-driven expanders (read-more, filter
    panels). Chromium-only; elsewhere the expand is instant. */
 :root { interpolate-size: allow-keywords; }
