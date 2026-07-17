@@ -3164,6 +3164,11 @@ const sk = StyleSheet.create({
     backgroundColor: COLORS.deepNavy,
     justifyContent: 'flex-end',
     overflow: 'hidden',
+    // Rounded top corners echo the sheet's rounded top (mSheet) and keep the
+    // portrait's radius on its visible edges as the card morphs in — the bottom
+    // stays tucked under the sliding sheet, so only the top needs rounding.
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
   },
   mIdentitySkel: { paddingHorizontal: 20, paddingBottom: 46 },
   mSheet: {
@@ -3712,6 +3717,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     overflow: 'hidden',
     backgroundColor: COLORS.deepNavy,
+    // Rounded top corners echo the sheet's rounded top and keep the portrait's
+    // radius on its visible edges as the card morphs in — the bottom stays
+    // tucked under the sliding sheet, so only the top needs rounding.
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
   },
   // Deep-navy vignette over the top of the full-bleed portrait: opaque navy
   // through the status bar + back-button zone, easing to transparent below. It
