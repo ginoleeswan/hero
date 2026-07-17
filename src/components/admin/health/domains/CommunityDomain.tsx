@@ -689,7 +689,13 @@ const s = StyleSheet.create({
   },
   lInfo: { flex: 1, minWidth: 0, gap: 4 },
   lTop: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-  lName: { flex: 1, minWidth: 0, fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.black },
+  lName: {
+    flex: 1,
+    minWidth: 0,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    color: COLORS.black,
+  },
   lWin: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.green },
   lLevel: {
     fontFamily: 'Nunito_700Bold',
@@ -709,7 +715,13 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   lFill: { height: '100%', borderRadius: 999 },
-  cAvatar: { width: 26, height: 26, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+  cAvatar: {
+    width: 26,
+    height: 26,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   // Engagement-mix stacked bar
   mixWrap: { marginTop: 14, gap: 8 },
   mixHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
