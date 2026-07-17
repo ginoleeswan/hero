@@ -8,7 +8,7 @@
 //
 // Safe on native and in unsupported browsers: withViewTransition falls back to a
 // plain navigation there, and `morphName` simply never activates.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { Image } from 'expo-image';
 import {
@@ -16,6 +16,9 @@ import {
   type MorphArt,
   markMorphDeparture,
   withViewTransition,
+  subscribeMorphReturn,
+  getMorphReturnId,
+  claimMorphReturn,
 } from '../lib/viewTransition';
 import { heroImageSource } from '../constants/heroImages';
 
@@ -28,6 +31,22 @@ export function useHeroMorph(art: MorphArt, enabled = true) {
       alive.current = false;
     };
   }, []);
+
+  // Return morph (detail → card): when the detail page navigates back it marks
+  // this hero as the return target; the matching card tags itself with the
+  // shared name so the detail portrait shrinks back into it. The claim ensures
+  // exactly one card tags even if the hero appears in several rows (duplicate
+  // names would abort the transition). The store pings subscribers before the
+  // back-navigation is flushed, so the tag is committed into the transition's
+  // "new" snapshot.
+  const claimToken = useRef<symbol | null>(null);
+  if (claimToken.current === null) claimToken.current = Symbol('morph-return');
+  const returnId = useSyncExternalStore(subscribeMorphReturn, getMorphReturnId, () => null);
+  const returning =
+    enabled &&
+    returnId != null &&
+    returnId === art.id &&
+    claimMorphReturn(art.id, claimToken.current);
 
   const run = useCallback(
     (navigate: () => void) => {
@@ -63,5 +82,5 @@ export function useHeroMorph(art: MorphArt, enabled = true) {
     [art.id, art.name, art.image_url, art.portrait_url, enabled],
   );
 
-  return { morphName: morphing ? VT_PORTRAIT : undefined, run };
+  return { morphName: morphing || returning ? VT_PORTRAIT : undefined, run };
 }

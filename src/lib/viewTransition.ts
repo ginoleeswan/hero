@@ -83,3 +83,49 @@ export function consumeMorphArrival(heroId: string): MorphArt | null {
   pendingMorph = null;
   return hit;
 }
+
+// ── Return morph (detail → card) ──────────────────────────────────────────────
+// The forward morph grows a card into the detail portrait; the return morph
+// plays the film in reverse — the detail portrait shrinks back into the exact
+// card it came from. The detail page's back button calls beginMorphReturn(id)
+// and navigates inside a view transition; every hero card (via useHeroMorph)
+// subscribes to this store, and the one matching card tags itself with the
+// shared name for the transition's "new" snapshot. endMorphReturn() un-tags it
+// once the morph settles. If no card matches (deep link, different screen), the
+// name is simply unpaired and the transition falls back to the root cross-fade.
+let returnTargetId: string | null = null;
+// Exactly ONE card may claim the name per return (duplicate names abort the
+// whole transition — e.g. the same hero in two explore rows). First claimant
+// wins; claims reset when the target changes.
+let returnClaimedBy: symbol | null = null;
+const returnSubs = new Set<() => void>();
+
+export function beginMorphReturn(heroId: string): void {
+  returnTargetId = heroId;
+  returnClaimedBy = null;
+  returnSubs.forEach((cb) => cb());
+}
+
+export function endMorphReturn(): void {
+  if (returnTargetId === null) return;
+  returnTargetId = null;
+  returnClaimedBy = null;
+  returnSubs.forEach((cb) => cb());
+}
+
+export function subscribeMorphReturn(cb: () => void): () => void {
+  returnSubs.add(cb);
+  return () => returnSubs.delete(cb);
+}
+
+export function getMorphReturnId(): string | null {
+  return returnTargetId;
+}
+
+/** First caller with the matching target wins the tag (per return); callers
+ *  must pass a stable token so re-renders keep their claim. */
+export function claimMorphReturn(heroId: string, token: symbol): boolean {
+  if (returnTargetId !== heroId) return false;
+  if (returnClaimedBy === null) returnClaimedBy = token;
+  return returnClaimedBy === token;
+}

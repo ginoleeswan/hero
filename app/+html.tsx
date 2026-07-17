@@ -158,10 +158,17 @@ input, textarea, select { font-size: max(16px, 1em) !important; }
    it composes with the group's built-in size/position morph instead of
    replacing it; the header itself stays square (edge-to-edge at rest). */
 @keyframes vt-hero-portrait-radius { from { border-radius: 22px; } to { border-radius: 0; } }
+/* Return direction (detail → card): the portrait starts full-bleed (0) and
+   GAINS radius as it shrinks home into the rounded card. goBack toggles the
+   root class for the duration of the return transition. */
+@keyframes vt-hero-portrait-radius-rev { from { border-radius: 0; } to { border-radius: 14px; } }
 ::view-transition-group(vt-hero-portrait) { overflow: clip; animation-duration: 250ms; }
 ::view-transition-image-pair(vt-hero-portrait) {
   overflow: clip;
   animation: vt-hero-portrait-radius 250ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+:root.vt-returning ::view-transition-image-pair(vt-hero-portrait) {
+  animation-name: vt-hero-portrait-radius-rev;
 }
 /* Let height: auto animate for user-driven expanders (read-more, filter
    panels). Chromium-only; elsewhere the expand is instant. */

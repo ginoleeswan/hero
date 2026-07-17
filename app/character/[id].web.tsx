@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, Fragment, type ComponentProps } from 'react';
+import { useCallback, useEffect, useMemo, useState, Fragment, type ComponentProps } from 'react';
+import { flushSync } from 'react-dom';
 import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter, usePathname } from 'expo-router';
@@ -29,7 +30,13 @@ import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { MOTION, prefersReducedMotion } from '../../src/lib/motion';
-import { VT_PORTRAIT, consumeMorphArrival } from '../../src/lib/viewTransition';
+import {
+  VT_PORTRAIT,
+  consumeMorphArrival,
+  beginMorphReturn,
+  endMorphReturn,
+  withViewTransition,
+} from '../../src/lib/viewTransition';
 import { HeartPop } from '../../src/components/web/HeartPop';
 import { PRESS_TRANSITION, pressTransform } from '../../src/components/web/pressStyles';
 import { PullQuoteBio } from '../../src/components/character/PullQuoteBio';
@@ -622,6 +629,37 @@ export default function WebCharacterScreen() {
     return () => clearTimeout(t);
   }, [portraitTagged]);
   const portraitVT = portraitTagged ? ({ viewTransitionName: VT_PORTRAIT } as object) : null;
+
+  // Choreographed back: play the forward morph in reverse. Tag the portrait
+  // synchronously (so it lands in the transition's "old" snapshot), mark this
+  // hero as the return target (the matching card on the screen below tags
+  // itself for the "new" snapshot via useHeroMorph), and navigate inside a view
+  // transition — the portrait shrinks back into the exact card it grew from.
+  // With no matching card (deep link, different origin) the name is unpaired
+  // and it degrades to the soft root cross-fade; in unsupported browsers
+  // withViewTransition falls back to a plain navigation.
+  const goBack = useCallback(() => {
+    flushSync(() => setPortraitTagged(true));
+    beginMorphReturn(String(id));
+    // Flips the corner-radius keyframes to the return direction (0 → rounded)
+    // for the duration of the transition — see +html.tsx.
+    document.documentElement.classList.add('vt-returning');
+    const t = withViewTransition(() =>
+      router.canGoBack() ? router.back() : router.replace('/explore'),
+    );
+    const done = () => {
+      endMorphReturn();
+      document.documentElement.classList.remove('vt-returning');
+    };
+    // Un-tag the card once the morph settles (or immediately on the fallback
+    // path); a timer backstops a transition that never resolves.
+    if (t?.finished) {
+      t.finished.then(done, done);
+    } else {
+      done();
+    }
+    setTimeout(done, 800);
+  }, [id, router]);
   // The exact (already-cached) image the card was showing — used as the content
   // portrait's placeholder so, on a morph arrival, it paints crisp immediately
   // and upgrades to full-res without flashing through a blur.
@@ -1935,9 +1973,7 @@ export default function WebCharacterScreen() {
 
                 <View style={styles.mControls}>
                   <Pressable
-                    onPress={() =>
-                      router.canGoBack() ? router.back() : router.replace('/explore')
-                    }
+                    onPress={goBack}
                     style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                       [styles.glassIconBtn, hovered && (styles.glassBtnHover as object)] as object
                     }
