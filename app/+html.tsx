@@ -170,6 +170,12 @@ input, textarea, select { font-size: max(16px, 1em) !important; }
 :root.vt-returning ::view-transition-image-pair(vt-hero-portrait) {
   animation-name: vt-hero-portrait-radius-rev;
 }
+/* Character sheet entrance on morph arrivals: holds a beat while the portrait
+   flies, then rises in as it lands (see character/[id].web.tsx). */
+@keyframes char-sheet-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 /* Let height: auto animate for user-driven expanders (read-more, filter
    panels). Chromium-only; elsewhere the expand is instant. */
 :root { interpolate-size: allow-keywords; }

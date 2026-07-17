@@ -499,7 +499,10 @@ function VitalCount({ value, style }: { value: number; style?: object }) {
       return;
     }
     let raf = 0;
-    const start = performance.now() + 250; // beat after the stage settles
+    // Start rolling immediately — the old 250ms "beat" held the display at a
+    // flat 0 long enough to read as broken data ("0 POWER") in the entrance,
+    // especially when values mount mid-morph. The count-up IS the beat.
+    const start = performance.now();
     const DUR = 900;
     const tick = (now: number) => {
       const t = Math.min(Math.max(now - start, 0) / DUR, 1);
@@ -1940,22 +1943,30 @@ export default function WebCharacterScreen() {
             /* ── Mobile: native-style immersive single scroll ── */
             <View>
               {/* Immersive portrait header */}
-              <View style={[styles.mHero, { height: mHeroHeight }, portraitVT] as object}>
-                <HeroImage
-                  id={id}
-                  name={stats.name}
-                  imageUrl={stats.image.url ?? null}
-                  portraitUrl={stats.image.portraitUrl ?? null}
-                  contentFit="cover"
-                  contentPosition="top"
-                  style={StyleSheet.absoluteFill}
-                  recyclingKey={id}
-                  // On a morph arrival, show the card's cached grid image (crisp)
-                  // while the full-res loads; blurhash covers a cold load.
-                  placeholderUri={morphGridUri}
-                  blurhash={heroRow?.portrait_blurhash}
-                  priority="high"
-                />
+              <View style={[styles.mHero, { height: mHeroHeight }] as object}>
+                {/* The morph tag lives on an IMAGE-ONLY layer, not the header:
+                    tagging the whole header baked the identity overlay (name,
+                    chips, vitals) into the transition snapshot, so a wall of
+                    tiny text flew inside the growing box and the two snapshots
+                    ghosted. Image→image keeps the flight clean; the identity
+                    fades in place via the root cross-fade. */}
+                <View style={[StyleSheet.absoluteFill as object, portraitVT] as object}>
+                  <HeroImage
+                    id={id}
+                    name={stats.name}
+                    imageUrl={stats.image.url ?? null}
+                    portraitUrl={stats.image.portraitUrl ?? null}
+                    contentFit="cover"
+                    contentPosition="top"
+                    style={StyleSheet.absoluteFill}
+                    recyclingKey={id}
+                    // On a morph arrival, show the card's cached grid image (crisp)
+                    // while the full-res loads; blurhash covers a cold load.
+                    placeholderUri={morphGridUri}
+                    blurhash={heroRow?.portrait_blurhash}
+                    priority="high"
+                  />
+                </View>
                 <View style={[styles.mScrimTop, { pointerEvents: 'none' }] as object} />
                 <View style={[styles.mScrimBottom, { pointerEvents: 'none' }] as object} />
                 {/* Character accent bloom rising from the sheet edge */}
@@ -1997,7 +2008,21 @@ export default function WebCharacterScreen() {
                   ) : null}
                 </View>
 
-                <View style={styles.mIdentity}>
+                <View
+                  style={
+                    [
+                      styles.mIdentity,
+                      // Morph arrivals: the identity holds while the portrait
+                      // flies, then fades up just as it lands — text lands ON
+                      // its backdrop instead of floating over the flight.
+                      arrivedViaMorph && !prefersReducedMotion()
+                        ? ({
+                            animation: 'char-sheet-in 220ms cubic-bezier(0.2, 0, 0, 1) 140ms both',
+                          } as object)
+                        : null,
+                    ] as object
+                  }
+                >
                   <UniverseEyebrow
                     publisher={stats.biography.publisher}
                     franchise={heroRow?.franchise}
@@ -2125,6 +2150,16 @@ export default function WebCharacterScreen() {
                       // their trims.
                       backgroundImage: `radial-gradient(120% 340px at 50% 0%, ${theme.accentWash} 0%, rgba(255,255,255,0) 70%)`,
                     },
+                    // Morph arrivals: the sheet holds back a beat, then rises in
+                    // as the portrait lands. Without this its dark-on-beige text
+                    // cross-faded over the departing grid for the whole flight —
+                    // two worlds interleaved. The delay clears the portrait's
+                    // 250ms flight; `both` keeps it hidden until then.
+                    arrivedViaMorph && !prefersReducedMotion()
+                      ? ({
+                          animation: 'char-sheet-in 240ms cubic-bezier(0.2, 0, 0, 1) 180ms both',
+                        } as object)
+                      : null,
                   ] as object
                 }
               >
