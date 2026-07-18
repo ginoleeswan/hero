@@ -485,14 +485,22 @@ export function useCatalogActions({
   };
 
   // Refetch this screen's queries (not the whole app cache) and keep the spinner
-  // up until they settle, with a small minimum so the tap registers.
-  const onRefresh = () => {
-    if (refreshing) return;
+  // up until they settle, with a small minimum so the gesture registers. Returns
+  // the promise so callers (the mobile pull-to-refresh) can await REAL
+  // completion — the pull indicator holds until the data lands, not just a frame.
+  const onRefresh = (): Promise<void> => {
+    if (refreshing) return Promise.resolve();
     setRefreshing(true);
     const started = Date.now();
-    Promise.all(REFRESH_KEYS.map((k) => queryClient.invalidateQueries({ queryKey: [k] }))).finally(
-      () => setTimeout(() => setRefreshing(false), Math.max(0, 450 - (Date.now() - started))),
-    );
+    return Promise.all(REFRESH_KEYS.map((k) => queryClient.invalidateQueries({ queryKey: [k] })))
+      .catch(() => undefined)
+      .then(
+        () =>
+          new Promise<void>((resolve) =>
+            setTimeout(resolve, Math.max(0, 450 - (Date.now() - started))),
+          ),
+      )
+      .finally(() => setRefreshing(false));
   };
 
   return {

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { View, Animated, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, Animated, StyleSheet, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useUrlTabState } from '../../src/hooks/useUrlTabState';
 import { useCommandAlerts } from '../../src/contexts/CommandAlertsContext';
 import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
+import { PullToRefreshIndicator } from '../../src/components/admin/health/PullToRefreshIndicator';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useIsAdmin } from '../../src/lib/query/heroDetailQueries';
@@ -22,7 +23,7 @@ import {
   type DomainKey,
   type LaneJump,
 } from '../../src/components/admin/health/format';
-import { CommandShell, CHROME_TOP } from '../../src/components/admin/health/CommandShell';
+import { CommandShell } from '../../src/components/admin/health/CommandShell';
 import { VitalsBar } from '../../src/components/admin/health/VitalsBar';
 import { type Alert } from '../../src/components/admin/health/AlertStack';
 import { CommandHome } from '../../src/components/admin/health/domains/CommandHome';
@@ -268,7 +269,7 @@ export default function AdminHealthScreen() {
   }, [alerts, setAlerts]);
 
   // Mobile pull-to-refresh stands in for the (now desktop-only) refresh button.
-  const { distance: ptrDist, refreshing: ptrBusy } = usePullToRefresh(onRefresh, narrow);
+  const ptr = usePullToRefresh(onRefresh, narrow);
 
   if (!gateResolved || !isAdmin) return <LogoLoader />;
 
@@ -316,21 +317,16 @@ export default function AdminHealthScreen() {
 
   return (
     <View style={styles.root}>
-      {narrow && (ptrDist > 0 || ptrBusy) ? (
-        <View
-          style={[
-            styles.ptr,
-            {
-              opacity: ptrBusy ? 1 : Math.min(1, ptrDist / 64),
-              transform: [{ translateY: ptrDist * 0.35 }],
-            },
-          ]}
-          pointerEvents="none"
-        >
-          <View style={styles.ptrPill}>
-            <ActivityIndicator color={COLORS.orange} />
-          </View>
-        </View>
+      {/* Always mounted while narrow (opacity-driven), so the settle/spring-back
+          transition plays instead of the pill vanishing the instant it idles. */}
+      {narrow ? (
+        <PullToRefreshIndicator
+          distance={ptr.distance}
+          progress={ptr.progress}
+          armed={ptr.armed}
+          dragging={ptr.dragging}
+          refreshing={ptr.refreshing}
+        />
       ) : null}
       <SkeletonProvider>
         <CommandShell
@@ -474,24 +470,4 @@ export default function AdminHealthScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   // Pull-to-refresh spinner — pinned just below the floating nav (64 = TOPBAR_HEIGHT).
-  ptr: {
-    position: 'fixed',
-    transform: 'translateZ(0)',
-    willChange: 'transform',
-    top: `calc(64px + env(safe-area-inset-top) + 6px)` as unknown as number,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    zIndex: 60,
-  } as object,
-  ptrPill: {
-    width: 38,
-    height: 38,
-    borderRadius: 999,
-    backgroundColor: CHROME_TOP,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

@@ -176,6 +176,9 @@ input, textarea, select { font-size: max(16px, 1em) !important; }
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* Command-center pull-to-refresh: the ring spins while the refresh actually
+   runs (see PullToRefreshIndicator). */
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
 /* Let height: auto animate for user-driven expanders (read-more, filter
    panels). Chromium-only; elsewhere the expand is instant. */
 :root { interpolate-size: allow-keywords; }
