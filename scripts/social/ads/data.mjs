@@ -142,10 +142,13 @@ export async function fetchLore(sb, rand, { excludeTierS = false } = {}) {
 export async function fetchPools(sb, rand, { excludeTierS = false } = {}) {
   const pool = (await famousPool(sb)).map(toSafeHero).filter((h) => !excludeTierS || h.tier !== 'S');
 
-  // matchups: rivalries that resolve, topped up with contrasting famous pairs
+  // matchups: rivalries that resolve, topped up with contrasting famous pairs.
+  // Pool sized for the weighted plan (matchup is ~43% of a batch — see
+  // plan.mjs ANGLES), so a 30-piece month never runs the angle dry.
+  const MATCHUP_POOL = 16;
   const matchups = [];
   for (const [an, bn] of RIVALRIES) {
-    if (matchups.length >= 10) break;
+    if (matchups.length >= MATCHUP_POOL) break;
     const [ar, br] = await Promise.all([heroByName(sb, an), heroByName(sb, bn)]);
     if (!ar || !br) continue;
     const a = toSafeHero(ar), b = toSafeHero(br);
@@ -154,7 +157,7 @@ export async function fetchPools(sb, rand, { excludeTierS = false } = {}) {
     if (rounds.length >= 3) matchups.push({ a, b, rounds });
   }
   let attempts = 0;
-  while (matchups.length < 10 && pool.length > 4 && attempts < 400) {
+  while (matchups.length < MATCHUP_POOL && pool.length > 4 && attempts < 400) {
     attempts++;
     const a = pool[Math.floor(rand() * Math.min(40, pool.length))];
     const b = pool[Math.floor(rand() * Math.min(40, pool.length))];
