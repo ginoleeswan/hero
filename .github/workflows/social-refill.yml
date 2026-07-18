@@ -1,0 +1,99 @@
+# Social content refill — the self-running half of the growth engine.
+#
+# Monthly (and on demand), this renders a full batch of ad-safe social content
+# (batch-month: weighted plan → carousels + reels) and publishes it straight
+# into the app's posting queue (publish-posts → Cloudinary + social_posts), so
+# the command-center Publish › Social lane refills itself. The owner's job
+# shrinks to posting from the queue and running promotes from Publish › Promote.
+#
+# ONE-TIME SETUP — add these repository secrets (Settings → Secrets → Actions):
+#   EXPO_PUBLIC_SUPABASE_URL     same values as .env.local
+#   EXPO_PUBLIC_SUPABASE_KEY
+#   SUPABASE_SERVICE_ROLE_KEY    used for reads (no statement timeout) + publish
+#   CLOUDINARY_CLOUD_NAME        image hosting for the queue previews
+#   CLOUDINARY_API_KEY
+#   CLOUDINARY_API_SECRET
+# Until the secrets exist the run fails fast at the "check secrets" step.
+#
+# Manual run: Actions → "Social content refill" → Run workflow (pick n).
+name: Social content refill
+
+on:
+  schedule:
+    # 06:00 UTC on the 1st — a fresh month of content lands before the month starts.
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+    inputs:
+      n:
+        description: 'How many pieces to generate'
+        required: false
+        default: '30'
+
+concurrency:
+  group: social-refill
+  cancel-in-progress: false
+
+jobs:
+  refill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check secrets
+        env:
+          URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          SRK: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CCN: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+        run: |
+          missing=""
+          [ -z "$URL" ] && missing="$missing EXPO_PUBLIC_SUPABASE_URL"
+          [ -z "$SRK" ] && missing="$missing SUPABASE_SERVICE_ROLE_KEY"
+          [ -z "$CCN" ] && missing="$missing CLOUDINARY_*"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing — see the header of this workflow file."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: corepack enable
+      - run: yarn install --immutable
+
+      - name: Install ffmpeg (reels)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Generate the batch
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # GH ubuntu runners ship Google Chrome; lib.mjs honours PW_CHROME.
+          PW_CHROME: /usr/bin/google-chrome
+        # Seed from run_number: each month differs, a re-run of the same run
+        # regenerates identically (matches the plan's determinism contract).
+        run: |
+          node scripts/social/ads/batch-month.mjs \
+            --n "${{ github.event.inputs.n || '30' }}" \
+            --seed "${{ github.run_number }}"
+
+      - name: Publish to the app's posting queue
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+        run: node scripts/social/publish-posts.mjs
+
+      - name: Upload batch for preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: social-batch-${{ github.run_number }}
+          path: out/social
+          retention-days: 7
+          if-no-files-found: ignore

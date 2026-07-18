@@ -7,12 +7,29 @@ export function rng(seed) {
   return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 
+// Scenario framings for matchup hooks — the paid data (Jul '26 promotes) showed
+// a scenario question ("Who runs the city?") out-clicking plain "who wins" by a
+// wide margin, so matchup captions rotate through stakes-framed hooks. Picked
+// deterministically per pair (name hash) so regenerating a batch is stable.
+const MATCHUP_HOOKS = [
+  'who takes it? ⚔️',
+  'one city. one throne. who runs it? 👀',
+  'last one standing walks away — who is it? 🥊',
+  'everything on the line. who wins? ⚡',
+  'no prep, no help, right now — who survives? 🔥',
+];
+const matchupHook = (a, b) => {
+  let h = 0;
+  for (const ch of a + '|' + b) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return MATCHUP_HOOKS[h % MATCHUP_HOOKS.length];
+};
+
 // Per-angle: consume the next unused pool item → { title, data, caption }.
 const MAKERS = {
   matchup: (m) => ({
     title: `${m.a.name} vs ${m.b.name}`,
     data: m,
-    caption: `${m.a.name} vs ${m.b.name} — who takes it? ⚔️\n\nRound by round, stat by stat. Cast your vote on mythique.app\n\n#whowouldwin #superheroes #comics #mythique`,
+    caption: `${m.a.name} vs ${m.b.name} — ${matchupHook(m.a.name, m.b.name)}\n\nRound by round, stat by stat. Cast your vote on mythique.app\n\n#whowouldwin #superheroes #comics #mythique`,
   }),
   ranking: (r) => ({
     title: `Top 10 ${r.label}`,
@@ -47,7 +64,13 @@ const MAKERS = {
     };
   },
 };
-const ANGLES = ['matchup', 'ranking', 'guess', 'fact', 'lore'];
+// Weighted angle cycle — matchup appears 3× per 7 slots (~43%) because the paid
+// promote data shows pick-a-side matchups are the click winner (TikTok's own
+// budget allocator fed them 51% of spend); every other angle still appears once
+// per cycle so a batch keeps full variety. When the matchup pool runs dry the
+// round-robin skips to the next live angle, so a heavier weight can never stall
+// a batch. Re-tune by editing this list as new performance data lands.
+const ANGLES = ['matchup', 'ranking', 'matchup', 'guess', 'fact', 'matchup', 'lore'];
 const POOL_KEY = { matchup: 'matchups', ranking: 'rankings', guess: 'guesses', fact: 'facts', lore: 'lore' };
 // music.mjs kinds: matchup|ranking|bio|brand|post — map guess/fact to fitting kinds.
 const MUSIC_KIND = { matchup: 'matchup', ranking: 'ranking', guess: 'post', fact: 'brand', lore: 'brand' };
@@ -92,14 +115,18 @@ export function buildPlan({ n = 30, seed = 1, mix = { carousel: 18, reel: 12 }, 
   for (let i = 0; i < n; i++) {
     const format = formats[i];
     const ai = streamAngleCursor[format];
-    // round-robin angles within this format's stream, skipping exhausted pools
-    let item = null, angle = null;
+    // round-robin the weighted cycle within this format's stream, skipping
+    // exhausted pools. Track the CYCLE POSITION (idx), not indexOf(angle) —
+    // the cycle repeats 'matchup', and indexOf would always resolve to its
+    // first slot, collapsing the rotation.
+    let item = null, angle = null, idx = ai;
     for (let tries = 0; tries < ANGLES.length && !item; tries++) {
-      angle = ANGLES[(ai + tries) % ANGLES.length];
+      idx = (ai + tries) % ANGLES.length;
+      angle = ANGLES[idx];
       item = next(angle);
     }
     if (!item) break; // all pools exhausted
-    streamAngleCursor[format] = (ANGLES.indexOf(angle) + 1) % ANGLES.length;
+    streamAngleCursor[format] = (idx + 1) % ANGLES.length;
     const made = MAKERS[angle](item);
     entries.push({
       ord: entries.length + 1,
