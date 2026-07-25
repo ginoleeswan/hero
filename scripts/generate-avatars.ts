@@ -225,6 +225,41 @@ async function uploadToCloudinary(heroId: string, imageBytes: Uint8Array): Promi
   return body.secure_url;
 }
 
+/**
+ * Every hero-avatars/{id} asset in Cloudinary → its versioned secure_url. The
+ * upload happens before the DB write, so a lost write orphans a paid-for image
+ * (asset exists, avatar_url still null). Listing lets a re-run re-link those for
+ * free instead of regenerating them — the same self-heal the portrait pipeline
+ * needed after high-concurrency runs dropped writes.
+ */
+async function listCloudinaryAvatars(): Promise<Map<string, string>> {
+  const assets = new Map<string, string>();
+  let cursor: string | undefined;
+  do {
+    const url = new URL(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/image`);
+    url.searchParams.set('type', 'upload');
+    url.searchParams.set('prefix', 'hero-avatars/');
+    url.searchParams.set('max_results', '500');
+    if (cursor) url.searchParams.set('next_cursor', cursor);
+    const auth = 'Basic ' + Buffer.from(`${CLOUD_KEY}:${CLOUD_SECRET}`).toString('base64');
+    const res = await fetch(url, { headers: { Authorization: auth } });
+    if (!res.ok) throw new Error(`Cloudinary list failed: ${res.status} ${await res.text()}`);
+    const body = (await res.json()) as {
+      resources: { public_id: string; version: number; format: string; secure_url?: string }[];
+      next_cursor?: string;
+    };
+    for (const r of body.resources) {
+      assets.set(
+        r.public_id.replace(/^hero-avatars\//, ''),
+        r.secure_url ??
+          `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/v${r.version}/${r.public_id}.${r.format}`,
+      );
+    }
+    cursor = body.next_cursor;
+  } while (cursor);
+  return assets;
+}
+
 /** Write avatar_url back, retrying through the connection sheds seen at high concurrency. */
 async function setAvatarUrl(heroId: string, url: string): Promise<void> {
   let lastError: string | null = null;
@@ -472,10 +507,31 @@ async function run(): Promise<void> {
   }
 
   if (outDir) mkdirSync(outDir, { recursive: true });
-  console.log(`Processing ${heroes.length} heroes with concurrency=${CONCURRENCY}\n`);
 
-  await withConcurrency(heroes, CONCURRENCY, async (hero, idx) => {
-    const label = `[${idx + 1}/${heroes.length}] ${hero.name} (${hero.id})`;
+  // Re-link anything already sitting in Cloudinary before paying to regenerate it.
+  let workingSet = heroes;
+  if (!localOnly && !dryRun && !force) {
+    const assets = await listCloudinaryAvatars();
+    const orphans = heroes.filter((h) => assets.has(h.id));
+    if (orphans.length) {
+      console.log(`Re-linking ${orphans.length} orphaned Cloudinary avatars (no regen)…`);
+      await withConcurrency(orphans, CONCURRENCY, async (hero) => {
+        try {
+          await setAvatarUrl(hero.id, assets.get(hero.id)!);
+          console.log(`  ↺ backfilled ${hero.name} (${hero.id})`);
+        } catch (err) {
+          console.error(`  ✗ backfill ${hero.id}: ${err instanceof Error ? err.message : err}`);
+        }
+      });
+      const orphanIds = new Set(orphans.map((h) => h.id));
+      workingSet = heroes.filter((h) => !orphanIds.has(h.id));
+    }
+  }
+
+  console.log(`Processing ${workingSet.length} heroes with concurrency=${CONCURRENCY}\n`);
+
+  await withConcurrency(workingSet, CONCURRENCY, async (hero, idx) => {
+    const label = `[${idx + 1}/${workingSet.length}] ${hero.name} (${hero.id})`;
     if (dryRun) {
       console.log(`  [dry-run] ${label}`);
       return;

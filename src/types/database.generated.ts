@@ -967,6 +967,7 @@ export type Database = {
           aliases: string[] | null
           alignment: string | null
           alter_egos: string | null
+          avatar_url: string | null
           base: string | null
           category: string | null
           combat: number | null
@@ -1047,6 +1048,7 @@ export type Database = {
           aliases?: string[] | null
           alignment?: string | null
           alter_egos?: string | null
+          avatar_url?: string | null
           base?: string | null
           category?: string | null
           combat?: number | null
@@ -1127,6 +1129,7 @@ export type Database = {
           aliases?: string[] | null
           alignment?: string | null
           alter_egos?: string | null
+          avatar_url?: string | null
           base?: string | null
           category?: string | null
           combat?: number | null
