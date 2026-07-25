@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
 import { HeroAvatar } from '../HeroAvatar';
-import { deriveCharacterTheme } from '../../lib/accent';
+import { deriveCharacterTheme, accentButtonColors } from '../../lib/accent';
 import { describeRelationship } from '../../lib/graph/relationshipReason';
 import { topStatEdges, matchupVerdict } from '../../lib/graph/statEdge';
 import type { NeighborNode } from '../../lib/db/heroes/neighborhood';
@@ -89,6 +89,11 @@ export function SocialWebFocusCard({
     [node.portrait_blurhash, node.publisher],
   );
   const tint = theme.accent || accent;
+  // The filled button paints a per-character colour, so its label can't assume a
+  // fixed ink. This nudges the fill's lightness (hue and saturation untouched)
+  // until the chosen ink clears WCAG AA — some mid tones fail against BOTH black
+  // and beige, so swapping the text colour alone would not be enough.
+  const button = useMemo(() => accentButtonColors(tint), [tint]);
 
   const { sharedTeams, summary } = describeRelationship(
     kind,
@@ -253,10 +258,10 @@ export function SocialWebFocusCard({
       <View style={styles.actions}>
         <Pressable
           onPress={onView}
-          style={[styles.primary, { backgroundColor: tint }] as object}
+          style={[styles.primary, { backgroundColor: button.background }] as object}
         >
-          <Text style={styles.primaryText}>View dossier</Text>
-          <Ionicons name="chevron-forward" size={13} color={COLORS.black} />
+          <Text style={[styles.primaryText, { color: button.ink }] as object}>View dossier</Text>
+          <Ionicons name="chevron-forward" size={13} color={button.ink} />
         </Pressable>
         {onCompare ? (
           <Pressable onPress={onCompare} style={styles.secondary}>
@@ -380,7 +385,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
   },
-  primaryText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 12, color: COLORS.black },
+  primaryText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 12 },
   secondary: {
     flexDirection: 'row',
     alignItems: 'center',

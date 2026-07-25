@@ -115,3 +115,83 @@ export function deriveCharacterTheme(hero: {
   const accentWash = `rgba(${r},${g},${b},0.07)`;
   return { accent, accentDeep, accentWash };
 }
+
+/**
+ * WCAG relative luminance of an sRGB colour (0 = black, 1 = white).
+ * The gamma expansion matters: naive channel averaging rates mid greens far too
+ * dark and mid blues far too light, which is exactly where accents land.
+ */
+function relativeLuminance({ r, g, b }: { r: number; g: number; b: number }): number {
+  const lin = (c: number) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+/** WCAG contrast ratio between two hex colours, 1 (identical) to 21 (black/white). */
+export function contrastRatio(hexA: string, hexB: string): number {
+  const a = relativeLuminance(hexToRgb(hexA));
+  const b = relativeLuminance(hexToRgb(hexB));
+  const [hi, lo] = a > b ? [a, b] : [b, a];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/**
+ * Pick the app ink that stays legible on a given background.
+ *
+ * Character accents are derived per hero, so a filled button's background is
+ * whatever colour that portrait happened to yield — the engine clamps lightness
+ * to [0.34, 0.56], and dark ink on the bottom of that range fails badly. Rather
+ * than guessing from a luminance threshold, this measures both candidates and
+ * takes the higher contrast, so the label is readable for every character
+ * instead of most of them.
+ */
+export function readableInkOn(background: string): string {
+  const dark = COLORS.black;
+  const light = COLORS.beige;
+  return contrastRatio(background, dark) >= contrastRatio(background, light) ? dark : light;
+}
+
+/** WCAG AA for normal-size text. */
+const AA_CONTRAST = 4.5;
+
+/**
+ * A filled button in a character's colour that is guaranteed to be readable.
+ *
+ * Choosing the better of dark/light ink is NOT sufficient here, which a test
+ * caught: a mid crimson like #8a2d2d manages only 3.47:1 against BOTH inks, so
+ * whichever you pick, the label loses. The fill itself has to move.
+ *
+ * So this keeps the character's hue and saturation — the part that carries their
+ * identity — and slides only lightness until the ink clears AA. Both directions
+ * are tried and the smaller shift wins, so the colour stays as close to the
+ * portrait's own as legibility allows.
+ */
+export function accentButtonColors(accent: string): { background: string; ink: string } {
+  const { r, g, b } = hexToRgb(accent);
+  const [h, s, l0] = rgbToHsl(r, g, b);
+
+  const search = (ink: string, dir: 1 | -1): { background: string; shift: number } | null => {
+    for (let step = 0; step <= 48; step++) {
+      const l = clamp(l0 + dir * step * 0.02, 0.04, 0.96);
+      const candidate = hslToHex(h, s, l);
+      if (contrastRatio(candidate, ink) >= AA_CONTRAST) {
+        return { background: candidate, shift: step };
+      }
+      if (l <= 0.04 || l >= 0.96) break;
+    }
+    return null;
+  };
+
+  const lighter = search(COLORS.black, 1);
+  const darker = search(COLORS.beige, -1);
+
+  if (lighter && (!darker || lighter.shift <= darker.shift)) {
+    return { background: lighter.background, ink: COLORS.black };
+  }
+  if (darker) return { background: darker.background, ink: COLORS.beige };
+
+  // Unreachable for real hues, but never return an unreadable pair.
+  return { background: COLORS.beige, ink: COLORS.black };
+}
