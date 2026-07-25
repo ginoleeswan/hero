@@ -168,6 +168,10 @@ const repairMode = args.includes('--repair');
 const genericMode = args.includes('--generic');
 // Drop the screenprint grain for crisp flat shapes — the "clean vector" look.
 const cleanMode = args.includes('--clean');
+// Put the cheap image model first in the ladder for character avatars too.
+// Worth testing per batch: 2.5's image-to-image is weaker at holding a likeness,
+// which is the whole job here — unlike the featureless generic silhouettes.
+const cheapFirst = args.includes('--cheap');
 const CONCURRENCY = parseInt(argValue('--concurrency') ?? '3', 10);
 const limitArg = argValue('--limit');
 const LIMIT = limitArg ? parseInt(limitArg, 10) : null;
@@ -539,7 +543,7 @@ async function generateAvatarFromSource(
 
   const named = await attempt(
     [{ text: buildPrompt(heroName, null, hasRefs) }, sourceImg, ...refs],
-    GEMINI_URL,
+    cheapFirst ? GEMINI_25_IMAGE_URL : GEMINI_URL,
     3,
   );
   if (named !== 'PROHIBITED') return named;
