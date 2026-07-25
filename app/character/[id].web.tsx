@@ -1934,6 +1934,8 @@ export default function WebCharacterScreen() {
                   <FamilyCanvas
                     heroName={stats.name}
                     heroImage={stats.image.portraitUrl || stats.image.url || null}
+                    heroAvatar={heroRow?.avatar_url ?? null}
+                    heroId={heroRow?.id ?? null}
                     members={family}
                   />
                 </View>
@@ -2399,6 +2401,8 @@ export default function WebCharacterScreen() {
                     <FamilyCanvas
                       heroName={stats.name}
                       heroImage={stats.image.portraitUrl || stats.image.url || null}
+                      heroAvatar={heroRow?.avatar_url ?? null}
+                      heroId={heroRow?.id ?? null}
                       members={family}
                     />
                   </View>

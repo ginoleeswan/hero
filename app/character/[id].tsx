@@ -1572,6 +1572,8 @@ export default function CharacterScreen() {
                   <FamilyCanvas
                     heroName={data.stats.name}
                     heroImage={data.stats.image.portraitUrl || data.stats.image.url || null}
+                    heroAvatar={heroRow?.avatar_url ?? null}
+                    heroId={heroRow?.id ?? null}
                     members={family}
                   />
                 </View>

@@ -43,21 +43,34 @@ function CanvasNode({
   node,
   heroName,
   heroImage,
+  heroAvatar,
+  heroId,
   onNavigate,
 }: {
   node: PositionedNode;
   heroName: string;
   heroImage: string | null;
+  heroAvatar: string | null;
+  heroId: string | null;
   onNavigate?: () => void;
 }): ReactElement {
   const router = useRouter();
 
   if (node.isHero) {
     return (
-      <View style={[styles.heroAnchor, !heroImage && styles.heroAnchorNoImg]}>
-        {heroImage ? (
-          <Image source={{ uri: heroImage }} style={styles.heroAvatar} contentFit="cover" />
-        ) : null}
+      <View style={styles.heroAnchor}>
+        {/* The subject is the most-looked-at node in the tree and is always a
+            character we have art for, so it gets the flat avatar like every
+            other node. Chipped rather than bare: this anchor sits on black, and
+            a cut-out head with no plate loses its edges against it. */}
+        <HeroAvatar
+          id={heroId ?? heroName}
+          name={heroName}
+          avatarUrl={heroAvatar}
+          fallbackUrl={heroImage}
+          size={34}
+          radius={9}
+        />
         <View>
           <Text style={styles.heroName} numberOfLines={1}>
             {heroName}
@@ -163,6 +176,8 @@ function FamilyStage({
   layout,
   heroName,
   heroImage,
+  heroAvatar,
+  heroId,
   fullscreen,
   showAxis,
   compact = false,
@@ -173,6 +188,8 @@ function FamilyStage({
   layout: FamilyLayout;
   heroName: string;
   heroImage: string | null;
+  heroAvatar: string | null;
+  heroId: string | null;
   fullscreen: boolean;
   showAxis: boolean;
   compact?: boolean;
@@ -346,6 +363,8 @@ function FamilyStage({
                   node={node}
                   heroName={heroName}
                   heroImage={heroImage}
+                  heroAvatar={heroAvatar}
+                  heroId={heroId}
                   onNavigate={onNavigate}
                 />
               </View>
@@ -403,10 +422,14 @@ function FamilyStage({
 export function FamilyCanvas({
   heroName,
   heroImage = null,
+  heroAvatar = null,
+  heroId = null,
   members,
 }: {
   heroName: string;
   heroImage?: string | null;
+  heroAvatar?: string | null;
+  heroId?: string | null;
   members: FamilyMember[];
 }): ReactElement | null {
   const [fullscreen, setFullscreen] = useState(false);
@@ -458,6 +481,8 @@ export function FamilyCanvas({
           layout={layout}
           heroName={heroName}
           heroImage={heroImage}
+          heroAvatar={heroAvatar}
+          heroId={heroId}
           fullscreen={false}
           showAxis={isDesktop}
           compact={!isDesktop}
@@ -497,6 +522,8 @@ export function FamilyCanvas({
             layout={layout}
             heroName={heroName}
             heroImage={heroImage}
+            heroAvatar={heroAvatar}
+            heroId={heroId}
             fullscreen
             showAxis={isDesktop}
             onToggleFullscreen={() => setFullscreen(false)}
