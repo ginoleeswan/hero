@@ -77,6 +77,7 @@ export function SocialWebFocusCard({
 }) {
   const narrow = useWindowDimensions().width < 760;
   const faceCap = narrow ? 5 : 6;
+  const chipCap = narrow ? 2 : 3;
   const align = alignmentLabel(node.alignment);
   const kindColor = kind ? KIND_COLOR[kind] : accent;
 
@@ -131,7 +132,7 @@ export function SocialWebFocusCard({
       />
 
       <View style={styles.head}>
-        <View style={styles.portrait}>
+        <View style={[styles.portrait, narrow && styles.portraitNarrow] as object}>
           <HeroImage
             id={node.id}
             name={node.name}
@@ -183,7 +184,7 @@ export function SocialWebFocusCard({
 
       {sharedTeams.length > 0 ? (
         <View style={styles.chips}>
-          {sharedTeams.slice(0, 3).map((t) => (
+          {sharedTeams.slice(0, chipCap).map((t) => (
             <View key={t} style={styles.chip}>
               <Ionicons name="people" size={10} color={INK_TEXT.muted} />
               <Text style={styles.chipText} numberOfLines={1}>
@@ -191,8 +192,8 @@ export function SocialWebFocusCard({
               </Text>
             </View>
           ))}
-          {sharedTeams.length > 3 ? (
-            <Text style={styles.chipMore}>+{sharedTeams.length - 3}</Text>
+          {sharedTeams.length > chipCap ? (
+            <Text style={styles.chipMore}>+{sharedTeams.length - chipCap}</Text>
           ) : null}
         </View>
       ) : null}
@@ -298,9 +299,14 @@ const styles = StyleSheet.create({
     width: 'auto',
     maxWidth: 'none',
     bottom: 'calc(16px + env(safe-area-inset-bottom))',
-    padding: 13,
-    gap: 9,
+    padding: 12,
+    gap: 8,
+    // It was eating ~half the viewport and burying the scene it describes.
+    // Capped and scrollable, so a dense dossier costs the graph nothing.
+    maxHeight: '58vh',
+    overflowY: 'auto',
   } as object,
+  portraitNarrow: { width: 60, height: 74 } as object,
   head: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   portrait: {
     width: 76,

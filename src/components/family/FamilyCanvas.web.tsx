@@ -16,6 +16,8 @@ import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanima
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
+import { PlaceholderHead } from './PlaceholderHead';
+import { headShapeForRole } from '../../lib/family/kinshipGender';
 import { buildFamilyGraph } from '../../lib/family/buildFamilyGraph';
 import { layoutFamily } from '../../lib/family/layoutFamily';
 import type { FamilyMember, FamilyGraph } from '../../lib/family/types';
@@ -110,7 +112,11 @@ function CanvasNode({
   return (
     <View style={styles.plainNode}>
       <View style={[styles.nodeInner, dead && styles.dead]}>
-        <View style={[styles.linkMeta, styles.metaPadLeft]}>
+        {/* Unmatched relatives have no character behind them, so they get a
+            featureless head instead of an empty slot — otherwise a tree reads as
+            a few pictures scattered through a list of plain text. */}
+        <PlaceholderHead shape={headShapeForRole(member.role)} size={26} />
+        <View style={styles.linkMeta}>
           <Text style={[styles.plainName, { maxWidth: 150 }]} numberOfLines={1}>
             {member.name}
             {dead ? ' ✝' : ''}

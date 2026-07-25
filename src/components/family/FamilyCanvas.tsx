@@ -18,6 +18,8 @@ import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanima
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
+import { PlaceholderHead } from './PlaceholderHead';
+import { headShapeForRole } from '../../lib/family/kinshipGender';
 import { buildFamilyGraph } from '../../lib/family/buildFamilyGraph';
 import { layoutFamily } from '../../lib/family/layoutFamily';
 import type { FamilyMember, FamilyGraph } from '../../lib/family/types';
@@ -111,8 +113,12 @@ function CanvasNode({
 
   const dead = member.status === 'deceased';
   return (
-    <View style={styles.plainNode}>
-      <View style={[styles.linkMeta, dead && styles.dead, styles.metaPadLeft]}>
+    <View style={[styles.plainNode, styles.plainRow] as object}>
+      {/* Unmatched relatives have no character behind them, so they get a
+          featureless head instead of an empty slot — otherwise a tree reads as
+          a few pictures scattered through a list of plain text. */}
+      <PlaceholderHead shape={headShapeForRole(member.role)} size={26} />
+      <View style={[styles.linkMeta, dead && styles.dead] as object}>
         <Text style={[styles.plainName, { maxWidth: 150 }]} numberOfLines={1}>
           {member.name}
           {dead ? ' ✝' : ''}
@@ -768,6 +774,8 @@ const styles = StyleSheet.create({
   },
   powerBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 8, color: 'white' },
 
+  // Native's plain node had no inner row, so the head needs one.
+  plainRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   plainNode: {
     backgroundColor: '#fbf7ef',
     borderWidth: 1,

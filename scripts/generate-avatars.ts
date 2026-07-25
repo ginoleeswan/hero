@@ -88,11 +88,17 @@ function loadStyleRefs(): { inline_data: { mime_type: string; data: string } }[]
 // trademarked name is what trips the safety filter, so every rung blocked for those
 // two while Batman (unnamed in the blocks) passed. Keep the examples generic.
 
-const STYLE_BLOCK = `STYLE — flat vector icon illustration, vintage screenprint. This is a FLAT GRAPHIC MARK, not a painting and not a render:
+const TEXTURE_LINE =
+  '• A subtle distressed screenprint / aged-paper texture over the flat fills: fine vertical streaks and light mottling, as if silkscreened on textured stock. Subtle — the shapes stay clean and readable.';
+const CLEAN_LINE =
+  '• PERFECTLY CLEAN flat fills. No texture, no grain, no distressing, no paper fibre, no mottling, no noise of any kind — every colour area is a single uniform, unbroken block, and every edge is crisp and hard, exactly as if drawn as vector shapes.';
+
+const styleBlock =
+  () => `STYLE — flat vector icon illustration, vintage screenprint. This is a FLAT GRAPHIC MARK, not a painting and not a render:
 • FLAT colour shapes only. Each element is one solid fill plus at most ONE subtle darker tone for a soft shadow down one side of the face. No gradients, no glossy highlights, no volumetric lighting, no 3D form, no cel-shading ramps.
 • NO outlines. Shapes are separated by colour alone — absolutely no black line art, no ink strokes, no sticker outline.
 • Vintage screenprint palette — slightly dusty and paper-like rather than neon, but still COMMITTED and full-bodied. The character's signature colour must stay unmistakably itself: a deep true green stays a deep true green, a costume red stays a rich brick red. Never pale, never washed-out, never pastel, never greyed into mush. 3 to 5 colours total for the whole image.
-• A subtle distressed screenprint / aged-paper texture over the flat fills: fine vertical streaks and light mottling, as if silkscreened on textured stock. Subtle — the shapes stay clean and readable.
+${cleanMode ? CLEAN_LINE : TEXTURE_LINE}
 • Extreme simplification. Reduce the character to the fewest shapes that still identify them.
 • EXCEPT the character's signature surface pattern, which is identity and must survive: a mask's web or mesh lines, a helmet's panel seams, facial markings, stripes or war paint. Render it as fine, clean, flat lines or shapes over the base colour — never omit it, never let it become shading.`;
 
@@ -136,7 +142,7 @@ function buildPrompt(
 
 ${fidelity}${refNote}
 
-${STYLE_BLOCK}
+${styleBlock()}
 
 ${FORM_BLOCK}
 
@@ -160,6 +166,8 @@ const force = args.includes('--force');
 const repairMode = args.includes('--repair');
 // Render the generic placeholder heads into assets/ (no DB, no Cloudinary).
 const genericMode = args.includes('--generic');
+// Drop the screenprint grain for crisp flat shapes — the "clean vector" look.
+const cleanMode = args.includes('--clean');
 const CONCURRENCY = parseInt(argValue('--concurrency') ?? '3', 10);
 const limitArg = argValue('--limit');
 const LIMIT = limitArg ? parseInt(limitArg, 10) : null;
@@ -697,7 +705,13 @@ const GENERIC_HEADS: { key: string; shape: string }[] = [
   },
   {
     key: 'neutral',
-    shape: 'a featureless head-and-jaw silhouette with plain medium-length hair',
+    // Used where the role never states who the person is (cousin, ancestor,
+    // "other"), which is ~28% of unmatched relatives — so it has to read as
+    // genuinely ambiguous. An earlier pass came back with long hair, which
+    // silently assigned a gender to every one of them.
+    shape:
+      'a featureless head-and-jaw silhouette with plain, short, androgynous hair — ' +
+      'neither long nor obviously masculine or feminine, simply a neutral rounded shape',
   },
 ];
 
@@ -708,7 +722,7 @@ async function generateGeneric(): Promise<void> {
   for (const { key, shape } of GENERIC_HEADS) {
     const prompt = `Create an anonymous placeholder avatar icon: ${shape}.
 
-${STYLE_BLOCK}
+${styleBlock()}
 
 FORM — a head-only icon, dead-on FRONT view, perfectly symmetrical:
 • A SOLID SILHOUETTE. Absolutely NO facial features of any kind — no eyes, no brows, no mouth, no nose. The face area is one flat, even shape.
@@ -718,10 +732,12 @@ FORM — a head-only icon, dead-on FRONT view, perfectly symmetrical:
 
 ${FRAME_BLOCK}`;
 
-    // 3.1's per-minute quota is usually spent by a big batch, and these three
-    // are one-off assets — fall through to 2.5 rather than blocking on it.
+    // Cheap model FIRST here, unlike the character avatars. These are flat,
+    // featureless silhouettes with no likeness to preserve, so 3.1's extra
+    // fidelity buys nothing — and it's the model whose spend cap the big batch
+    // exhausts. 3.1 stays as the fallback only if 2.5 refuses outright.
     let out: Uint8Array | 'PROHIBITED' | null = null;
-    for (const url of [GEMINI_URL, GEMINI_25_IMAGE_URL]) {
+    for (const url of [GEMINI_25_IMAGE_URL, GEMINI_URL]) {
       try {
         out = await callImageModel([{ text: prompt }], url);
         if (out !== 'PROHIBITED') break;

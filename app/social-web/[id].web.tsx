@@ -213,11 +213,13 @@ export default function SocialWebExplorer() {
         />
       ) : null}
 
-      <Text style={[styles.hint, narrow && styles.hintNarrow] as object}>
-        {narrow
-          ? 'Drag to orbit · pinch to zoom · tap a head'
-          : 'Drag to orbit · click a head to focus · double-click to travel there'}
-      </Text>
+      {narrow && focusNode ? null : (
+        <Text style={[styles.hint, narrow && styles.hintNarrow] as object}>
+          {narrow
+            ? 'Drag to orbit · pinch to zoom · tap a head'
+            : 'Drag to orbit · click a head to focus · double-click to travel there'}
+        </Text>
+      )}
     </View>
   );
 }
@@ -277,6 +279,10 @@ const styles = StyleSheet.create({
   // truncating it to "Supergirl's univer…".
   headerNarrow: {
     flexDirection: 'column',
+    // Must reset wrap: the base header wraps, and in a COLUMN container wrap
+    // flows overflow into a second column — which pushed the title off-screen
+    // entirely, leaving just the back arrow above the legend.
+    flexWrap: 'nowrap',
     alignItems: 'flex-start',
     gap: 6,
     paddingTop: TOPBAR_HEIGHT + 8,
