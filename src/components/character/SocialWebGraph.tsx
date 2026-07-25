@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
+import { HeroAvatar } from '../HeroAvatar';
 import { monogram } from '../RelatedHeroStrip';
 import { layoutNeighborhood } from '../../lib/graph/forceLayout';
 import { subjectKind, type Neighborhood } from '../../lib/db/heroes/neighborhood';
@@ -126,10 +127,20 @@ export function SocialWebGraph({
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         {edges.map((e, i) => {
           if (!kinds[e.kind]) return null;
+          const incident = e.from === subjectId || e.to === subjectId;
+          // Only draw ties belonging to whoever you're looking at. A 25-node
+          // neighbourhood carries ~250 edges — 84% of every possible pair — and
+          // drawing them all is the hairball: 90% of those lines say "two of the
+          // subject's acquaintances also know each other", which is noise on a
+          // page about the subject. Focusing or hovering a node reveals its own
+          // ties, so the detail is a gesture away rather than always on.
+          const active = hoveredId ?? focusId;
+          const onActive = active ? e.from === active || e.to === active : false;
+          if (!incident && !onActive) return null;
+
           const a = at(e.from);
           const b = at(e.to);
           const lit = isEdgeLit(e, focusId);
-          const incident = e.from === subjectId || e.to === subjectId;
           const color = KIND_COLOR[e.kind] ?? COLORS.grey;
           const alpha = !lit ? '12' : incident ? 'ee' : '99';
           const glowA = !lit ? '08' : incident ? '3a' : '22';
@@ -176,9 +187,16 @@ export function SocialWebGraph({
       {nodes.map((n) => {
         const p = at(n.id);
         const fame = n.fame_score ?? 0;
-        const d = Math.round((n.is_subject ? 72 : 40 + 12 * (fame / 100)) * nodeScale);
+        // Wide fame spread (34→64) rather than the old near-uniform 40→52, so the
+        // eye gets anchors and the field reads as a hierarchy instead of a swarm.
+        const d = Math.round((n.is_subject ? 78 : 34 + 30 * (fame / 100)) * nodeScale);
         const kind = n.is_subject ? null : subjectKind(edges, subjectId, n.id);
         const ring = n.is_subject ? accent : kind ? KIND_COLOR[kind] : COLORS.grey;
+        // With an avatar the cut-out head IS the node: no disc, no ring, no fill.
+        // The edges already carry the kind colour, so the ring was redundant once
+        // the silhouette became legible. Portrait/monogram nodes keep the disc,
+        // since a square crop needs the circle to read as a node at all.
+        const headOnly = !!n.avatar_url;
         const lit = isNodeLit(n.id, focusId, connected);
         // A node whose only tie to the subject is a filtered-out kind fades away.
         const filtered = kind ? !kinds[kind] : false;
@@ -250,20 +268,36 @@ export function SocialWebGraph({
               onHoverOut={() => setHoveredId((c) => (c === n.id ? null : c))}
               style={
                 [
-                  styles.node,
+                  headOnly ? styles.headNode : styles.node,
                   {
                     width: d,
                     height: d,
-                    borderRadius: d / 2,
-                    borderColor: ring,
-                    borderWidth: n.is_subject ? 3 : 2,
                     transform: [{ scale: hovered ? 1.08 : 1 }],
                     transition: 'transform 160ms ease',
                   },
+                  headOnly
+                    ? null
+                    : {
+                        borderRadius: d / 2,
+                        borderColor: ring,
+                        borderWidth: n.is_subject ? 3 : 2,
+                      },
                 ] as object
               }
             >
-              {n.portrait_url || n.image_md_url || n.image_url ? (
+              {headOnly ? (
+                // No face-shifting needed: it's already a centred head drawn for
+                // this size. Sized past the node box because the art carries its
+                // own margin — at 1:1 the head would read smaller than the discs
+                // it sits beside.
+                <HeroAvatar
+                  id={n.id}
+                  name={n.name}
+                  avatarUrl={n.avatar_url}
+                  size={Math.round(d * 1.3)}
+                  bare
+                />
+              ) : n.portrait_url || n.image_md_url || n.image_url ? (
                 <HeroImage
                   id={n.id}
                   name={n.name}
@@ -319,6 +353,17 @@ const styles = StyleSheet.create({
   nameChipText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 10, color: INK_TEXT.primary },
   halo: { position: 'absolute' } as object,
   node: { overflow: 'hidden', backgroundColor: COLORS.navy } as object,
+  // Head-only nodes must not clip: the art is sized past the node box so the
+  // head reads at the same weight as a disc node, and overflow is the point.
+  // drop-shadow (not boxShadow) follows the PNG's alpha, so the rim traces the
+  // silhouette rather than a square. Two passes: a faint warm halo that lifts
+  // near-black heads (Batman, Venom, Black Panther) off the ink, and a soft dark
+  // shadow that keeps pale heads from floating.
+  headNode: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    filter: 'drop-shadow(0 0 5px rgba(245,235,220,0.28)) drop-shadow(0 2px 5px rgba(0,0,0,0.55))',
+  } as object,
   mono: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.navy },
   monoText: { fontFamily: 'Flame-Regular', fontSize: 16, lineHeight: 20 } as object,
 });

@@ -97,7 +97,7 @@ export async function getHeroFamily(heroId: string): Promise<FamilyMember[]> {
     .select(
       'id, name, alias, role, relation, tier, modifiers, status, position, ' +
         'tree_parent_id, branch_side, ' +
-        'related:related_hero_id ( id, portrait_url, image_md_url, image_url, power, alignment )',
+        'related:related_hero_id ( id, avatar_url, portrait_url, image_md_url, image_url, power, alignment )',
     )
     .eq('hero_id', heroId)
     .order('tier', { ascending: false })

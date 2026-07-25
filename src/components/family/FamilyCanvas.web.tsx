@@ -15,6 +15,7 @@ import Svg, { Path, Defs, Pattern, Circle, Rect } from 'react-native-svg';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { COLORS } from '../../constants/colors';
+import { HeroAvatar } from '../HeroAvatar';
 import { buildFamilyGraph } from '../../lib/family/buildFamilyGraph';
 import { layoutFamily } from '../../lib/family/layoutFamily';
 import type { FamilyMember, FamilyGraph } from '../../lib/family/types';
@@ -83,10 +84,16 @@ function CanvasNode({
             <Text style={styles.powerBadgeText}>{member.heroPower}</Text>
           </View>
         ) : null}
-        {member.heroImage ? (
-          <Image source={{ uri: member.heroImage }} style={styles.avatar} contentFit="cover" />
-        ) : null}
-        <View style={[styles.linkMeta, !member.heroImage && styles.metaPadLeft]}>
+        <HeroAvatar
+          id={member.heroId}
+          name={member.name}
+          avatarUrl={member.heroAvatar}
+          fallbackUrl={member.heroImage}
+          size={30}
+          radius={8}
+          bare
+        />
+        <View style={styles.linkMeta}>
           <Text style={[styles.linkName, { maxWidth: 150 }]} numberOfLines={1}>
             {member.name}
           </Text>
@@ -535,10 +542,16 @@ function AsideMemberNode({ member }: { member: FamilyMember }): ReactElement {
             <Text style={styles.powerBadgeText}>{member.heroPower}</Text>
           </View>
         ) : null}
-        {member.heroImage ? (
-          <Image source={{ uri: member.heroImage }} style={styles.avatar} contentFit="cover" />
-        ) : null}
-        <View style={[styles.linkMeta, !member.heroImage && styles.metaPadLeft]}>
+        <HeroAvatar
+          id={member.heroId}
+          name={member.name}
+          avatarUrl={member.heroAvatar}
+          fallbackUrl={member.heroImage}
+          size={30}
+          radius={8}
+          bare
+        />
+        <View style={styles.linkMeta}>
           <Text style={[styles.linkName, { maxWidth: 150 }]} numberOfLines={1}>
             {member.name}
           </Text>

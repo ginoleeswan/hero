@@ -3,6 +3,8 @@ import { supabase } from '../../supabase';
 export interface NeighborNode {
   id: string;
   name: string;
+  /** Flat icon avatar, preferred at node size. Famous heroes only — often null. */
+  avatar_url: string | null;
   portrait_url: string | null;
   image_md_url: string | null;
   image_url: string | null;

@@ -95,6 +95,25 @@ export function heroGridImageSource(
   return { uri: withResize(uri, width, 'scale_medium') };
 }
 
+// Avatars are flat icon marks, so they stay legible far smaller than a portrait.
+// 128px covers a 34pt node at 3x with headroom; the stored PNG is 1024px/~500KB,
+// which must never reach a 30px slot.
+const AVATAR_WIDTH = 128;
+
+/**
+ * Source for the flat icon avatar (heroes.avatar_url — transparent PNG on
+ * Cloudinary). Returns null when the hero has no avatar, which is the common
+ * case: they're only generated for the most famous heroes, so every call site
+ * needs a fallback to its existing portrait/monogram treatment.
+ */
+export function heroAvatarSource(
+  avatarUrl?: string | null,
+  width: number = AVATAR_WIDTH,
+): { uri: string } | null {
+  const uri = realUrl(avatarUrl);
+  return uri ? { uri: withCloudinaryTransform(uri, width) } : null;
+}
+
 /**
  * True when there's a usable portrait for this hero. When false, surfaces should
  * render the monogram fallback (see HeroImage) instead of a blank Image.

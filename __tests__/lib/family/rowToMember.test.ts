@@ -15,6 +15,7 @@ const base: FamilyRow = {
   branch_side: 'paternal',
   related: {
     id: 'h9',
+    avatar_url: null,
     portrait_url: null,
     image_md_url: 'md.jpg',
     image_url: 'full.jpg',
@@ -50,9 +51,22 @@ describe('rowToMember', () => {
     expect(m).toMatchObject({
       heroId: null,
       heroImage: null,
+      heroAvatar: null,
       heroPower: null,
       heroAlignment: null,
     });
+  });
+
+  // The avatar is a separate slot, not part of the heroImage chain: node-sized
+  // surfaces prefer it, everything else keeps using the portrait.
+  it('carries the avatar through without disturbing the portrait chain', () => {
+    const m = rowToMember({ ...base, related: { ...base.related!, avatar_url: 'avatar.png' } });
+    expect(m.heroAvatar).toBe('avatar.png');
+    expect(m.heroImage).toBe('md.jpg');
+  });
+
+  it('leaves heroAvatar null when the hero has no avatar yet', () => {
+    expect(rowToMember(base).heroAvatar).toBeNull();
   });
 
   it('maps the kinship columns', () => {

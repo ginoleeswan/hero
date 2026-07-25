@@ -13,6 +13,7 @@ function m(p: Partial<FamilyMember> & { id: string }): FamilyMember {
     position: 0,
     heroId: null,
     heroImage: null,
+    heroAvatar: null,
     heroPower: null,
     heroAlignment: null,
     treeParentId: null,

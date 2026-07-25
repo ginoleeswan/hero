@@ -47,6 +47,7 @@ export interface FamilyMember {
   position: number;
   heroId: string | null; // related_hero_id, if it resolved to a page
   heroImage: string | null; // portrait for linked nodes
+  heroAvatar: string | null; // flat icon avatar, preferred at node size (famous heroes only)
   heroPower: number | null; // power badge for linked nodes
   heroAlignment: string | null;
   treeParentId: string | null; // the member this node hangs from (null = hero spine)
