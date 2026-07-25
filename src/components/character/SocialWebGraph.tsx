@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import Svg, { Line } from 'react-native-svg';
+import Svg, { Line, Circle } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -13,7 +13,7 @@ import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
 import { HeroAvatar } from '../HeroAvatar';
 import { monogram } from '../RelatedHeroStrip';
-import { layoutNeighborhood } from '../../lib/graph/forceLayout';
+import { layoutOrbital } from '../../lib/graph/orbitalLayout';
 import { subjectKind, type Neighborhood } from '../../lib/db/heroes/neighborhood';
 import { connectedIds, isEdgeLit, isNodeLit } from './socialWebFocus';
 
@@ -27,8 +27,10 @@ const reducedMotion = () =>
   typeof window !== 'undefined' &&
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
-// Dark-constellation renderer: glowing kind-tinted edges + haloed portrait
-// nodes on deep ink. Focus dims everything not connected to the focused node.
+// Solar-system renderer: the subject at the centre, everyone else orbiting in the
+// band for their relationship — teammates closest, then allies, then enemies.
+// The orbit says the relationship, so the subject's edges aren't drawn at all;
+// only neighbour-to-neighbour ties appear, and only for the node you point at.
 // Nodes fade/bloom outward from centre once on mount; the subject halo pulses.
 export function SocialWebGraph({
   neighborhood,
@@ -56,13 +58,18 @@ export function SocialWebGraph({
 }) {
   const kinds = activeKinds ?? { enemy: true, ally: true, teammate: true };
   const { nodes, edges } = neighborhood;
-  const positions = useMemo(
+  const { positions, bands } = useMemo(
     () =>
-      layoutNeighborhood(
-        nodes.map((n) => ({ id: n.id, isSubject: n.is_subject })),
-        edges,
+      layoutOrbital(
+        nodes.map((n) => ({
+          id: n.id,
+          isSubject: n.is_subject,
+          kind: n.is_subject ? null : subjectKind(edges, subjectId, n.id),
+          fame: n.fame_score ?? 0,
+        })),
+        subjectId,
       ),
-    [nodes, edges],
+    [nodes, edges, subjectId],
   );
   const connected = useMemo(
     () => (focusId ? connectedIds(edges, focusId) : new Set<string>()),
@@ -125,25 +132,38 @@ export function SocialWebGraph({
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        {/* Orbit rings. Each band's radius IS its relationship, so these replace
+            the subject's edges entirely rather than sitting behind them. */}
+        {bands.map((band) => (
+          <Circle
+            key={band.kind}
+            cx={cx}
+            cy={cy}
+            r={band.r * R}
+            fill="none"
+            stroke={(KIND_COLOR[band.kind] ?? COLORS.grey) + (kinds[band.kind] ? '2e' : '10')}
+            strokeWidth={1}
+            strokeDasharray="2 7"
+            opacity={entrance}
+          />
+        ))}
         {edges.map((e, i) => {
           if (!kinds[e.kind]) return null;
           const incident = e.from === subjectId || e.to === subjectId;
-          // Only draw ties belonging to whoever you're looking at. A 25-node
-          // neighbourhood carries ~250 edges — 84% of every possible pair — and
-          // drawing them all is the hairball: 90% of those lines say "two of the
-          // subject's acquaintances also know each other", which is noise on a
-          // page about the subject. Focusing or hovering a node reveals its own
-          // ties, so the detail is a gesture away rather than always on.
+          // The subject's own ties are now said by the orbit a character sits in,
+          // so drawing them would repeat the ring in line form. What the rings
+          // can't show is how the neighbours relate to EACH OTHER — so those are
+          // the only edges left, and only for the node you're pointing at.
           const active = hoveredId ?? focusId;
           const onActive = active ? e.from === active || e.to === active : false;
-          if (!incident && !onActive) return null;
+          if (incident || !onActive) return null;
 
           const a = at(e.from);
           const b = at(e.to);
           const lit = isEdgeLit(e, focusId);
           const color = KIND_COLOR[e.kind] ?? COLORS.grey;
-          const alpha = !lit ? '12' : incident ? 'ee' : '99';
-          const glowA = !lit ? '08' : incident ? '3a' : '22';
+          const alpha = lit ? '99' : '12';
+          const glowA = lit ? '22' : '08';
           return (
             <Fragment key={i}>
               {/* wide low-alpha glow underlay */}
@@ -153,7 +173,7 @@ export function SocialWebGraph({
                 x2={b.x}
                 y2={b.y}
                 stroke={color + glowA}
-                strokeWidth={incident ? 6 : 4}
+                strokeWidth={4}
                 opacity={entrance}
               />
               {/* crisp core */}
@@ -163,11 +183,11 @@ export function SocialWebGraph({
                 x2={b.x}
                 y2={b.y}
                 stroke={color + alpha}
-                strokeWidth={incident ? 1.8 : 1}
+                strokeWidth={1}
                 opacity={entrance}
               />
-              {/* living energy flow on lit subject edges */}
-              {incident && lit && flow ? (
+              {/* living energy flow along the revealed ties */}
+              {lit && flow ? (
                 <AnimatedLine
                   x1={a.x}
                   y1={a.y}
