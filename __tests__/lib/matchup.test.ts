@@ -39,8 +39,14 @@ const hero = (id: string, name: string, stats: Partial<Hero> = {}): Hero =>
 
 // Mirrors matchup.ts's private dailySeed(), so the fallback-path assertions
 // stay correct regardless of what "today" happens to be when the suite runs.
+//
+// It has to mirror it in UTC as well as in arithmetic. Using local date parts
+// here made the suite fail every night in any timezone ahead of UTC, for the
+// window between local midnight and UTC midnight: the two clocks named
+// different days, so the expected seed and the real one differed by one and
+// picked different heroes out of the pool.
 function dailySeed(d = new Date()): number {
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
 }
 
 const pool: Hero[] = Array.from({ length: 24 }, (_, i) => hero(`p${i}`, `Pool ${i}`));

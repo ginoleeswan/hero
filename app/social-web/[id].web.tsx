@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { SURFACE, INK_TEXT } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
@@ -24,11 +24,20 @@ export default function SocialWebExplorer() {
   // A phone shows the same heads at a fraction of the width, so the same count
   // that reads as a constellation on desktop reads as a crowd here.
   const nodeLimit = narrow ? 14 : 24;
-  const { data } = useQuery({
-    queryKey: ['neighborhood', focusSubject, nodeLimit],
-    queryFn: () => getHeroNeighborhood(focusSubject, nodeLimit),
+  const neighbourhoodQuery = (heroId: string) => ({
+    queryKey: ['neighborhood', heroId, nodeLimit],
+    queryFn: () => getHeroNeighborhood(heroId, nodeLimit),
     staleTime: 5 * 60 * 1000,
   });
+  const { data } = useQuery({
+    ...neighbourhoodQuery(focusSubject),
+    // Hold the outgoing universe on screen while the next one loads. Without
+    // this `data` goes undefined the moment you travel, the scene below
+    // unmounts, and the WebGL context — with every head and texture in it — is
+    // destroyed and rebuilt. There would be nothing left to animate.
+    placeholderData: keepPreviousData,
+  });
+  const queryClient = useQueryClient();
   const subjectNode = data?.nodes.find((n) => n.id === focusSubject);
   const theme = useMemo(
     () => deriveCharacterTheme({ publisher: subjectNode?.publisher ?? null }),
@@ -103,7 +112,15 @@ export default function SocialWebExplorer() {
             nodes={universeNodes}
             edges={data.edges}
             focusId={focusId}
-            onSelect={async (nodeId: string) => setFocusId(nodeId)}
+            onSelect={async (nodeId: string) => {
+              setFocusId(nodeId);
+              // Travel is always preceded by selecting the same head — a
+              // double-click fires click first, and on touch the first tap of a
+              // double tap does too. Warming that character's cast here means
+              // the scene usually has it in hand the instant travel starts, so
+              // the transition plays out rather than waiting on the network.
+              void queryClient.prefetchQuery(neighbourhoodQuery(nodeId));
+            }}
             onRecenter={async (nodeId: string) => {
               setFocusSubject(nodeId);
               setFocusId(null);

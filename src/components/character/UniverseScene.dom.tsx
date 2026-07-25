@@ -346,9 +346,22 @@ export default function UniverseScene({
     focusRef.current = focusId;
   }, [onSelect, onRecenter, focusId]);
 
+  /**
+   * Feeds a new cast into the LIVE scene, rather than replacing the scene.
+   *
+   * Travelling to another character changes `subjectId`, which used to be an
+   * effect dependency — so every head was disposed, every texture re-fetched,
+   * and the move through what is meant to be one continuous world played as a
+   * hard cut. Neighbouring universes overlap heavily (Batman, Harley and
+   * Catwoman are in both Wonder Woman's and the Joker's), so the heads present
+   * in both can simply travel to their new positions. Keeping them on screen is
+   * the whole difference between navigating a place and loading a page.
+   */
+  const applyRef = useRef<((n: UniverseNode[], e: UniverseEdge[], s: string) => void) | null>(null);
+
   useEffect(() => {
     const mount = mountRef.current;
-    if (!mount || nodes.length === 0) return;
+    if (!mount) return;
 
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
@@ -380,8 +393,21 @@ export default function UniverseScene({
     camera.position.set(0, 0, 7.6);
     camera.lookAt(0, 0, 0);
 
-    const { positions, clusters, radius: ringRadius } = factionLayout(nodes);
-    positions.set(subjectId, new THREE.Vector3(0, 0, 0));
+    // Everything that changes when a new cast lands, or while travelling to one.
+    const state = {
+      subjectId: '',
+      ringRadius: 4,
+      /** The character being travelled TO, held until their own cast arrives. */
+      travelId: null as string | null,
+      dolly: 1,
+      dollyTarget: 1,
+      /** Opacity multiplier for everyone except the destination, while moving. */
+      crowd: 1,
+      crowdTarget: 1,
+      panTarget: new THREE.Vector3(),
+      /** Heads are still easing into a new arrangement until this moment. */
+      settleUntil: 0,
+    };
 
     // How far back the camera must sit for the whole system to fit the frame.
     //
@@ -390,25 +416,22 @@ export default function UniverseScene({
     // which is why mobile came out massively over-zoomed with heads spilling off
     // both edges. Deriving the distance from the aspect ratio fixes every screen
     // shape at once instead of special-casing a breakpoint.
-    // The ring is wide but, seen on a tilt, not nearly as tall — its height on
-    // screen is only radius x sin(pitch) plus the stacked rows and their
-    // heading. Measuring both axes honestly instead of treating the scene as a
-    // sphere is what stops it sitting marooned in the middle of a big viewport.
     const HEAD_PAD = 0.72;
     const fitDistance = (aspect: number): number => {
       const half = (FOV * Math.PI) / 360;
-      // Rows now step radially, so the whole scene is the ring plus one head
-      // either side. Vertically that plane is foreshortened by sin(pitch), and
+      // Rows step radially, so the whole scene is the ring plus one head either
+      // side. Vertically that plane is foreshortened by sin(pitch), and
       // measuring it honestly rather than as a sphere is what stops the graph
       // sitting marooned in the middle of a large viewport.
-      const vExtent = ringRadius * Math.sin(INITIAL_PITCH) + HEAD_PAD + 0.25;
-      const hExtent = ringRadius * STRETCH_X + HEAD_PAD;
+      const vExtent = state.ringRadius * Math.sin(INITIAL_PITCH) + HEAD_PAD + 0.25;
+      const hExtent = state.ringRadius * STRETCH_X + HEAD_PAD;
       const forHeight = vExtent / Math.tan(half);
       const forWidth = hExtent / (Math.tan(half) * aspect);
       return Math.max(forHeight, forWidth);
     };
     // User zoom multiplies the fitted distance, so pinching stays sane on any screen.
     let zoom = 1;
+    let baseDistance = 8;
 
     const disposables: { dispose(): void }[] = [renderer];
     const track = <T extends { dispose(): void }>(d: T): T => {
@@ -451,73 +474,101 @@ export default function UniverseScene({
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
 
-    // `ready` gates the head's fade-in. A SpriteMaterial with no map yet renders
-    // as an opaque WHITE SQUARE, so the field flashes a grid of blank tiles while
-    // textures stream in. Heads start fully transparent and ease in once their
-    // texture actually lands; the tinted glow shows immediately, so a loading node
-    // reads as a soft coloured ember rather than as nothing (or as a white box).
+    // Every head carries its own tween state. `target`/`targetBase` are where
+    // the current cast says it belongs; `alpha` is presence, easing 0→1 as a
+    // character joins the universe and 1→0 as they leave it.
+    //
+    // `ready` gates the texture fade. A SpriteMaterial with no map yet renders
+    // as an opaque WHITE SQUARE, so the field would flash a grid of blank tiles
+    // while textures stream in. Heads start fully transparent and ease in once
+    // their texture actually lands; the tinted glow shows immediately, so a
+    // loading node reads as a soft coloured ember rather than as a white box.
     type Placed = {
       node: UniverseNode;
       sprite: THREE.Sprite;
       glow: THREE.Sprite;
+      mat: THREE.SpriteMaterial;
+      glowMat: THREE.SpriteMaterial;
+      tex: THREE.Texture | null;
+      target: THREE.Vector3;
+      colour: THREE.Color;
       base: number;
+      targetBase: number;
       ready: boolean;
       fade: number;
+      alpha: number;
+      targetAlpha: number;
     };
-    const placed: Placed[] = [];
+    const placed = new Map<string, Placed>();
+    let sprites: THREE.Sprite[] = [];
+    const reindex = () => {
+      sprites = [...placed.values()].map((p) => p.sprite);
+    };
 
-    for (const n of nodes) {
-      const pos = positions.get(n.id);
-      if (!pos) continue;
+    const SUBJECT_SCALE = 1.9;
+    const SUBJECT_RGB = '224,163,53';
+    const colourFor = (n: UniverseNode) =>
+      new THREE.Color(
+        `rgb(${n.is_subject ? SUBJECT_RGB : (KIND_RGB[n.kind ?? 'ally'] ?? '162,161,155')})`,
+      );
+    // The subject sits alone at the centre of the ring with nothing to lend her
+    // scale, so she has to be decisively larger than the crowd rather than
+    // merely the biggest head among many.
+    const scaleFor = (n: UniverseNode) =>
+      n.is_subject ? SUBJECT_SCALE : 0.66 + 0.36 * ((n.fame_score ?? 0) / 100);
 
-      const fame = (n.fame_score ?? 0) / 100;
-      // The subject sits alone at the centre of the ring with nothing to lend
-      // her scale, so she has to be decisively larger than the crowd rather
-      // than merely the biggest head among many.
-      const scale = n.is_subject ? 1.9 : 0.66 + 0.36 * fame;
-
+    const spawn = (n: UniverseNode, pos: THREE.Vector3): Placed => {
       // A tight rim, not an aura. At the old 2.1x scale and 0.55 opacity the
       // glows of adjacent heads overlapped and additively summed into one
       // formless cloud — the "green fog" in the middle of the screen. Grouping
       // heads into clusters packs them tighter still, so the halo has to come in
       // well inside the head's own silhouette and stay faint; it now reads as a
       // faction tint on each face instead of weather.
-      const glowMat = track(
-        new THREE.SpriteMaterial({
-          map: glowTex,
-          transparent: true,
-          depthWrite: false,
-          blending: THREE.AdditiveBlending,
-          color: new THREE.Color(
-            `rgb(${n.is_subject ? '224,163,53' : (KIND_RGB[n.kind ?? 'ally'] ?? '162,161,155')})`,
-          ),
-          opacity: n.is_subject ? 0.5 : 0.26,
-        }),
-      );
+      const glowMat = new THREE.SpriteMaterial({
+        map: glowTex,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        color: colourFor(n),
+        opacity: 0,
+      });
       const glow = new THREE.Sprite(glowMat);
       glow.position.copy(pos);
-      glow.scale.setScalar(scale * GLOW_SCALE);
       // Behind the head, and never occluding anything.
       glow.renderOrder = 0;
       world.add(glow);
 
-      const spriteMat = track(
-        new THREE.SpriteMaterial({
-          transparent: true,
-          depthWrite: false,
-          depthTest: false,
-          opacity: 0,
-        }),
-      );
-
-      const sprite = new THREE.Sprite(spriteMat);
+      const mat = new THREE.SpriteMaterial({
+        transparent: true,
+        depthWrite: false,
+        depthTest: false,
+        opacity: 0,
+      });
+      const sprite = new THREE.Sprite(mat);
       sprite.position.copy(pos);
-      sprite.scale.setScalar(scale);
       sprite.renderOrder = 1;
       sprite.userData.id = n.id;
       world.add(sprite);
 
-      const entry: Placed = { node: n, sprite, glow, base: scale, ready: false, fade: 0 };
+      const entry: Placed = {
+        node: n,
+        sprite,
+        glow,
+        mat,
+        glowMat,
+        tex: null,
+        target: pos.clone(),
+        colour: colourFor(n),
+        // Arrivals grow in from nothing where they belong, rather than flying in
+        // from off-stage, which would fight the clusters for attention.
+        base: 0,
+        targetBase: scaleFor(n),
+        ready: false,
+        fade: 0,
+        alpha: 0,
+        targetAlpha: 1,
+      };
+
       const url = textureUrl(n);
       if (url) {
         loader.load(
@@ -530,68 +581,81 @@ export default function UniverseScene({
             tex.minFilter = THREE.LinearMipmapLinearFilter;
             tex.magFilter = THREE.LinearFilter;
             tex.anisotropy = maxAnisotropy;
-            spriteMat.map = tex;
-            spriteMat.needsUpdate = true;
-            track(tex);
+            mat.map = tex;
+            mat.needsUpdate = true;
+            entry.tex = tex;
             entry.ready = true;
           },
           undefined,
           () => {
-            spriteMat.map = track(makeMonogramTexture(n.name, n.id));
-            spriteMat.needsUpdate = true;
+            const tex = makeMonogramTexture(n.name, n.id);
+            mat.map = tex;
+            mat.needsUpdate = true;
+            entry.tex = tex;
             entry.ready = true;
           },
         );
       } else {
         // No avatar: the monogram is generated locally, so it's ready at once.
-        spriteMat.map = track(makeMonogramTexture(n.name, n.id));
+        const tex = makeMonogramTexture(n.name, n.id);
+        mat.map = tex;
+        entry.tex = tex;
         entry.ready = true;
       }
-      placed.push(entry);
-    }
+      return entry;
+    };
+
+    const retire = (p: Placed) => {
+      world.remove(p.sprite);
+      world.remove(p.glow);
+      p.mat.dispose();
+      p.glowMat.dispose();
+      p.tex?.dispose();
+    };
 
     // ── Edges: drawn on demand, never as a resting state ─────────────────────
     //
-    // Where a head SITS now says what it is to the subject, so drawing the
-    // subject's own ties would restate the layout in lines — the single biggest
-    // source of visual noise on the old scene, and the reason it read as a
-    // hairball. What position can't express is how the cast relates to *each
-    // other*, so the lines are reserved for exactly that: focus a head and its
-    // own connections light up across the clusters (Ares also fights Hippolyta),
-    // which is new information rather than decoration.
+    // Where a head SITS says what it is to the subject, so drawing the subject's
+    // own ties would restate the layout in lines — the single biggest source of
+    // visual noise on the old scene, and the reason it read as a hairball. What
+    // position can't express is how the cast relates to *each other*, so the
+    // lines are reserved for exactly that: focus a head and its own connections
+    // light up across the clusters, which is new information, not decoration.
     //
     // Only the lit segments are ever WRITTEN into the buffer, and the draw range
     // is set to exactly how many there are. The first attempt hid a segment by
     // multiplying its colour to black, on the reasoning that black adds nothing
     // under additive blending — and the whole 257-edge web stayed on screen with
-    // nothing focused. Not drawing a line is unambiguous in a way that drawing an
-    // invisible one is not, so the state is carried by geometry, not by colour.
-    const segs = edges.flatMap((e) => {
-      const a = positions.get(e.from);
-      const b = positions.get(e.to);
-      if (!a || !b) return [];
-      const [r, g, bl] = (KIND_RGB[e.kind] ?? '162,161,155').split(',').map(Number);
-      return [
-        {
-          a: e.from,
-          b: e.to,
-          pts: [a.x, a.y, a.z, b.x, b.y, b.z],
-          rgb: [r / 255, g / 255, bl / 255] as [number, number, number],
-        },
-      ];
-    });
-
+    // nothing focused. Not drawing a line is unambiguous in a way that drawing
+    // an invisible one is not, so the state is carried by geometry, not colour.
+    type Seg = { a: string; b: string; rgb: [number, number, number] };
+    let segs: Seg[] = [];
     let lines: THREE.LineSegments | null = null;
     let posAttr: THREE.Float32BufferAttribute | null = null;
     let colAttr: THREE.Float32BufferAttribute | null = null;
-    if (segs.length) {
-      const lineGeo = track(new THREE.BufferGeometry());
+
+    const buildLines = (es: UniverseEdge[]) => {
+      if (lines) {
+        world.remove(lines);
+        lines.geometry.dispose();
+      }
+      segs = es.map((e) => {
+        const [r, g, b] = (KIND_RGB[e.kind] ?? '162,161,155').split(',').map(Number);
+        return { a: e.from, b: e.to, rgb: [r / 255, g / 255, b / 255] as [number, number, number] };
+      });
+      if (segs.length === 0) {
+        lines = null;
+        posAttr = null;
+        colAttr = null;
+        return;
+      }
+      const geo = new THREE.BufferGeometry();
       posAttr = new THREE.Float32BufferAttribute(new Float32Array(segs.length * 6), 3);
       colAttr = new THREE.Float32BufferAttribute(new Float32Array(segs.length * 6), 3);
-      lineGeo.setAttribute('position', posAttr);
-      lineGeo.setAttribute('color', colAttr);
-      lineGeo.setDrawRange(0, 0);
-      const lineMat = track(
+      geo.setAttribute('position', posAttr);
+      geo.setAttribute('color', colAttr);
+      geo.setDrawRange(0, 0);
+      const mat = track(
         new THREE.LineBasicMaterial({
           vertexColors: true,
           transparent: true,
@@ -600,16 +664,22 @@ export default function UniverseScene({
           depthWrite: false,
         }),
       );
-      lines = new THREE.LineSegments(lineGeo, lineMat);
+      lines = new THREE.LineSegments(geo, mat);
       lines.renderOrder = -1;
       lines.visible = false;
       // The bounding sphere is computed from a buffer that's mostly unwritten
       // zeros, so leaving culling on can drop the lines entirely.
       lines.frustumCulled = false;
       world.add(lines);
-    }
+    };
 
-    /** Draw only the segments touching `id`; pass null to draw none at all. */
+    /**
+     * Draw only the segments touching `id`; pass null to draw none at all.
+     *
+     * Endpoints are read from the sprites' LIVE positions rather than from a
+     * snapshot, so lines stay attached to heads that are still easing towards
+     * their new slots after a change of universe.
+     */
     const litEdgesFor = (id: string | null) => {
       if (!lines || !posAttr || !colAttr) return;
       if (!id) {
@@ -622,17 +692,21 @@ export default function UniverseScene({
       let n = 0;
       for (const s of segs) {
         if (s.a !== id && s.b !== id) continue;
-        const o = n * 6;
+        const A = placed.get(s.a)?.sprite.position;
+        const B = placed.get(s.b)?.sprite.position;
+        if (!A || !B) continue;
         // Wind each segment so the focused character is always the first
         // vertex, which lets the gradient read as reaching out FROM them.
-        const [x1, y1, z1, x2, y2, z2] = s.pts;
         const fromFocus = s.a === id;
-        p[o] = fromFocus ? x1 : x2;
-        p[o + 1] = fromFocus ? y1 : y2;
-        p[o + 2] = fromFocus ? z1 : z2;
-        p[o + 3] = fromFocus ? x2 : x1;
-        p[o + 4] = fromFocus ? y2 : y1;
-        p[o + 5] = fromFocus ? z2 : z1;
+        const F = fromFocus ? A : B;
+        const T = fromFocus ? B : A;
+        const o = n * 6;
+        p[o] = F.x;
+        p[o + 1] = F.y;
+        p[o + 2] = F.z;
+        p[o + 3] = T.x;
+        p[o + 4] = T.y;
+        p[o + 5] = T.z;
         const [r, g, b] = s.rgb;
         c[o] = r;
         c[o + 1] = g;
@@ -654,17 +728,92 @@ export default function UniverseScene({
     // These are DOM, not sprites: text stays crisp at any zoom, costs no
     // texture, and inherits real font rendering.
     const layer = clusterLayerRef.current;
-    const chips = clusters.map((c) => {
-      const el = document.createElement('div');
-      el.textContent = `${c.label} · ${c.count}`;
-      el.setAttribute('style', CHIP_CSS);
-      el.style.color = `rgb(${KIND_RGB[c.faction]})`;
-      el.style.borderColor = `rgba(${KIND_RGB[c.faction]},0.42)`;
-      layer?.appendChild(el);
-      // Measured once, here, rather than per frame: reading offsetWidth in the
-      // render loop forces a synchronous layout on every tick.
-      return { cluster: c, el, w: el.offsetWidth / 2, h: el.offsetHeight / 2 };
-    });
+    let chips: { cluster: Cluster; el: HTMLDivElement; w: number; h: number }[] = [];
+    const buildChips = (clusters: Cluster[]) => {
+      for (const { el } of chips) el.remove();
+      chips = clusters.map((c) => {
+        const el = document.createElement('div');
+        el.textContent = `${c.label} · ${c.count}`;
+        el.setAttribute('style', CHIP_CSS);
+        el.style.color = `rgb(${KIND_RGB[c.faction]})`;
+        el.style.borderColor = `rgba(${KIND_RGB[c.faction]},0.42)`;
+        layer?.appendChild(el);
+        // Measured once, here, rather than per frame: reading offsetWidth in the
+        // render loop forces a synchronous layout on every tick.
+        return { cluster: c, el, w: el.offsetWidth / 2, h: el.offsetHeight / 2 };
+      });
+    };
+
+    // ── Applying a cast ──────────────────────────────────────────────────────
+    let lastLead: string | null | undefined;
+
+    const applyData = (ns: UniverseNode[], es: UniverseEdge[], sid: string) => {
+      if (ns.length === 0) return;
+      // Ignore a cast that doesn't belong to this subject.
+      //
+      // `subjectId` changes the instant you travel, but the new cast is a
+      // fetch behind it, so this runs once with the OLD cast under the NEW
+      // subject's name. Acting on that pairing broke the transition in three
+      // ways at once: the travel state was cleared a frame after it started
+      // (because the id matched), the previous subject had no position in the
+      // new layout and so was retired mid-flight, and every node resolved its
+      // tie against the wrong edge list and collapsed into one "ally" blob.
+      // Waiting is the entire fix — the old universe stays up and animating
+      // until the real one lands.
+      const subject = ns.find((n) => n.is_subject);
+      if (!subject || subject.id !== sid) return;
+      const { positions, clusters, radius } = factionLayout(ns);
+      positions.set(sid, new THREE.Vector3(0, 0, 0));
+      state.subjectId = sid;
+      state.ringRadius = radius;
+      baseDistance = fitDistance(camera.aspect);
+
+      // The destination's own cast has landed. Stop pinning them to the centre
+      // and let the crowd come back up — the pan target falls to zero and their
+      // new position IS the origin, so the two agree and nothing jumps.
+      if (state.travelId === sid) {
+        state.travelId = null;
+        state.dollyTarget = 1;
+        state.crowdTarget = 1;
+      }
+      // Hover naming and connection lines stay out of the way until the new
+      // arrangement has stopped moving. Both point AT a head, and pointing at
+      // one that's still travelling — with a line that stretches as it goes —
+      // reads as glitching rather than as information.
+      state.settleUntil = performance.now() + 620;
+
+      const seen = new Set<string>();
+      for (const n of ns) {
+        const pos = positions.get(n.id);
+        if (!pos) continue;
+        seen.add(n.id);
+        const existing = placed.get(n.id);
+        if (existing) {
+          // Already on screen: keep the head, just retarget it. This is the
+          // whole point — a character in both universes walks to their new
+          // place instead of blinking out and back.
+          existing.node = n;
+          existing.target.copy(pos);
+          existing.targetBase = scaleFor(n);
+          existing.targetAlpha = 1;
+          existing.colour = colourFor(n);
+        } else {
+          placed.set(n.id, spawn(n, pos));
+        }
+      }
+      for (const [id, p] of placed) {
+        if (seen.has(id)) continue;
+        // Not in this universe: shrink away, and get disposed once invisible.
+        p.targetAlpha = 0;
+        p.targetBase = p.base * 0.35;
+      }
+      reindex();
+
+      buildLines(es);
+      lastLead = undefined; // force the next frame to re-light
+      buildChips(clusters);
+    };
+    applyRef.current = applyData;
 
     // ── Interaction ──────────────────────────────────────────────────────────
     const raycaster = new THREE.Raycaster();
@@ -673,9 +822,6 @@ export default function UniverseScene({
     let dragging = false;
     let lastX = 0;
     let lastY = 0;
-    // Slower than the old free-floating field: the arrangement now MEANS
-    // something, so it should drift enough to feel alive and not so much that
-    // the viewer is chasing a carousel.
     let spinVel = 0.0009;
     let yaw = 0;
     // The clusters ring the subject in the horizontal plane, and a camera at
@@ -698,6 +844,32 @@ export default function UniverseScene({
       el.style.transform = `translate(-50%, -140%) translate(${x}px, ${y}px)`;
     };
 
+    /**
+     * Begin travelling to another character.
+     *
+     * The destination is pinned to the centre of the frame and grows to subject
+     * size while the rest of the cast recedes, the camera eases back, and the
+     * world spins up — so the move reads as the universe turning to put them at
+     * its centre. None of it is on a fixed timeline: the state simply holds
+     * until their cast arrives, which makes it immune to how long the fetch
+     * takes. Whether the data lands in 50ms or 800ms, the same thing is true at
+     * the join — the destination is centred and large in both the old scene and
+     * the new one, so there is no cut to hide.
+     */
+    const startTravel = (id: string) => {
+      if (state.travelId === id) return;
+      state.travelId = id;
+      const p = placed.get(id);
+      if (p) {
+        p.targetBase = SUBJECT_SCALE;
+        p.colour = new THREE.Color(`rgb(${SUBJECT_RGB})`);
+      }
+      state.dollyTarget = reduced ? 1 : 1.17;
+      state.crowdTarget = reduced ? 1 : 0.22;
+      setLabel(null);
+      void recenterRef.current?.(id);
+    };
+
     // Touch needs its own handling: phones have no hover, and without a pinch
     // there is no way to zoom out of a system that doesn't fit. Tracking every
     // active pointer lets one finger orbit and two fingers pinch, from the same
@@ -705,6 +877,7 @@ export default function UniverseScene({
     const active = new Map<number, { x: number; y: number }>();
     let pinchStart: { dist: number; zoom: number } | null = null;
     let movedWhilePressed = 0;
+    let lastTap = { id: '', at: 0 };
 
     const spread = (): number => {
       const pts = [...active.values()];
@@ -768,7 +941,18 @@ export default function UniverseScene({
         pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
         pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
         const id = pick();
-        if (id) void selectRef.current?.(id);
+        if (!id) return;
+        // Touch has no dblclick event, so travel is a double TAP on the same
+        // head — otherwise the only way to move through the graph is a control
+        // that exists on desktop and nowhere else.
+        const now = performance.now();
+        if (lastTap.id === id && now - lastTap.at < 400 && id !== state.subjectId) {
+          lastTap = { id: '', at: 0 };
+          startTravel(id);
+          return;
+        }
+        lastTap = { id, at: now };
+        void selectRef.current?.(id);
       }
     };
     const onLeave = () => {
@@ -777,10 +961,7 @@ export default function UniverseScene({
     };
     const pick = (): string | null => {
       raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObjects(
-        placed.map((p) => p.sprite),
-        false,
-      );
+      const hits = raycaster.intersectObjects(sprites, false);
       return (hits[0]?.object.userData.id as string) ?? null;
     };
 
@@ -790,7 +971,7 @@ export default function UniverseScene({
     };
     // Double-click travels: that character becomes the new centre of the universe.
     const onDoubleClick = () => {
-      if (hovered && hovered !== subjectId) void recenterRef.current?.(hovered);
+      if (hovered && hovered !== state.subjectId) startTravel(hovered);
     };
 
     const el = renderer.domElement;
@@ -817,7 +998,6 @@ export default function UniverseScene({
       camera.updateProjectionMatrix();
       baseDistance = fitDistance(camera.aspect);
     };
-    let baseDistance = 8;
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(document.documentElement);
@@ -826,41 +1006,70 @@ export default function UniverseScene({
     // ── Loop ─────────────────────────────────────────────────────────────────
     let raf = 0;
     const clock = new THREE.Clock();
+    let elapsed = 0;
     let entrance = reduced ? 1 : 0;
-    // `undefined` rather than null, so the first frame always writes the buffer.
-    let lastLead: string | null | undefined;
+    const rotM = new THREE.Matrix4();
 
     const tick = () => {
       raf = requestAnimationFrame(tick);
-      const t = clock.getElapsedTime();
-      if (entrance < 1) entrance = Math.min(1, entrance + 0.02);
+      // Clamped so a backgrounded tab doesn't return and snap everything to its
+      // target in a single enormous step.
+      const dt = Math.min(clock.getDelta(), 0.05);
+      elapsed += dt;
+      // Frame-rate independent smoothing: the fraction of the remaining
+      // distance to close this frame, not a fixed per-frame step.
+      const k = reduced ? 1 : 1 - Math.exp(-dt * 7.5);
+      if (entrance < 1) entrance = Math.min(1, entrance + dt * 1.5);
       const ease = 1 - Math.pow(1 - entrance, 3);
+
+      // While travelling, the destination is pinned to the centre of the frame.
+      // Recomputed every frame from its live position and the live rotation, so
+      // the world can keep turning and drifting underneath it and the character
+      // you are moving towards simply stays put — which is what sells it as the
+      // universe rearranging itself around them.
+      if (state.travelId) {
+        const p = placed.get(state.travelId);
+        if (p) {
+          rotM.makeRotationFromEuler(world.rotation);
+          const wp = p.sprite.position.clone().applyMatrix4(rotM);
+          state.panTarget.set(-wp.x, -wp.y, -wp.z);
+        }
+      } else {
+        state.panTarget.set(0, 0, 0);
+      }
+      world.position.lerp(state.panTarget, k);
+      state.dolly += (state.dollyTarget - state.dolly) * k;
+      state.crowd += (state.crowdTarget - state.crowd) * k;
 
       // Distance is always the fitted distance for this viewport, scaled by the
       // user's pinch — so the system frames correctly on any screen shape.
-      camera.position.z = baseDistance * zoom;
+      camera.position.z = baseDistance * zoom * state.dolly;
       camera.lookAt(0, 0, 0);
 
-      // Idle drift stops while you're driving, and eases back afterwards.
+      // Idle drift stops while you're driving, and eases back afterwards. It
+      // accelerates hard during travel and decays back down on arrival, which
+      // gives the move a sense of momentum without ever snapping.
+      const spinCap = !reduced && state.travelId ? 0.0055 : 0.0009;
+      if (dragging) spinVel = 0;
+      else if (spinVel < spinCap) spinVel = Math.min(spinCap, spinVel + dt * 0.024);
+      else spinVel = Math.max(spinCap, spinVel - dt * 0.007);
       if (!dragging && !reduced) yaw += spinVel;
-      spinVel = dragging ? 0 : Math.min(0.0009, spinVel + 0.00003);
       world.rotation.y = yaw;
       world.rotation.x = pitch;
+
+      const busy = state.travelId !== null || performance.now() < state.settleUntil;
 
       // Hover test
       if (pointerInside && !dragging) {
         raycaster.setFromCamera(pointer, camera);
-        const hits = raycaster.intersectObjects(
-          placed.map((p) => p.sprite),
-          false,
-        );
+        const hits = raycaster.intersectObjects(sprites, false);
         const id = (hits[0]?.object.userData.id as string) ?? null;
         if (id !== hovered) {
           hovered = id;
           el.style.cursor = id ? 'pointer' : 'grab';
         }
-        if (hovered) {
-          const hit = placed.find((p) => p.node.id === hovered)!;
+        const hit = hovered ? placed.get(hovered) : null;
+        if (hit && !busy) {
           const v = hit.sprite.position.clone();
           world.localToWorld(v);
           v.project(camera);
@@ -875,23 +1084,23 @@ export default function UniverseScene({
         }
       }
 
-      // Lines follow whichever head is being pointed at or held in focus, and
-      // the buffer is only rewritten when that actually changes.
+      // Lines follow whichever head is being pointed at or held in focus. The
+      // buffer is rewritten every frame while one is lit, because the endpoints
+      // are live sprite positions that may still be easing into place.
       const focused = focusRef.current;
-      const lead = hovered ?? focused;
-      if (lead !== lastLead) {
+      const lead = busy ? null : (hovered ?? focused);
+      if (lead !== lastLead || lead !== null) {
         lastLead = lead;
         litEdgesFor(lead);
       }
 
-      // Cluster headings track their group in screen space, and fade out as the
-      // group swings round the back so labels never read against the wrong pile.
+      // Cluster headings track their group in screen space.
       for (const { cluster, el, w, h } of chips) {
         const v = cluster.anchor.clone();
         world.localToWorld(v);
         const depth = v.clone().applyMatrix4(camera.matrixWorldInverse).z;
         // -1 at the nearest point of the ring, +1 at the furthest.
-        const t = Math.max(-1, Math.min(1, (-depth - camera.position.z) / ringRadius));
+        const t = Math.max(-1, Math.min(1, (-depth - camera.position.z) / state.ringRadius));
         v.project(camera);
         const rect = el.parentElement?.getBoundingClientRect();
         if (!rect) continue;
@@ -905,32 +1114,66 @@ export default function UniverseScene({
         // Recede with depth, never disappear. Fading the far label out was
         // right when the ring was near edge-on and the back half sat behind the
         // subject; from a steep view all four clusters are equally visible, so
-        // hiding one of the four headings would just lose a group's name.
-        el.style.opacity = String((1 - 0.45 * Math.max(0, Math.min(1, (t + 1) / 2))) * ease);
+        // hiding one of the four headings would just lose a group's name. The
+        // headings also duck out entirely while travelling, because they name
+        // groups that are in the middle of being re-formed.
+        const travelFade = state.travelId ? state.crowd : 1;
+        el.style.opacity = String(
+          (1 - 0.45 * Math.max(0, Math.min(1, (t + 1) / 2))) * ease * travelFade,
+        );
       }
 
-      for (const p of placed) {
+      const gone: string[] = [];
+      for (const p of placed.values()) {
+        p.sprite.position.lerp(p.target, k);
+        p.glow.position.copy(p.sprite.position);
+        p.base += (p.targetBase - p.base) * k;
+        p.alpha += (p.targetAlpha - p.alpha) * k;
+        p.glowMat.color.lerp(p.colour, k);
+        if (p.targetAlpha === 0 && p.alpha < 0.02) {
+          gone.push(p.node.id);
+          continue;
+        }
+
+        const isDestination = state.travelId === p.node.id;
         const active = p.node.id === hovered || p.node.id === focused;
-        const lift = active ? 1.18 : 1;
+        const lift = active && !state.travelId ? 1.18 : 1;
         // A slow per-node bob, phase-shifted by id, so the field breathes
         // instead of sitting rigid.
         const bob =
-          p.node.is_subject || reduced ? 1 : 1 + Math.sin(t * 0.7 + hash01(p.node.id) * 9) * 0.03;
+          p.node.is_subject || reduced
+            ? 1
+            : 1 + Math.sin(elapsed * 0.7 + hash01(p.node.id) * 9) * 0.03;
         const s = p.base * lift * bob * ease;
         p.sprite.scale.setScalar(s);
         p.glow.scale.setScalar(s * GLOW_SCALE);
-        (p.glow.material as THREE.SpriteMaterial).opacity =
-          (p.node.is_subject ? 0.5 : 0.26) * ease * (active ? 2.4 : 1);
-        // Fade the head in once its texture exists, and dim everything unrelated
-        // while one character holds focus. Multiplying by `fade` means a head is
-        // never drawn as the blank white square of an unmapped material.
-        p.fade = Math.min(1, p.fade + (p.ready ? 0.06 : 0));
+        // Everyone except the character being travelled to recedes, so the
+        // destination is unmistakably the thing the move is about.
+        const crowd = isDestination ? 1 : state.crowd;
+        p.glowMat.opacity =
+          (p.node.is_subject || isDestination ? 0.5 : 0.26) *
+          ease *
+          p.alpha *
+          crowd *
+          (active ? 2.4 : 1);
+        // Fade the head in once its texture exists. Multiplying by `fade` means
+        // a head is never drawn as the blank white square of an unmapped
+        // material.
+        p.fade = Math.min(1, p.fade + (p.ready ? dt * 4 : 0));
         // A gentle recede, not a blackout. At 0.28 the other 23 heads read as
         // half-loaded rather than as context, which made the whole scene look
         // broken the moment anything was selected; the lit head's own lift and
         // halo carry the emphasis instead.
-        const dim = focused && !active && !p.node.is_subject ? 0.62 : 1;
-        (p.sprite.material as THREE.SpriteMaterial).opacity = p.fade * dim;
+        const dim = focused && !active && !p.node.is_subject && !state.travelId ? 0.62 : 1;
+        p.mat.opacity = p.fade * p.alpha * dim * crowd;
+      }
+      if (gone.length) {
+        for (const id of gone) {
+          const p = placed.get(id);
+          if (p) retire(p);
+          placed.delete(id);
+        }
+        reindex();
       }
 
       renderer.render(scene, camera);
@@ -939,6 +1182,7 @@ export default function UniverseScene({
 
     return () => {
       cancelAnimationFrame(raf);
+      applyRef.current = null;
       ro.disconnect();
       window.removeEventListener('resize', resize);
       el.removeEventListener('pointermove', onPointerMove);
@@ -949,9 +1193,18 @@ export default function UniverseScene({
       el.removeEventListener('click', onClick);
       el.removeEventListener('dblclick', onDoubleClick);
       for (const { el: chip } of chips) chip.remove();
+      for (const p of placed.values()) retire(p);
+      placed.clear();
+      lines?.geometry.dispose();
       for (const d of disposables) d.dispose();
       if (el.parentNode === mount) mount.removeChild(el);
     };
+    // Set up ONCE. New casts arrive through applyRef below, so that travelling
+    // to another character morphs the scene instead of replacing it.
+  }, []);
+
+  useEffect(() => {
+    applyRef.current?.(nodes, edges, subjectId);
   }, [nodes, edges, subjectId]);
 
   return (
