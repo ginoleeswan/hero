@@ -14,13 +14,18 @@ import { HeroImage } from '../HeroImage';
 import { HeroAvatar } from '../HeroAvatar';
 import { monogram } from '../RelatedHeroStrip';
 import { layoutNeighborhood } from '../../lib/graph/forceLayout';
-import { subjectKind, type Neighborhood } from '../../lib/db/heroes/neighborhood';
+import {
+  subjectKind,
+  type Neighborhood,
+  type NeighborKind,
+} from '../../lib/db/heroes/neighborhood';
 import { connectedIds, isEdgeLit, isNodeLit } from './socialWebFocus';
 
 const KIND_COLOR: Record<string, string> = {
   enemy: COLORS.red,
   ally: COLORS.green,
   teammate: COLORS.blue,
+  family: COLORS.purple,
 };
 
 const reducedMotion = () =>
@@ -48,13 +53,16 @@ export function SocialWebGraph({
   size: number;
   focusId?: string | null;
   sharedIds?: Set<string>;
-  activeKinds?: { enemy: boolean; ally: boolean; teammate: boolean };
+  activeKinds?: Partial<Record<NeighborKind, boolean>>;
   /** Shrink nodes (e.g. for the compact preview) without changing layout. */
   nodeScale?: number;
   onNodePress?: (id: string) => void;
   onNodeLongPress?: (id: string) => void;
 }) {
-  const kinds = activeKinds ?? { enemy: true, ally: true, teammate: true };
+  // Absent from the map means shown, so a newly added kind is never
+  // silently filtered out of the native graph.
+  const kinds = activeKinds ?? {};
+  const shown = (k: NeighborKind) => kinds[k] !== false;
   const { nodes, edges } = neighborhood;
 
   const cx = size / 2;
@@ -138,7 +146,7 @@ export function SocialWebGraph({
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         {edges.map((e, i) => {
-          if (!kinds[e.kind]) return null;
+          if (!shown(e.kind)) return null;
           const incident = e.from === subjectId || e.to === subjectId;
           // Only draw ties belonging to whoever you're looking at. A 25-node
           // neighbourhood carries ~250 edges — 84% of every possible pair — and
@@ -211,7 +219,7 @@ export function SocialWebGraph({
         const headOnly = !!n.avatar_url;
         const lit = isNodeLit(n.id, focusId, connected);
         // A node whose only tie to the subject is a filtered-out kind fades away.
-        const filtered = kind ? !kinds[kind] : false;
+        const filtered = kind ? !shown(kind) : false;
         // entrance: lerp from centre outward
         const ex = cx + (p.x - cx) * entrance;
         const ey = cy + (p.y - cy) * entrance;

@@ -39,6 +39,24 @@ describe('describeRelationship', () => {
     expect(describeRelationship(null, 'Batman', [], [], 0).summary).toBeNull();
   });
 
+  // Kin outrank the roster: a relative who also served on a team is described
+  // as family FIRST, not as a generic teammate, which is what the old copy did
+  // for every non-enemy kind.
+  it('leads with kinship for family, and keeps the roster as supporting detail', () => {
+    const r = describeRelationship('family', 'Superman', ['Justice League'], ['Justice League'], 3);
+    expect(r.summary).toBe('Family to Superman, and served alongside them in Justice League.');
+  });
+
+  it('describes family with no shared roster via mutuals', () => {
+    const r = describeRelationship('family', 'Superman', null, null, 2);
+    expect(r.summary).toBe('Family to Superman, with 2 mutual connections in common.');
+  });
+
+  // The pill already reads "Family", so an unsupported sentence adds nothing.
+  it('stays silent for family when there is no roster and no mutual', () => {
+    expect(describeRelationship('family', 'Superman', null, null, 0).summary).toBeNull();
+  });
+
   it('tolerates missing and empty team arrays', () => {
     expect(describeRelationship('teammate', 'X', null, ['A'], 0).sharedTeams).toEqual([]);
     expect(describeRelationship('teammate', 'X', ['A'], null, 0).sharedTeams).toEqual([]);

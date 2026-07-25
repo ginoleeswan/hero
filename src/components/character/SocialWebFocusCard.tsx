@@ -7,17 +7,19 @@ import { HeroAvatar } from '../HeroAvatar';
 import { deriveCharacterTheme, accentButtonColors } from '../../lib/accent';
 import { describeRelationship } from '../../lib/graph/relationshipReason';
 import { topStatEdges, matchupVerdict } from '../../lib/graph/statEdge';
-import type { NeighborNode } from '../../lib/db/heroes/neighborhood';
+import type { NeighborKind, NeighborNode } from '../../lib/db/heroes/neighborhood';
 
 const KIND_LABEL: Record<string, string> = {
   enemy: 'Enemy',
   ally: 'Ally',
   teammate: 'Teammate',
+  family: 'Family',
 };
 const KIND_COLOR: Record<string, string> = {
   enemy: COLORS.red,
   ally: COLORS.green,
   teammate: COLORS.blue,
+  family: COLORS.purple,
 };
 
 function alignmentLabel(a: string | null): { label: string; color: string } | null {
@@ -64,7 +66,7 @@ export function SocialWebFocusCard({
   subject?: NeighborNode | null;
   subjectName: string;
   subjectTeams?: string[] | null;
-  kind: 'enemy' | 'ally' | 'teammate' | null;
+  kind: NeighborKind | null;
   degree: number;
   /** Page accent — the fallback when this character has no usable colour. */
   accent: string;

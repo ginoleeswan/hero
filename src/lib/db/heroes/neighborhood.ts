@@ -24,10 +24,19 @@ export interface NeighborNode {
   powerstats_total: number | null;
   is_subject: boolean;
 }
+/**
+ * Wider than `RelationKind` in ./types on purpose: that one is the set of kinds
+ * the hero_relationships TABLE accepts, while the neighbourhood graph also folds
+ * in kin from hero_relatives. `family` outranks the rest — where a pair is both
+ * kin and something else (Lois Lane is Superman's spouse *and* an ally), the
+ * blood tie is the more specific fact and wins the edge.
+ */
+export type NeighborKind = 'family' | 'enemy' | 'ally' | 'teammate';
+
 export interface NeighborEdge {
   from: string;
   to: string;
-  kind: 'enemy' | 'ally' | 'teammate';
+  kind: NeighborKind;
 }
 export interface Neighborhood {
   nodes: NeighborNode[];

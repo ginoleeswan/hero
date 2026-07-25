@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-na
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SURFACE, INK_TEXT } from '../../src/constants/colors';
+import { SURFACE, INK_TEXT } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { getHeroNeighborhood, subjectKind } from '../../src/lib/db/heroes/neighborhood';
 import { nodeDegree, sharedWithSubject } from '../../src/components/character/socialWebFocus';
@@ -35,7 +35,6 @@ export default function SocialWebExplorer() {
     [subjectNode],
   );
 
-  const [activeKinds, setActiveKinds] = useState({ enemy: true, ally: true, teammate: true });
   const [focusId, setFocusId] = useState<string | null>(null);
   const focusNode = (focusId && data?.nodes.find((n) => n.id === focusId)) || null;
   const focusKind = focusNode ? subjectKind(data!.edges, focusSubject, focusNode.id) : null;
@@ -70,13 +69,16 @@ export default function SocialWebExplorer() {
 
   return (
     <View style={styles.screen}>
-      {/* accent bloom from centre */}
+      {/* Accent bloom from centre. Deliberately faint and tight: at 4d across
+          60% of the screen it summed with the per-head haloes into the formless
+          cloud that made the middle of the scene unreadable. It's a floor for
+          the subject to stand on, not a light source. */}
       <View
         style={
           [
             StyleSheet.absoluteFill,
             {
-              backgroundImage: `radial-gradient(60% 50% at 50% 48%, ${theme.accentDeep}4d, transparent 72%)`,
+              backgroundImage: `radial-gradient(38% 32% at 50% 50%, ${theme.accentDeep}26, transparent 70%)`,
               pointerEvents: 'none',
             },
           ] as object
@@ -149,29 +151,12 @@ export default function SocialWebExplorer() {
         >
           <Ionicons name="arrow-back" size={20} color={INK_TEXT.primary} />
         </Pressable>
+        {/* No legend: the scene now labels each faction ON its own cluster, which
+            is both nearer the thing it names and honest — these toggles were
+            never wired to the WebGL scene, so filtering by kind did nothing. */}
         <Text style={[styles.title, narrow && styles.titleNarrow] as object} numberOfLines={1}>
           {subjectNode ? `${subjectNode.name}'s universe` : 'Universe'}
         </Text>
-        <View style={[styles.legend, narrow && styles.legendNarrow] as object}>
-          <Legend
-            color={COLORS.red}
-            label="Enemy"
-            active={activeKinds.enemy}
-            onToggle={() => setActiveKinds((k) => ({ ...k, enemy: !k.enemy }))}
-          />
-          <Legend
-            color={COLORS.green}
-            label="Ally"
-            active={activeKinds.ally}
-            onToggle={() => setActiveKinds((k) => ({ ...k, ally: !k.ally }))}
-          />
-          <Legend
-            color={COLORS.blue}
-            label="Team"
-            active={activeKinds.teammate}
-            onToggle={() => setActiveKinds((k) => ({ ...k, teammate: !k.teammate }))}
-          />
-        </View>
       </View>
 
       {sparse ? (
@@ -224,34 +209,6 @@ export default function SocialWebExplorer() {
   );
 }
 
-function Legend({
-  color,
-  label,
-  active,
-  onToggle,
-}: {
-  color: string;
-  label: string;
-  active: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <Pressable style={styles.legendItem} onPress={onToggle}>
-      <View
-        style={[
-          styles.dot,
-          {
-            backgroundColor: active ? color : 'transparent',
-            borderWidth: active ? 0 : 1.5,
-            borderColor: color,
-          },
-        ]}
-      />
-      <Text style={[styles.legendText, !active && { opacity: 0.4 }] as object}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: SURFACE.ink },
   header: {
@@ -271,28 +228,17 @@ const styles = StyleSheet.create({
     color: INK_TEXT.primary,
     flex: 1,
   } as object,
-  legend: { flexDirection: 'row', gap: 12 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: INK_TEXT.muted },
-  // Narrow: the title stops competing with the legend for one line, which was
-  // truncating it to "Supergirl's univer…".
+  // Narrow: with the legend gone the title has the row to itself, so it stays
+  // in-line with the back arrow instead of stacking.
   headerNarrow: {
-    flexDirection: 'column',
-    // Must reset wrap: the base header wraps, and in a COLUMN container wrap
-    // flows overflow into a second column — which pushed the title off-screen
-    // entirely, leaving just the back arrow above the legend.
     flexWrap: 'nowrap',
-    alignItems: 'flex-start',
-    gap: 6,
+    alignItems: 'center',
+    gap: 8,
     paddingTop: TOPBAR_HEIGHT + 8,
   } as object,
-  titleNarrow: { flex: 0, width: '100%', fontSize: 19, lineHeight: 24, paddingLeft: 2 } as object,
-  legendNarrow: { paddingLeft: 2 } as object,
+  titleNarrow: { fontSize: 19, lineHeight: 24 } as object,
   searchOverlay: { position: 'absolute', left: 16, top: TOPBAR_HEIGHT + 60, zIndex: 20 } as object,
-  // The stacked narrow header is taller, so the search has to drop below it
-  // instead of landing on the legend.
-  searchOverlayNarrow: { top: TOPBAR_HEIGHT + 78, right: 16 } as object,
+  searchOverlayNarrow: { top: TOPBAR_HEIGHT + 54, right: 16 } as object,
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: INK_TEXT.faint },
   hint: {

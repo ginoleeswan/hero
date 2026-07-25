@@ -1,4 +1,4 @@
-export type RelKind = 'enemy' | 'ally' | 'teammate';
+export type RelKind = 'family' | 'enemy' | 'ally' | 'teammate';
 
 export interface RelationshipReason {
   /** Rosters both characters belong to — the concrete evidence for the tie. */
@@ -41,6 +41,12 @@ export function describeRelationship(
         summary: `Opposed to ${subjectName}, despite both serving in ${list}${extra}.`,
       };
     }
+    if (kind === 'family') {
+      return {
+        sharedTeams,
+        summary: `Family to ${subjectName}, and served alongside them in ${list}${extra}.`,
+      };
+    }
     return {
       sharedTeams,
       summary: `Served alongside ${subjectName} in ${list}${extra}.`,
@@ -57,6 +63,9 @@ export function describeRelationship(
     }
     if (kind === 'teammate') {
       return { sharedTeams, summary: `A teammate of ${subjectName}, with ${people} in common.` };
+    }
+    if (kind === 'family') {
+      return { sharedTeams, summary: `Family to ${subjectName}, with ${people} in common.` };
     }
   }
 
