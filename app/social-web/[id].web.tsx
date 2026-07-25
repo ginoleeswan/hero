@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,12 +17,16 @@ import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 export default function SocialWebExplorer() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const narrow = useWindowDimensions().width < 760;
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   const [focusSubject, setFocusSubject] = useState<string>(id);
+  // A phone shows the same heads at a fraction of the width, so the same count
+  // that reads as a constellation on desktop reads as a crowd here.
+  const nodeLimit = narrow ? 14 : 24;
   const { data } = useQuery({
-    queryKey: ['neighborhood', focusSubject, 24],
-    queryFn: () => getHeroNeighborhood(focusSubject, 24),
+    queryKey: ['neighborhood', focusSubject, nodeLimit],
+    queryFn: () => getHeroNeighborhood(focusSubject, nodeLimit),
     staleTime: 5 * 60 * 1000,
   });
   const subjectNode = data?.nodes.find((n) => n.id === focusSubject);
@@ -138,17 +142,17 @@ export default function SocialWebExplorer() {
           <NebulaLoader />
         </View>
       ) : null}
-      <View style={styles.header}>
+      <View style={[styles.header, narrow && styles.headerNarrow] as object}>
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
           style={styles.back}
         >
           <Ionicons name="arrow-back" size={20} color={INK_TEXT.primary} />
         </Pressable>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, narrow && styles.titleNarrow] as object} numberOfLines={1}>
           {subjectNode ? `${subjectNode.name}'s universe` : 'Universe'}
         </Text>
-        <View style={styles.legend}>
+        <View style={[styles.legend, narrow && styles.legendNarrow] as object}>
           <Legend
             color={COLORS.red}
             label="Enemy"
@@ -181,7 +185,7 @@ export default function SocialWebExplorer() {
       )}
 
       {data && !sparse ? (
-        <View style={styles.searchOverlay}>
+        <View style={[styles.searchOverlay, narrow && styles.searchOverlayNarrow] as object}>
           <SocialWebSearch nodes={data.nodes} onPick={(pid) => setFocusId(pid)} />
         </View>
       ) : null}
@@ -209,8 +213,10 @@ export default function SocialWebExplorer() {
         />
       ) : null}
 
-      <Text style={styles.hint}>
-        Drag to orbit · click a head to focus · double-click to travel there
+      <Text style={[styles.hint, narrow && styles.hintNarrow] as object}>
+        {narrow
+          ? 'Drag to orbit · pinch to zoom · tap a head'
+          : 'Drag to orbit · click a head to focus · double-click to travel there'}
       </Text>
     </View>
   );
@@ -267,7 +273,20 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   legendText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: INK_TEXT.muted },
+  // Narrow: the title stops competing with the legend for one line, which was
+  // truncating it to "Supergirl's univer…".
+  headerNarrow: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 6,
+    paddingTop: TOPBAR_HEIGHT + 8,
+  } as object,
+  titleNarrow: { flex: 0, width: '100%', fontSize: 19, lineHeight: 24, paddingLeft: 2 } as object,
+  legendNarrow: { paddingLeft: 2 } as object,
   searchOverlay: { position: 'absolute', left: 16, top: TOPBAR_HEIGHT + 60, zIndex: 20 } as object,
+  // The stacked narrow header is taller, so the search has to drop below it
+  // instead of landing on the legend.
+  searchOverlayNarrow: { top: TOPBAR_HEIGHT + 78, right: 16 } as object,
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: INK_TEXT.faint },
   hint: {
@@ -277,4 +296,9 @@ const styles = StyleSheet.create({
     color: INK_TEXT.faint,
     paddingVertical: 14,
   },
+  // Mobile Safari's toolbar floats over the bottom of the viewport, which was
+  // slicing this line in half. The safe-area inset is what clears it.
+  hintNarrow: {
+    paddingBottom: 'calc(14px + env(safe-area-inset-bottom))',
+  } as object,
 });

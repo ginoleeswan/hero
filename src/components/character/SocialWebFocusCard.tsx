@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
@@ -75,6 +75,8 @@ export function SocialWebFocusCard({
   onPickMutual?: (id: string) => void;
   onClose: () => void;
 }) {
+  const narrow = useWindowDimensions().width < 760;
+  const faceCap = narrow ? 5 : 6;
   const align = alignmentLabel(node.alignment);
   const kindColor = kind ? KIND_COLOR[kind] : accent;
 
@@ -103,7 +105,10 @@ export function SocialWebFocusCard({
     degree,
   );
 
-  const edges = useMemo(() => topStatEdges(subject ?? null, node, 3), [subject, node]);
+  const edges = useMemo(
+    () => topStatEdges(subject ?? null, node, narrow ? 2 : 3),
+    [subject, node, narrow],
+  );
   const verdict = matchupVerdict(
     subject?.powerstats_total ?? null,
     node.powerstats_total ?? null,
@@ -112,7 +117,7 @@ export function SocialWebFocusCard({
   );
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, narrow && styles.cardNarrow] as object}>
       {/* The character's colour as a soft wash from the top, so the card takes on
           their identity without a border or a stripe doing the talking. */}
       <View
@@ -231,7 +236,7 @@ export function SocialWebFocusCard({
         <View style={styles.mutuals}>
           <Text style={styles.sectionLabel}>Both know</Text>
           <View style={styles.faces}>
-            {mutuals.slice(0, 6).map((m) => (
+            {mutuals.slice(0, faceCap).map((m) => (
               <Pressable key={m.id} onPress={() => onPickMutual?.(m.id)} style={styles.face}>
                 <HeroAvatar
                   id={m.id}
@@ -243,7 +248,9 @@ export function SocialWebFocusCard({
                 />
               </Pressable>
             ))}
-            {mutuals.length > 6 ? <Text style={styles.chipMore}>+{mutuals.length - 6}</Text> : null}
+            {mutuals.length > faceCap ? (
+              <Text style={styles.chipMore}>+{mutuals.length - faceCap}</Text>
+            ) : null}
           </View>
         </View>
       ) : null}
@@ -282,6 +289,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(245,235,220,0.14)',
     backdropFilter: 'blur(14px)',
+  } as object,
+  // Full-bleed on a phone, and lifted clear of the floating browser toolbar
+  // that would otherwise cut the action row in half.
+  cardNarrow: {
+    left: 12,
+    right: 12,
+    width: 'auto',
+    maxWidth: 'none',
+    bottom: 'calc(16px + env(safe-area-inset-bottom))',
+    padding: 13,
+    gap: 9,
   } as object,
   head: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   portrait: {

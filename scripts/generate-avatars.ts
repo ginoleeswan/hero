@@ -158,6 +158,8 @@ const dryRun = args.includes('--dry-run');
 const force = args.includes('--force');
 // Re-cut alpha on avatars already in Cloudinary; no model calls, no cost.
 const repairMode = args.includes('--repair');
+// Render the generic placeholder heads into assets/ (no DB, no Cloudinary).
+const genericMode = args.includes('--generic');
 const CONCURRENCY = parseInt(argValue('--concurrency') ?? '3', 10);
 const limitArg = argValue('--limit');
 const LIMIT = limitArg ? parseInt(limitArg, 10) : null;
@@ -671,6 +673,74 @@ async function repair(): Promise<void> {
   });
 }
 
+/**
+ * The placeholder heads used where we have no character at all.
+ *
+ * ~80% of family-tree entries are unmatched text — a relative's name that was
+ * never resolved to a hero row — so they can never have a real avatar. These
+ * stand in, drawn in exactly the same flat screenprint language so a tree reads
+ * as one system instead of "some rows have pictures".
+ *
+ * They are SILHOUETTES on purpose: no eyes, no features, nothing that implies a
+ * specific person. Only the outline differs. Which one a row gets is decided by
+ * the relative's stated role ("mother", "father"), never guessed from a name.
+ */
+const GENERIC_HEADS: { key: string; shape: string }[] = [
+  {
+    key: 'feminine',
+    shape:
+      'a featureless head-and-jaw silhouette with long hair falling past the jaw on both sides',
+  },
+  {
+    key: 'masculine',
+    shape: 'a featureless head-and-jaw silhouette with short cropped hair',
+  },
+  {
+    key: 'neutral',
+    shape: 'a featureless head-and-jaw silhouette with plain medium-length hair',
+  },
+];
+
+async function generateGeneric(): Promise<void> {
+  const dir = join((import.meta as unknown as { dir: string }).dir, '../assets/avatars');
+  mkdirSync(dir, { recursive: true });
+
+  for (const { key, shape } of GENERIC_HEADS) {
+    const prompt = `Create an anonymous placeholder avatar icon: ${shape}.
+
+${STYLE_BLOCK}
+
+FORM — a head-only icon, dead-on FRONT view, perfectly symmetrical:
+• A SOLID SILHOUETTE. Absolutely NO facial features of any kind — no eyes, no brows, no mouth, no nose. The face area is one flat, even shape.
+• The only thing that distinguishes this icon is its outer outline (the hair and head shape).
+• Crop at the JAW. NO neck, NO shoulders, NO body.
+• Use ONE muted, desaturated warm-grey tone for the face and ONE slightly darker neutral tone for the hair. No character colours, nothing vivid — this must read as a placeholder, never as a specific person.
+
+${FRAME_BLOCK}`;
+
+    // 3.1's per-minute quota is usually spent by a big batch, and these three
+    // are one-off assets — fall through to 2.5 rather than blocking on it.
+    let out: Uint8Array | 'PROHIBITED' | null = null;
+    for (const url of [GEMINI_URL, GEMINI_25_IMAGE_URL]) {
+      try {
+        out = await callImageModel([{ text: prompt }], url);
+        if (out !== 'PROHIBITED') break;
+      } catch (err) {
+        console.log(`  ⚠ ${key}: ${err instanceof Error ? err.message.split('\n')[0] : err}`);
+        out = null;
+      }
+    }
+    if (!out || out === 'PROHIBITED') {
+      console.error(`  ✗ ${key}: could not render`);
+      continue;
+    }
+    const bytes = keyWhiteToAlpha(`generic-${key}`, out);
+    const path = join(dir, `placeholder-${key}.png`);
+    writeFileSync(path, bytes);
+    console.log(`  ✓ ${key} → ${path}`);
+  }
+}
+
 // ─── Run ──────────────────────────────────────────────────────────────────────
 
 async function run(): Promise<void> {
@@ -779,7 +849,8 @@ async function main() {
   if (LIMIT) console.log(`Limit: ${LIMIT} heroes`);
   console.log('');
 
-  if (repairMode) await repair();
+  if (genericMode) await generateGeneric();
+  else if (repairMode) await repair();
   else await run();
   console.log('\nDone.\n');
 }

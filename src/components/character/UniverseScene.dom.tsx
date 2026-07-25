@@ -198,14 +198,38 @@ export default function UniverseScene({
     mount.appendChild(renderer.domElement);
     renderer.domElement.style.display = 'block';
     renderer.domElement.style.cursor = 'grab';
+    // Without this the browser claims the gestures first: one finger scrolls the
+    // page and two fingers zoom the document, so neither orbit nor pinch ever
+    // reaches the scene on mobile Safari.
+    renderer.domElement.style.touchAction = 'none';
+    renderer.domElement.style.overscrollBehavior = 'none';
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 100);
+    const FOV = 46;
+    const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
     // Dead-on, aimed at the origin where the subject sits. An unaimed camera
     // lifted on Y still looks straight down -Z, which pushed the subject below
     // the centre of frame — the offset had nothing to do with the layout.
     camera.position.set(0, 0, 7.6);
     camera.lookAt(0, 0, 0);
+
+    // How far back the camera must sit for the whole system to fit the frame.
+    //
+    // three's fov is VERTICAL, so a fixed distance that frames the sphere nicely
+    // on a wide desktop viewport gives a phone a far narrower horizontal field —
+    // which is why mobile came out massively over-zoomed with heads spilling off
+    // both edges. Deriving the distance from the aspect ratio fixes every screen
+    // shape at once instead of special-casing a breakpoint.
+    const OUTER_RADIUS = Math.max(...Object.values(KIND_RADIUS));
+    const fitDistance = (aspect: number): number => {
+      const half = (FOV * Math.PI) / 360;
+      const extent = OUTER_RADIUS + 0.75; // the heads have size of their own
+      const forHeight = extent / Math.tan(half);
+      const forWidth = extent / (Math.tan(half) * aspect);
+      return Math.max(forHeight, forWidth);
+    };
+    // User zoom multiplies the fitted distance, so pinching stays sane on any screen.
+    let zoom = 1;
 
     const disposables: { dispose(): void }[] = [renderer];
     const track = <T extends { dispose(): void }>(d: T): T => {
@@ -401,34 +425,95 @@ export default function UniverseScene({
       el.style.transform = `translate(-50%, -140%) translate(${x}px, ${y}px)`;
     };
 
+    // Touch needs its own handling: phones have no hover, and without a pinch
+    // there is no way to zoom out of a system that doesn't fit. Tracking every
+    // active pointer lets one finger orbit and two fingers pinch, from the same
+    // events desktop already uses.
+    const active = new Map<number, { x: number; y: number }>();
+    let pinchStart: { dist: number; zoom: number } | null = null;
+    let movedWhilePressed = 0;
+
+    const spread = (): number => {
+      const pts = [...active.values()];
+      if (pts.length < 2) return 0;
+      return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    };
+
     const onPointerMove = (ev: PointerEvent) => {
       const rect = renderer.domElement.getBoundingClientRect();
       pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
       pointerInside = true;
+
+      if (active.has(ev.pointerId)) {
+        active.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      }
+
+      if (active.size >= 2) {
+        // Pinch. Distance is a ratio against the spread at gesture start, so it
+        // tracks the fingers exactly rather than drifting.
+        const d = spread();
+        if (pinchStart && d > 0) {
+          zoom = Math.max(0.45, Math.min(2.2, pinchStart.zoom * (pinchStart.dist / d)));
+        }
+        return;
+      }
+
       if (dragging) {
+        movedWhilePressed += Math.abs(ev.clientX - lastX) + Math.abs(ev.clientY - lastY);
         yaw += (ev.clientX - lastX) * 0.005;
         pitch = Math.max(-0.5, Math.min(0.5, pitch + (ev.clientY - lastY) * 0.003));
         lastX = ev.clientX;
         lastY = ev.clientY;
       }
     };
+
     const onPointerDown = (ev: PointerEvent) => {
+      active.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (active.size === 2) {
+        pinchStart = { dist: spread(), zoom };
+        dragging = false;
+        return;
+      }
       dragging = true;
+      movedWhilePressed = 0;
       lastX = ev.clientX;
       lastY = ev.clientY;
       renderer.domElement.style.cursor = 'grabbing';
     };
-    const onPointerUp = () => {
-      dragging = false;
+
+    const onPointerUp = (ev?: PointerEvent) => {
+      if (ev) active.delete(ev.pointerId);
+      if (active.size < 2) pinchStart = null;
+      if (active.size === 0) dragging = false;
       renderer.domElement.style.cursor = hovered ? 'pointer' : 'grab';
+
+      // Touch never hovers, so a tap has to be resolved here — and only if the
+      // finger stayed put, otherwise every orbit would end in a selection.
+      if (ev && ev.pointerType !== 'mouse' && movedWhilePressed < 10 && !pinchStart) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+        const id = pick();
+        if (id) void selectRef.current?.(id);
+      }
     };
     const onLeave = () => {
       pointerInside = false;
       setLabel(null);
     };
+    const pick = (): string | null => {
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(
+        placed.map((p) => p.sprite),
+        false,
+      );
+      return (hits[0]?.object.userData.id as string) ?? null;
+    };
+
     const onClick = () => {
-      if (hovered) void selectRef.current?.(hovered);
+      const id = hovered ?? pick();
+      if (id) void selectRef.current?.(id);
     };
     // Double-click travels: that character becomes the new centre of the universe.
     const onDoubleClick = () => {
@@ -440,6 +525,7 @@ export default function UniverseScene({
     el.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointerup', onPointerUp);
     el.addEventListener('pointerleave', onLeave);
+    window.addEventListener('pointercancel', onPointerUp);
     el.addEventListener('click', onClick);
     el.addEventListener('dblclick', onDoubleClick);
 
@@ -456,7 +542,9 @@ export default function UniverseScene({
       renderer.setSize(w, h);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      baseDistance = fitDistance(camera.aspect);
     };
+    let baseDistance = 8;
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(document.documentElement);
@@ -472,6 +560,11 @@ export default function UniverseScene({
       const t = clock.getElapsedTime();
       if (entrance < 1) entrance = Math.min(1, entrance + 0.02);
       const ease = 1 - Math.pow(1 - entrance, 3);
+
+      // Distance is always the fitted distance for this viewport, scaled by the
+      // user's pinch — so the system frames correctly on any screen shape.
+      camera.position.z = baseDistance * zoom;
+      camera.lookAt(0, 0, 0);
 
       // Idle drift stops while you're driving, and eases back afterwards.
       if (!dragging && !reduced) yaw += spinVel;
@@ -540,6 +633,7 @@ export default function UniverseScene({
       el.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointerup', onPointerUp);
       el.removeEventListener('pointerleave', onLeave);
+      window.removeEventListener('pointercancel', onPointerUp);
       el.removeEventListener('click', onClick);
       el.removeEventListener('dblclick', onDoubleClick);
       for (const d of disposables) d.dispose();
