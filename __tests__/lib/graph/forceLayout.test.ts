@@ -65,9 +65,7 @@ describe('layoutNeighborhood — size-aware separation', () => {
         const a = positions.get(nodes[i].id)!;
         const b = positions.get(nodes[j].id)!;
         const gap = Math.hypot(b.x - a.x, b.y - a.y);
-        expect(gap).toBeGreaterThanOrEqual(
-          (nodes[i].radius ?? 0) + (nodes[j].radius ?? 0) - 1e-6,
-        );
+        expect(gap).toBeGreaterThanOrEqual((nodes[i].radius ?? 0) + (nodes[j].radius ?? 0) - 1e-6);
       }
     }
   });

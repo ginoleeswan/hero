@@ -28,7 +28,14 @@ describe('topStatEdges', () => {
 
   it('respects the limit', () => {
     const a = stats({ intelligence: 1, strength: 2, speed: 3, durability: 4, power: 5, combat: 6 });
-    const b = stats({ intelligence: 90, strength: 80, speed: 70, durability: 60, power: 50, combat: 40 });
+    const b = stats({
+      intelligence: 90,
+      strength: 80,
+      speed: 70,
+      durability: 60,
+      power: 50,
+      combat: 40,
+    });
     expect(topStatEdges(a, b, 2)).toHaveLength(2);
   });
 

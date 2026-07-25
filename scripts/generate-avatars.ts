@@ -68,7 +68,10 @@ function loadStyleRefs(): { inline_data: { mime_type: string; data: string } }[]
   for (const name of STYLE_REF_NAMES) {
     try {
       refs.push({
-        inline_data: { mime_type: 'image/png', data: readFileSync(join(REFS_DIR, name)).toString('base64') },
+        inline_data: {
+          mime_type: 'image/png',
+          data: readFileSync(join(REFS_DIR, name)).toString('base64'),
+        },
       });
     } catch {
       /* ref not present yet — prompt-only styling */
@@ -103,7 +106,11 @@ const FRAME_BLOCK = `FRAMING & BACKGROUND — square canvas. The head is centred
 
 No text, no signature, no watermark, no logos, no frame.`;
 
-function buildPrompt(heroName: string | null, description: string | null, hasRefs: boolean): string {
+function buildPrompt(
+  heroName: string | null,
+  description: string | null,
+  hasRefs: boolean,
+): string {
   const subject = heroName
     ? `Create a flat vector avatar icon of ${heroName}.`
     : `Create a flat vector avatar icon of the character in the supplied image.`;
@@ -167,13 +174,27 @@ function decodeRgba(bytes: Uint8Array, path: string): { rgba: Buffer; w: number;
   writeFileSync(path, bytes);
   const dims = execFileSync(
     'ffprobe',
-    ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', path],
+    [
+      '-v',
+      'error',
+      '-select_streams',
+      'v:0',
+      '-show_entries',
+      'stream=width,height',
+      '-of',
+      'csv=p=0',
+      path,
+    ],
     { encoding: 'utf8' },
   ).trim();
   const [w, h] = dims.split(',').map((n) => parseInt(n, 10));
-  const rgba = execFileSync('ffmpeg', ['-v', 'error', '-i', path, '-f', 'rawvideo', '-pix_fmt', 'rgba', '-'], {
-    maxBuffer: 1024 * 1024 * 256,
-  });
+  const rgba = execFileSync(
+    'ffmpeg',
+    ['-v', 'error', '-i', path, '-f', 'rawvideo', '-pix_fmt', 'rgba', '-'],
+    {
+      maxBuffer: 1024 * 1024 * 256,
+    },
+  );
   return { rgba, w, h };
 }
 
@@ -181,7 +202,20 @@ function decodeRgba(bytes: Uint8Array, path: string): { rgba: Buffer; w: number;
 function encodePng(rgba: Buffer, w: number, h: number, outPath: string): Uint8Array {
   execFileSync(
     'ffmpeg',
-    ['-y', '-v', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgba', '-s', `${w}x${h}`, '-i', 'pipe:0', outPath],
+    [
+      '-y',
+      '-v',
+      'error',
+      '-f',
+      'rawvideo',
+      '-pix_fmt',
+      'rgba',
+      '-s',
+      `${w}x${h}`,
+      '-i',
+      'pipe:0',
+      outPath,
+    ],
     { input: rgba, maxBuffer: 1024 * 1024 * 256 },
   );
   return readFileSync(outPath);
@@ -272,7 +306,9 @@ function keyWhiteToAlpha(id: string, bytes: Uint8Array): Uint8Array {
 
     return encodePng(rgba, w, h, outPath);
   } catch (err) {
-    console.log(`  ⚠ ${id}: alpha cut failed (${err instanceof Error ? err.message.split('\n')[0] : err}) — keeping the white background`);
+    console.log(
+      `  ⚠ ${id}: alpha cut failed (${err instanceof Error ? err.message.split('\n')[0] : err}) — keeping the white background`,
+    );
     return bytes;
   } finally {
     for (const p of [inPath, outPath]) {
@@ -389,7 +425,7 @@ async function describeCharacterVisually(base64: string, mime: string): Promise<
         {
           parts: [
             {
-              text: 'Describe only this character\'s HEAD for an icon designer: mask or helmet design, hair shape and colour, skin tone, eye shape, and any signature head feature (horns, ears, lenses, markings). Be specific about colours. Do not name the character. 2 sentences.',
+              text: "Describe only this character's HEAD for an icon designer: mask or helmet design, hair shape and colour, skin tone, eye shape, and any signature head feature (horns, ears, lenses, markings). Be specific about colours. Do not name the character. 2 sentences.",
             },
             { inline_data: { mime_type: mime, data: base64 } },
           ],
@@ -474,7 +510,11 @@ async function generateAvatarFromSource(
    * several shots before we descend; descending early costs identity quality for
    * nothing. Errors are treated as a block so a bad rung never kills the hero.
    */
-  const attempt = async (parts: object[], url: string, tries: number): Promise<Uint8Array | 'PROHIBITED'> => {
+  const attempt = async (
+    parts: object[],
+    url: string,
+    tries: number,
+  ): Promise<Uint8Array | 'PROHIBITED'> => {
     for (let i = 0; i < tries; i++) {
       try {
         const out = await callImageModel(parts, url);
@@ -498,7 +538,11 @@ async function generateAvatarFromSource(
   const description = await describeCharacterVisually(sourceBase64, sourceMime);
   // Image first: with no name to anchor identity, leading with the source keeps the
   // model copying the actual head instead of illustrating the text description.
-  const namelessParts = [sourceImg, { text: buildPrompt(null, description || null, hasRefs) }, ...refs];
+  const namelessParts = [
+    sourceImg,
+    { text: buildPrompt(null, description || null, hasRefs) },
+    ...refs,
+  ];
 
   for (const [label, url] of [
     ['Gemini 3.1 (nameless)', GEMINI_URL],
@@ -519,7 +563,11 @@ async function generateAvatarFromSource(
   // image that usually trips the filter, so dropping it is often what gets a
   // stubbornly-blocked character (Spider-Man) through at all.
   if (description) {
-    const textOnly = await attempt([{ text: buildPrompt(null, description, false) }], GEMINI_URL, 3);
+    const textOnly = await attempt(
+      [{ text: buildPrompt(null, description, false) }],
+      GEMINI_URL,
+      3,
+    );
     if (textOnly !== 'PROHIBITED') {
       console.log(`  ✓ ${heroName} rendered by Gemini 3.1 (description only)`);
       return textOnly;
@@ -712,7 +760,9 @@ async function run(): Promise<void> {
 
 async function main() {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    throw new Error('EXPO_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local');
+    throw new Error(
+      'EXPO_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local',
+    );
   }
   if (!GEMINI_API_KEY) throw new Error('GOOGLE_AI_STUDIO_API_KEY must be set in .env.local');
   if (!localOnly && !dryRun && (!CLOUD_NAME || !CLOUD_KEY || !CLOUD_SECRET)) {

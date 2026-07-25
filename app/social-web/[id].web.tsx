@@ -7,9 +7,7 @@ import { COLORS, SURFACE, INK_TEXT } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { getHeroNeighborhood, subjectKind } from '../../src/lib/db/heroes/neighborhood';
 import { nodeDegree, sharedWithSubject } from '../../src/components/character/socialWebFocus';
-import UniverseScene, {
-  type UniverseNode,
-} from '../../src/components/character/UniverseScene.dom';
+import UniverseScene, { type UniverseNode } from '../../src/components/character/UniverseScene.dom';
 import { SocialWebFocusCard } from '../../src/components/character/SocialWebFocusCard';
 import { SocialWebSearch } from '../../src/components/character/SocialWebSearch';
 import { NebulaLoader } from '../../src/components/character/NebulaLoader';
@@ -184,10 +182,7 @@ export default function SocialWebExplorer() {
 
       {data && !sparse ? (
         <View style={styles.searchOverlay}>
-          <SocialWebSearch
-            nodes={data.nodes}
-            onPick={(pid) => setFocusId(pid)}
-          />
+          <SocialWebSearch nodes={data.nodes} onPick={(pid) => setFocusId(pid)} />
         </View>
       ) : null}
 
@@ -214,7 +209,9 @@ export default function SocialWebExplorer() {
         />
       ) : null}
 
-      <Text style={styles.hint}>Drag to orbit · click a head to focus · double-click to travel there</Text>
+      <Text style={styles.hint}>
+        Drag to orbit · click a head to focus · double-click to travel there
+      </Text>
     </View>
   );
 }

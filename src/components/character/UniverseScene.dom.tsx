@@ -513,7 +513,8 @@ export default function UniverseScene({
         const lift = active ? 1.18 : 1;
         // A slow per-node bob, phase-shifted by id, so the field breathes
         // instead of sitting rigid.
-        const bob = p.node.is_subject || reduced ? 1 : 1 + Math.sin(t * 0.7 + hash01(p.node.id) * 9) * 0.03;
+        const bob =
+          p.node.is_subject || reduced ? 1 : 1 + Math.sin(t * 0.7 + hash01(p.node.id) * 9) * 0.03;
         const s = p.base * lift * bob * ease;
         p.sprite.scale.setScalar(s);
         p.glow.scale.setScalar(s * 2.1);

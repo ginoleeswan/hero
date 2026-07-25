@@ -19,9 +19,7 @@ describe('describeRelationship', () => {
   // Shared history makes an enmity more interesting, not less — say so.
   it('frames a shared roster as tension when the tie is enmity', () => {
     const r = describeRelationship('enemy', 'Supergirl', JL, ['House of El'], 2);
-    expect(r.summary).toBe(
-      'Opposed to Supergirl, despite both serving in House of El.',
-    );
+    expect(r.summary).toBe('Opposed to Supergirl, despite both serving in House of El.');
   });
 
   it('falls back to mutual connections when no roster is shared', () => {

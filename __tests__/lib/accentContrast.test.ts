@@ -16,10 +16,7 @@ describe('contrastRatio', () => {
   });
 
   it('is symmetric', () => {
-    expect(contrastRatio('#15A1AB', '#2D2D2D')).toBeCloseTo(
-      contrastRatio('#2D2D2D', '#15A1AB'),
-      6,
-    );
+    expect(contrastRatio('#15A1AB', '#2D2D2D')).toBeCloseTo(contrastRatio('#2D2D2D', '#15A1AB'), 6);
   });
 
   // Gamma expansion is the point: a naive channel average misjudges exactly the

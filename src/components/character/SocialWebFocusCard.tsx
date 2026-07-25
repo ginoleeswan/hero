@@ -217,12 +217,7 @@ export function SocialWebFocusCard({
                   />
                 </View>
                 <Text
-                  style={
-                    [
-                      styles.statDelta,
-                      { color: winning ? tint : INK_TEXT.muted },
-                    ] as object
-                  }
+                  style={[styles.statDelta, { color: winning ? tint : INK_TEXT.muted }] as object}
                 >
                   {e.delta > 0 ? `+${e.delta}` : e.delta}
                 </Text>
@@ -248,9 +243,7 @@ export function SocialWebFocusCard({
                 />
               </Pressable>
             ))}
-            {mutuals.length > 6 ? (
-              <Text style={styles.chipMore}>+{mutuals.length - 6}</Text>
-            ) : null}
+            {mutuals.length > 6 ? <Text style={styles.chipMore}>+{mutuals.length - 6}</Text> : null}
           </View>
         </View>
       ) : null}
