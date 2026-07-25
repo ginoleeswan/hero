@@ -111,7 +111,27 @@ export function heroAvatarSource(
   width: number = AVATAR_WIDTH,
 ): { uri: string } | null {
   const uri = realUrl(avatarUrl);
-  return uri ? { uri: withCloudinaryTransform(uri, width) } : null;
+  return uri ? { uri: withAlphaSafeTransform(uri, width) } : null;
+}
+
+/**
+ * Deliver a transparent PNG without wrecking its edges.
+ *
+ * `f_auto` picks PNG8 for these images, and a 256-colour palette cannot hold a
+ * smooth alpha ramp: measured on Batman, the avatar comes back with 29 distinct
+ * alpha levels instead of 73, which is exactly the crunchy, stair-stepped
+ * silhouette you see against a dark background. Explicit WebP keeps the full
+ * ramp AND is about half the bytes of what f_auto was choosing, so this is
+ * cheaper and better at once. Only matters for cut-out art — opaque portraits
+ * are fine on the normal transform.
+ */
+export function withAlphaSafeTransform(url: string, width: number): string {
+  if (!url.includes(CLOUDINARY_MARKER)) return url;
+  const marker = '/upload/';
+  const i = url.indexOf(marker);
+  if (i === -1) return url;
+  const insertAt = i + marker.length;
+  return `${url.slice(0, insertAt)}f_webp,q_auto,w_${width}/${url.slice(insertAt)}`;
 }
 
 /**

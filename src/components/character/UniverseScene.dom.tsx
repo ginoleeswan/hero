@@ -94,11 +94,18 @@ function makeMonogramTexture(name: string, seed: string): THREE.Texture {
   return new THREE.CanvasTexture(canvas);
 }
 
-/** Cloudinary derivative — a 256px texture is plenty for a head this size. */
+/**
+ * Cloudinary derivative — 256px is plenty for a head this size.
+ *
+ * Explicitly WebP, never `f_auto`: f_auto picks PNG8 for these cut-outs, and a
+ * 256-colour palette can't hold a smooth alpha ramp (29 distinct alpha levels
+ * instead of 73 on Batman), which stair-steps every silhouette. WebP keeps the
+ * full ramp at roughly half the bytes.
+ */
 function textureUrl(n: UniverseNode): string | null {
   const url = n.avatar_url;
   if (!url || !url.includes('/upload/')) return url;
-  return url.replace('/upload/', '/upload/f_auto,q_auto,w_256/');
+  return url.replace('/upload/', '/upload/f_webp,q_auto,w_256/');
 }
 
 /**
@@ -177,6 +184,15 @@ export default function UniverseScene({
     if (!mount || nodes.length === 0) return;
 
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+
+    // The DOM component gets its own document, which still carries the UA's
+    // default body margin — that alone shifts the whole canvas off-centre.
+    document.documentElement.style.margin = '0';
+    document.documentElement.style.height = '100%';
+    document.body.style.margin = '0';
+    document.body.style.height = '100%';
+    document.body.style.overflow = 'hidden';
+
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     mount.appendChild(renderer.domElement);
@@ -227,10 +243,23 @@ export default function UniverseScene({
     positions.set(subjectId, new THREE.Vector3(0, 0, 0));
 
     const glowTex = track(makeGlowTexture());
+    const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
 
-    type Placed = { node: UniverseNode; sprite: THREE.Sprite; glow: THREE.Sprite; base: number };
+    // `ready` gates the head's fade-in. A SpriteMaterial with no map yet renders
+    // as an opaque WHITE SQUARE, so the field flashes a grid of blank tiles while
+    // textures stream in. Heads start fully transparent and ease in once their
+    // texture actually lands; the tinted glow shows immediately, so a loading node
+    // reads as a soft coloured ember rather than as nothing (or as a white box).
+    type Placed = {
+      node: UniverseNode;
+      sprite: THREE.Sprite;
+      glow: THREE.Sprite;
+      base: number;
+      ready: boolean;
+      fade: number;
+    };
     const placed: Placed[] = [];
 
     for (const n of nodes) {
@@ -260,28 +289,13 @@ export default function UniverseScene({
       world.add(glow);
 
       const spriteMat = track(
-        new THREE.SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false }),
+        new THREE.SpriteMaterial({
+          transparent: true,
+          depthWrite: false,
+          depthTest: false,
+          opacity: 0,
+        }),
       );
-      const url = textureUrl(n);
-      if (url) {
-        loader.load(
-          url,
-          (tex) => {
-            tex.colorSpace = THREE.SRGBColorSpace;
-            spriteMat.map = tex;
-            spriteMat.needsUpdate = true;
-            track(tex);
-          },
-          undefined,
-          () => {
-            const fallback = makeMonogramTexture(n.name, n.id);
-            spriteMat.map = track(fallback);
-            spriteMat.needsUpdate = true;
-          },
-        );
-      } else {
-        spriteMat.map = track(makeMonogramTexture(n.name, n.id));
-      }
 
       const sprite = new THREE.Sprite(spriteMat);
       sprite.position.copy(pos);
@@ -290,7 +304,37 @@ export default function UniverseScene({
       sprite.userData.id = n.id;
       world.add(sprite);
 
-      placed.push({ node: n, sprite, glow, base: scale });
+      const entry: Placed = { node: n, sprite, glow, base: scale, ready: false, fade: 0 };
+      const url = textureUrl(n);
+      if (url) {
+        loader.load(
+          url,
+          (tex) => {
+            tex.colorSpace = THREE.SRGBColorSpace;
+            // Trilinear mips + anisotropy: without them a head shrinks to a
+            // shimmering, crunchy mess as it rotates away from the camera.
+            tex.generateMipmaps = true;
+            tex.minFilter = THREE.LinearMipmapLinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            tex.anisotropy = maxAnisotropy;
+            spriteMat.map = tex;
+            spriteMat.needsUpdate = true;
+            track(tex);
+            entry.ready = true;
+          },
+          undefined,
+          () => {
+            spriteMat.map = track(makeMonogramTexture(n.name, n.id));
+            spriteMat.needsUpdate = true;
+            entry.ready = true;
+          },
+        );
+      } else {
+        // No avatar: the monogram is generated locally, so it's ready at once.
+        spriteMat.map = track(makeMonogramTexture(n.name, n.id));
+        entry.ready = true;
+      }
+      placed.push(entry);
     }
 
     // ── Edges: only the subject's own ties ───────────────────────────────────
@@ -396,16 +440,23 @@ export default function UniverseScene({
     el.addEventListener('dblclick', onDoubleClick);
 
     // ── Resize ───────────────────────────────────────────────────────────────
+    // Measure the viewport, not the mount. This component renders inside its own
+    // DOM-component document, where a percentage-height chain doesn't resolve —
+    // clientHeight came back 0, the aspect ratio blew up, and the scene rendered
+    // enormous and off in a corner. The iframe IS the stage, so vw/vh is the
+    // honest measurement. `setSize` also updates the canvas CSS size (no third
+    // argument), otherwise the element stays at its default 300x150.
     const resize = () => {
-      const w = mount.clientWidth || 1;
-      const h = mount.clientHeight || 1;
-      renderer.setSize(w, h, false);
+      const w = window.innerWidth || mount.clientWidth || 1;
+      const h = window.innerHeight || mount.clientHeight || 1;
+      renderer.setSize(w, h);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     };
     resize();
     const ro = new ResizeObserver(resize);
-    ro.observe(mount);
+    ro.observe(document.documentElement);
+    window.addEventListener('resize', resize);
 
     // ── Loop ─────────────────────────────────────────────────────────────────
     let raf = 0;
@@ -464,9 +515,12 @@ export default function UniverseScene({
         p.glow.scale.setScalar(s * 2.1);
         (p.glow.material as THREE.SpriteMaterial).opacity =
           (p.node.is_subject ? 0.85 : 0.5) * ease * (active ? 1.6 : 1);
-        // Everything unrelated dims while one character holds focus.
-        (p.sprite.material as THREE.SpriteMaterial).opacity =
-          focused && !active && !p.node.is_subject ? 0.28 : 1;
+        // Fade the head in once its texture exists, and dim everything unrelated
+        // while one character holds focus. Multiplying by `fade` means a head is
+        // never drawn as the blank white square of an unmapped material.
+        p.fade = Math.min(1, p.fade + (p.ready ? 0.06 : 0));
+        const dim = focused && !active && !p.node.is_subject ? 0.28 : 1;
+        (p.sprite.material as THREE.SpriteMaterial).opacity = p.fade * dim;
       }
 
       renderer.render(scene, camera);
@@ -476,6 +530,7 @@ export default function UniverseScene({
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      window.removeEventListener('resize', resize);
       el.removeEventListener('pointermove', onPointerMove);
       el.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointerup', onPointerUp);
@@ -488,8 +543,8 @@ export default function UniverseScene({
   }, [nodes, edges, subjectId]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <div ref={mountRef} style={{ width: '100%', height: '100%' }} />
+    <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh' }}>
+      <div ref={mountRef} style={{ width: '100vw', height: '100vh' }} />
       <div
         ref={labelRef}
         style={{

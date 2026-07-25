@@ -113,7 +113,14 @@ export default function SocialWebExplorer() {
       {data && !sparse ? (
         <View style={styles.stage}>
           <UniverseScene
-            dom={{ scrollEnabled: false, matchContents: false }}
+            // The iframe must be pinned to the stage box. Left to size itself it
+            // grew wider than the viewport, which scrolled the whole document
+            // sideways and clipped the header and search field.
+            dom={{
+              scrollEnabled: false,
+              matchContents: false,
+              style: { width: '100%', height: '100%', borderWidth: 0 },
+            }}
             subjectId={focusSubject}
             nodes={universeNodes}
             edges={data.edges}
@@ -194,7 +201,7 @@ function Legend({
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: SURFACE.ink },
   // The WebGL stage takes the whole area between header and hint.
-  stage: { flex: 1, minHeight: 0 },
+  stage: { flex: 1, minHeight: 0, overflow: 'hidden' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
