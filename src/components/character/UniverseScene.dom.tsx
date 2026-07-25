@@ -40,8 +40,14 @@ const KIND_RGB: Record<string, string> = {
 /** Halo size as a multiple of the head. Kept under 1.5 so haloes never merge. */
 const GLOW_SCALE = 1.34;
 
-/** Opening tilt, in radians. See the `pitch` declaration for why it isn't 0. */
-const INITIAL_PITCH = 0.42;
+/**
+ * Opening tilt, in radians (~59°). See the `pitch` declaration for why it can't
+ * be 0; the reason it's this STEEP is that the heads are billboards which always
+ * face the camera, so depth buys no information here — all a shallow angle did
+ * was squash the ring to 41% of its width and let the far clusters land on top
+ * of the near ones. Near plan view the ring reads as an actual ring.
+ */
+const INITIAL_PITCH = 1.03;
 
 /** Faction heading pill. Set as one string so it can't be reflowed per frame. */
 const CHIP_CSS = [
@@ -208,22 +214,34 @@ function factionLayout(nodes: UniverseNode[]): {
 
   const rowsFor = (n: number) => (n <= 4 ? 1 : n <= 11 ? 2 : 3);
 
+  // Rows step OUTWARD in the ring plane, not upward.
+  //
+  // The scene is viewed on a steep tilt, and rotating the world about X maps
+  // world-Y onto screen DEPTH by cos(pitch) — so rows stacked in Y flatten into
+  // each other exactly as the view gets steep enough to separate the clusters.
+  // Stepping in radius instead puts the rows along the same axis the tilt keeps
+  // visible, so a faction reads as a wedge at any angle.
+  const ROW_STEP = 1.06;
+
   // Radius is derived, not fixed: every head needs roughly HEAD_ARC of arc
   // length, and arc length is radius x angle, so the ring has to be pushed out
-  // far enough for the most crowded row in the widest faction to breathe.
+  // far enough for the most crowded row in the widest faction to breathe. The
+  // binding row is the INNERMOST one, which has the least circumference.
   const HEAD_ARC = 0.92;
-  let radius = 3.1;
+  let radius = 3.4;
   present.forEach((f, i) => {
     const n = byFaction.get(f)!.length;
-    const perRow = Math.ceil(n / rowsFor(n));
-    radius = Math.max(radius, (perRow * HEAD_ARC) / finalSpans[i]);
+    const rowCount = rowsFor(n);
+    const perRow = Math.ceil(n / rowCount);
+    const inset = ((rowCount - 1) / 2) * ROW_STEP;
+    radius = Math.max(radius, (perRow * HEAD_ARC) / finalSpans[i] + inset);
   });
-  radius = Math.min(radius, 7.4);
+  radius = Math.min(radius, 7.6);
 
-  const ROW_Y = 0.86;
   // Start enemies at the front-left so the default camera opens on conflict,
   // and the rest of the world unwraps as you orbit right.
   let cursor = Math.PI * 0.82;
+  let outerRadius = radius;
 
   present.forEach((faction, i) => {
     const members = byFaction.get(faction)!;
@@ -233,26 +251,31 @@ function factionLayout(nodes: UniverseNode[]): {
     cursor += span + GAP;
 
     const rowCount = rowsFor(members.length);
+    const inset = ((rowCount - 1) / 2) * ROW_STEP;
     // Deal round-robin so each row gets a mix of prominence rather than one row
-    // of stars above a row of nobodies.
+    // of stars in front of a row of nobodies.
     const rows: UniverseNode[][] = Array.from({ length: rowCount }, () => []);
     members.forEach((m, idx) => rows[idx % rowCount].push(m));
 
     rows.forEach((row, r) => {
       const ordered = centreOut(row);
-      const y = ((rowCount - 1) / 2 - r) * ROW_Y;
-      // Alternate rows sit slightly deeper so heads never stack dead in line.
-      const rowRadius = radius - (r % 2) * 0.22;
+      const rowRadius = radius - inset + r * ROW_STEP;
+      outerRadius = Math.max(outerRadius, rowRadius);
       ordered.forEach((n, c) => {
         const frac = ordered.length === 1 ? 0.5 : (c + 0.5) / ordered.length;
-        // A touch of deterministic scatter keeps a group looking like a crowd
-        // rather than a spreadsheet, without blurring which group it is.
-        const jitter = (hash01(n.id) - 0.5) * 0.12;
-        const theta = start + frac * span + jitter;
-        const yj = y + (hash01(n.id + 'y') - 0.5) * 0.16;
+        // Outer rows are staggered half a slot so heads don't line up radially
+        // into spokes, and a touch of deterministic scatter keeps a group
+        // looking like a crowd rather than a spreadsheet.
+        const stagger = r % 2 === 1 ? span / (ordered.length * 2) : 0;
+        const jitter = (hash01(n.id) - 0.5) * 0.1;
+        const theta = start + frac * span + stagger + jitter;
         positions.set(
           n.id,
-          new THREE.Vector3(Math.cos(theta) * rowRadius, yj, Math.sin(theta) * rowRadius),
+          new THREE.Vector3(
+            Math.cos(theta) * rowRadius,
+            (hash01(n.id + 'y') - 0.5) * 0.22,
+            Math.sin(theta) * rowRadius,
+          ),
         );
       });
     });
@@ -261,15 +284,17 @@ function factionLayout(nodes: UniverseNode[]): {
       faction,
       label: FACTION_LABEL[faction],
       count: members.length,
+      // Just beyond the outermost row, on the faction's centre line — outside
+      // the heads it names rather than floating over them.
       anchor: new THREE.Vector3(
-        Math.cos(mid) * radius,
-        ((rowCount - 1) / 2) * ROW_Y + 0.92,
-        Math.sin(mid) * radius,
+        Math.cos(mid) * (radius - inset + (rowCount - 1) * ROW_STEP + 0.95),
+        0,
+        Math.sin(mid) * (radius - inset + (rowCount - 1) * ROW_STEP + 0.95),
       ),
     });
   });
 
-  return { positions, clusters, radius };
+  return { positions, clusters, radius: outerRadius };
 }
 
 export default function UniverseScene({
@@ -351,10 +376,14 @@ export default function UniverseScene({
     // screen is only radius x sin(pitch) plus the stacked rows and their
     // heading. Measuring both axes honestly instead of treating the scene as a
     // sphere is what stops it sitting marooned in the middle of a big viewport.
-    const HEAD_PAD = 0.9;
+    const HEAD_PAD = 0.72;
     const fitDistance = (aspect: number): number => {
       const half = (FOV * Math.PI) / 360;
-      const vExtent = ringRadius * Math.sin(INITIAL_PITCH) + 1.9 + HEAD_PAD;
+      // Rows now step radially, so the whole scene is the ring plus one head
+      // either side. Vertically that plane is foreshortened by sin(pitch), and
+      // measuring it honestly rather than as a sphere is what stops the graph
+      // sitting marooned in the middle of a large viewport.
+      const vExtent = (ringRadius + HEAD_PAD) * Math.sin(INITIAL_PITCH) + 0.5;
       const hExtent = ringRadius + HEAD_PAD;
       const forHeight = vExtent / Math.tan(half);
       const forWidth = hExtent / (Math.tan(half) * aspect);
@@ -424,7 +453,10 @@ export default function UniverseScene({
       if (!pos) continue;
 
       const fame = (n.fame_score ?? 0) / 100;
-      const scale = n.is_subject ? 1.55 : 0.66 + 0.36 * fame;
+      // The subject sits alone at the centre of the ring with nothing to lend
+      // her scale, so she has to be decisively larger than the crowd rather
+      // than merely the biggest head among many.
+      const scale = n.is_subject ? 1.9 : 0.66 + 0.36 * fame;
 
       // A tight rim, not an aura. At the old 2.1x scale and 0.55 opacity the
       // glows of adjacent heads overlapped and additively summed into one
@@ -510,62 +542,93 @@ export default function UniverseScene({
     // own connections light up across the clusters (Ares also fights Hippolyta),
     // which is new information rather than decoration.
     //
-    // Colours are held in one buffer and multiplied to black to hide a segment.
-    // Under additive blending black contributes nothing, so this costs one
-    // attribute upload per focus change instead of rebuilding geometry.
-    const segs: { a: string; b: string; rgb: [number, number, number] }[] = [];
-    const linePts: number[] = [];
-    for (const e of edges) {
+    // Only the lit segments are ever WRITTEN into the buffer, and the draw range
+    // is set to exactly how many there are. The first attempt hid a segment by
+    // multiplying its colour to black, on the reasoning that black adds nothing
+    // under additive blending — and the whole 257-edge web stayed on screen with
+    // nothing focused. Not drawing a line is unambiguous in a way that drawing an
+    // invisible one is not, so the state is carried by geometry, not by colour.
+    const segs = edges.flatMap((e) => {
       const a = positions.get(e.from);
       const b = positions.get(e.to);
-      if (!a || !b) continue;
+      if (!a || !b) return [];
       const [r, g, bl] = (KIND_RGB[e.kind] ?? '162,161,155').split(',').map(Number);
-      linePts.push(a.x, a.y, a.z, b.x, b.y, b.z);
-      segs.push({ a: e.from, b: e.to, rgb: [r / 255, g / 255, bl / 255] });
-    }
-    let lineCol: THREE.Float32BufferAttribute | null = null;
+      return [
+        {
+          a: e.from,
+          b: e.to,
+          pts: [a.x, a.y, a.z, b.x, b.y, b.z],
+          rgb: [r / 255, g / 255, bl / 255] as [number, number, number],
+        },
+      ];
+    });
+
+    let lines: THREE.LineSegments | null = null;
+    let posAttr: THREE.Float32BufferAttribute | null = null;
+    let colAttr: THREE.Float32BufferAttribute | null = null;
     if (segs.length) {
       const lineGeo = track(new THREE.BufferGeometry());
-      lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePts, 3));
-      lineCol = new THREE.Float32BufferAttribute(new Float32Array(segs.length * 6), 3);
-      lineGeo.setAttribute('color', lineCol);
+      posAttr = new THREE.Float32BufferAttribute(new Float32Array(segs.length * 6), 3);
+      colAttr = new THREE.Float32BufferAttribute(new Float32Array(segs.length * 6), 3);
+      lineGeo.setAttribute('position', posAttr);
+      lineGeo.setAttribute('color', colAttr);
+      lineGeo.setDrawRange(0, 0);
       const lineMat = track(
         new THREE.LineBasicMaterial({
           vertexColors: true,
           transparent: true,
-          opacity: 0.85,
+          opacity: 0.9,
           blending: THREE.AdditiveBlending,
           depthWrite: false,
         }),
       );
-      const lines = new THREE.LineSegments(lineGeo, lineMat);
+      lines = new THREE.LineSegments(lineGeo, lineMat);
       lines.renderOrder = -1;
+      lines.visible = false;
+      // The bounding sphere is computed from a buffer that's mostly unwritten
+      // zeros, so leaving culling on can drop the lines entirely.
+      lines.frustumCulled = false;
       world.add(lines);
     }
 
-    /** Light only the segments touching `id`; pass null to darken every one. */
+    /** Draw only the segments touching `id`; pass null to draw none at all. */
     const litEdgesFor = (id: string | null) => {
-      if (!lineCol) return;
-      const arr = lineCol.array as Float32Array;
-      segs.forEach((s, i) => {
-        const on = id !== null && (s.a === id || s.b === id);
+      if (!lines || !posAttr || !colAttr) return;
+      if (!id) {
+        lines.visible = false;
+        lines.geometry.setDrawRange(0, 0);
+        return;
+      }
+      const p = posAttr.array as Float32Array;
+      const c = colAttr.array as Float32Array;
+      let n = 0;
+      for (const s of segs) {
+        if (s.a !== id && s.b !== id) continue;
+        const o = n * 6;
+        // Wind each segment so the focused character is always the first
+        // vertex, which lets the gradient read as reaching out FROM them.
+        const [x1, y1, z1, x2, y2, z2] = s.pts;
+        const fromFocus = s.a === id;
+        p[o] = fromFocus ? x1 : x2;
+        p[o + 1] = fromFocus ? y1 : y2;
+        p[o + 2] = fromFocus ? z1 : z2;
+        p[o + 3] = fromFocus ? x2 : x1;
+        p[o + 4] = fromFocus ? y2 : y1;
+        p[o + 5] = fromFocus ? z2 : z1;
         const [r, g, b] = s.rgb;
-        const o = i * 6;
-        // Dim at the far end, full at the focused end, so a line reads as
-        // reaching out FROM the character you picked.
-        const near = on ? 0.22 : 0;
-        const far = on ? 1 : 0;
-        const flip = s.a === id;
-        arr[o] = r * (flip ? far : near);
-        arr[o + 1] = g * (flip ? far : near);
-        arr[o + 2] = b * (flip ? far : near);
-        arr[o + 3] = r * (flip ? near : far);
-        arr[o + 4] = g * (flip ? near : far);
-        arr[o + 5] = b * (flip ? near : far);
-      });
-      lineCol.needsUpdate = true;
+        c[o] = r;
+        c[o + 1] = g;
+        c[o + 2] = b;
+        c[o + 3] = r * 0.12;
+        c[o + 4] = g * 0.12;
+        c[o + 5] = b * 0.12;
+        n++;
+      }
+      posAttr.needsUpdate = true;
+      colAttr.needsUpdate = true;
+      lines.geometry.setDrawRange(0, n * 2);
+      lines.visible = n > 0;
     };
-    litEdgesFor(null);
 
     // ── Cluster headings ─────────────────────────────────────────────────────
     // The whole design rests on the viewer knowing that this group is the
@@ -652,7 +715,7 @@ export default function UniverseScene({
       if (dragging) {
         movedWhilePressed += Math.abs(ev.clientX - lastX) + Math.abs(ev.clientY - lastY);
         yaw += (ev.clientX - lastX) * 0.005;
-        pitch = Math.max(0.1, Math.min(0.85, pitch + (ev.clientY - lastY) * 0.003));
+        pitch = Math.max(0.45, Math.min(1.42, pitch + (ev.clientY - lastY) * 0.003));
         lastX = ev.clientX;
         lastY = ev.clientY;
       }
@@ -815,7 +878,11 @@ export default function UniverseScene({
         el.style.transform = `translate(-50%,-50%) translate(${(v.x * 0.5 + 0.5) * rect.width}px, ${
           (-v.y * 0.5 + 0.5) * rect.height
         }px)`;
-        el.style.opacity = String(Math.max(0, Math.min(1, (0.62 - t) / 0.5)) * ease);
+        // Recede with depth, never disappear. Fading the far label out was
+        // right when the ring was near edge-on and the back half sat behind the
+        // subject; from a steep view all four clusters are equally visible, so
+        // hiding one of the four headings would just lose a group's name.
+        el.style.opacity = String((1 - 0.45 * Math.max(0, Math.min(1, (t + 1) / 2))) * ease);
       }
 
       for (const p of placed) {
@@ -834,7 +901,11 @@ export default function UniverseScene({
         // while one character holds focus. Multiplying by `fade` means a head is
         // never drawn as the blank white square of an unmapped material.
         p.fade = Math.min(1, p.fade + (p.ready ? 0.06 : 0));
-        const dim = focused && !active && !p.node.is_subject ? 0.28 : 1;
+        // A gentle recede, not a blackout. At 0.28 the other 23 heads read as
+        // half-loaded rather than as context, which made the whole scene look
+        // broken the moment anything was selected; the lit head's own lift and
+        // halo carry the emphasis instead.
+        const dim = focused && !active && !p.node.is_subject ? 0.62 : 1;
         (p.sprite.material as THREE.SpriteMaterial).opacity = p.fade * dim;
       }
 
