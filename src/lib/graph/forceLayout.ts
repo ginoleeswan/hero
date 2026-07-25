@@ -14,7 +14,7 @@ function hash01(s: string): number {
  * character's web is stable across visits. Normalized to roughly [-1,1].
  */
 export function layoutNeighborhood(
-  nodes: { id: string; isSubject: boolean }[],
+  nodes: { id: string; isSubject: boolean; radius?: number }[],
   edges: { from: string; to: string }[],
   opts?: { iterations?: number },
 ): Map<string, { x: number; y: number }> {
@@ -90,5 +90,87 @@ export function layoutNeighborhood(
     p.x *= scale;
     p.y *= scale;
   }
+
+  separate(nodes, pos);
   return pos;
+}
+
+/**
+ * Push overlapping nodes apart until none collide.
+ *
+ * The main sim's repulsion is a point force — it has no idea how big anything is
+ * drawn. Once node size varies with fame (34→64px) that gap shows: big heads in
+ * the crowded centre sit on top of each other, and overlapping cut-out heads read
+ * as one smudged blob rather than as separate characters.
+ *
+ * Callers pass each node's drawn radius in the same normalized units as the
+ * positions. Nodes with no radius are treated as points, so existing callers keep
+ * their old behaviour exactly.
+ */
+function separate(
+  nodes: { id: string; isSubject: boolean; radius?: number }[],
+  pos: Map<string, { x: number; y: number }>,
+): void {
+  const sized = nodes.filter((n) => (n.radius ?? 0) > 0);
+  if (sized.length < 2) return;
+
+  // Pull everything in first so the spreading has somewhere to go — otherwise
+  // separation just pushes the outermost nodes off the canvas.
+  for (const p of pos.values()) {
+    p.x *= 0.82;
+    p.y *= 0.82;
+  }
+
+  const PAD = 0.012; // breathing room between silhouettes
+  for (let iter = 0; iter < 80; iter++) {
+    let moved = false;
+    for (let i = 0; i < sized.length; i++) {
+      for (let j = i + 1; j < sized.length; j++) {
+        const a = pos.get(sized[i].id)!;
+        const b = pos.get(sized[j].id)!;
+        const min = (sized[i].radius ?? 0) + (sized[j].radius ?? 0) + PAD;
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let d = Math.hypot(dx, dy);
+        if (d >= min) continue;
+        // Exactly coincident nodes have no direction to separate along; nudge
+        // them apart deterministically so the loop can get a grip.
+        if (d < 1e-6) {
+          dx = hash01(sized[i].id + sized[j].id) - 0.5;
+          dy = hash01(sized[j].id + sized[i].id) - 0.5;
+          d = Math.hypot(dx, dy) || 1e-6;
+        }
+        const push = (min - d) / 2;
+        const ux = (dx / d) * push;
+        const uy = (dy / d) * push;
+        // The subject is pinned at the centre, so its partner absorbs the whole
+        // correction rather than dragging the anchor off origin.
+        if (sized[i].isSubject) {
+          b.x += ux * 2;
+          b.y += uy * 2;
+        } else if (sized[j].isSubject) {
+          a.x -= ux * 2;
+          a.y -= uy * 2;
+        } else {
+          a.x -= ux;
+          a.y -= uy;
+          b.x += ux;
+          b.y += uy;
+        }
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+
+  // Anything shoved past the canvas edge comes back in. Radii are small relative
+  // to the field, so this reintroduces at most a slight touch, never the blob.
+  for (const n of sized) {
+    const p = pos.get(n.id)!;
+    const m = Math.hypot(p.x, p.y);
+    if (m > 1) {
+      p.x /= m;
+      p.y /= m;
+    }
+  }
 }

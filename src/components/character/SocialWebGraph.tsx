@@ -56,22 +56,34 @@ export function SocialWebGraph({
 }) {
   const kinds = activeKinds ?? { enemy: true, ally: true, teammate: true };
   const { nodes, edges } = neighborhood;
+
+  const cx = size / 2;
+  const cy = size / 2;
+  const R = size / 2 - 48;
+
+  // Node diameter is fame-driven, and the layout needs it: without a radius the
+  // sim treats every head as a point and the big ones overlap in the middle.
+  const diameter = (n: (typeof nodes)[number]) =>
+    Math.round((n.is_subject ? 78 : 34 + 30 * ((n.fame_score ?? 0) / 100)) * nodeScale);
+
   const positions = useMemo(
     () =>
       layoutNeighborhood(
-        nodes.map((n) => ({ id: n.id, isSubject: n.is_subject })),
+        nodes.map((n) => ({
+          id: n.id,
+          isSubject: n.is_subject,
+          radius: diameter(n) / 2 / R, // same normalized space as the positions
+        })),
         edges,
       ),
-    [nodes, edges],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [nodes, edges, R, nodeScale],
   );
   const connected = useMemo(
     () => (focusId ? connectedIds(edges, focusId) : new Set<string>()),
     [edges, focusId],
   );
 
-  const cx = size / 2;
-  const cy = size / 2;
-  const R = size / 2 - 48;
   const at = (id: string) => {
     const p = positions.get(id) ?? { x: 0, y: 0 };
     return { x: cx + p.x * R, y: cy + p.y * R };
@@ -189,7 +201,7 @@ export function SocialWebGraph({
         const fame = n.fame_score ?? 0;
         // Wide fame spread (34→64) rather than the old near-uniform 40→52, so the
         // eye gets anchors and the field reads as a hierarchy instead of a swarm.
-        const d = Math.round((n.is_subject ? 78 : 34 + 30 * (fame / 100)) * nodeScale);
+        const d = diameter(n);
         const kind = n.is_subject ? null : subjectKind(edges, subjectId, n.id);
         const ring = n.is_subject ? accent : kind ? KIND_COLOR[kind] : COLORS.grey;
         // With an avatar the cut-out head IS the node: no disc, no ring, no fill.
@@ -276,7 +288,14 @@ export function SocialWebGraph({
                     transition: 'transform 160ms ease',
                   },
                   headOnly
-                    ? null
+                    ? // Not a disc — an aura. Dropping the ring took the head's
+                      // relationship colour with it (the edges are hidden until
+                      // you point at something), so the glow carries it instead:
+                      // it lifts near-black heads off the ink AND colour-codes
+                      // the field, without putting a plate behind the art.
+                      {
+                        filter: `drop-shadow(0 0 7px ${ring}59) drop-shadow(0 2px 4px rgba(0,0,0,0.5))`,
+                      }
                     : {
                         borderRadius: d / 2,
                         borderColor: ring,
@@ -355,15 +374,10 @@ const styles = StyleSheet.create({
   node: { overflow: 'hidden', backgroundColor: COLORS.navy } as object,
   // Head-only nodes must not clip: the art is sized past the node box so the
   // head reads at the same weight as a disc node, and overflow is the point.
-  // drop-shadow (not boxShadow) follows the PNG's alpha, so the rim traces the
-  // silhouette rather than a square. Two passes: a faint warm halo that lifts
-  // near-black heads (Batman, Venom, Black Panther) off the ink, and a soft dark
-  // shadow that keeps pale heads from floating.
-  headNode: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    filter: 'drop-shadow(0 0 5px rgba(245,235,220,0.28)) drop-shadow(0 2px 5px rgba(0,0,0,0.55))',
-  } as object,
+  // The aura itself is set per node (it's tinted by relationship) — drop-shadow
+  // rather than boxShadow, so it follows the PNG's alpha and traces the
+  // silhouette instead of a square.
+  headNode: { alignItems: 'center', justifyContent: 'center' } as object,
   mono: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.navy },
   monoText: { fontFamily: 'Flame-Regular', fontSize: 16, lineHeight: 20 } as object,
 });
