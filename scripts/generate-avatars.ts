@@ -149,6 +149,8 @@ const heroIdsSet = heroIdsFlag ? heroIdsFlag.split(',').map((s) => s.trim()) : n
 const outDir = argValue('--out-dir');
 const dryRun = args.includes('--dry-run');
 const force = args.includes('--force');
+// Re-cut alpha on avatars already in Cloudinary; no model calls, no cost.
+const repairMode = args.includes('--repair');
 const CONCURRENCY = parseInt(argValue('--concurrency') ?? '3', 10);
 const limitArg = argValue('--limit');
 const LIMIT = limitArg ? parseInt(limitArg, 10) : null;
@@ -160,25 +162,117 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // ─── Transparency ─────────────────────────────────────────────────────────────
 
+/** Decode a PNG to a raw RGBA buffer via ffmpeg (no image library needed). */
+function decodeRgba(bytes: Uint8Array, path: string): { rgba: Buffer; w: number; h: number } {
+  writeFileSync(path, bytes);
+  const dims = execFileSync(
+    'ffprobe',
+    ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', path],
+    { encoding: 'utf8' },
+  ).trim();
+  const [w, h] = dims.split(',').map((n) => parseInt(n, 10));
+  const rgba = execFileSync('ffmpeg', ['-v', 'error', '-i', path, '-f', 'rawvideo', '-pix_fmt', 'rgba', '-'], {
+    maxBuffer: 1024 * 1024 * 256,
+  });
+  return { rgba, w, h };
+}
+
+/** Re-encode a raw RGBA buffer back to PNG via ffmpeg. */
+function encodePng(rgba: Buffer, w: number, h: number, outPath: string): Uint8Array {
+  execFileSync(
+    'ffmpeg',
+    ['-y', '-v', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgba', '-s', `${w}x${h}`, '-i', 'pipe:0', outPath],
+    { input: rgba, maxBuffer: 1024 * 1024 * 256 },
+  );
+  return readFileSync(outPath);
+}
+
 /**
- * Key the flat white background out to alpha. `colorkey` with a similarity of
- * 0.10 catches the model's near-white (it never emits a mathematically perfect
- * #FFFFFF) without eating light greys inside the artwork; blend 0.08 feathers
- * the edge so the silhouette isn't aliased into a hard jaggy cut.
+ * Cut the flat white background to alpha by FLOOD FILLING inward from the border,
+ * not by keying every white pixel in the image.
+ *
+ * ffmpeg's `colorkey` is a global colour match, so it also punched out every white
+ * pixel *inside* the artwork: Spider-Man's eye lenses, Iron Man's eye slits, and
+ * Captain America's eyes, wing motif and chest "A" all became holes. On the beige
+ * canvas that read as an off-white lens and looked fine, which is exactly what made
+ * it dangerous — the holes only reveal themselves on a dark or coloured surface.
+ *
+ * A flood fill from the edges only removes white that is CONNECTED to the border,
+ * so enclosed white shapes survive. The resulting hard mask is then feathered by a
+ * 3×3 box blur on the alpha channel alone, which restores the anti-aliased edge that
+ * colorkey's blend parameter used to provide.
  */
 function keyWhiteToAlpha(id: string, bytes: Uint8Array): Uint8Array {
   const inPath = join(tmpdir(), `avatar-${id}-${Date.now()}.png`);
   const outPath = `${inPath}.out.png`;
-  writeFileSync(inPath, bytes);
   try {
-    execFileSync(
-      'ffmpeg',
-      ['-y', '-i', inPath, '-vf', 'colorkey=0xFFFFFF:0.10:0.08', '-frames:v', '1', outPath],
-      { stdio: 'ignore' },
-    );
-    return readFileSync(outPath);
-  } catch {
-    console.log(`  ⚠ ${id}: colorkey failed — keeping the white background`);
+    const { rgba, w, h } = decodeRgba(bytes, inPath);
+    const n = w * h;
+
+    // "Background-ish" is deliberately generous: the model never emits a clean
+    // #FFFFFF, and the screenprint texture speckles the backdrop.
+    const isPale = (i: number) => {
+      const o = i * 4;
+      return rgba[o] >= 232 && rgba[o + 1] >= 232 && rgba[o + 2] >= 232;
+    };
+
+    // BFS from every border pixel. A typed-array queue keeps this ~instant at 1MP.
+    const bg = new Uint8Array(n);
+    const queue = new Int32Array(n);
+    let head = 0;
+    let tail = 0;
+    const push = (i: number) => {
+      if (!bg[i] && isPale(i)) {
+        bg[i] = 1;
+        queue[tail++] = i;
+      }
+    };
+    for (let x = 0; x < w; x++) {
+      push(x);
+      push((h - 1) * w + x);
+    }
+    for (let y = 0; y < h; y++) {
+      push(y * w);
+      push(y * w + w - 1);
+    }
+    while (head < tail) {
+      const i = queue[head++];
+      const x = i % w;
+      const y = (i / w) | 0;
+      if (x > 0) push(i - 1);
+      if (x < w - 1) push(i + 1);
+      if (y > 0) push(i - w);
+      if (y < h - 1) push(i + w);
+    }
+
+    // Hard mask → feathered alpha (3×3 box blur), so edges stay anti-aliased.
+    const alpha = new Uint8Array(n);
+    for (let i = 0; i < n; i++) alpha[i] = bg[i] ? 0 : 255;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let sum = 0;
+        let count = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          const yy = y + dy;
+          if (yy < 0 || yy >= h) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            const xx = x + dx;
+            if (xx < 0 || xx >= w) continue;
+            sum += alpha[yy * w + xx];
+            count++;
+          }
+        }
+        // Feather only inward. Letting a background pixel take partial alpha
+        // would tint it back in, and since its RGB is white that shows up as a
+        // pale halo around the silhouette.
+        const i = y * w + x;
+        rgba[i * 4 + 3] = bg[i] ? 0 : Math.round(sum / count);
+      }
+    }
+
+    return encodePng(rgba, w, h, outPath);
+  } catch (err) {
+    console.log(`  ⚠ ${id}: alpha cut failed (${err instanceof Error ? err.message.split('\n')[0] : err}) — keeping the white background`);
     return bytes;
   } finally {
     for (const p of [inPath, outPath]) {
@@ -481,6 +575,54 @@ async function withConcurrency<T>(
   await Promise.all(Array.from({ length: limit }, worker));
 }
 
+// ─── Repair ───────────────────────────────────────────────────────────────────
+
+/**
+ * Re-cut the alpha on avatars already in Cloudinary, in place, with no model calls.
+ *
+ * Possible because `colorkey` only zeroed the alpha channel — it left the RGB under
+ * every hole intact (a punched-out eye lens is still white, just invisible). So
+ * flattening alpha back to opaque and re-running the flood-fill cut recovers the
+ * enclosed white shapes exactly. Free, and much faster than regenerating.
+ */
+async function repair(): Promise<void> {
+  const assets = await listCloudinaryAvatars();
+  const ids = [...assets.keys()];
+  console.log(`Repairing alpha on ${ids.length} existing avatars\n`);
+
+  await withConcurrency(ids, CONCURRENCY, async (id, idx) => {
+    const label = `[${idx + 1}/${ids.length}] ${id}`;
+    if (dryRun) {
+      console.log(`  [dry-run] ${label}`);
+      return;
+    }
+    const flatPath = join(tmpdir(), `repair-${id}-${Date.now()}.png`);
+    try {
+      const res = await fetch(assets.get(id)!);
+      if (!res.ok) throw new Error(`fetch ${res.status}`);
+      const original = Buffer.from(await res.arrayBuffer());
+
+      // Flatten alpha back to fully opaque so the flood fill sees the real pixels.
+      const { rgba, w, h } = decodeRgba(original, flatPath);
+      for (let i = 3; i < rgba.length; i += 4) rgba[i] = 255;
+      const opaque = encodePng(rgba, w, h, flatPath);
+
+      const fixed = keyWhiteToAlpha(id, opaque);
+      const url = await uploadToCloudinary(id, fixed);
+      await setAvatarUrl(id, url);
+      console.log(`  ✓ ${label}`);
+    } catch (err) {
+      console.error(`  ✗ ${label}: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      try {
+        unlinkSync(flatPath);
+      } catch {
+        /* ignore */
+      }
+    }
+  });
+}
+
 // ─── Run ──────────────────────────────────────────────────────────────────────
 
 async function run(): Promise<void> {
@@ -587,7 +729,8 @@ async function main() {
   if (LIMIT) console.log(`Limit: ${LIMIT} heroes`);
   console.log('');
 
-  await run();
+  if (repairMode) await repair();
+  else await run();
   console.log('\nDone.\n');
 }
 
