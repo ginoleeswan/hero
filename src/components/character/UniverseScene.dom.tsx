@@ -49,6 +49,19 @@ const GLOW_SCALE = 1.34;
  */
 const INITIAL_PITCH = 1.03;
 
+/**
+ * The ring is a CIRCLE, deliberately.
+ *
+ * Widening it into an ellipse to spend the dead margins a widescreen viewport
+ * leaves either side is tempting and wrong: the scene drifts and can be
+ * orbited, and a baked-in stretch rotates with it, so the moment the long axis
+ * swings front-to-back the vertical extent grows by the stretch factor and the
+ * near cluster clips off the bottom of the frame. Sizing the camera for that
+ * worst case cancels out the gain exactly. A circle has the same silhouette at
+ * every yaw, so it can be framed tightly and stay framed.
+ */
+const STRETCH_X = 1;
+
 /** Faction heading pill. Set as one string so it can't be reflowed per frame. */
 const CHIP_CSS = [
   'position:absolute',
@@ -241,6 +254,9 @@ function factionLayout(nodes: UniverseNode[]): {
   // Start enemies at the front-left so the default camera opens on conflict,
   // and the rest of the world unwraps as you orbit right.
   let cursor = Math.PI * 0.82;
+  // Tracks the furthest thing from the centre — including the headings, which
+  // sit beyond the outermost row. Leaving them out of the measurement is what
+  // pushed the Bloodline label off the bottom of the viewport.
   let outerRadius = radius;
 
   present.forEach((faction, i) => {
@@ -272,7 +288,7 @@ function factionLayout(nodes: UniverseNode[]): {
         positions.set(
           n.id,
           new THREE.Vector3(
-            Math.cos(theta) * rowRadius,
+            Math.cos(theta) * rowRadius * STRETCH_X,
             (hash01(n.id + 'y') - 0.5) * 0.22,
             Math.sin(theta) * rowRadius,
           ),
@@ -280,6 +296,8 @@ function factionLayout(nodes: UniverseNode[]): {
       });
     });
 
+    const labelRadius = radius - inset + (rowCount - 1) * ROW_STEP + 0.95;
+    outerRadius = Math.max(outerRadius, labelRadius);
     clusters.push({
       faction,
       label: FACTION_LABEL[faction],
@@ -287,9 +305,9 @@ function factionLayout(nodes: UniverseNode[]): {
       // Just beyond the outermost row, on the faction's centre line — outside
       // the heads it names rather than floating over them.
       anchor: new THREE.Vector3(
-        Math.cos(mid) * (radius - inset + (rowCount - 1) * ROW_STEP + 0.95),
+        Math.cos(mid) * labelRadius * STRETCH_X,
         0,
-        Math.sin(mid) * (radius - inset + (rowCount - 1) * ROW_STEP + 0.95),
+        Math.sin(mid) * labelRadius,
       ),
     });
   });
@@ -383,8 +401,8 @@ export default function UniverseScene({
       // either side. Vertically that plane is foreshortened by sin(pitch), and
       // measuring it honestly rather than as a sphere is what stops the graph
       // sitting marooned in the middle of a large viewport.
-      const vExtent = (ringRadius + HEAD_PAD) * Math.sin(INITIAL_PITCH) + 0.5;
-      const hExtent = ringRadius + HEAD_PAD;
+      const vExtent = ringRadius * Math.sin(INITIAL_PITCH) + HEAD_PAD + 0.25;
+      const hExtent = ringRadius * STRETCH_X + HEAD_PAD;
       const forHeight = vExtent / Math.tan(half);
       const forWidth = hExtent / (Math.tan(half) * aspect);
       return Math.max(forHeight, forWidth);
@@ -643,7 +661,9 @@ export default function UniverseScene({
       el.style.color = `rgb(${KIND_RGB[c.faction]})`;
       el.style.borderColor = `rgba(${KIND_RGB[c.faction]},0.42)`;
       layer?.appendChild(el);
-      return { cluster: c, el };
+      // Measured once, here, rather than per frame: reading offsetWidth in the
+      // render loop forces a synchronous layout on every tick.
+      return { cluster: c, el, w: el.offsetWidth / 2, h: el.offsetHeight / 2 };
     });
 
     // ── Interaction ──────────────────────────────────────────────────────────
@@ -866,7 +886,7 @@ export default function UniverseScene({
 
       // Cluster headings track their group in screen space, and fade out as the
       // group swings round the back so labels never read against the wrong pile.
-      for (const { cluster, el } of chips) {
+      for (const { cluster, el, w, h } of chips) {
         const v = cluster.anchor.clone();
         world.localToWorld(v);
         const depth = v.clone().applyMatrix4(camera.matrixWorldInverse).z;
@@ -875,9 +895,13 @@ export default function UniverseScene({
         v.project(camera);
         const rect = el.parentElement?.getBoundingClientRect();
         if (!rect) continue;
-        el.style.transform = `translate(-50%,-50%) translate(${(v.x * 0.5 + 0.5) * rect.width}px, ${
-          (-v.y * 0.5 + 0.5) * rect.height
-        }px)`;
+        // The anchors sit outside the ring, which on a narrow viewport is past
+        // the edge of the frame — the headings were being sliced into "EMESES"
+        // and "ALLIES ·". Clamping keeps a group's name readable; it can drift
+        // a little off its centre line, which costs far less than losing it.
+        const sx = Math.min(Math.max((v.x * 0.5 + 0.5) * rect.width, w + 8), rect.width - w - 8);
+        const sy = Math.min(Math.max((-v.y * 0.5 + 0.5) * rect.height, h + 8), rect.height - h - 8);
+        el.style.transform = `translate(-50%,-50%) translate(${sx}px, ${sy}px)`;
         // Recede with depth, never disappear. Fading the far label out was
         // right when the ring was near edge-on and the back half sat behind the
         // subject; from a steep view all four clusters are equally visible, so
