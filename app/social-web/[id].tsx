@@ -123,6 +123,7 @@ export default function SocialWebExplorerNative() {
       {focusNode && !focusNode.is_subject ? (
         <SocialWebFocusCard
           node={focusNode}
+          subject={subjectNode ?? null}
           subjectName={subjectNode?.name ?? ''}
           subjectTeams={subjectNode?.teams ?? null}
           kind={focusKind}

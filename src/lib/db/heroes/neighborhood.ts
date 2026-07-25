@@ -13,6 +13,15 @@ export interface NeighborNode {
   fame_score: number | null;
   /** Rosters this character belongs to — powers the "why" on the focus card. */
   teams: string[] | null;
+  /** Drives the card's per-character accent via deriveCharacterTheme. */
+  portrait_blurhash: string | null;
+  intelligence: number | null;
+  strength: number | null;
+  speed: number | null;
+  durability: number | null;
+  power: number | null;
+  combat: number | null;
+  powerstats_total: number | null;
   is_subject: boolean;
 }
 export interface NeighborEdge {

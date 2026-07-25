@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SURFACE, INK_TEXT } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { getHeroNeighborhood, subjectKind } from '../../src/lib/db/heroes/neighborhood';
-import { nodeDegree } from '../../src/components/character/socialWebFocus';
+import { nodeDegree, sharedWithSubject } from '../../src/components/character/socialWebFocus';
 import UniverseScene, {
   type UniverseNode,
 } from '../../src/components/character/UniverseScene.dom';
@@ -38,6 +38,14 @@ export default function SocialWebExplorer() {
   const focusNode = (focusId && data?.nodes.find((n) => n.id === focusId)) || null;
   const focusKind = focusNode ? subjectKind(data!.edges, focusSubject, focusNode.id) : null;
   const focusDegree = focusNode ? nodeDegree(data!.edges, focusNode.id) : 0;
+  // Characters connected to BOTH ends — the card renders them as faces, which
+  // is the most legible answer to "how do these two actually overlap".
+  const mutuals = useMemo(() => {
+    if (!focusId || !data) return [];
+    const ids = sharedWithSubject(data.edges, focusSubject, focusId);
+    return data.nodes.filter((n) => ids.has(n.id) && !n.is_subject && n.id !== focusId);
+  }, [focusId, data, focusSubject]);
+
   // The scene needs each node's tie to the subject up front — it can't run
   // subjectKind per frame, and DOM component props must be plain JSON.
   const universeNodes: UniverseNode[] = useMemo(
@@ -154,8 +162,16 @@ export default function SocialWebExplorer() {
       {focusNode && !focusNode.is_subject ? (
         <SocialWebFocusCard
           node={focusNode}
+          subject={subjectNode ?? null}
           subjectName={subjectNode?.name ?? ''}
           subjectTeams={subjectNode?.teams ?? null}
+          mutuals={mutuals}
+          onCompare={() =>
+            router.push(
+              `/compare/${focusSubject}/${focusNode.id}` as Parameters<typeof router.push>[0],
+            )
+          }
+          onPickMutual={(mid) => setFocusId(mid)}
           kind={focusKind}
           degree={focusDegree}
           accent={theme.accent}
