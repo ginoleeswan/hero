@@ -155,6 +155,7 @@ export default function SocialWebExplorer() {
         <SocialWebFocusCard
           node={focusNode}
           subjectName={subjectNode?.name ?? ''}
+          subjectTeams={subjectNode?.teams ?? null}
           kind={focusKind}
           degree={focusDegree}
           accent={theme.accent}

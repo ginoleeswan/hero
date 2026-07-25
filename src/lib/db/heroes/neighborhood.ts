@@ -11,6 +11,8 @@ export interface NeighborNode {
   alignment: string | null;
   publisher: string | null;
   fame_score: number | null;
+  /** Rosters this character belongs to — powers the "why" on the focus card. */
+  teams: string[] | null;
   is_subject: boolean;
 }
 export interface NeighborEdge {
