@@ -80,6 +80,60 @@ export default function SocialWebExplorer() {
           ] as object
         }
       />
+      {/* The universe is full-bleed behind the chrome. It has to be: the scene
+          centres the subject in ITS canvas, so if the canvas were only the box
+          below the header, the main head would sit well below the middle of the
+          screen. Full-bleed makes canvas centre and screen centre the same
+          point. Chrome renders after this, so it paints on top. */}
+      {data && !sparse ? (
+        <View style={StyleSheet.absoluteFill}>
+          <UniverseScene
+            // Pin the iframe to its box; left to size itself it grew wider than
+            // the viewport and scrolled the whole document sideways.
+            dom={{
+              scrollEnabled: false,
+              matchContents: false,
+              style: { width: '100%', height: '100%', borderWidth: 0 },
+            }}
+            subjectId={focusSubject}
+            nodes={universeNodes}
+            edges={data.edges}
+            focusId={focusId}
+            onSelect={async (nodeId: string) => setFocusId(nodeId)}
+            onRecenter={async (nodeId: string) => {
+              setFocusSubject(nodeId);
+              setFocusId(null);
+            }}
+          />
+        </View>
+      ) : null}
+
+      {/* Now that heads pass behind the chrome, the title and legend need ground
+          to stand on — a short ink fade at each edge, not a solid bar, so the
+          scene still reads as full-bleed. */}
+      <View
+        style={
+          [
+            { position: 'absolute', left: 0, right: 0, top: 0, height: 190 },
+            {
+              backgroundImage: `linear-gradient(${SURFACE.ink}f2, ${SURFACE.ink}b8 45%, transparent)`,
+              pointerEvents: 'none',
+            },
+          ] as object
+        }
+      />
+      <View
+        style={
+          [
+            { position: 'absolute', left: 0, right: 0, bottom: 0, height: 110 },
+            {
+              backgroundImage: `linear-gradient(transparent, ${SURFACE.ink}d9)`,
+              pointerEvents: 'none',
+            },
+          ] as object
+        }
+      />
+
       {/* Full-screen nebula behind the chrome while the neighbourhood loads */}
       {!data ? (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -118,36 +172,14 @@ export default function SocialWebExplorer() {
         </View>
       </View>
 
-      {data && !sparse ? (
-        <View style={styles.stage}>
-          <UniverseScene
-            // The iframe must be pinned to the stage box. Left to size itself it
-            // grew wider than the viewport, which scrolled the whole document
-            // sideways and clipped the header and search field.
-            dom={{
-              scrollEnabled: false,
-              matchContents: false,
-              style: { width: '100%', height: '100%', borderWidth: 0 },
-            }}
-            subjectId={focusSubject}
-            nodes={universeNodes}
-            edges={data.edges}
-            focusId={focusId}
-            onSelect={async (nodeId: string) => setFocusId(nodeId)}
-            onRecenter={async (nodeId: string) => {
-              setFocusSubject(nodeId);
-              setFocusId(null);
-            }}
-          />
-        </View>
-      ) : sparse ? (
+      {sparse ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>Not enough connections to map yet.</Text>
         </View>
       ) : (
-        // Loading: a flex spacer holds the header up / hint down; the nebula
-        // itself is a full-screen layer behind the chrome (rendered below).
-        <View style={{ flex: 1 }} />
+        // A flex spacer holds the header up and the hint down. It sits OVER the
+        // full-bleed scene, so it must not swallow the drag-to-orbit gesture.
+        <View style={{ flex: 1 }} pointerEvents="none" />
       )}
 
       {data && !sparse ? (
@@ -217,8 +249,6 @@ function Legend({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: SURFACE.ink },
-  // The WebGL stage takes the whole area between header and hint.
-  stage: { flex: 1, minHeight: 0, overflow: 'hidden' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

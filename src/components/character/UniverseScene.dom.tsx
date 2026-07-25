@@ -201,7 +201,11 @@ export default function UniverseScene({
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 100);
-    camera.position.set(0, 0.6, 7.4);
+    // Dead-on, aimed at the origin where the subject sits. An unaimed camera
+    // lifted on Y still looks straight down -Z, which pushed the subject below
+    // the centre of frame — the offset had nothing to do with the layout.
+    camera.position.set(0, 0, 7.6);
+    camera.lookAt(0, 0, 0);
 
     const disposables: { dispose(): void }[] = [renderer];
     const track = <T extends { dispose(): void }>(d: T): T => {
