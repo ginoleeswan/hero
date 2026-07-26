@@ -373,7 +373,18 @@ function Seat({
     </>
   );
   return (
-    <View style={[styles.seat, accent ? { borderColor: accent } : null] as object}>
+    /* The right inset only exists to make room for the clear button. Kept
+       unconditionally it left the hover fill floating 8px short of a border it
+       is flush with everywhere else. */
+    <View
+      style={
+        [
+          styles.seat,
+          onClear && styles.seatWithClear,
+          accent ? { borderColor: accent } : null,
+        ] as object
+      }
+    >
       {onPress ? (
         <Pressable
           onPress={onPress}
@@ -462,8 +473,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: '#e7dcc9',
-    paddingRight: 8,
   },
+  seatWithClear: { paddingRight: 6 },
   seatMain: {
     flexGrow: 1,
     flexShrink: 1,
@@ -471,10 +482,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderRadius: 12,
+    // 14 minus the 1.5 border, so the fill's corners nest inside the seat's.
+    borderRadius: 12.5,
     paddingVertical: 9,
     paddingLeft: 12,
-    paddingRight: 6,
+    paddingRight: 12,
     cursor: 'pointer',
   } as object,
   seatMainHover: { backgroundColor: '#f7eeda' } as object,
