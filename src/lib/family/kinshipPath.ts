@@ -118,7 +118,7 @@ export function findKinshipPath(
         cameBy.set(step.toId, step);
         if (step.toId === toId) {
           const path: KinshipStep[] = [];
-          for (let at = toId; at !== fromId; ) {
+          for (let at = toId; at !== fromId;) {
             const s = cameBy.get(at)!;
             path.unshift(s);
             at = s.fromId;
@@ -141,7 +141,7 @@ const gendered = (g: Gender, male: string, female: string, neutral: string): str
   g === 'Male' ? male : g === 'Female' ? female : neutral;
 
 const ordinal = (n: number): string => {
-  const suffix = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
+  const suffix = n % 100 >= 11 && n % 100 <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
   return `${n}${suffix}`;
 };
 

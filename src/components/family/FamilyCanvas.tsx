@@ -227,9 +227,7 @@ function CanvasNode({
         activeOpacity={0.75}
         style={styles.cameoNode}
         accessibilityRole="button"
-        accessibilityLabel={
-          onSelectMember ? `Select ${member.name}` : `Open ${member.name}`
-        }
+        accessibilityLabel={onSelectMember ? `Select ${member.name}` : `Open ${member.name}`}
         onPress={() => {
           if (onSelectMember) {
             onSelectMember(member.heroId!, member.name);

@@ -11,13 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import type { HeroHouse } from '../../hooks/useHeroHouses';
 
-export function HouseLinks({
-  houses,
-  heroId,
-}: {
-  houses: HeroHouse[];
-  heroId: string | null;
-}) {
+export function HouseLinks({ houses, heroId }: { houses: HeroHouse[]; heroId: string | null }) {
   const router = useRouter();
   if (houses.length === 0) return null;
 

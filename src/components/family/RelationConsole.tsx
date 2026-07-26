@@ -111,7 +111,10 @@ export function RelationConsole({
           {/* Named buttons, not icons: the chart's own click is ambiguous
               between "who is this" and "centre on them", so both get said. */}
           <View style={styles.actions}>
-            <ConsoleAction label={`Centre the chart on ${partner.name.split(' ')[0]}`} onPress={onRootPartner} />
+            <ConsoleAction
+              label={`Centre the chart on ${partner.name.split(' ')[0]}`}
+              onPress={onRootPartner}
+            />
             <ConsoleAction
               label="Open profile"
               onPress={() =>

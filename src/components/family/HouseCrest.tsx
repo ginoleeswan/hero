@@ -30,12 +30,13 @@ export function mixHex(hex: string, towards: string, amount: number): string {
   if (!HEX.test(hex) || !HEX.test(towards)) return hex;
   const parse = (h: string): number[] => {
     const s = h.replace('#', '');
-    const full = s.length === 3
-      ? s
-          .split('')
-          .map((c) => c + c)
-          .join('')
-      : s;
+    const full =
+      s.length === 3
+        ? s
+            .split('')
+            .map((c) => c + c)
+            .join('')
+        : s;
     return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
   };
   const a = parse(hex);

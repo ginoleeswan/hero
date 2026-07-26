@@ -50,7 +50,12 @@ const GENDERS: Record<string, 'Male' | 'Female'> = {
 const graph = buildKinshipGraph(WESTEROS);
 const describe_ = (from: string, to: string) => {
   const path = findKinshipPath(graph, from, to)!;
-  return describeKinship(path, from, (id) => NAMES[id] ?? id, (id) => GENDERS[id]);
+  return describeKinship(
+    path,
+    from,
+    (id) => NAMES[id] ?? id,
+    (id) => GENDERS[id],
+  );
 };
 
 describe('findKinshipPath', () => {
@@ -113,9 +118,7 @@ describe('findKinshipPath', () => {
 describe('describeKinship', () => {
   it('names the relation people actually ask about', () => {
     // The whole feature in one assertion.
-    expect(describe_('jon', 'daenerys').headline).toBe(
-      "Daenerys Targaryen is Jon Snow's aunt",
-    );
+    expect(describe_('jon', 'daenerys').headline).toBe("Daenerys Targaryen is Jon Snow's aunt");
   });
 
   it('always renders the chain, whatever the headline says', () => {
@@ -130,9 +133,7 @@ describe('describeKinship', () => {
   });
 
   it('composes two hops into one word', () => {
-    expect(describe_('jon', 'aerys').headline).toBe(
-      "Aerys II Targaryen is Jon Snow's grandfather",
-    );
+    expect(describe_('jon', 'aerys').headline).toBe("Aerys II Targaryen is Jon Snow's grandfather");
   });
 
   it('counts the greats on an unbroken line', () => {
@@ -171,13 +172,23 @@ describe('describeKinship', () => {
 
   it('says "1 step", not "1 steps"', () => {
     const g = buildKinshipGraph([{ from: 'a', to: 'b', relation: 'in_law' }]);
-    const d = describeKinship(findKinshipPath(g, 'a', 'b')!, 'a', (id) => id, () => null);
+    const d = describeKinship(
+      findKinshipPath(g, 'a', 'b')!,
+      'a',
+      (id) => id,
+      () => null,
+    );
     expect(d.headline).toContain('1 step');
     expect(d.headline).not.toContain('1 steps');
   });
 
   it('handles a person and themselves', () => {
-    const d = describeKinship([], 'jon', (id) => NAMES[id], (id) => GENDERS[id]);
+    const d = describeKinship(
+      [],
+      'jon',
+      (id) => NAMES[id],
+      (id) => GENDERS[id],
+    );
     expect(d.steps).toBe(0);
     expect(d.chain).toBe('Jon Snow is the same person.');
   });

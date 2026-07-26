@@ -79,35 +79,34 @@ export function relativesOf(payload: HousePayload, focusId: string): FamilyMembe
   // Ids in the projected list are edge-scoped, so a chain link only resolves if
   // the parent is also one of THIS person's relatives.
   const reachable = new Set(own.map((e) => e.related_hero_id));
-  return own
-    .map((e) => {
-      const other = byId.get(e.related_hero_id)!;
-      return {
-        id: `${e.hero_id}:${e.related_hero_id}`,
-        name: other.name,
-        alias: null,
-        role: e.role ?? e.relation,
-        relation: e.relation as FamilyRelation,
-        tier: e.tier,
-        modifiers: e.modifiers ?? [],
-        status: (e.status ?? null) as RelativeStatus,
-        position: e.position,
-        heroId: other.id,
-        heroImage: other.portrait_url ?? other.image_md_url ?? other.image_url,
-        heroAvatar: other.avatar_url,
-        heroPower: null,
-        heroAlignment: other.alignment,
-        // Remapped into this list's edge-scoped id space, so deep forebears
-        // hang off the right ancestor instead of falling out of the chart into
-        // the "generation unrecorded" list.
-        treeParentId:
-          e.tree_parent_hero_id && reachable.has(e.tree_parent_hero_id)
-            ? `${e.hero_id}:${e.tree_parent_hero_id}`
-            : null,
-        branchSide: (e.branch_side ?? null) as BranchSide,
-        dates: nodeDates(other),
-      };
-    });
+  return own.map((e) => {
+    const other = byId.get(e.related_hero_id)!;
+    return {
+      id: `${e.hero_id}:${e.related_hero_id}`,
+      name: other.name,
+      alias: null,
+      role: e.role ?? e.relation,
+      relation: e.relation as FamilyRelation,
+      tier: e.tier,
+      modifiers: e.modifiers ?? [],
+      status: (e.status ?? null) as RelativeStatus,
+      position: e.position,
+      heroId: other.id,
+      heroImage: other.portrait_url ?? other.image_md_url ?? other.image_url,
+      heroAvatar: other.avatar_url,
+      heroPower: null,
+      heroAlignment: other.alignment,
+      // Remapped into this list's edge-scoped id space, so deep forebears
+      // hang off the right ancestor instead of falling out of the chart into
+      // the "generation unrecorded" list.
+      treeParentId:
+        e.tree_parent_hero_id && reachable.has(e.tree_parent_hero_id)
+          ? `${e.hero_id}:${e.tree_parent_hero_id}`
+          : null,
+      branchSide: (e.branch_side ?? null) as BranchSide,
+      dates: nodeDates(other),
+    };
+  });
 }
 
 export interface UseHouseResult {
@@ -165,8 +164,7 @@ export function useHouse(
     // An unknown ?focus is ignored rather than shown empty — a stale or hand-
     // edited link should still land on the house.
     const known = new Set(data.members.map((m) => m.id));
-    const focusId =
-      (focus && known.has(focus) ? focus : null) ?? data.members[0]?.id ?? null;
+    const focusId = (focus && known.has(focus) ? focus : null) ?? data.members[0]?.id ?? null;
     if (!focusId) return { ...empty, house: data.house, members: data.members };
 
     let kinship: KinshipDescription | null = null;

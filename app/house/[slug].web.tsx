@@ -27,7 +27,11 @@ const MAX_WIDTH = 1320;
 
 export default function HousePage() {
   const router = useRouter();
-  const { slug, focus, with: withId } = useLocalSearchParams<{
+  const {
+    slug,
+    focus,
+    with: withId,
+  } = useLocalSearchParams<{
     slug: string;
     focus?: string;
     with?: string;
@@ -129,9 +133,7 @@ export default function HousePage() {
             kinship={kinship}
             tint={tint}
             onSwap={() =>
-              compared && rooted
-                ? setParams({ focus: compared.id, with: rooted.id })
-                : undefined
+              compared && rooted ? setParams({ focus: compared.id, with: rooted.id }) : undefined
             }
             onClear={() => setParams({ with: null })}
             onRootPartner={() =>
@@ -153,8 +155,8 @@ export default function HousePage() {
           ) : (
             <View style={styles.blank}>
               <Text style={styles.muted}>
-                {rooted?.name ?? 'This member'} has no recorded kin inside the house. Root the
-                tree on someone else to see the line.
+                {rooted?.name ?? 'This member'} has no recorded kin inside the house. Root the tree
+                on someone else to see the line.
               </Text>
             </View>
           )}

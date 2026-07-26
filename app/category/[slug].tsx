@@ -339,9 +339,7 @@ export default function CategoryScreen() {
             them — and it is the only route to the family trees from here. */}
         {houses.length > 0 && (
           <View style={styles.housesRow}>
-            <Text style={styles.housesLabel}>
-              {houses.length === 1 ? 'House' : 'Houses'}
-            </Text>
+            <Text style={styles.housesLabel}>{houses.length === 1 ? 'House' : 'Houses'}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
