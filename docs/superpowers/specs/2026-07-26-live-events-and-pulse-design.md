@@ -1,8 +1,9 @@
 # Live Events + The Pulse — design & handoff
 
 **Date:** 2026-07-26
-**Status:** Detection layer built and pushed (branch `claude/explore-right-now-freshness-4jo1wp`).
-Migration **not yet applied**. UI not wired.
+**Status:** Detection layer built and **live** — §7 done 2026-07-26, now on `main`.
+Migration applied (as version `20260726183108`), function deployed, cron running,
+SDCC approved. UI not wired — §8 is untouched.
 **Visual proposal:** https://claude.ai/code/artifact/18490f5f-7323-4041-bcce-ba1e78becb42
 
 ---
@@ -12,7 +13,7 @@ Migration **not yet applied**. UI not wired.
 Explore's "Right Now" band is accurate but doesn't feel current. Every rail in it
 reports a **state** — in cinemas, on Disney+, 197k pageviews, 12 comics this week
 — and a state stays true for months, so it never gives anyone a reason to open
-the app *today*.
+the app _today_.
 
 Audit findings from the same session (all verified against the live DB via
 `get_explore_bundle`):
@@ -41,13 +42,13 @@ can be ranked by recency, described in relative time ("3h ago"), and pushed.
 
 ## 2. The reframe: states vs events
 
-| Today's band says | It could say |
-| --- | --- |
-| Toy Story 5 is in cinemas | A trailer dropped 3 hours ago |
-| The Fantastic 4 is on Disney+ | Fantastic 4 landed on Disney+ Tuesday |
-| Doctor Doom has 197,899 pageviews | Doom is surging — here's why |
-| 12 comics came out this week | Amazing Spider-Man #33 is out today |
-| Star Wars #1 debuted in July 1977 | Hall H is live right now |
+| Today's band says                 | It could say                          |
+| --------------------------------- | ------------------------------------- |
+| Toy Story 5 is in cinemas         | A trailer dropped 3 hours ago         |
+| The Fantastic 4 is on Disney+     | Fantastic 4 landed on Disney+ Tuesday |
+| Doctor Doom has 197,899 pageviews | Doom is surging — here's why          |
+| 12 comics came out this week      | Amazing Spider-Man #33 is out today   |
+| Star Wars #1 debuted in July 1977 | Hall H is live right now              |
 
 Not more data sources — the same data, re-modelled with timestamps.
 
@@ -88,8 +89,8 @@ happening (see §5.3).
 ## 4. Comic-Con: the table already existed and was empty
 
 `supabase/migrations/20260615190000_phase3_campaigns_and_personal_trending.sql`
-describes `featured_campaigns` as *"admin-scheduled editorial moments TMDB
-popularity can't see (premieres, **Comic-Con**, game launches)"* — with
+describes `featured_campaigns` as _"admin-scheduled editorial moments TMDB
+popularity can't see (premieres, **Comic-Con**, game launches)"_ — with
 `starts_at`, `ends_at`, `priority`, an accent hex, and a full admin CRUD screen
 at `src/components/admin/health/domains/CampaignsDomain.tsx`.
 
@@ -114,20 +115,20 @@ The repo does have a working SPARQL client at
 
 Two free, key-less, independent signals on the event's own Wikipedia article:
 
-| Signal | Lag | Role |
-| --- | --- | --- |
-| Daily pageviews | 1–2 days | High signal, but too slow alone |
+| Signal            | Lag      | Role                                  |
+| ----------------- | -------- | ------------------------------------- |
+| Daily pageviews   | 1–2 days | High signal, but too slow alone       |
 | Article edit rate | **none** | Catches an event the morning it opens |
 
 Measured over the **same 28 days**, captured 2026-07-26 while SDCC 2026 was
 actually running:
 
-| | SDCC (live) | NYCC (dormant) |
-| --- | --- | --- |
-| Pageview lift | **3.35×** (1,099 → 3,688) | 1.74× (143 → 250) |
-| Edits in 4 days | **13** | 1 |
-| Edit-rate burst | ~65× | ~5× |
-| Verdict | `live` | `idle` |
+|                 | SDCC (live)               | NYCC (dormant)    |
+| --------------- | ------------------------- | ----------------- |
+| Pageview lift   | **3.35×** (1,099 → 3,688) | 1.74× (143 → 250) |
+| Edits in 4 days | **13**                    | 1                 |
+| Edit-rate burst | ~65×                      | ~5×               |
+| Verdict         | `live`                    | `idle`            |
 
 **Both signals are required.** Pageviews alone would have flagged NYCC too — a
 quiet news week lifts every convention article a little.
@@ -143,11 +144,11 @@ SDCC's window at **2026-07-23 → 07-25, ongoing**. 07-23 was opening day.
 
 ### 5.3 Curve shape classifies the event type
 
-| Article | Baseline | Peak | Shape | Reading |
-| --- | --- | --- | --- | --- |
-| `Doctor_Doom` | 2,764 | **62,256** (one day) | `decaying` | Discrete announcement |
-| `Masters_of_the_Universe` | 1,368 | **12,598** (still climbing) | `sustained` | Ongoing run |
-| `San_Diego_Comic-Con` | 1,099 | 3,688 | `sustained` | Event in progress |
+| Article                   | Baseline | Peak                        | Shape       | Reading               |
+| ------------------------- | -------- | --------------------------- | ----------- | --------------------- |
+| `Doctor_Doom`             | 2,764    | **62,256** (one day)        | `decaying`  | Discrete announcement |
+| `Masters_of_the_Universe` | 1,368    | **12,598** (still climbing) | `sustained` | Ongoing run           |
+| `San_Diego_Comic-Con`     | 1,099    | 3,688                       | `sustained` | Event in progress     |
 
 Different shapes want different copy and different decay half-lives. A single
 week-over-week ratio flattens all three.
@@ -159,13 +160,13 @@ week-over-week ratio flattens all three.
 Commit `7e9e763` — `yarn typecheck` clean, `yarn test:ci` **944 passing / 128
 suites**, eslint + prettier clean.
 
-| File | Role |
-| --- | --- |
-| `src/lib/events/detect.ts` | Pure detector. Clock-free (`asOf` injected) so it's deterministic in tests. Exports tunable thresholds. |
-| `__tests__/lib/events/detect.test.ts` | 18 tests. Fixtures are the real measured curves above, inlined (no helper files under `__tests__` — jest treats every `.ts` there as a suite). |
-| `supabase/migrations/20260726150000_watched_events.sql` | `watched_events` table, 20 seeded events, `get_live_events()`, 3 admin RPCs, cron at `7,37 * * * *`. |
-| `supabase/functions/sync-watched-events/index.ts` | Poller. Mirrors `detect.ts` (Deno can't import from `src/`) — same convention as `enrich-tmdb-batch` mirroring `src/lib/tmdb/mapFilm.ts`. **Change both together.** |
-| `src/lib/db/events.ts` + test | Client reader. Uses `as never` on the RPC until types are regenerated. |
+| File                                                    | Role                                                                                                                                                                |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/events/detect.ts`                              | Pure detector. Clock-free (`asOf` injected) so it's deterministic in tests. Exports tunable thresholds.                                                             |
+| `__tests__/lib/events/detect.test.ts`                   | 18 tests. Fixtures are the real measured curves above, inlined (no helper files under `__tests__` — jest treats every `.ts` there as a suite).                      |
+| `supabase/migrations/20260726150000_watched_events.sql` | `watched_events` table, 20 seeded events, `get_live_events()`, 3 admin RPCs, cron at `7,37 * * * *`.                                                                |
+| `supabase/functions/sync-watched-events/index.ts`       | Poller. Mirrors `detect.ts` (Deno can't import from `src/`) — same convention as `enrich-tmdb-batch` mirroring `src/lib/tmdb/mapFilm.ts`. **Change both together.** |
+| `src/lib/db/events.ts` + test                           | Client reader. Uses `as never` on the RPC until types are regenerated.                                                                                              |
 
 ### Thresholds (`src/lib/events/detect.ts`)
 
@@ -201,7 +202,18 @@ thresholds tuned against two samples.
 
 ---
 
-## 7. Next actions (need the Supabase MCP — do these on the Mac)
+## 7. Next actions (need the Supabase MCP — do these on the Mac) — **DONE 2026-07-26**
+
+All four ran clean. Measured result: `processed: 20`, `live: ["sdcc"]`, with SDCC at
+`spike_ratio` 3.35 / `sustained` / 2026-07-23 → 07-25 / `ongoing` — the §5.2 numbers
+reproduced exactly. NYCC came back `idle` on 1 recent edit despite an
+`edit_burst_ratio` of 4.32 clearing `EDIT_BURST_MIN`, so `EDITS_ABS_MIN` really is
+the veto §5.2 says it is.
+
+One gotcha for whoever automates the gate: `admin_set_watched_event_approval`
+checks `auth.uid()`, which is null over the MCP service role, so it raises
+`not authorized` there. Approval was set with the equivalent `update` instead.
+The RPC is fine from a signed-in admin client — it just can't be driven from MCP.
 
 1. **Apply the migration** via `mcp__supabase__apply_migration` —
    `supabase/migrations/20260726150000_watched_events.sql`. Confirm 20 seed rows
@@ -242,13 +254,13 @@ score = w_type × exp(−ln2 × age_hours / half_life) × relevance
 relevance = catalogue_characters_with_art × (max_fame / 100)
 ```
 
-| Event type | Source | Half-life |
-| --- | --- | --- |
-| Live event window | `watched_events` (approved) | pinned |
-| Trailer / teaser drop | TMDB `videos.published_at` | 48h |
-| Streaming debut | TMDB `watch_providers` delta | 72h |
-| New issue on shelves | `comic_issues.store_date` | 96h |
-| Pageview surge | `heroes.pageviews_spike` | 24h |
+| Event type            | Source                       | Half-life |
+| --------------------- | ---------------------------- | --------- |
+| Live event window     | `watched_events` (approved)  | pinned    |
+| Trailer / teaser drop | TMDB `videos.published_at`   | 48h       |
+| Streaming debut       | TMDB `watch_providers` delta | 72h       |
+| New issue on shelves  | `comic_issues.store_date`    | 96h       |
+| Pageview surge        | `heroes.pageviews_spike`     | 24h       |
 
 Events with an explicit window pin above the decay curve for their duration —
 that's what makes a convention outrank a good trailer, and what makes it vanish
@@ -270,7 +282,7 @@ inherits the Greek-mythology problem from §1.
 
 **Panel-level detail** ("Hall H, 11am, Marvel Studios"). It exists only on SDCC's
 own site — no API, fragile to scrape, ToS-dubious. Event-window granularity plus
-the announcements coming *out of* the event is the part people actually want.
+the announcements coming _out of_ the event is the part people actually want.
 
 ---
 
@@ -286,12 +298,12 @@ small and immediately visible.
 
 Suggested split, one message each:
 
-| Session | Scope | Why it ends there |
-| --- | --- | --- |
-| 1 | §7 (all four) + §8 step 2 | Plumbing plus the first visible change. Small, safe, no design calls. |
-| 2 | §8 step 1, then step 3 | Trailer events must exist before the rail has anything interesting to show. Verify TMDB's field names against a real response first — a key is needed and wasn't available when this was written. |
-| 3 | §8 step 4 | The Pulse rail: `get_pulse_events`, fold into the bundle, then the component for **both** `RightNowBand.tsx` and `RightNowBand.web.tsx`. Stop here and look at it. |
-| 4 | §8 steps 5–6 | Takeover skin + approve UI, then push with hard volume caps. |
+| Session | Scope                     | Why it ends there                                                                                                                                                                                 |
+| ------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1       | §7 (all four) + §8 step 2 | Plumbing plus the first visible change. Small, safe, no design calls.                                                                                                                             |
+| 2       | §8 step 1, then step 3    | Trailer events must exist before the rail has anything interesting to show. Verify TMDB's field names against a real response first — a key is needed and wasn't available when this was written. |
+| 3       | §8 step 4                 | The Pulse rail: `get_pulse_events`, fold into the bundle, then the component for **both** `RightNowBand.tsx` and `RightNowBand.web.tsx`. Stop here and look at it.                                |
+| 4       | §8 steps 5–6              | Takeover skin + approve UI, then push with hard volume caps.                                                                                                                                      |
 
 Dependency that matters: **step 1 before step 4.** Without trailer events the rail
 is only comics, spikes and live events, which undersells it.
