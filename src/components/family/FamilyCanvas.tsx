@@ -13,7 +13,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path, Defs, Pattern, Circle, Rect } from 'react-native-svg';
+import Svg, { Path, Defs, Pattern, Circle, Rect, G } from 'react-native-svg';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { COLORS } from '../../constants/colors';
@@ -23,9 +23,9 @@ import { PlaceholderHead } from './PlaceholderHead';
 import { headShapeForRole } from '../../lib/family/kinshipGender';
 import { buildFamilyGraph } from '../../lib/family/buildFamilyGraph';
 import { treeDisplayName } from '../../lib/family/displayName';
-import { layoutFamily, ROW_H } from '../../lib/family/layoutFamily';
+import { layoutFamily, ROW_H, isLineal } from '../../lib/family/layoutFamily';
 import type { FamilyMember, FamilyGraph } from '../../lib/family/types';
-import type { PositionedNode, FamilyLayout } from '../../lib/family/layoutFamily';
+import type { PositionedNode, FamilyLayout, LayoutEdge } from '../../lib/family/layoutFamily';
 
 // Node nominal dimensions (must match layoutFamily constants)
 // A cameo node is portrait-shaped rather than a list row, so it is much narrower
@@ -66,20 +66,31 @@ function rowNamesTheRelation(member: FamilyMember): boolean {
  * heads are cut out with no plate behind them the line shows through the face —
  * most obviously on the deceased, who are drawn at reduced opacity.
  */
-function edgePath(a: PositionedNode, b: PositionedNode): string {
+function edgePath(edge: LayoutEdge, from: PositionedNode, to: PositionedNode): string {
   const halfW = NODE_W / 2;
   // Only the head needs clearing; the nameplate sits below it.
   const halfH = CAMEO / 2 + 6;
 
-  if (Math.abs(a.y - b.y) < 1) {
-    const dir = Math.sign(b.x - a.x) || 1;
-    return `M${a.x + dir * halfW},${a.y} L${b.x - dir * halfW},${b.y}`;
+  // A line of descent starts between two parents, not at either one of them.
+  const ax = edge.fromX ?? from.x;
+  const ay0 = edge.fromY ?? from.y;
+
+  if (Math.abs(ay0 - to.y) < 1) {
+    const dir = Math.sign(to.x - ax) || 1;
+    return `M${ax + dir * halfW},${ay0} L${to.x - dir * halfW},${to.y}`;
   }
-  const dir = Math.sign(b.y - a.y) || 1;
-  const ay = a.y + dir * halfH;
-  const by = b.y - dir * halfH;
+  const dir = Math.sign(to.y - ay0) || 1;
+  const ay = ay0 + dir * (edge.fromX == null ? halfH : 0);
+  const by = to.y - dir * halfH;
   const my = (ay + by) / 2;
-  return `M${a.x},${ay} L${a.x},${my} L${b.x},${my} L${b.x},${by}`;
+  return `M${ax},${ay} L${ax},${my} L${to.x},${my} L${to.x},${by}`;
+}
+
+/** The bar between two spouses: a short double rule, drawn head to head. */
+function marriageBar(a: PositionedNode, b: PositionedNode): string {
+  const [l, r] = a.x <= b.x ? [a, b] : [b, a];
+  const gap = CAMEO / 2 + 3;
+  return `M${l.x + gap},${l.y} L${r.x - gap},${r.y}`;
 }
 
 function roleLabel(member: FamilyMember): string {
@@ -144,32 +155,50 @@ function CanvasNode({
   // an initials monogram, which in a dynasty identifies nobody — Aegon I through
   // V collapse to the same letters.
   const face = hasRealArt(member.heroImage) || !!member.heroAvatar;
+  // Weight follows kinship: a direct forebear and an adopted uncle were drawn
+  // identically, so the chart had no hierarchy and the eye could not find the
+  // bloodline. Collateral branches keep the disc, but sit smaller inside it.
+  const lineal = isLineal(member.relation);
+  const art = lineal ? CAMEO : Math.round(CAMEO * 0.82);
   // Every head sits on the same disc. Three art sources land here — flat cut-out
   // avatars, circle-cropped comic panels, and featureless silhouettes — and left
   // bare they read as three different languages in one row. The disc is a
   // footprint, not a card: it gives every head the same silhouette and weight.
   const cameo = (
-    <View style={styles.headDisc}>
+    <View style={[styles.headDisc, !lineal && styles.headDiscCollateral] as object}>
       {face ? (
         <HeroAvatar
           id={member.heroId ?? member.name}
           name={member.name}
           avatarUrl={member.heroAvatar}
           fallbackUrl={member.heroImage}
-          size={CAMEO}
-          radius={CAMEO / 2}
+          size={art}
+          radius={art / 2}
           bare
         />
       ) : (
-        <PlaceholderHead shape={headShapeForRole(member.role)} size={CAMEO} />
+        <PlaceholderHead shape={headShapeForRole(member.role)} size={art} />
       )}
     </View>
   );
 
   // The head sits flat on the canvas; the name gets the plate.
   const label = (
-    <View style={[styles.namePlate, dead && styles.namePlateDead] as object}>
-      <Text style={[styles.nodeName, dead && styles.deadText] as object} numberOfLines={2}>
+    <View
+      style={
+        [
+          styles.namePlate,
+          !lineal && styles.namePlateCollateral,
+          dead && styles.namePlateDead,
+        ] as object
+      }
+    >
+      <Text
+        style={
+          [styles.nodeName, !lineal && styles.nodeNameCollateral, dead && styles.deadText] as object
+        }
+        numberOfLines={2}
+      >
         {shownName}
         {dead ? <Text style={styles.dagger}> †</Text> : null}
       </Text>
@@ -396,20 +425,29 @@ function FamilyStage({
                 const a = nodeMap.get(edge.fromId);
                 const b = nodeMap.get(edge.toId);
                 if (!a || !b) return null;
-                const d = edgePath(a, b);
-                if (edge.kind === 'bloodline') {
-                  return <Path key={i} d={d} stroke="#a9987c" strokeWidth={1.25} fill="none" />;
-                }
+
                 if (edge.kind === 'marriage') {
-                  return <Path key={i} d={d} stroke="#D2952A" strokeWidth={1.5} fill="none" />;
+                  // Two rules, not one: the double bar is what a printed tree
+                  // uses for a marriage, and reads as a tie rather than descent.
+                  const bar = marriageBar(a, b);
+                  return (
+                    <G key={i}>
+                      <Path d={bar} stroke="#D2952A" strokeWidth={1.25} fill="none" y={-2} />
+                      <Path d={bar} stroke="#D2952A" strokeWidth={1.25} fill="none" y={2} />
+                    </G>
+                  );
                 }
+
+                // A direct forebear carries the line; a collateral branch is
+                // drawn lighter so the bloodline is what the eye follows.
+                const lineal = !b.member || isLineal(b.member.relation);
+                const d = edgePath(edge, a, b);
                 return (
                   <Path
                     key={i}
                     d={d}
-                    stroke="#e2d6c2"
-                    strokeWidth={2}
-                    strokeDasharray="4 4"
+                    stroke={lineal ? '#96836a' : '#c9bca6'}
+                    strokeWidth={lineal ? 1.5 : 1}
                     fill="none"
                   />
                 );
@@ -804,6 +842,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   } as object,
+  headDiscCollateral: { backgroundColor: 'rgba(41,60,67,0.035)' } as object,
   headDiscHero: {
     width: HERO_CAMEO,
     height: HERO_CAMEO,
@@ -825,6 +864,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 3,
   } as object,
+  namePlateCollateral: {
+    backgroundColor: '#fdf7ec',
+    borderColor: '#e6dac4',
+  } as object,
   namePlateDead: {
     backgroundColor: '#f1e9dc',
     borderColor: '#ded3c2',
@@ -842,6 +885,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
+  nodeNameCollateral: { color: '#6b6355', fontWeight: '400' } as object,
   deadText: { color: '#8d8375' } as object,
   dagger: { color: '#b0a189' },
   linkNode: {

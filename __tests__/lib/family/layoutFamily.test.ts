@@ -152,6 +152,60 @@ describe('layoutFamily', () => {
     });
   });
 
+  // The atomic unit of a family tree is a couple, not a person: two parents with
+  // one line of descent running from between them. Drawn per-person, a pair of
+  // parents produced two parallel lines to the same child and nothing said they
+  // were married.
+  describe('couples', () => {
+    const parents = [
+      m({ id: 'mum', relation: 'parent', tier: 1, position: 0 }),
+      m({ id: 'dad', relation: 'parent', tier: 1, position: 1 }),
+    ];
+
+    it('ties two parents together with a marriage bar', () => {
+      const out = layout(parents);
+      const marriage = out.edges.filter((e) => e.kind === 'marriage');
+      expect(marriage).toHaveLength(1);
+      expect([marriage[0].fromId, marriage[0].toId].sort()).toEqual(['dad', 'mum']);
+    });
+
+    it('runs one line of descent from between them, not two from each', () => {
+      const out = layout(parents);
+      const blood = out.edges.filter((e) => e.kind === 'bloodline');
+      expect(blood).toHaveLength(1);
+      const x = (id: string) => out.nodes.find((n) => n.id === id)!.x;
+      expect(blood[0].fromX).toBeCloseTo((x('mum') + x('dad')) / 2, 1);
+    });
+
+    it('does not marry a lone parent to an aunt standing beside them', () => {
+      const out = layout([
+        m({ id: 'mum', relation: 'parent', tier: 1, position: 0 }),
+        m({ id: 'auntie', relation: 'aunt_uncle', tier: 1, position: 1 }),
+      ]);
+      expect(out.edges.filter((e) => e.kind === 'marriage')).toHaveLength(0);
+    });
+
+    it('does not marry the hero’s two children to each other', () => {
+      const out = layout([
+        m({ id: 'kid1', relation: 'child', tier: -1, position: 0 }),
+        m({ id: 'kid2', relation: 'child', tier: -1, position: 1 }),
+      ]);
+      expect(out.edges.filter((e) => e.kind === 'marriage')).toHaveLength(0);
+      expect(out.edges.filter((e) => e.kind === 'bloodline')).toHaveLength(2);
+    });
+
+    it('couples grandparents under the parent they belong to', () => {
+      const out = layout([
+        m({ id: 'dad', relation: 'parent', tier: 1, position: 0 }),
+        m({ id: 'gran', relation: 'grandparent', tier: 2, treeParentId: 'dad', position: 1 }),
+        m({ id: 'gramp', relation: 'grandparent', tier: 2, treeParentId: 'dad', position: 2 }),
+      ]);
+      const marriage = out.edges.filter((e) => e.kind === 'marriage');
+      expect(marriage).toHaveLength(1);
+      expect([marriage[0].fromId, marriage[0].toId].sort()).toEqual(['gramp', 'gran']);
+    });
+  });
+
   // The descendant half was capped at grandchildren while ancestors ran deep,
   // so Aegon the Conqueror's line stopped at his grandsons even though Daenerys
   // could see all the way back up to him.

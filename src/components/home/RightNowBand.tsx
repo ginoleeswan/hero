@@ -14,7 +14,6 @@ import Animated, {
   withSequence,
 } from 'react-native-reanimated';
 import { HeroImage } from '../HeroImage';
-import { HeroAvatar } from '../HeroAvatar';
 import { COLORS } from '../../constants/colors';
 import { TitlePosterRail } from './TitlePosterRail';
 import { ComicCoverRail } from './ComicCoverRail';
@@ -131,27 +130,20 @@ function CampaignHero({
                 // the left chip's edge sits on top instead of being clipped.
                 style={[
                   hero.avatar,
-                  c.avatar_url && hero.faceBare,
                   { marginLeft: i === 0 ? 0 : -10, zIndex: avatarChars.length - i },
                 ]}
               >
-                {/* Overlapping heads over artwork — the case cut-outs are for.
-                    A cropped portrait needs its disc; a head does not. */}
-                {c.avatar_url ? (
-                  <HeroAvatar id={c.id} name={c.name} avatarUrl={c.avatar_url} size={34} bare />
-                ) : (
-                  <HeroImage
-                    id={c.id}
-                    name={c.name}
-                    imageUrl={c.image_url}
-                    portraitUrl={c.portrait_url}
-                    grid
-                    contentFit="cover"
-                    contentPosition={{ top: '20%', left: '50%' }}
-                    style={StyleSheet.absoluteFill as object}
-                    recyclingKey={c.id}
-                  />
-                )}
+                <HeroImage
+                  id={c.id}
+                  name={c.name}
+                  imageUrl={c.image_url}
+                  portraitUrl={c.portrait_url}
+                  grid
+                  contentFit="cover"
+                  contentPosition={{ top: '20%', left: '50%' }}
+                  style={StyleSheet.absoluteFill as object}
+                  recyclingKey={c.id}
+                />
               </View>
             ))}
           </View>
@@ -362,13 +354,6 @@ const hero = StyleSheet.create({
     marginTop: 14,
   },
   avatars: { flexDirection: 'row' },
-  // Fill dropped — a head needs no plate — but the ring stays: these chips
-  // overlap, and the outline keeps one head from merging into the next.
-  faceBare: {
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as object,
   avatar: {
     width: 34,
     height: 34,

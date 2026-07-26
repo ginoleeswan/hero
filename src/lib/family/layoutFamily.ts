@@ -30,6 +30,28 @@ export interface LayoutEdge {
   fromId: string;
   toId: string;
   kind: EdgeKind;
+  /**
+   * Overrides the start point, used to hang a line of descent from the midpoint
+   * between two parents rather than from either one of them.
+   */
+  fromX?: number;
+  fromY?: number;
+}
+
+/**
+ * A relation that lies on the subject's own bloodline, as opposed to a
+ * collateral branch (aunts, cousins, in-laws). The chart weights the two
+ * differently — a direct forebear should not read the same as an adopted uncle.
+ */
+export function isLineal(relation: string): boolean {
+  return (
+    relation === 'parent' ||
+    relation === 'child' ||
+    relation === 'grandparent' ||
+    relation === 'grandchild' ||
+    relation === 'ancestor' ||
+    relation === 'descendant'
+  );
 }
 export interface FamilyLayout {
   nodes: PositionedNode[];
@@ -195,6 +217,52 @@ export function layoutFamily(graph: FamilyGraph): FamilyLayout {
   const maxX = Math.max(...nodes.map((n) => n.x));
   const maxY = Math.max(...nodes.map((n) => n.y));
 
+  // ── Couples ───────────────────────────────────────────────────────────────
+  // The atomic unit of a family tree is not a person, it is a couple: two
+  // parents with one line of descent running from between them. Drawn per-person
+  // instead, a pair of parents produced two parallel lines to the same child and
+  // nothing at all said they were married.
+  //
+  // Co-parenthood is already in the data without being named: two lineal
+  // forebears hanging off the same node ARE that node's parents. Restricted to
+  // the ancestor half — two lineal nodes below a shared parent are siblings, not
+  // spouses, and coupling those would marry a hero's own children to each other.
+  const byFrom = new Map<string, LayoutEdge[]>();
+  for (const e of edges) {
+    if (e.kind !== 'bloodline') continue;
+    const list = byFrom.get(e.fromId) ?? [];
+    list.push(e);
+    byFrom.set(e.fromId, list);
+  }
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
+  const coupled: LayoutEdge[] = [];
+  const dropped = new Set<LayoutEdge>();
+
+  for (const [fromId, group] of byFrom) {
+    const anchor = nodeById.get(fromId);
+    if (!anchor) continue;
+    const lineal = group.filter((e) => {
+      const n = nodeById.get(e.toId);
+      return n?.member && isLineal(n.member.relation) && n.y < anchor.y;
+    });
+    if (lineal.length !== 2) continue;
+
+    const a = nodeById.get(lineal[0].toId)!;
+    const b = nodeById.get(lineal[1].toId)!;
+    if (Math.abs(a.y - b.y) > 1) continue;
+
+    lineal.forEach((e) => dropped.add(e));
+    coupled.push({ fromId: a.id, toId: b.id, kind: 'marriage' });
+    coupled.push({
+      fromId: a.id,
+      toId: fromId,
+      kind: 'bloodline',
+      fromX: (a.x + b.x) / 2,
+      fromY: (a.y + b.y) / 2,
+    });
+  }
+  const finalEdges = edges.filter((e) => !dropped.has(e)).concat(coupled);
+
   const tierY = new Map<number, number>();
   const heroNode = nodes.find((n) => n.isHero)!;
   tierY.set(0, heroNode.y);
@@ -203,5 +271,5 @@ export function layoutFamily(graph: FamilyGraph): FamilyLayout {
     .sort((a, b) => a[1] - b[1])
     .map(([tier, y]) => ({ tier, label: tierLabel(tier, LAYOUT_TIER_LABELS), y }));
 
-  return { nodes, edges, rows, bounds: { width: maxX + PAD, height: maxY + PAD } };
+  return { nodes, edges: finalEdges, rows, bounds: { width: maxX + PAD, height: maxY + PAD } };
 }
