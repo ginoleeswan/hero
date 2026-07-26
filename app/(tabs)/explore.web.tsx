@@ -262,6 +262,10 @@ function StatChip({
 // the light falling on them.
 const SLIVER_OPACITY = [1, 0.82, 0.66, 0.54, 0.44, 0.36, 0.28, 0.2];
 
+// Gap between deck cards. Shared by the strip's style and its pinned width, so
+// the two can't disagree.
+const CARD_GAP = 12;
+
 // The dark stage's own clearance for the floating nav on phones. The stacked
 // spotlight cancels it with a negative margin so its poster runs up behind the
 // bar — one number, two places, or the art tears away from the top edge.
@@ -541,6 +545,16 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
 
   // ── Caption / duo / gallery: portrait (plus deck) beside the panel ──────────
   const stripCards = state === 'caption' ? [cardWidth] : [cardWidth, ...tail];
+  // The strip is pinned to its own total rather than sized by its children.
+  // While the cards morph — and especially now that the ripple staggers them —
+  // the sum of their animating widths isn't constant frame to frame, and a
+  // flex:1 panel next to it absorbed every one of those wobbles. That was the
+  // jank: not the panel changing, the panel REACTING. A fixed strip means the
+  // cards can move all they like and nothing to their right ever hears about
+  // it. The gap term counts every child, including the zero-width cards that
+  // are animating in and out of the deck.
+  const stripWidth =
+    stripCards.reduce((sum, w) => sum + w, 0) + CARD_GAP * Math.max(0, heroes.length - 1);
 
   return (
     <View
@@ -602,7 +616,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
           mean fixing the slots and rotating the artwork through them — which
           holds the composition still but replaces the morph with a dissolve,
           and the morph is the better feel. */}
-      <View style={pss.strip}>
+      <View style={[pss.strip, { width: stripWidth }] as object}>
         {heroes.map((h, index) => {
           const offset = (index - activeIndex + heroes.length) % heroes.length;
           const isActive = offset === 0;
@@ -614,12 +628,9 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
           return (
             <Pressable
               key={h.id}
-              // A sliver is a card you bring forward; the front card is the
-              // character. Same rule the phone plate follows, so pressing art
-              // always means the same thing.
-              onPress={() => (isActive ? onViewProfile(String(h.id)) : setActiveIndex(index))}
-              accessibilityRole={isActive ? 'link' : 'button'}
-              accessibilityLabel={isActive ? `View ${h.name}` : `Show ${h.name}`}
+              onPress={() => setActiveIndex(index)}
+              accessibilityRole="button"
+              accessibilityLabel={`Show ${h.name}`}
               style={[
                 pss.card,
                 {
@@ -746,7 +757,7 @@ const pss = StyleSheet.create({
   strip: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    gap: 12,
+    gap: CARD_GAP,
     contain: 'layout style',
     height: '100%',
     // Clip the rightmost accordion slivers so they don't shear the glass panel,
@@ -754,8 +765,8 @@ const pss = StyleSheet.create({
     // drop shadow flat at the bottom. clip-path insets the right edge (slivers)
     // while extending top/bottom/left so the shadow renders in full.
     clipPath: 'inset(-90px 0px -90px -60px)',
-    flexShrink: 1,
-    minWidth: 0,
+    flexGrow: 0,
+    flexShrink: 0,
   } as object,
   card: {
     borderRadius: 14,
