@@ -1260,39 +1260,6 @@ export type Database = {
         }
         Relationships: []
       }
-      heroes_meta_backup_20260629: {
-        Row: {
-          comicvine_id: string | null
-          comicvine_status: string | null
-          id: string | null
-          issue_count: number | null
-          movie_count: number | null
-          name: string | null
-          publisher: string | null
-          snapshot_at: string | null
-        }
-        Insert: {
-          comicvine_id?: string | null
-          comicvine_status?: string | null
-          id?: string | null
-          issue_count?: number | null
-          movie_count?: number | null
-          name?: string | null
-          publisher?: string | null
-          snapshot_at?: string | null
-        }
-        Update: {
-          comicvine_id?: string | null
-          comicvine_status?: string | null
-          id?: string | null
-          issue_count?: number | null
-          movie_count?: number | null
-          name?: string | null
-          publisher?: string | null
-          snapshot_at?: string | null
-        }
-        Relationships: []
-      }
       house_members: {
         Row: {
           hero_id: string
