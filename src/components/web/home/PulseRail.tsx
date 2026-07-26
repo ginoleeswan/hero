@@ -8,6 +8,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, ELEVATION, HOVER_TRANSITION } from '../../../constants/colors';
+import { brandForEvent, fitMark } from '../../../constants/eventBrands';
 import type { PulseEvent, PulseKind } from '../../../lib/home/pulse';
 
 const KIND_TINT: Record<PulseKind, string> = {
@@ -51,13 +52,9 @@ export function PulseRail({
 
   return (
     <View style={s.section as object}>
-      <View style={[s.header, { paddingHorizontal: gutter }] as object}>
-        <View style={[s.accentBar, { backgroundColor: COLORS.orange }] as object} />
-        <View>
-          <Text style={[s.label, { color: COLORS.orange }] as object}>Latest</Text>
-          <Text style={s.title as object}>Just Happened</Text>
-        </View>
-      </View>
+      {/* No header. The band above already says "Right Now" and describes
+          itself; a second "Latest / Just Happened" repeated the same claim and
+          unbalanced the top of the band. */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -71,6 +68,7 @@ export function PulseRail({
           // out of the data instead.
           if (item.kind === 'live_event') {
             const accent = item.accent ?? COLORS.goldAccent;
+            const brand = brandForEvent(item.entityId);
             return (
               <View
                 key={item.eventId}
@@ -95,9 +93,21 @@ export function PulseRail({
                       </>
                     )}
                   </View>
-                  <Text style={live.name as object} numberOfLines={3}>
-                    {item.headline}
-                  </Text>
+                  {brand ? (
+                    // The mark replaces the name rather than joining it — a
+                    // wordmark logo already says the name.
+                    <View style={live.markBox as object}>
+                      <brand.mark
+                        {...fitMark(brand, LIVE_MARK_MAX_W, LIVE_MARK_MAX_H)}
+                        color={accent}
+                        fill={accent}
+                      />
+                    </View>
+                  ) : (
+                    <Text style={live.name as object} numberOfLines={3}>
+                      {item.headline}
+                    </Text>
+                  )}
                   <View style={{ flex: 1 }} />
                   {topMover ? (
                     <View>
@@ -178,13 +188,18 @@ export function PulseRail({
 
 const CARD_W = 208;
 const CARD_H = 286;
+const LIVE_CARD_W = Math.round(CARD_W * 1.62);
+/** The mark sits where the headline did: body width inside the padding, and no
+ *  taller than the three lines of Flame it replaces. */
+const LIVE_MARK_MAX_W = LIVE_CARD_W - 36;
+const LIVE_MARK_MAX_H = 104;
 
 // The live-event card. Wider than a poster card on purpose: a different shape
 // reads as "a different kind of thing", where a same-shaped card with no image
 // reads as a broken one.
 const live = StyleSheet.create({
   card: {
-    width: Math.round(CARD_W * 1.62),
+    width: LIVE_CARD_W,
     height: CARD_H,
     borderRadius: 16,
     borderCurve: 'continuous',
@@ -232,29 +247,13 @@ const live = StyleSheet.create({
     color: COLORS.beige,
   } as object,
   moverPct: { fontFamily: 'Nunito_700Bold', fontSize: 12, marginTop: 2 } as object,
+  // Left-aligned so the mark shares an optical edge with the status row above
+  // and the mover lines below, whatever its aspect ratio.
+  markBox: { alignItems: 'flex-start', justifyContent: 'center', minHeight: 52 } as object,
 });
 
 const s = StyleSheet.create({
   section: { marginBottom: 26 } as object,
-  header: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: 12,
-    marginBottom: 14,
-  } as object,
-  accentBar: { width: 4, borderRadius: 2 } as object,
-  label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  } as object,
-  title: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 30,
-    color: COLORS.beige,
-    lineHeight: 37,
-  } as object,
   strip: { gap: 14, paddingBottom: 6 } as object,
   card: {
     width: CARD_W,

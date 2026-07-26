@@ -12,6 +12,7 @@ import { View, Text, FlatList, StyleSheet, Pressable, Dimensions } from 'react-n
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../../constants/colors';
+import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import type { PulseEvent, PulseKind } from '../../lib/home/pulse';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -63,13 +64,9 @@ export function PulseRail({
 
   return (
     <View style={s.section}>
-      <View style={s.header}>
-        <View style={[s.accentBar, { backgroundColor: COLORS.orange }]} />
-        <View>
-          <Text style={[s.label, { color: COLORS.orange }]}>Latest</Text>
-          <Text style={s.title}>Just Happened</Text>
-        </View>
-      </View>
+      {/* No header. The band above already says "Right Now" and describes
+          itself; a second "Latest / Just Happened" repeated the same claim and
+          pushed the cards below the fold on a phone. */}
       <FlatList
         horizontal
         data={events}
@@ -87,6 +84,7 @@ export function PulseRail({
           // room, and the loudest character it's moving.
           if (item.kind === 'live_event') {
             const accent = item.accent ?? COLORS.goldAccent;
+            const brand = brandForEvent(item.entityId);
             return (
               <View
                 style={[live.card, { borderColor: `${accent}55` }]}
@@ -110,9 +108,22 @@ export function PulseRail({
                       </>
                     )}
                   </View>
-                  <Text style={live.name} numberOfLines={3}>
-                    {item.headline}
-                  </Text>
+                  {brand ? (
+                    // The mark replaces the name rather than joining it — a
+                    // wordmark logo already says the name, and showing both
+                    // reads as a mistake.
+                    <View style={live.markBox}>
+                      <brand.mark
+                        {...fitMark(brand, LIVE_MARK_MAX_W, LIVE_MARK_MAX_H)}
+                        color={accent}
+                        fill={accent}
+                      />
+                    </View>
+                  ) : (
+                    <Text style={live.name} numberOfLines={3}>
+                      {item.headline}
+                    </Text>
+                  )}
                   <View style={{ flex: 1 }} />
                   {topMover ? (
                     <View>
@@ -197,9 +208,15 @@ export function PulseRail({
 // The live-event card. Wider than a poster card on purpose: a different shape
 // reads as "a different kind of thing", where a same-shaped card with no image
 // reads as a broken one.
+const LIVE_CARD_W = Math.round(CARD_W * 1.62);
+/** The mark sits where the headline did: full body width inside the padding,
+ *  and no taller than the three lines of Flame it replaces. */
+const LIVE_MARK_MAX_W = LIVE_CARD_W - 26;
+const LIVE_MARK_MAX_H = 92;
+
 const live = StyleSheet.create({
   card: {
-    width: Math.round(CARD_W * 1.62),
+    width: LIVE_CARD_W,
     height: CARD_H,
     borderRadius: 14,
     borderCurve: 'continuous',
@@ -246,27 +263,13 @@ const live = StyleSheet.create({
     color: COLORS.beige,
   },
   moverPct: { fontFamily: 'Nunito_700Bold', fontSize: 11, marginTop: 1 },
+  // Left-aligned so the mark sits on the same optical edge as the status row
+  // above and the mover lines below, whatever its aspect ratio.
+  markBox: { alignItems: 'flex-start', justifyContent: 'center', minHeight: 44 },
 });
 
 const s = StyleSheet.create({
   section: { marginBottom: 20 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: 11,
-    paddingHorizontal: 15,
-    marginBottom: 12,
-  },
-  accentBar: { width: 4, borderRadius: 2 },
-  label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  // Flame needs lineHeight >= 1.22x fontSize; this is unclamped but kept in step
-  // with the band's other shelf titles.
-  title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.beige, lineHeight: 28 },
   strip: { gap: 10, paddingHorizontal: 15, paddingBottom: 4 },
   card: {
     width: CARD_W,
