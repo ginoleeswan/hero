@@ -1,6 +1,7 @@
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from './Skeleton';
 import { COLORS, pageGutter } from '../../constants/colors';
+import { spotlightLayout } from './home/spotlightLayout';
 import { TOPBAR_HEIGHT } from './TopBar';
 
 const ROW_CARD_WIDTH = 220;
@@ -9,70 +10,51 @@ const ROW_CARD_HEIGHT = 310;
 type Opacity = ReturnType<typeof useSkeletonAnim>;
 
 function SpotlightSkeleton({ opacity, dark }: { opacity: Opacity; dark: boolean }) {
-  const { width, height } = useWindowDimensions();
-  const isMobile = width < 640;
-  // Same gutter as the real stage (pageGutter): caps content at CONTENT_MAX_WIDTH
-  // and centres it. A hardcoded 32 let the skeleton sprawl edge-to-edge on
-  // >1504px displays while the loaded content stayed 1440 wide.
-  const pagePad = pageGutter(width);
+  const { width } = useWindowDimensions();
+  // Same source of truth as the real stage, so the page doesn't nudge when the
+  // spotlight swaps in. The skeleton IS the layout, minus the content.
+  const { state, stageHeight, cardWidth, tail, gutter } = spotlightLayout(width);
 
-  if (isMobile) {
-    const contentHeight = 240;
+  if (state === 'stacked') {
     return (
-      <View
-        style={{
-          flexDirection: 'row',
-          gap: 10,
-          height: contentHeight,
-          marginTop: 6,
-          marginBottom: 20,
-          paddingHorizontal: pagePad,
-        }}
-      >
-        <SkeletonBlock
-          opacity={opacity}
-          dark={dark}
-          width={150}
-          height={contentHeight}
-          borderRadius={10}
-        />
-        <View style={{ flex: 1 }}>
-          <SkeletonBlock opacity={opacity} dark={dark} height={contentHeight} borderRadius={10} />
+      <View style={{ gap: 14, marginTop: 6, marginBottom: 22, paddingHorizontal: gutter }}>
+        <View style={{ alignSelf: 'center' }}>
+          <SkeletonBlock
+            opacity={opacity}
+            dark={dark}
+            width={cardWidth}
+            height={stageHeight}
+            borderRadius={18}
+          />
         </View>
+        <SkeletonBlock opacity={opacity} dark={dark} height={64} borderRadius={10} />
       </View>
     );
   }
 
-  // Mirror the real stage height formula (PortraitStripSpotlight): max(440,
-  // min(500, h*0.62)). The old min(460, h*0.58) ran ~40px short, so the page
-  // nudged down when the spotlight swapped in.
-  const contentHeight = Math.max(440, Math.min(500, height * 0.62));
   return (
     <View
       style={{
         flexDirection: 'row',
         gap: 16,
-        height: contentHeight,
+        height: stageHeight,
         marginBottom: 24,
-        paddingHorizontal: pagePad,
+        paddingHorizontal: gutter,
       }}
     >
-      {/* Accordion strip — mirror the large-scale ACCORDION_SCALES widths
-          (active card + the thin slivers) so the strip and the glass panel land
-          where the real ones do. */}
-      {[280, 140, 100, 76, 54, 40, 28].map((w, i) => (
+      {[cardWidth, ...tail].map((w, i) => (
         <SkeletonBlock
           key={i}
           opacity={opacity}
           dark={dark}
           width={w}
-          height={contentHeight}
+          height={stageHeight}
           borderRadius={14}
         />
       ))}
       {/* Info panel */}
       <View style={{ flex: 1 }}>
-        <SkeletonBlock opacity={opacity} dark={dark} height={contentHeight} borderRadius={16} />
+        <SkeletonBlock opacity={opacity} dark={dark} height={stageHeight} borderRadius={16} />
       </View>
     </View>
   );
@@ -87,7 +69,7 @@ function StatPodsSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: num
     return (
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: pagePad }}>
         {Array.from({ length: 4 }).map((_, i) => (
-          <View key={i} style={{ width: '48%' }}>
+          <View key={i} style={{ flexGrow: 1, flexBasis: 'calc(50% - 5px)' } as object}>
             <SkeletonBlock opacity={opacity} dark height={84} borderRadius={14} />
           </View>
         ))}

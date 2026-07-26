@@ -102,7 +102,9 @@ const s = StyleSheet.create({
     boxShadow: CARD_SHADOW,
   } as object,
   podFlex: { flex: 1 },
-  podHalfWidth: { width: '48%' } as object,
+  // Two up, filling the row exactly. `48%` left a 20px dead strip on the right
+  // at iPad portrait — half the gap is what the pod owes, not 2%.
+  podHalfWidth: { flexGrow: 1, flexBasis: 'calc(50% - 5px)' } as object,
   podHover: { backgroundColor: 'rgba(255,255,255,0.09)' } as object,
   podPaperHover: {
     transform: [{ translateY: -3 }],

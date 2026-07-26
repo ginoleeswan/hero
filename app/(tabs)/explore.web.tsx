@@ -22,6 +22,7 @@ import { pressTransform } from '../../src/components/web/pressStyles';
 import { useHeroMorph } from '../../src/hooks/useHeroMorph';
 import { HeroImage } from '../../src/components/HeroImage';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
+import { spotlightLayout } from '../../src/components/web/home/spotlightLayout';
 import { type Hero } from '../../src/lib/db/heroes';
 import { loginHref } from '../../src/lib/loginRedirect';
 import { RightNowBand } from '../../src/components/web/home/RightNowBand';
@@ -255,49 +256,16 @@ function StatChip({
 }
 
 // ── Portrait strip spotlight ──────────────────────────────────────────────────
-const ACCORDION_SCALES = {
-  // Extra-wide displays (1600px+). Content is capped at CONTENT_MAX_WIDTH, so
-  // the strip mustn't eat the whole band — these widths leave the glass panel a
-  // comfortable ~460px within 1440 (strip ≈ 964 + gap). Entry count matches the
-  // 8-hero pool (optimalPoolSize) so every slot is fed.
-  xlarge: [
-    { w: 320, o: 1 },
-    { w: 172, o: 0.82 },
-    { w: 124, o: 0.66 },
-    { w: 92, o: 0.54 },
-    { w: 66, o: 0.44 },
-    { w: 48, o: 0.36 },
-    { w: 34, o: 0.28 },
-    { w: 24, o: 0.2 },
-  ],
-  // Ultra-wide displays (1200px+)
-  large: [
-    { w: 280, o: 1 },
-    { w: 140, o: 0.8 },
-    { w: 100, o: 0.6 },
-    { w: 76, o: 0.5 },
-    { w: 54, o: 0.4 },
-    { w: 40, o: 0.3 },
-    { w: 28, o: 0.2 },
-    { w: 20, o: 0.1 },
-  ],
-  // Standard desktop (900px - 1199px)
-  medium: [
-    { w: 180, o: 1 },
-    { w: 100, o: 0.8 },
-    { w: 76, o: 0.5 },
-    { w: 54, o: 0.3 },
-    { w: 38, o: 0.2 },
-    { w: 20, o: 0.1 },
-  ],
-  // Tablet / Small desktop (768px - 899px)
-  small: [
-    { w: 160, o: 1 },
-    { w: 80, o: 0.7 },
-    { w: 40, o: 0.3 },
-  ],
-};
+// Depth taper for the deck: the active card is fully lit and each sliver behind
+// it sits a step further back. Widths come from spotlightLayout; this is only
+// the light falling on them.
+const SLIVER_OPACITY = [1, 0.82, 0.66, 0.54, 0.44, 0.36, 0.28, 0.2];
 
+// Four states, one rule: the portrait's aspect ratio is the invariant and the
+// stage height follows the card width, so the art never gets sliced into a
+// ribbon to make a fixed-height billboard fit. `spotlightLayout` owns the
+// arithmetic; this component owns what's shown at each of its states, which is
+// mostly a question of what to take away.
 const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   heroes,
   onViewProfile,
@@ -306,7 +274,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   onViewProfile: (heroId: string) => void;
 }) {
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 768;
+  const layout = spotlightLayout(width);
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -338,51 +306,145 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
     };
   }, [heroName, backdrop.name]);
 
+  // Touch: a deck you flip. Dots alone read as a slideshow someone else is
+  // driving, which is the wrong feeling for a stack of cards.
+  const swipeStart = useRef<number | null>(null);
+  const step = useCallback(
+    (dir: number) => setActiveIndex((i) => (i + dir + heroes.length) % heroes.length),
+    [heroes.length],
+  );
+  const swipeHandlers = {
+    onTouchStart: (e: { touches: Array<{ clientX: number }> }) => {
+      swipeStart.current = e.touches[0]?.clientX ?? null;
+    },
+    onTouchEnd: (e: { changedTouches: Array<{ clientX: number }> }) => {
+      const from = swipeStart.current;
+      swipeStart.current = null;
+      const to = e.changedTouches[0]?.clientX;
+      if (from == null || to == null) return;
+      if (Math.abs(to - from) > 44) step(to < from ? 1 : -1);
+    },
+  } as object;
+
   if (!hero) return null;
 
-  const pagePad = pageGutter(width);
+  const { state, stageHeight, cardWidth, tail, detail, showGhostName, panelMaxWidth, gutter } =
+    layout;
   // Publisher-tinted ambience: the primary orb warms toward the featured
   // hero's brand colour (Marvel red, DC blue…), easing over 800ms per turn.
   const brandGlow = glowColor(brandForPublisher(hero.publisher)?.color, 0.16);
   const backdropSize = Math.min(260, Math.max(140, Math.round(width * 0.15)));
+  const align = alignmentLabel(hero.alignment);
 
-  const activeScale =
-    width >= 1600
-      ? ACCORDION_SCALES.xlarge
-      : width >= 1280
-        ? ACCORDION_SCALES.large
-        : width >= 900
-          ? ACCORDION_SCALES.medium
-          : ACCORDION_SCALES.small;
+  const dots = (
+    <View style={pss.dots}>
+      {heroes.map((_, i) => (
+        <Pressable
+          key={i}
+          onPress={() => setActiveIndex(i)}
+          accessibilityRole="button"
+          accessibilityLabel={`Show featured character ${i + 1} of ${heroes.length}`}
+          style={pss.dotHit as object}
+        >
+          <View style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object} />
+        </Pressable>
+      ))}
+    </View>
+  );
 
-  if (isDesktop) {
-    // FIXED height (not minHeight): the glass panel's content varies per hero
-    // (name 1↔2 lines, real-name line present/absent, summary length), so a
-    // minHeight let the stage grow to fit the tallest — and the whole billboard
-    // (and everything below it) jumped 12px as the carousel rotated. 516 clears
-    // the tallest measured content (≈512); the summary flexes (below) as a
-    // safety so nothing clips even if a hero runs longer.
-    const stageHeight = 516;
+  const cta = (label: string) => (
+    <Pressable
+      onPress={() => onViewProfile(String(hero.id))}
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+        [pss.ctaBtn, hovered && (pss.ctaBtnHover as object)] as object
+      }
+    >
+      <Text style={pss.ctaBtnText}>{label}</Text>
+    </Pressable>
+  );
 
+  // ── Stacked (<720): one column, the poster leads ────────────────────────────
+  if (state === 'stacked') {
     return (
-      <View
-        style={[pss.wrap, { paddingHorizontal: pagePad, height: stageHeight }] as object}
-        {...({
-          onMouseEnter: () => setPaused(true),
-          onMouseLeave: () => setPaused(false),
-        } as object)}
-      >
-        {/* Atmospheric orbs — decorative, no interaction. Orb A carries the
-            featured hero's publisher tint. These bloom freely: the wrap no
-            longer clips (it used to shear the blurred glow flat at the stage's
-            top edge — a hard line on a soft bloom). The two things that DO need
-            clipping keep their own: the giant ghost name (ambientClip) and the
-            accordion card slivers (the strip's own overflow). */}
-        <View style={[pss.orbA, { backgroundColor: brandGlow }] as object} />
-        <View style={pss.orbB as object} />
+      <View style={[pss.stack, { paddingHorizontal: gutter }] as object} {...swipeHandlers}>
+        <View
+          style={
+            [pss.poster, { width: cardWidth, height: stageHeight, alignSelf: 'center' }] as object
+          }
+        >
+          <HeroImage
+            id={String(hero.id)}
+            name={hero.name}
+            imageUrl={hero.image_url}
+            portraitUrl={hero.portrait_url}
+            imageMdUrl={hero.image_md_url ?? null}
+            grid
+            contentFit="cover"
+            contentPosition={{ top: 0, left: '50%' }}
+            style={StyleSheet.absoluteFill}
+            recyclingKey={String(hero.id)}
+          />
+          <View style={pss.posterScrim as object} />
+          <View style={pss.posterCaption as object}>
+            <Text style={pss.glassPanelEyebrow as object}>Featured Character</Text>
+            <Text style={pss.posterName as object} numberOfLines={2}>
+              {hero.name}
+            </Text>
+            {!!hero.publisher && (
+              <Text style={pss.glassPanelPub as object} numberOfLines={1}>
+                {hero.publisher}
+              </Text>
+            )}
+          </View>
+        </View>
+        <View style={pss.stackBody}>
+          {!!hero.summary && (
+            <Text style={pss.stackSummary as object} numberOfLines={3}>
+              {hero.summary}
+            </Text>
+          )}
+          <View style={pss.panelFooter}>
+            {cta('View Profile →')}
+            {dots}
+          </View>
+        </View>
+      </View>
+    );
+  }
 
-        {/* Type as scenery — the splash-page title behind the portraits, cropped
-            to the stage by its own clip layer (was cropped by the wrap). */}
+  // ── Caption / duo / gallery: portrait (plus deck) beside the panel ──────────
+  const stripCards = state === 'caption' ? [cardWidth] : [cardWidth, ...tail];
+
+  return (
+    <View
+      style={
+        [
+          pss.wrap,
+          { paddingHorizontal: gutter, height: stageHeight },
+          // When the panel is capped the pair centres, so a wide window reads as
+          // a composed spread rather than a portrait pinned to the left margin.
+          panelMaxWidth ? { justifyContent: 'center' } : null,
+        ] as object
+      }
+      {...({
+        onMouseEnter: () => setPaused(true),
+        onMouseLeave: () => setPaused(false),
+      } as object)}
+      {...swipeHandlers}
+    >
+      {/* Atmospheric orbs — decorative, no interaction. Orb A carries the
+          featured hero's publisher tint. These bloom freely: the wrap no
+          longer clips (it used to shear the blurred glow flat at the stage's
+          top edge — a hard line on a soft bloom). The two things that DO need
+          clipping keep their own: the giant ghost name (ambientClip) and the
+          accordion card slivers (the strip's own overflow). */}
+      <View style={[pss.orbA, { backgroundColor: brandGlow }] as object} />
+      <View style={pss.orbB as object} />
+
+      {/* Type as scenery — only where there's negative space for it to BE
+          scenery. Below the deck states it sits behind the glass panel and
+          reads as a smudge, so it goes. */}
+      {showGhostName ? (
         <View style={pss.ambientClip as object} pointerEvents="none">
           <Text
             style={
@@ -401,194 +463,115 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
             {backdrop.name.toUpperCase()}
           </Text>
         </View>
+      ) : null}
 
-        <View style={pss.strip}>
-          {heroes.map((h, index) => {
-            const offset = (index - activeIndex + heroes.length) % heroes.length;
-            const isActive = offset === 0;
-            const isNext = offset === 1;
+      <View style={pss.strip}>
+        {heroes.map((h, index) => {
+          const offset = (index - activeIndex + heroes.length) % heroes.length;
+          const isActive = offset === 0;
+          const isNext = offset === 1;
 
-            const isVisible = offset < activeScale.length;
-            const cardWidth = isVisible ? activeScale[offset].w : 0;
-            const opacity = isVisible ? activeScale[offset].o : 0;
+          const isVisible = offset < stripCards.length;
+          const slotWidth = isVisible ? stripCards[offset] : 0;
 
-            return (
-              <Pressable
-                key={h.id}
-                onPress={() => setActiveIndex(index)}
-                style={[
-                  pss.card,
-                  {
-                    width: cardWidth,
-                    opacity: opacity,
-                    borderWidth: cardWidth === 0 ? 0 : undefined,
-                  } as object,
-                  isActive && (pss.cardActive as object),
-                ]}
-              >
-                {/* The opacity fade + its transition live on THIS wrapper, not the
-                    image — a composited layer (opacity/transition) escapes the
-                    card's rounded overflow clip in WebKit, poking square corners
-                    past the radius. The wrapper carries its own border-radius +
-                    overflow so the composited layer is itself rounded. */}
-                <View style={[pss.imgLayer, { opacity: isActive ? 1 : 0.4 }] as object}>
-                  <HeroImage
-                    id={String(h.id)}
-                    name={h.name}
-                    imageUrl={h.image_url}
-                    portraitUrl={h.portrait_url}
-                    contentFit="cover"
-                    contentPosition={{ top: 0, left: '50%' }}
-                    style={StyleSheet.absoluteFill}
-                    recyclingKey={String(h.id)}
-                  />
-                </View>
-                <View style={pss.cardOverlay as object} />
-                <Text
-                  style={[
-                    pss.cardName as object,
-                    isNext && (pss.cardNameNext as object),
-                    {
-                      opacity: isActive ? 1 : isNext ? 0.7 : 0,
-                      transition: 'opacity 250ms ease',
-                    } as object,
-                  ]}
-                  numberOfLines={2}
-                >
-                  {h.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* Glass info panel — flex child beside the portrait strip */}
-        <View style={pss.glassPanel as object}>
-          <Text style={pss.glassPanelEyebrow as object}>Featured Character</Text>
-          <Text style={pss.glassPanelName as object} numberOfLines={2}>
-            {hero.name}
-          </Text>
-          {!!hero.full_name && hero.full_name !== hero.name && (
-            <Text style={pss.glassPanelRealName as object} numberOfLines={1}>
-              {hero.full_name}
-            </Text>
-          )}
-          <View style={pss.metaRow as object}>
-            {!!hero.publisher && (
-              <Text style={pss.glassPanelPub as object} numberOfLines={1}>
-                {hero.publisher}
-              </Text>
-            )}
-            {!!alignmentLabel(hero.alignment) && (
-              <View style={pss.alignChip as object}>
-                <Text style={pss.alignChipText as object}>{alignmentLabel(hero.alignment)}</Text>
-              </View>
-            )}
-          </View>
-          {!!hero.summary && (
-            <Text style={pss.glassPanelSummary as object} numberOfLines={4}>
-              {hero.summary}
-            </Text>
-          )}
-          {hero.intelligence || hero.strength || hero.speed ? (
-            <View style={pss.statPills as object}>
-              {!!hero.intelligence && (
-                <StatChip icon="brain" label="INT" value={hero.intelligence} />
-              )}
-              {!!hero.strength && <StatChip icon="arm-flex" label="STR" value={hero.strength} />}
-              {!!hero.speed && <StatChip icon="run-fast" label="SPD" value={hero.speed} />}
-            </View>
-          ) : null}
-          {!!hero.first_appearance && (
-            <Text style={pss.firstAppearance as object} numberOfLines={1}>
-              First appearance · {hero.first_appearance}
-            </Text>
-          )}
-          <View style={pss.panelFooter}>
+          return (
             <Pressable
-              onPress={() => onViewProfile(String(hero.id))}
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [pss.ctaBtn, hovered && (pss.ctaBtnHover as object)] as object
-              }
+              key={h.id}
+              onPress={() => setActiveIndex(index)}
+              style={[
+                pss.card,
+                {
+                  width: slotWidth,
+                  opacity: isVisible ? (SLIVER_OPACITY[offset] ?? 0.2) : 0,
+                  borderWidth: slotWidth === 0 ? 0 : undefined,
+                } as object,
+                isActive && (pss.cardActive as object),
+              ]}
             >
-              <Text style={pss.ctaBtnText}>View Profile →</Text>
+              {/* The opacity fade + its transition live on THIS wrapper, not the
+                  image — a composited layer (opacity/transition) escapes the
+                  card's rounded overflow clip in WebKit, poking square corners
+                  past the radius. The wrapper carries its own border-radius +
+                  overflow so the composited layer is itself rounded. */}
+              <View style={[pss.imgLayer, { opacity: isActive ? 1 : 0.4 }] as object}>
+                <HeroImage
+                  id={String(h.id)}
+                  name={h.name}
+                  imageUrl={h.image_url}
+                  portraitUrl={h.portrait_url}
+                  contentFit="cover"
+                  contentPosition={{ top: 0, left: '50%' }}
+                  style={StyleSheet.absoluteFill}
+                  recyclingKey={String(h.id)}
+                />
+              </View>
+              <View style={pss.cardOverlay as object} />
+              <Text
+                style={[
+                  pss.cardName as object,
+                  isNext && (pss.cardNameNext as object),
+                  {
+                    opacity: isActive ? 1 : isNext ? 0.7 : 0,
+                    transition: 'opacity 250ms ease',
+                  } as object,
+                ]}
+                numberOfLines={2}
+              >
+                {h.name}
+              </Text>
             </Pressable>
-            <View style={pss.dots}>
-              {heroes.slice(0, activeScale.length).map((_, i) => (
-                <Pressable
-                  key={i}
-                  onPress={() => setActiveIndex(i)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Show featured character ${i + 1} of ${heroes.length}`}
-                  style={pss.dotHit as object}
-                >
-                  <View
-                    style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object}
-                  />
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        </View>
+          );
+        })}
       </View>
-    );
-  }
 
-  // Mobile web: single portrait + info panel
-  return (
-    <View style={[pss.wrapMobile, { paddingHorizontal: pagePad }]}>
-      <View style={pss.singlePortrait}>
-        <HeroImage
-          id={String(hero.id)}
-          name={hero.name}
-          imageUrl={hero.image_url}
-          portraitUrl={hero.portrait_url}
-          imageMdUrl={hero.image_md_url ?? null}
-          grid
-          contentFit="cover"
-          contentPosition="top"
-          style={StyleSheet.absoluteFill}
-          recyclingKey={String(hero.id)}
-        />
-        <View style={pss.cardOverlay as object} />
-        <Text style={pss.cardName as object} numberOfLines={2}>
+      {/* Glass info panel — flex child beside the portrait strip. Its contents
+          come off in a fixed order as the width goes: first appearance, then
+          the stat pills, then the real name. */}
+      <View style={[pss.glassPanel, panelMaxWidth ? { maxWidth: panelMaxWidth } : null] as object}>
+        <Text style={pss.glassPanelEyebrow as object}>Featured Character</Text>
+        <Text
+          style={[pss.glassPanelName, detail === 'lean' && (pss.glassPanelNameLean as object)]}
+          numberOfLines={2}
+        >
           {hero.name}
         </Text>
-      </View>
-      <View style={pss.panelMobile}>
-        <View>
-          <Text style={pss.panelLabel as object}>Featured Character</Text>
-          <Text style={pss.panelNameMobile as object} numberOfLines={2}>
-            {hero.name}
+        {detail !== 'lean' && !!hero.full_name && hero.full_name !== hero.name && (
+          <Text style={pss.glassPanelRealName as object} numberOfLines={1}>
+            {hero.full_name}
           </Text>
+        )}
+        <View style={pss.metaRow as object}>
           {!!hero.publisher && (
-            <Text style={pss.panelPub as object} numberOfLines={1}>
+            <Text style={pss.glassPanelPub as object} numberOfLines={1}>
               {hero.publisher}
             </Text>
           )}
-          {!!hero.summary && (
-            <Text style={pss.panelSummaryMobile as object} numberOfLines={5}>
-              {hero.summary}
-            </Text>
+          {!!align && (
+            <View style={pss.alignChip as object}>
+              <Text style={pss.alignChipText as object}>{align}</Text>
+            </View>
           )}
         </View>
-        <View style={pss.panelFooter}>
-          <Pressable onPress={() => onViewProfile(String(hero.id))} style={pss.ctaBtn as object}>
-            <Text style={pss.ctaBtnText}>View →</Text>
-          </Pressable>
-          <View style={pss.dots}>
-            {heroes.slice(0, 8).map((_, i) => (
-              <Pressable
-                key={i}
-                onPress={() => setActiveIndex(i)}
-                accessibilityRole="button"
-                accessibilityLabel={`Show featured character ${i + 1} of ${heroes.length}`}
-                style={pss.dotHit as object}
-              >
-                <View style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object} />
-              </Pressable>
-            ))}
+        {!!hero.summary && (
+          <Text style={pss.glassPanelSummary as object} numberOfLines={detail === 'lean' ? 3 : 4}>
+            {hero.summary}
+          </Text>
+        )}
+        {hero.intelligence || hero.strength || hero.speed ? (
+          <View style={pss.statPills as object}>
+            {!!hero.intelligence && <StatChip icon="brain" label="INT" value={hero.intelligence} />}
+            {!!hero.strength && <StatChip icon="arm-flex" label="STR" value={hero.strength} />}
+            {!!hero.speed && <StatChip icon="run-fast" label="SPD" value={hero.speed} />}
           </View>
+        ) : null}
+        {detail === 'full' && !!hero.first_appearance && (
+          <Text style={pss.firstAppearance as object} numberOfLines={1}>
+            First appearance · {hero.first_appearance}
+          </Text>
+        )}
+        <View style={pss.panelFooter}>
+          {cta('View Profile →')}
+          {dots}
         </View>
       </View>
     </View>
@@ -665,13 +648,6 @@ const pss = StyleSheet.create({
     bottom: 0,
     backgroundImage:
       'linear-gradient(to top, rgba(15,20,24,0.95) 0%, rgba(15,20,24,0.15) 50%, transparent 100%)',
-  } as object,
-  cardBadge: {
-    position: 'absolute',
-    top: 14,
-    left: 14,
-    ...EYEBROW,
-    zIndex: 2,
   } as object,
   // Character names set in Flame everywhere — the display face is the brand.
   cardName: {
@@ -858,19 +834,6 @@ const pss = StyleSheet.create({
     color: INK_TEXT.faint,
   } as object,
 
-  // Shared / mobile panel text
-  panelLabel: {
-    ...EYEBROW,
-    marginBottom: 8,
-  } as object,
-  panelPub: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: INK_TEXT.faint,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    marginBottom: 14,
-  } as object,
   panelFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -915,41 +878,45 @@ const pss = StyleSheet.create({
   } as object,
   dotActive: { width: 20, backgroundColor: COLORS.orange } as object,
 
-  // Mobile Web overrides
-  // minHeight, not height: the footer can wrap to two rows on a narrow phone
-  // and a fixed height would clip it.
-  wrapMobile: { flexDirection: 'row', gap: 10, minHeight: 240, marginTop: 6, marginBottom: 20 },
-  singlePortrait: {
-    // Was a hard 150. At 320px that left the panel 128px wide — too narrow for
-    // its own contents — so it yields space when there isn't enough.
-    width: 150,
-    flexShrink: 1,
-    minWidth: 104,
-    borderRadius: 10,
+  // ── Stacked (<720): the poster leads, the reading follows ──────────────────
+  // One column. The identity rides the poster's own lower edge — art and name
+  // as one object — and only the summary, the CTA and the deck sit under it.
+  stack: { gap: 14, marginTop: 6, marginBottom: 22 } as object,
+  poster: {
+    borderRadius: 18,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
     position: 'relative',
-  },
-  panelMobile: {
-    flex: 1,
-    backgroundColor: COLORS.navy,
-    borderRadius: 10,
-    padding: 14,
-    justifyContent: 'space-between',
-  },
-  panelNameMobile: {
+    boxShadow: '0 22px 44px rgba(0,0,0,0.32)',
+  } as object,
+  posterScrim: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '62%',
+    backgroundImage:
+      'linear-gradient(to top, rgba(11,24,32,0.96) 0%, rgba(11,24,32,0.62) 42%, transparent 100%)',
+  } as object,
+  posterCaption: { position: 'absolute', left: 18, right: 18, bottom: 16, gap: 2 } as object,
+  posterName: {
     fontFamily: 'Flame-Regular',
-    fontSize: 18,
+    fontSize: 32,
+    lineHeight: 40,
     color: COLORS.beige,
-    lineHeight: 22,
-    marginBottom: 4,
+    paddingBottom: 2,
+    textShadow: '0 2px 12px rgba(0,0,0,0.75)',
   } as object,
-  panelSummaryMobile: {
+  stackBody: { gap: 4 } as object,
+  stackSummary: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 10,
-    color: 'rgba(245,235,220,0.5)',
-    lineHeight: 15,
+    fontSize: 14,
+    lineHeight: 22,
+    color: INK_TEXT.muted,
   } as object,
+  // Caption state runs the name a step smaller — the panel is narrower there and
+  // a 34px display face wrapping to two lines eats the summary's room.
+  glassPanelNameLean: { fontSize: 28, lineHeight: 36 } as object,
 });
 
 // ── Carousel scroll hook (web desktop) ───────────────────────────────────────
@@ -1353,8 +1320,10 @@ export default function WebHomeScreen() {
     idlePrefetchTopUniverses();
   }, []);
 
-  // 1. MATCH THE ACCORDION_SCALES EXACTLY
-  const optimalPoolSize = width >= 1280 ? 8 : width >= 900 ? 6 : 3;
+  // One deck at every width. This used to drop to 3 below 900px, which let a
+  // display constraint quietly delete five featured characters — the layout is
+  // what should adapt, not the content.
+  const optimalPoolSize = 8;
 
   // Shared, platform-neutral data layer (see useExploreData). Web keeps reading
   // rows via `homeData.*`; these aliases preserve the existing render references.
