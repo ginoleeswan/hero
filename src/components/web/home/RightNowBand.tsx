@@ -559,6 +559,13 @@ export function RightNowBand({
     liveEventLabel: liveEventName,
   });
 
+  // The live card's one line of proof, from the wikiTrending already in props —
+  // no extra fetch. `avatar_url` is famous-tier-only and was null on 13 of 14
+  // rows in production, so this is a name and a number rather than faces.
+  const topMover = wikiTrending[0]
+    ? { name: wikiTrending[0].name, spikePct: wikiTrending[0].spikePct }
+    : null;
+
   // "What's Hot" is the real TMDB daily-trending feed (trendingOnScreen). On the
   // rare day nothing trending is in the catalogue, fall back to the live release
   // slate so the sidebar is never empty.
@@ -607,6 +614,7 @@ export function RightNowBand({
 
       <PulseRail
         events={pulse}
+        topMover={topMover}
         onTitlePress={onTitlePress}
         onIssuePress={onIssuePress}
         gutter={pagePad}

@@ -602,6 +602,39 @@ Same payload after:
 Six cards, mixed, news-led. Shorter and honest beats long and padded — and it
 grows on its own as the trailer lane fills (§8.4c).
 
+### 8.4d The live-event card — it looked broken, so it stopped being a poster
+
+Seen on screen 2026-07-26: the SDCC card rendered as a flat gold rectangle first
+in a rail of real cover art. It read as a missing image.
+
+The diagnosis is not "find it a picture". Every other card in the rail is **a
+thing you look at** — a poster, a cover. A convention isn't an object; it's a
+moment you're inside. Giving it the shape of a poster with no poster is why it
+looked broken. When there's no artwork, the data has to become the artwork — the
+same move Sky Sports, Twitch and Apple TV live tiles make.
+
+Two sources were checked and rejected before designing:
+
+| Idea | Why not |
+| --- | --- |
+| Wikipedia lead image | **San Diego Comic-Con has none at all.** The rest are crowd photos or a bare logo SVG — inconsistent, and absent for the one event that's live. |
+| Row of surging character faces | `avatar_url` is famous-tier only: **1 of 14** surging heroes had one in production. Thirteen holes. Viable later via `portrait_url`, but the Trending-Movers pollution (§1) would put Charybdis and Pasiphae on an SDCC card. |
+
+So the card is built from data instead:
+
+- **A day counter that advances** — `LIVE · DAY 2 OF 4`, `FINAL DAY`. This is the
+  highest-value part: progress through a window is what makes a card read as live
+  rather than labelled. "Happening now" is true but static. Needs `window_from` /
+  `window_to`, added by `20260726230000_pulse_event_window.sql`.
+  `eventDayLabel` degrades to a plain `DAY 5` when pageview lag puts today past
+  `live_to` — which is SDCC's actual state today — rather than "DAY 5 OF 3".
+- **The name, large.** With no image competing it becomes the card, not a caption.
+- **One named mover** — "Doctor Doom · +889% this week", from the `wikiTrending`
+  already in the band's props. No extra fetch. A name is a story; "3.4× chatter"
+  is a metric.
+- **Wider than a poster card, lit by a diagonal accent gradient.** A different
+  shape reads as *a different kind of thing*; a flat fill reads as a placeholder.
+
 ### 8.4c The real constraint: the catalogue is historical
 
 Worth restating next to the caps, because it's the reason the rail is short rather

@@ -35,6 +35,9 @@ const KIND_GROUND: Record<PulseKind, string> = {
 
 export interface PulseRailProps {
   events: PulseEvent[];
+  /** The loudest character surging right now, for the live-event card's one line
+   *  of proof. Already a prop on the band as `wikiTrending`; nothing new fetched. */
+  topMover?: { name: string; spikePct: number } | null;
   /** A trailer or title card → the title page. */
   onTitlePress: (titleId: string) => void;
   /** A comic → the issue page. */
@@ -44,17 +47,18 @@ export interface PulseRailProps {
 
 export function PulseRail({
   events,
+  topMover,
   onTitlePress,
   onIssuePress,
   disabled = false,
 }: PulseRailProps) {
   if (events.length === 0) return null;
 
+  // Live events render their own card and are never routed here — they have no
+  // destination of their own until the takeover hero exists.
   const open = (e: PulseEvent) => {
     if (e.kind === 'issue') onIssuePress(e.entityId);
-    else if (e.kind === 'trailer') onTitlePress(e.entityId);
-    // A live event has no destination of its own yet — the takeover hero is where
-    // it leads. Tapping the card is a no-op rather than a dead route.
+    else onTitlePress(e.entityId);
   };
 
   return (
@@ -76,13 +80,64 @@ export function PulseRail({
         initialNumToRender={4}
         renderItem={({ item }) => {
           const tint = KIND_TINT[item.kind];
-          const tappable = item.kind !== 'live_event';
+
+          // A convention isn't an object you look at, so it doesn't get a poster
+          // card with the poster missing. Wider, lit from the accent, and built
+          // out of the data instead: a day counter that advances, the name given
+          // room, and the loudest character it's moving.
+          if (item.kind === 'live_event') {
+            const accent = item.accent ?? COLORS.goldAccent;
+            return (
+              <View
+                style={[live.card, { borderColor: `${accent}55` }]}
+                accessibilityLabel={`${item.headline}, live now`}
+              >
+                <LinearGradient
+                  colors={[`${accent}4d`, `${accent}12`, 'rgba(11,24,32,0)']}
+                  locations={[0, 0.42, 1]}
+                  start={{ x: 0.1, y: 0 }}
+                  end={{ x: 0.85, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={live.body}>
+                  <View style={live.statusRow}>
+                    <View style={[live.dot, { backgroundColor: accent }]} />
+                    <Text style={[live.status, { color: accent }]}>Live</Text>
+                    {!!item.dayLabel && (
+                      <>
+                        <Text style={live.statusSep}>·</Text>
+                        <Text style={live.day}>{item.dayLabel}</Text>
+                      </>
+                    )}
+                  </View>
+                  <Text style={live.name} numberOfLines={3}>
+                    {item.headline}
+                  </Text>
+                  <View style={{ flex: 1 }} />
+                  {topMover ? (
+                    <View>
+                      <Text style={live.moverLabel}>Moving fastest</Text>
+                      <Text style={live.moverName} numberOfLines={1}>
+                        {topMover.name}
+                      </Text>
+                      <Text style={[live.moverPct, { color: accent }]}>
+                        {`+${topMover.spikePct}% this week`}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={live.moverLabel}>Happening now</Text>
+                  )}
+                </View>
+              </View>
+            );
+          }
+
           return (
             <Pressable
               style={s.card}
               onPress={() => open(item)}
-              disabled={disabled || !tappable}
-              accessibilityRole={tappable ? 'button' : undefined}
+              disabled={disabled}
+              accessibilityRole="button"
               accessibilityLabel={`${item.badge}: ${item.headline}`}
             >
               {item.imageUrl ? (
@@ -108,9 +163,7 @@ export function PulseRail({
                 style={StyleSheet.absoluteFill}
               />
               <View style={[s.badge, { backgroundColor: tint }]}>
-                <Text style={[s.badgeText, item.kind === 'live_event' && s.badgeTextDark]}>
-                  {item.badge}
-                </Text>
+                <Text style={s.badgeText}>{item.badge}</Text>
               </View>
               {!!item.mediaKey && (
                 <View style={s.play}>
@@ -140,6 +193,60 @@ export function PulseRail({
     </View>
   );
 }
+
+// The live-event card. Wider than a poster card on purpose: a different shape
+// reads as "a different kind of thing", where a same-shaped card with no image
+// reads as a broken one.
+const live = StyleSheet.create({
+  card: {
+    width: Math.round(CARD_W * 1.62),
+    height: CARD_H,
+    borderRadius: 14,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    backgroundColor: COLORS.deepNavy,
+    borderWidth: 1,
+  },
+  body: { flex: 1, padding: 13 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 9 },
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  status: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+  },
+  statusSep: { fontSize: 10, color: 'rgba(245,235,220,0.35)' },
+  day: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.78)',
+  },
+  name: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 25,
+    // Clamped Flame needs lineHeight >= 1.22x fontSize or descenders clip.
+    lineHeight: 31,
+    color: COLORS.beige,
+  },
+  moverLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 8.5,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.45)',
+    marginBottom: 3,
+  },
+  moverName: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 16,
+    lineHeight: 20,
+    color: COLORS.beige,
+  },
+  moverPct: { fontFamily: 'Nunito_700Bold', fontSize: 11, marginTop: 1 },
+});
 
 const s = StyleSheet.create({
   section: { marginBottom: 20 },
@@ -186,8 +293,6 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
     color: '#fff',
   },
-  // Gold is too light for white text.
-  badgeTextDark: { color: COLORS.deepNavy },
   play: {
     position: 'absolute',
     top: '42%',

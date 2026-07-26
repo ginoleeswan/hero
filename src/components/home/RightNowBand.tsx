@@ -263,6 +263,13 @@ export function RightNowBand({
     liveEventLabel: liveEventName,
   });
 
+  // The live card's one line of proof, from the wikiTrending already in props —
+  // no extra fetch. `avatar_url` is famous-tier-only and was null on 13 of 14
+  // rows in production, so this is a name and a number rather than faces.
+  const topMover = wikiTrending[0]
+    ? { name: wikiTrending[0].name, spikePct: wikiTrending[0].spikePct }
+    : null;
+
   return (
     <View style={bandStyles.band}>
       <View style={bandStyles.header}>
@@ -274,6 +281,7 @@ export function RightNowBand({
 
       <PulseRail
         events={pulse}
+        topMover={topMover}
         onTitlePress={onTitlePress}
         onIssuePress={onIssuePress}
         disabled={disabled}

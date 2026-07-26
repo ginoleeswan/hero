@@ -3,6 +3,7 @@ import {
   rankPulse,
   scoreCandidate,
   decay,
+  eventDayLabel,
   relevance,
   badgeFor,
   subtitleFor,
@@ -380,5 +381,52 @@ describe('railEvents — artwork', () => {
     // live card gets its own treatment instead.
     const out = railEvents(rankPulse([liveEvent({ imageUrl: null }), trailer()], NOW));
     expect(out.some((e) => e.kind === 'live_event')).toBe(true);
+  });
+});
+
+describe('eventDayLabel — the live card counts days', () => {
+  // "Happening now" is true but static. A counter that advances is what makes a
+  // live card read as live rather than merely labelled.
+  it('counts the day inside a known window', () => {
+    expect(eventDayLabel('2026-07-25', '2026-07-28', NOW)).toBe('DAY 2 OF 4');
+    expect(eventDayLabel('2026-07-21', '2026-07-30', NOW)).toBe('DAY 6 OF 10');
+  });
+
+  it('says FINAL DAY rather than "DAY n OF n" on the last one', () => {
+    // Same fact, said better.
+    expect(eventDayLabel('2026-07-24', '2026-07-26', NOW)).toBe('FINAL DAY');
+    expect(eventDayLabel('2026-07-26', '2026-07-26', NOW)).toBe('FINAL DAY');
+  });
+
+  it('drops the total when the end is unknown', () => {
+    expect(eventDayLabel('2026-07-24', null, NOW)).toBe('DAY 3');
+  });
+
+  it('reports the honest day when pageview lag puts today past the window', () => {
+    // live_to trails reality by a day or two, so day > total is expected — better
+    // a plain "DAY 5" than the nonsense "DAY 5 OF 3". This is SDCC's actual
+    // production window (2026-07-23 → 07-25) read on 07-26.
+    expect(eventDayLabel('2026-07-23', '2026-07-25', NOW)).toBe('DAY 4');
+    expect(eventDayLabel('2026-07-22', '2026-07-24', NOW)).toBe('DAY 5');
+  });
+
+  it('returns null before the window opens, or when it cannot be parsed', () => {
+    expect(eventDayLabel('2026-08-01', '2026-08-04', NOW)).toBeNull();
+    expect(eventDayLabel(null, '2026-07-26', NOW)).toBeNull();
+    expect(eventDayLabel('not-a-date', '2026-07-26', NOW)).toBeNull();
+  });
+
+  it('is attached to live events and nothing else', () => {
+    const out = rankPulse(
+      [liveEvent({ windowFrom: '2026-07-25', windowTo: '2026-07-28' }), trailer()],
+      NOW,
+    );
+    expect(out.find((e) => e.kind === 'live_event')?.dayLabel).toBe('DAY 2 OF 4');
+    expect(out.find((e) => e.kind === 'trailer')?.dayLabel).toBeNull();
+  });
+
+  it('leaves the label null when the event has no window yet', () => {
+    const out = rankPulse([liveEvent()], NOW);
+    expect(out[0].dayLabel).toBeNull();
   });
 });

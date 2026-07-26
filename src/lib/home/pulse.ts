@@ -45,6 +45,9 @@ export interface PulseCandidate {
   publisher: string | null;
   characterCount: number;
   maxFame: number | null;
+  /** The event's own window — live events only. Drives the day counter. */
+  windowFrom?: string | null;
+  windowTo?: string | null;
 }
 
 /** A ranked, display-ready card. */
@@ -57,6 +60,8 @@ export interface PulseEvent extends PulseCandidate {
   badge: string;
   /** The "so what" second line. */
   subtitle: string | null;
+  /** "DAY 4 OF 4" / "FINAL DAY" / "DAY 2". Live events with a known window only. */
+  dayLabel: string | null;
   score: number;
 }
 
@@ -162,6 +167,37 @@ export function scoreCandidate(c: PulseCandidate, now: number): number {
 
 // ── copy ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Where we are inside a running event — "DAY 4 OF 4", "FINAL DAY", "DAY 2".
+ *
+ * "Happening now" is true but static. A counter that advances is what makes a
+ * live card read as live rather than merely labelled, and it's the one piece of
+ * urgency a convention card can honestly carry. Null when the window is unknown
+ * or nonsensical, so the caller shows nothing rather than "DAY NAN".
+ */
+export function eventDayLabel(
+  windowFrom: string | null | undefined,
+  windowTo: string | null | undefined,
+  now: number,
+): string | null {
+  if (!windowFrom) return null;
+  const start = Date.parse(`${windowFrom}T00:00:00Z`);
+  if (Number.isNaN(start)) return null;
+  const today = Math.floor(now / 86_400_000);
+  const startDay = Math.floor(start / 86_400_000);
+  const day = today - startDay + 1;
+  if (day < 1) return null;
+
+  const end = windowTo ? Date.parse(`${windowTo}T00:00:00Z`) : NaN;
+  if (Number.isNaN(end)) return `DAY ${day}`;
+  const total = Math.floor(end / 86_400_000) - startDay + 1;
+  // Pageviews lag by a day or two, so `windowTo` can sit behind reality and make
+  // day exceed total. Report the honest day rather than a nonsense fraction.
+  if (total < 1 || day > total) return `DAY ${day}`;
+  if (day === total) return 'FINAL DAY';
+  return `DAY ${day} OF ${total}`;
+}
+
 /** The card's badge. Short, and it carries the *kind* so the rail reads at a
  *  glance without a legend. */
 export function badgeFor(c: PulseCandidate): string {
@@ -224,6 +260,7 @@ export function rankPulse(
       ageLabel: c.kind === 'live_event' ? null : relativeAgeLabel(ageHours),
       badge: badgeFor(c),
       subtitle: subtitleFor(c, now),
+      dayLabel: c.kind === 'live_event' ? eventDayLabel(c.windowFrom, c.windowTo, now) : null,
     });
   }
 

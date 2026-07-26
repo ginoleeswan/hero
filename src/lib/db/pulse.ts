@@ -20,6 +20,8 @@ interface PulseCandidateRow {
   publisher: string | null;
   character_count: number | null;
   max_fame: number | null;
+  window_from?: string | null;
+  window_to?: string | null;
 }
 
 const KINDS: readonly PulseKind[] = ['live_event', 'trailer', 'issue'];
@@ -46,6 +48,11 @@ export function mapPulseRows(rows: PulseCandidateRow[]): PulseCandidate[] {
       publisher: r.publisher,
       characterCount: r.character_count ?? 0,
       maxFame: r.max_fame,
+      // Optional at the row level: the columns land with
+      // 20260726230000_pulse_event_window.sql, and the reader must keep working
+      // against the older signature until that's applied.
+      windowFrom: r.window_from ?? null,
+      windowTo: r.window_to ?? null,
     });
   }
   return out;
