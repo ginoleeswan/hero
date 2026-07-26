@@ -232,7 +232,20 @@ export default function SocialWebExplorer() {
             onJump={(i) => travelTo(trail[i].id)}
           />
         </View>
-        <ShareUniverseButton heroId={focusSubject} name={subjectNode?.name ?? ''} />
+        <View style={styles.actions}>
+          {data && !sparse ? (
+            <SocialWebSearch
+              nodes={data.nodes}
+              kindOf={(nid) => subjectKind(data.edges, focusSubject, nid)}
+              onPick={(pid) => setFocusId(pid)}
+            />
+          ) : null}
+          <ShareUniverseButton
+            heroId={focusSubject}
+            name={subjectNode?.name ?? ''}
+            compact={narrow}
+          />
+        </View>
       </View>
 
       {sparse ? (
@@ -244,12 +257,6 @@ export default function SocialWebExplorer() {
         // full-bleed scene, so it must not swallow the drag-to-orbit gesture.
         <View style={{ flex: 1 }} pointerEvents="none" />
       )}
-
-      {data && !sparse ? (
-        <View style={[styles.searchOverlay, narrow && styles.searchOverlayNarrow] as object}>
-          <SocialWebSearch nodes={data.nodes} onPick={(pid) => setFocusId(pid)} />
-        </View>
-      ) : null}
 
       {focusNode && !focusNode.is_subject ? (
         <SocialWebFocusCard
@@ -315,8 +322,8 @@ const styles = StyleSheet.create({
     paddingTop: TOPBAR_HEIGHT + 8,
   } as object,
   titleNarrow: { fontSize: 19, lineHeight: 24 } as object,
-  searchOverlay: { position: 'absolute', left: 16, top: TOPBAR_HEIGHT + 60, zIndex: 20 } as object,
-  searchOverlayNarrow: { top: TOPBAR_HEIGHT + 54, right: 16 } as object,
+  // Header controls sit above the scene so the search panel can hang over it.
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 8, zIndex: 30 } as object,
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: INK_TEXT.faint },
   hint: {

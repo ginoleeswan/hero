@@ -15,7 +15,16 @@ import { INK_TEXT } from '../../constants/colors';
  * type=universe), so what unfurls in a message or a timeline is the poster of
  * the character's world rather than a generic site preview.
  */
-export function ShareUniverseButton({ heroId, name }: { heroId: string; name: string }) {
+export function ShareUniverseButton({
+  heroId,
+  name,
+  compact = false,
+}: {
+  heroId: string;
+  name: string;
+  /** Icon only — on a phone the word costs the page title its last 55px. */
+  compact?: boolean;
+}) {
   const [done, setDone] = useState(false);
   if (!heroId) return null;
 
@@ -68,6 +77,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245,235,220,0.22)',
     paddingHorizontal: 12,
     paddingVertical: 7,
+  },
+  buttonCompact: {
+    width: 34,
+    height: 34,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   inner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   label: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: INK_TEXT.muted },
