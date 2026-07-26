@@ -16,6 +16,7 @@ import UniverseScene, { type UniverseNode } from '../../src/components/character
 import { SocialWebFocusCard } from '../../src/components/character/SocialWebFocusCard';
 import { SocialWebSearch } from '../../src/components/character/SocialWebSearch';
 import { NebulaLoader } from '../../src/components/character/NebulaLoader';
+import { getSharedTitles } from '../../src/lib/db/heroes/sharedTitles';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { UniverseTrail, type TrailStop } from '../../src/components/character/UniverseTrail';
@@ -101,6 +102,14 @@ export default function SocialWebExplorer() {
   const focusRelation = focusNode ? subjectRelation(data!.edges, focusSubject, focusNode.id) : null;
   const focusBlurb = focusNode ? subjectBlurb(data!.edges, focusSubject, focusNode.id) : null;
   const focusDegree = focusNode ? nodeDegree(data!.edges, focusNode.id) : 0;
+  // Fetched per focused pair rather than folded into the neighbourhood, which
+  // would compute and ship it for all 24 nodes to show it for one.
+  const { data: sharedTitles } = useQuery({
+    queryKey: ['sharedTitles', focusSubject, focusId],
+    queryFn: () => getSharedTitles(focusSubject, focusId as string, 3),
+    enabled: !!focusId,
+    staleTime: 30 * 60 * 1000,
+  });
   // Characters connected to BOTH ends — the card renders them as faces, which
   // is the most legible answer to "how do these two actually overlap".
   const mutuals = useMemo(() => {
@@ -276,6 +285,7 @@ export default function SocialWebExplorer() {
           kind={focusKind}
           relation={focusRelation}
           blurb={focusBlurb}
+          shared={sharedTitles ?? null}
           degree={focusDegree}
           accent={theme.accent}
           onView={() =>

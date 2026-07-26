@@ -809,6 +809,48 @@ export type Database = {
           },
         ]
       }
+      hero_relationship_blurbs: {
+        Row: {
+          author: string
+          blurb: string
+          hero_a: string
+          hero_b: string
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          author?: string
+          blurb: string
+          hero_a: string
+          hero_b: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          author?: string
+          blurb?: string
+          hero_a?: string
+          hero_b?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_relationship_blurbs_hero_a_fkey"
+            columns: ["hero_a"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_relationship_blurbs_hero_b_fkey"
+            columns: ["hero_b"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hero_relationships: {
         Row: {
           cross_universe: boolean
@@ -2390,6 +2432,10 @@ export type Database = {
           is_enemy: boolean
           is_teammate: boolean
         }[]
+      }
+      get_shared_titles: {
+        Args: { p_a: string; p_b: string; p_limit?: number }
+        Returns: Json
       }
       get_source_coverage: { Args: never; Returns: Json }
       get_streaks_at_risk: {

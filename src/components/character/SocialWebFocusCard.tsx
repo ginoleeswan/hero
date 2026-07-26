@@ -8,6 +8,8 @@ import { deriveCharacterTheme, accentButtonColors } from '../../lib/accent';
 import { describeRelationship } from '../../lib/graph/relationshipReason';
 import { topStatEdges, matchupVerdict } from '../../lib/graph/statEdge';
 import { UniverseVote } from './UniverseVote';
+import { SharedTitlesStrip } from './SharedTitlesStrip';
+import type { SharedTitles } from '../../lib/db/heroes/sharedTitles';
 import type { NeighborKind, NeighborNode } from '../../lib/db/heroes/neighborhood';
 
 const KIND_LABEL: Record<string, string> = {
@@ -56,6 +58,7 @@ export function SocialWebFocusCard({
   kind,
   relation,
   blurb,
+  shared,
   degree,
   accent,
   mutuals = [],
@@ -74,6 +77,8 @@ export function SocialWebFocusCard({
   relation?: string | null;
   /** A hand-written note on this pair, when one exists. Outranks the rest. */
   blurb?: string | null;
+  /** Films and shows both characters appear in — the evidence section. */
+  shared?: SharedTitles | null;
   degree: number;
   /** Page accent — the fallback when this character has no usable colour. */
   accent: string;
@@ -200,6 +205,8 @@ export function SocialWebFocusCard({
       ) : summary ? (
         <Text style={styles.reason}>{summary}</Text>
       ) : null}
+
+      {shared ? <SharedTitlesStrip shared={shared} /> : null}
 
       {sharedTeams.length > 0 ? (
         <View style={styles.chips}>
