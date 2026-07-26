@@ -2,16 +2,28 @@
 // A house of Westeros: the family tree as a destination rather than a band on
 // somebody's character page.
 //
+// Two columns on desktop, and that is the whole design argument. The roster is
+// the control surface for the tree and the console, so it sits *beside* them —
+// the previous stacked layout put fifty-five names a full screen below the
+// thing they changed, which made every click look like it had done nothing.
+//
 // All state lives in the URL — ?focus re-roots the tree, ?with lights the
 // kinship path — so every view a reader reaches is a link they can send.
-import { useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, SURFACE } from '../../src/constants/colors';
+import { useScreenChrome } from '../../src/hooks/useScreenChrome';
+import { PageEndCap } from '../../src/components/web/PageEndCap';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
-import { HeroAvatar } from '../../src/components/HeroAvatar';
-import { useHouse, type HouseMember } from '../../src/hooks/useHouse';
+import { HouseBanner } from '../../src/components/family/HouseBanner';
+import { RelationConsole } from '../../src/components/family/RelationConsole';
+import { HouseRoster } from '../../src/components/family/HouseRoster';
+import { useHouse } from '../../src/hooks/useHouse';
+
+/** Below this the rail can't hold a name and a tree at once — stack instead. */
+const TWO_COLUMN = 1000;
+const MAX_WIDTH = 1320;
 
 export default function HousePage() {
   const router = useRouter();
@@ -20,29 +32,45 @@ export default function HousePage() {
     focus?: string;
     with?: string;
   }>();
-  const { house, members, relatives, focusId, kinship, isLoading, error } = useHouse(
+  const { width } = useWindowDimensions();
+  const twoColumn = width >= TWO_COLUMN;
+  const stageRef = useRef<View | null>(null);
+
+  // Ink canvas so iOS Safari's status zone matches the band; the beige body is
+  // painted by this screen and closed onto the ink floor by PageEndCap.
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
+
+  const { house, members, relatives, focusId, kinship, pathIds, isLoading, error } = useHouse(
     slug,
     focus ?? null,
     withId ?? null,
   );
 
+  // Stacked, the console is above the roster you just clicked — so bring it
+  // back into view, or the answer arrives off-screen and reads as nothing.
+  const revealStage = useCallback(() => {
+    if (twoColumn) return;
+    const node = stageRef.current as unknown as HTMLElement | null;
+    node?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }, [twoColumn]);
+
   const setParams = useCallback(
     (next: { focus?: string | null; with?: string | null }) => {
-      const params = new URLSearchParams();
       const f = next.focus === undefined ? focusId : next.focus;
       const w = next.with === undefined ? (withId ?? null) : next.with;
+      const params = new URLSearchParams();
       if (f) params.set('focus', f);
       if (w) params.set('with', w);
-      const qs = params.toString();
-      router.setParams(Object.fromEntries(params) as Record<string, string>);
+      // setParams merges, so absent keys have to be blanked explicitly or a
+      // cleared comparison survives the next re-root.
+      router.setParams({ focus: f ?? '', with: w ?? '' });
       if (typeof window !== 'undefined') {
+        const qs = params.toString();
         window.history.replaceState(null, '', `/house/${slug}${qs ? `?${qs}` : ''}`);
       }
     },
     [router, slug, focusId, withId],
   );
-
-  const focused = members.find((m) => m.id === focusId) ?? null;
 
   if (isLoading) {
     return (
@@ -54,7 +82,7 @@ export default function HousePage() {
   if (error || !house) {
     return (
       <View style={styles.centre}>
-        <Text style={styles.h1}>No such house</Text>
+        <Text style={styles.notFound}>No such house</Text>
         <Text style={styles.muted}>
           {error ? error.message : 'Nothing in the catalogue answers to that name.'}
         </Text>
@@ -63,192 +91,136 @@ export default function HousePage() {
   }
 
   const tint = house.sigil_tint ?? COLORS.orange;
+  const rooted = members.find((m) => m.id === focusId) ?? null;
+  const compared = members.find((m) => m.id === withId) ?? null;
 
   return (
-    <ScrollView style={styles.page} contentContainerStyle={styles.pageInner}>
+    <View style={styles.root}>
       <Stack.Screen options={{ title: `${house.name} — family tree` }} />
 
-      {/* The banner is the one place the house gets to be itself: its own
-          colour, its own words. Everything below is the shared chart. */}
-      <View style={[styles.banner, { borderTopColor: tint }]}>
-        <Text style={styles.eyebrow}>{house.universe}</Text>
-        <Text style={styles.h1}>{house.name}</Text>
-        {house.words ? <Text style={[styles.words, { color: tint }]}>“{house.words}”</Text> : null}
-        {house.blurb ? <Text style={styles.blurb}>{house.blurb}</Text> : null}
-        <Text style={styles.meta}>
-          {members.length} recorded {members.length === 1 ? 'member' : 'members'}
-          {house.seat ? ` · Seat: ${house.seat}` : ''}
-        </Text>
-      </View>
+      <HouseBanner
+        name={house.name}
+        universe={house.universe}
+        words={house.words}
+        seat={house.seat}
+        blurb={house.blurb}
+        memberCount={members.length}
+        tint={tint}
+        maxWidth={MAX_WIDTH}
+      />
 
-      {/* The hook. When two people are named the answer leads the page, because
-          it is the thing worth sending to someone. */}
-      {kinship ? (
-        <View style={[styles.answer, { borderLeftColor: tint }]}>
-          <Text style={styles.answerHeadline}>{kinship.headline}</Text>
-          <Text style={styles.answerChain}>{kinship.chain}</Text>
-          <Pressable onPress={() => setParams({ with: null })} style={styles.clear}>
-            <Ionicons name="close" size={13} color={COLORS.navy} />
-            <Text style={styles.clearText}>Clear</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <Text style={styles.prompt}>
-          Pick someone below to see how they and {focused?.name ?? 'the head of the house'} are
-          related.
-        </Text>
-      )}
-
-      {relatives.length > 0 && focused ? (
-        <FamilyCanvas
-          heroName={focused.name}
-          heroImage={focused.portrait_url ?? focused.image_md_url ?? focused.image_url}
-          heroAvatar={focused.avatar_url}
-          heroId={focused.id}
-          members={relatives}
-        />
-      ) : (
-        <Text style={styles.muted}>
-          {focused?.name ?? 'This member'} has no recorded kin inside the house.
-        </Text>
-      )}
-
-      <Text style={styles.sectionLabel}>Everyone in the house</Text>
-      <View style={styles.roster}>
-        {members.map((m) => (
-          <MemberChip
-            key={m.id}
-            member={m}
-            isFocus={m.id === focusId}
-            isWith={m.id === withId}
-            onFocus={() => setParams({ focus: m.id, with: null })}
-            onRelate={() => setParams({ with: m.id })}
+      <View style={[styles.workspace, twoColumn && styles.workspaceWide] as object}>
+        <View
+          ref={stageRef}
+          style={[styles.stage, twoColumn && styles.stageWide] as object}
+          nativeID="house-stage"
+        >
+          <RelationConsole
+            root={rooted}
+            partner={compared}
+            kinship={kinship}
+            tint={tint}
+            onSwap={() =>
+              compared && rooted
+                ? setParams({ focus: compared.id, with: rooted.id })
+                : undefined
+            }
+            onClear={() => setParams({ with: null })}
           />
-        ))}
-      </View>
-    </ScrollView>
-  );
-}
 
-function MemberChip({
-  member,
-  isFocus,
-  isWith,
-  onFocus,
-  onRelate,
-}: {
-  member: HouseMember;
-  isFocus: boolean;
-  isWith: boolean;
-  onFocus: () => void;
-  onRelate: () => void;
-}) {
-  return (
-    <View style={[styles.chip, isFocus && styles.chipFocus, isWith && styles.chipWith]}>
-      <Pressable onPress={onFocus} style={styles.chipMain}>
-        <HeroAvatar
-          id={member.id}
-          name={member.name}
-          avatarUrl={member.avatar_url}
-          fallbackUrl={member.portrait_url ?? member.image_md_url ?? member.image_url}
-          size={30}
-          radius={15}
-          bare
-        />
-        <Text style={styles.chipName} numberOfLines={1}>
-          {member.name}
-        </Text>
-      </Pressable>
-      {isFocus ? (
-        <Text style={styles.chipTag}>rooted</Text>
-      ) : (
-        <Pressable onPress={onRelate} style={styles.relate}>
-          <Text style={styles.relateText}>relate</Text>
-        </Pressable>
-      )}
+          {relatives.length > 0 && rooted ? (
+            <FamilyCanvas
+              label={`The line of ${rooted.name}`}
+              heroName={rooted.name}
+              heroImage={rooted.portrait_url ?? rooted.image_md_url ?? rooted.image_url}
+              heroAvatar={rooted.avatar_url}
+              heroId={rooted.id}
+              members={relatives}
+            />
+          ) : (
+            <View style={styles.blank}>
+              <Text style={styles.muted}>
+                {rooted?.name ?? 'This member'} has no recorded kin inside the house. Root the
+                tree on someone else to see the line.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={[styles.rail, twoColumn && (styles.railSticky as object)] as object}>
+          <HouseRoster
+            members={members}
+            focusId={focusId}
+            withId={withId ?? null}
+            pathIds={pathIds}
+            tint={tint}
+            onCompare={(id) => {
+              setParams({ with: id });
+              revealStage();
+            }}
+            onRoot={(id) => {
+              setParams({ focus: id, with: null });
+              revealStage();
+            }}
+          />
+        </View>
+      </View>
+
+      <PageEndCap />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: COLORS.beige },
-  pageInner: { padding: 20, gap: 18, maxWidth: 1180, width: '100%', alignSelf: 'center' },
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 40 },
-  banner: {
-    backgroundColor: 'white',
-    borderRadius: 18,
-    borderTopWidth: 4,
-    padding: 22,
-    gap: 6,
-  },
-  eyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 1.1,
-    textTransform: 'uppercase',
-    color: '#a99b84',
-  },
-  h1: { fontFamily: 'Flame-Regular', fontSize: 34, color: COLORS.black },
-  words: { fontFamily: 'Flame-Regular', fontSize: 17 },
-  blurb: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
-    lineHeight: 21,
-    color: '#4a5560',
-    maxWidth: 640,
-  },
-  meta: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#a99b84', marginTop: 4 },
-  answer: {
-    backgroundColor: 'white',
-    borderRadius: 14,
-    borderLeftWidth: 4,
-    padding: 16,
-    gap: 6,
-  },
-  answerHeadline: { fontFamily: 'Flame-Regular', fontSize: 21, color: COLORS.black },
-  answerChain: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: '#4a5560', lineHeight: 20 },
-  clear: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  clearText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
-  prompt: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: '#8d8375' },
-  sectionLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 1.1,
-    textTransform: 'uppercase',
-    color: '#a99b84',
-    marginTop: 6,
-  },
-  roster: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    flexDirection: 'row',
+  // The painted root must GROW with the document-scrolled content; flex:1 would
+  // clamp it to the viewport and expose the ink canvas below the fold.
+  root: { backgroundColor: COLORS.beige, minHeight: '100lvh' } as object,
+  centre: {
+    backgroundColor: COLORS.beige,
+    minHeight: '100lvh',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
+    gap: 8,
+    padding: 40,
+  } as object,
+  workspace: {
+    width: '100%',
+    maxWidth: MAX_WIDTH,
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 56,
+    gap: 22,
+  },
+  workspaceWide: { flexDirection: 'row', alignItems: 'flex-start', gap: 28 },
+  // No `flex: 1` in the stacked case — flex-basis 0 inside an auto-height column
+  // collapses the stage to nothing.
+  stage: { gap: 18, minWidth: 0, scrollMarginTop: 84 } as object,
+  stageWide: { flex: 1 },
+  rail: { width: '100%' },
+  railSticky: {
+    width: 306,
+    flexGrow: 0,
+    flexShrink: 0,
+    position: 'sticky',
+    top: 84,
+    maxHeight: 'calc(100lvh - 108px)',
+    overflowY: 'auto',
+    paddingRight: 4,
+  } as object,
+  blank: {
     backgroundColor: 'white',
-    borderRadius: 999,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#e7dcc9',
-    paddingLeft: 4,
-    paddingRight: 10,
-    paddingVertical: 4,
+    borderColor: '#eadfcb',
+    padding: 22,
   },
-  chipFocus: { borderColor: COLORS.black, borderWidth: 2 },
-  chipWith: { borderColor: COLORS.orange, borderWidth: 2 },
-  chipMain: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  chipName: { fontFamily: 'FlameSans-Regular', fontSize: 12, color: COLORS.black, maxWidth: 150 },
-  chipTag: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: '#a99b84',
+  notFound: { fontFamily: 'Flame-Regular', fontSize: 30, lineHeight: 38, color: COLORS.black },
+  muted: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13.5,
+    lineHeight: 21,
+    color: '#8d8375',
+    maxWidth: 480,
   },
-  relate: { paddingHorizontal: 6, paddingVertical: 2 },
-  relateText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: COLORS.navy,
-  },
-  muted: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: '#8d8375' },
 });

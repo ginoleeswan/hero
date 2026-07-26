@@ -550,12 +550,18 @@ export function FamilyCanvas({
   heroAvatar = null,
   heroId = null,
   members,
+  label = 'Family',
 }: {
   heroName: string;
   heroImage?: string | null;
   heroAvatar?: string | null;
   heroId?: string | null;
   members: FamilyMember[];
+  /**
+   * Card title. Defaults to "Family" for the character page; the house page
+   * names the line instead, so the section doesn't repeat its own page header.
+   */
+  label?: string;
 }): ReactElement | null {
   const [fullscreen, setFullscreen] = useState(false);
   const { width } = useWindowDimensions();
@@ -586,7 +592,7 @@ export function FamilyCanvas({
           <>
             {/* Card chrome */}
             <View style={styles.header}>
-              <Text style={styles.eyebrow}>Family</Text>
+              <Text style={styles.eyebrow}>{label}</Text>
               <Text style={styles.count}>{relativesCount}</Text>
             </View>
             <View style={styles.divider} />
@@ -596,7 +602,9 @@ export function FamilyCanvas({
             {/* Mobile: the page's section-title grammar — right-aligned
               "Family · N" over the rule, matching "Gallery · N". */}
             <View style={styles.mHeader}>
-              <Text style={styles.mTitle}>Family · {members.length}</Text>
+              <Text style={styles.mTitle}>
+                {label} · {members.length}
+              </Text>
             </View>
             <View style={styles.mDivider} />
           </>

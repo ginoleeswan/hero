@@ -520,12 +520,18 @@ export function FamilyCanvas({
   heroAvatar = null,
   heroId = null,
   members,
+  label = 'Family',
 }: {
   heroName: string;
   heroImage?: string | null;
   heroAvatar?: string | null;
   heroId?: string | null;
   members: FamilyMember[];
+  /**
+   * Section title. Defaults to "Family" for the character page; the house page
+   * names the line instead, so the section doesn't repeat its own page header.
+   */
+  label?: string;
 }): ReactElement | null {
   const [fullscreen, setFullscreen] = useState(false);
   if (members.length === 0) return null;
@@ -549,7 +555,7 @@ export function FamilyCanvas({
             {members.length} {members.length === 1 ? 'relative' : 'relatives'}
             {linkedCount > 0 ? ` · ${linkedCount} on Mythique` : ''}
           </Text>
-          <Text style={styles.title}>Family</Text>
+          <Text style={styles.title}>{label}</Text>
         </View>
         <View style={styles.divider} />
 

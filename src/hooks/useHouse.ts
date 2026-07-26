@@ -44,7 +44,12 @@ interface HouseEdge {
   role: string | null;
   tier: number;
   branch_side: string | null;
-  tree_parent_id: string | null;
+  /**
+   * The hero this row hangs off in the lineage chain. `hero_relatives` stores a
+   * pointer to another ROW; `get_house` resolves it to that row's hero so it
+   * survives the re-projection below, where row ids no longer exist.
+   */
+  tree_parent_hero_id: string | null;
   position: number;
   modifiers: string[] | null;
   status: string | null;
@@ -65,8 +70,11 @@ interface HousePayload {
  */
 export function relativesOf(payload: HousePayload, focusId: string): FamilyMember[] {
   const byId = new Map(payload.members.map((m) => [m.id, m]));
-  return payload.edges
-    .filter((e) => e.hero_id === focusId && byId.has(e.related_hero_id))
+  const own = payload.edges.filter((e) => e.hero_id === focusId && byId.has(e.related_hero_id));
+  // Ids in the projected list are edge-scoped, so a chain link only resolves if
+  // the parent is also one of THIS person's relatives.
+  const reachable = new Set(own.map((e) => e.related_hero_id));
+  return own
     .map((e) => {
       const other = byId.get(e.related_hero_id)!;
       return {
@@ -84,10 +92,13 @@ export function relativesOf(payload: HousePayload, focusId: string): FamilyMembe
         heroAvatar: other.avatar_url,
         heroPower: null,
         heroAlignment: other.alignment,
-        // tree_parent_id points at a hero_relatives row id, but the canvas
-        // matches against the ids in THIS list — which are edge-scoped. Remap it
-        // so the lineage chaining survives the re-projection.
-        treeParentId: null,
+        // Remapped into this list's edge-scoped id space, so deep forebears
+        // hang off the right ancestor instead of falling out of the chart into
+        // the "generation unrecorded" list.
+        treeParentId:
+          e.tree_parent_hero_id && reachable.has(e.tree_parent_hero_id)
+            ? `${e.hero_id}:${e.tree_parent_hero_id}`
+            : null,
         branchSide: (e.branch_side ?? null) as BranchSide,
       };
     });
