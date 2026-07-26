@@ -61,7 +61,9 @@ function InlineHouse({ house, heroId }: { house: HeroHouse; heroId: string | nul
       onHoverOut={() => setHovered(false)}
       onPress={() => router.push(houseHref(house.slug, heroId))}
     >
-      <View style={[styles.dot, { backgroundColor: house.sigil_tint ?? COLORS.orange }] as object} />
+      <View
+        style={[styles.dot, { backgroundColor: house.sigil_tint ?? COLORS.orange }] as object}
+      />
       <Text style={[styles.inlineText, hovered && styles.inlineTextHover] as object}>
         {house.name}
       </Text>
