@@ -2,6 +2,7 @@ import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } fr
 import { Image } from 'expo-image';
 import { COLORS, EYEBROW, pageGutter } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
+import { HeroAvatar } from '../../HeroAvatar';
 import type { DebutIssue, DebutCharacter } from '../../../lib/db/anniversaries';
 
 const MONTH = new Date().toLocaleString('en-US', { month: 'long' });
@@ -145,24 +146,40 @@ export function ThisMonthInHistory({
                         ] as object
                       }
                     >
-                      <HeroImage
-                        id={c.id}
-                        name={c.name}
-                        imageUrl={c.image_url}
-                        portraitUrl={c.portrait_url}
-                        grid
-                        contentFit="cover"
-                        contentPosition={{ top: '10%', left: '50%' }}
-                        style={
-                          {
-                            position: 'absolute',
-                            inset: 0,
-                            borderRadius: AVATAR / 2,
-                          } as object
-                        }
-                        recyclingKey={c.id}
-                      />
-                      <View style={[s.charAvatarRing, { borderRadius: AVATAR / 2 }] as object} />
+                      {c.avatar_url ? (
+                        <HeroAvatar
+                          id={c.id}
+                          name={c.name}
+                          avatarUrl={c.avatar_url}
+                          size={AVATAR}
+                          bare
+                        />
+                      ) : (
+                        <>
+                          <HeroImage
+                            id={c.id}
+                            name={c.name}
+                            imageUrl={c.image_url}
+                            portraitUrl={c.portrait_url}
+                            grid
+                            contentFit="cover"
+                            contentPosition={{ top: '10%', left: '50%' }}
+                            style={
+                              {
+                                position: 'absolute',
+                                inset: 0,
+                                borderRadius: AVATAR / 2,
+                              } as object
+                            }
+                            recyclingKey={c.id}
+                          />
+                          {/* The ring frames a cropped rectangle into a face. A
+                              head is already one, so it goes unringed. */}
+                          <View
+                            style={[s.charAvatarRing, { borderRadius: AVATAR / 2 }] as object}
+                          />
+                        </>
+                      )}
                     </View>
                     <Text style={s.charName as object} numberOfLines={1}>
                       {c.name}

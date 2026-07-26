@@ -4,6 +4,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
+import { HeroAvatar } from '../HeroAvatar';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 
@@ -58,17 +59,29 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
           <Pressable key={h.id} style={s.row} onPress={() => onPress(String(h.id))}>
             <Text style={[s.rank, { color: rankColor(i) }]}>{String(i + 2).padStart(2, '0')}</Text>
             <View style={s.thumb}>
-              <HeroImage
-                id={String(h.id)}
-                name={h.name}
-                imageUrl={h.image_url}
-                portraitUrl={h.portrait_url}
-                grid
-                contentFit="cover"
-                contentPosition={{ top: 0, left: '50%' }}
-                style={StyleSheet.absoluteFill as object}
-                recyclingKey={String(h.id)}
-              />
+              {/* The pool is the top 25 by fame, which is the tier with full
+                  avatar coverage — so these rows are heads, not crops. */}
+              {h.avatar_url ? (
+                <HeroAvatar
+                  id={String(h.id)}
+                  name={h.name}
+                  avatarUrl={h.avatar_url}
+                  size={50}
+                  bare
+                />
+              ) : (
+                <HeroImage
+                  id={String(h.id)}
+                  name={h.name}
+                  imageUrl={h.image_url}
+                  portraitUrl={h.portrait_url}
+                  grid
+                  contentFit="cover"
+                  contentPosition={{ top: 0, left: '50%' }}
+                  style={StyleSheet.absoluteFill as object}
+                  recyclingKey={String(h.id)}
+                />
+              )}
             </View>
             <Text style={s.rowName} numberOfLines={1}>
               {h.name}

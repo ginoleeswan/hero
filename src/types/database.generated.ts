@@ -2285,6 +2285,7 @@ export type Database = {
           blurb: string
           campaign_id: string
           headline: string
+          hero_avatar_url: string
           hero_id: string
           hero_image_url: string
           hero_name: string
@@ -2509,6 +2510,7 @@ export type Database = {
       get_trending_heroes_wiki: {
         Args: { p_limit?: number; p_min_week?: number }
         Returns: {
+          avatar_url: string
           id: string
           image_url: string
           name: string
@@ -2542,6 +2544,7 @@ export type Database = {
         }
         Returns: {
           backdrop_url: string
+          hero_avatar_url: string
           hero_id: string
           hero_image_url: string
           hero_name: string
@@ -2564,6 +2567,7 @@ export type Database = {
         Returns: {
           backdrop_url: string
           bucket: string
+          hero_avatar_url: string
           hero_id: string
           hero_image_url: string
           hero_name: string
@@ -2635,6 +2639,7 @@ export type Database = {
         Returns: {
           aliases: string[]
           alignment: string
+          avatar_url: string
           fame_score: number
           full_name: string
           id: string
@@ -2699,6 +2704,7 @@ export type Database = {
         | "ancestor"
         | "clone"
         | "other"
+        | "descendant"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2840,6 +2846,7 @@ export const Constants = {
         "ancestor",
         "clone",
         "other",
+        "descendant",
       ],
     },
   },

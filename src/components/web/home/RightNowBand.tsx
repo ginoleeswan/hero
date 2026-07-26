@@ -6,6 +6,7 @@ import ReactDOM from 'react-dom';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { HeroImage } from '../../HeroImage';
+import { HeroAvatar } from '../../HeroAvatar';
 import { COLORS, EYEBROW, INK_TEXT, pageGutter } from '../../../constants/colors';
 import {
   mergeTrendingTitles,
@@ -106,17 +107,27 @@ function CampaignAvatar({
           ] as object
         }
       >
-        <HeroImage
-          id={character.id}
-          name={character.name}
-          imageUrl={character.image_url}
-          portraitUrl={character.portrait_url}
-          grid
-          contentFit="cover"
-          contentPosition={{ top: '20%', left: '50%' }}
-          style={{ position: 'absolute', inset: 0 } as object}
-          recyclingKey={character.id}
-        />
+        {character.avatar_url ? (
+          <HeroAvatar
+            id={character.id}
+            name={character.name}
+            avatarUrl={character.avatar_url}
+            size={42}
+            bare
+          />
+        ) : (
+          <HeroImage
+            id={character.id}
+            name={character.name}
+            imageUrl={character.image_url}
+            portraitUrl={character.portrait_url}
+            grid
+            contentFit="cover"
+            contentPosition={{ top: '20%', left: '50%' }}
+            style={{ position: 'absolute', inset: 0 } as object}
+            recyclingKey={character.id}
+          />
+        )}
       </View>
       {tipPos &&
         typeof document !== 'undefined' &&

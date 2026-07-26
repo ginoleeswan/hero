@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../../HeroImage';
+import { HeroAvatar } from '../../HeroAvatar';
 import { COLORS, pageGutter } from '../../../constants/colors';
 import type { Hero } from '../../../lib/db/heroes';
 
@@ -91,17 +92,27 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
                     {String(i + 2).padStart(2, '0')}
                   </Text>
                   <View style={s.thumb}>
-                    <HeroImage
-                      id={String(h.id)}
-                      name={h.name}
-                      imageUrl={h.image_url}
-                      portraitUrl={h.portrait_url}
-                      grid
-                      contentFit="cover"
-                      contentPosition={{ top: 0, left: '50%' }}
-                      style={StyleSheet.absoluteFill as object}
-                      recyclingKey={String(h.id)}
-                    />
+                    {h.avatar_url ? (
+                      <HeroAvatar
+                        id={String(h.id)}
+                        name={h.name}
+                        avatarUrl={h.avatar_url}
+                        size={THUMB}
+                        bare
+                      />
+                    ) : (
+                      <HeroImage
+                        id={String(h.id)}
+                        name={h.name}
+                        imageUrl={h.image_url}
+                        portraitUrl={h.portrait_url}
+                        grid
+                        contentFit="cover"
+                        contentPosition={{ top: 0, left: '50%' }}
+                        style={StyleSheet.absoluteFill as object}
+                        recyclingKey={String(h.id)}
+                      />
+                    )}
                   </View>
                   <View style={s.rowText}>
                     <Text style={s.rowName as object} numberOfLines={1}>

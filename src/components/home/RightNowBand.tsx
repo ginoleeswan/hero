@@ -14,6 +14,7 @@ import Animated, {
   withSequence,
 } from 'react-native-reanimated';
 import { HeroImage } from '../HeroImage';
+import { HeroAvatar } from '../HeroAvatar';
 import { COLORS } from '../../constants/colors';
 import { TitlePosterRail } from './TitlePosterRail';
 import { ComicCoverRail } from './ComicCoverRail';
@@ -133,17 +134,23 @@ function CampaignHero({
                   { marginLeft: i === 0 ? 0 : -10, zIndex: avatarChars.length - i },
                 ]}
               >
-                <HeroImage
-                  id={c.id}
-                  name={c.name}
-                  imageUrl={c.image_url}
-                  portraitUrl={c.portrait_url}
-                  grid
-                  contentFit="cover"
-                  contentPosition={{ top: '20%', left: '50%' }}
-                  style={StyleSheet.absoluteFill as object}
-                  recyclingKey={c.id}
-                />
+                {/* Overlapping heads over artwork — the case cut-outs are for.
+                    A cropped portrait needs its disc; a head does not. */}
+                {c.avatar_url ? (
+                  <HeroAvatar id={c.id} name={c.name} avatarUrl={c.avatar_url} size={34} bare />
+                ) : (
+                  <HeroImage
+                    id={c.id}
+                    name={c.name}
+                    imageUrl={c.image_url}
+                    portraitUrl={c.portrait_url}
+                    grid
+                    contentFit="cover"
+                    contentPosition={{ top: '20%', left: '50%' }}
+                    style={StyleSheet.absoluteFill as object}
+                    recyclingKey={c.id}
+                  />
+                )}
               </View>
             ))}
           </View>

@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../../HeroImage';
+import { HeroAvatar } from '../../HeroAvatar';
 import { COLORS, EYEBROW, pageGutter } from '../../../constants/colors';
 import type { WikiTrendingHero } from '../../../lib/db/trending';
 
@@ -28,17 +29,21 @@ function MoverRow({
     >
       <Text style={[s.rank, lead && (s.rankLead as object)] as object}>{i + 1}</Text>
       <View style={[s.face, lead && (s.faceLead as object)] as object}>
-        <HeroImage
-          id={h.id}
-          name={h.name}
-          imageUrl={h.image_url}
-          portraitUrl={h.portrait_url}
-          grid
-          contentFit="cover"
-          contentPosition={{ top: 0, left: '50%' }}
-          style={StyleSheet.absoluteFill as object}
-          recyclingKey={h.id}
-        />
+        {h.avatar_url ? (
+          <HeroAvatar id={h.id} name={h.name} avatarUrl={h.avatar_url} size={FACE} bare />
+        ) : (
+          <HeroImage
+            id={h.id}
+            name={h.name}
+            imageUrl={h.image_url}
+            portraitUrl={h.portrait_url}
+            grid
+            contentFit="cover"
+            contentPosition={{ top: 0, left: '50%' }}
+            style={StyleSheet.absoluteFill as object}
+            recyclingKey={h.id}
+          />
+        )}
       </View>
       <Text style={[s.name, { width: nameW }] as object} numberOfLines={1}>
         {h.name}

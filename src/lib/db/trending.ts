@@ -45,6 +45,8 @@ export interface TrendingTitleCharacter {
   name: string;
   image_url: string | null;
   portrait_url: string | null;
+  /** Flat head icon — famous tier only, so every consumer must degrade. */
+  avatar_url: string | null;
 }
 
 export interface TrendingTitle {
@@ -65,6 +67,7 @@ export interface TrendingTitle {
 /** One flat row from get_trending_titles / get_trending_titles_multi — title
  *  fields repeated per character. */
 export interface TrendingTitleRow {
+  hero_avatar_url?: string | null;
   title_id: string;
   title: string;
   media_type: string | null;
@@ -106,6 +109,7 @@ export function groupTitleRows(rows: TrendingTitleRow[]): TrendingTitle[] {
       name: r.hero_name,
       image_url: r.hero_image_url,
       portrait_url: r.hero_portrait_url,
+      avatar_url: r.hero_avatar_url ?? null,
     });
   }
   return [...byTitle.values()];
@@ -179,6 +183,7 @@ export function splitTitleBuckets(
 }
 
 export interface TrendingOnScreenRow {
+  hero_avatar_url?: string | null;
   title_id: string;
   title: string;
   media_type: string | null;
@@ -233,6 +238,7 @@ export function groupOnScreenRows(rows: TrendingOnScreenRow[]): TrendingTitle[] 
       name: r.hero_name,
       image_url: r.hero_image_url,
       portrait_url: r.hero_portrait_url,
+      avatar_url: r.hero_avatar_url ?? null,
     });
   }
   return [...byId.values()];
@@ -257,6 +263,7 @@ export interface Campaign {
 
 /** One flat row from the get_active_campaigns RPC. */
 export interface CampaignRow {
+  hero_avatar_url?: string | null;
   campaign_id: string;
   label: string;
   headline: string;
@@ -295,6 +302,7 @@ export function groupCampaignRows(rows: CampaignRow[]): Campaign[] {
       name: r.hero_name,
       image_url: r.hero_image_url,
       portrait_url: r.hero_portrait_url,
+      avatar_url: r.hero_avatar_url ?? null,
     });
   }
   return [...byId.values()];
@@ -383,11 +391,18 @@ export async function getTrendingForUser(
     console.warn('[getTrendingForUser] error:', error.message);
     return [];
   }
-  return ((data ?? []) as TrendingTitleCharacter[]).map((r) => ({
+  return (
+    (data ?? []) as (Omit<TrendingTitleCharacter, 'avatar_url'> & {
+      avatar_url?: string | null;
+    })[]
+  ).map((r) => ({
     id: r.id,
     name: r.name,
     image_url: r.image_url,
     portrait_url: r.portrait_url,
+    // This path comes from a different RPC that doesn't select it; the head is
+    // simply absent here rather than wrongly assumed.
+    avatar_url: r.avatar_url ?? null,
   }));
 }
 
@@ -460,6 +475,8 @@ export interface WikiTrendingHero {
   name: string;
   image_url: string | null;
   portrait_url: string | null;
+  /** Flat head icon — famous tier only, so every consumer must degrade. */
+  avatar_url: string | null;
   /** Pageviews in the most recent 7 days. */
   week: number;
   /** Week-over-week growth as a percentage (spike ratio 2.8 → 180). */
@@ -473,6 +490,7 @@ export interface WikiTrendingRow {
   portrait_url: string | null;
   pageviews_week: number | null;
   pageviews_spike: number | string | null;
+  avatar_url?: string | null;
 }
 
 /** Flat RPC rows → WikiTrendingHero. Shared with the explore-bundle path. */
@@ -487,6 +505,9 @@ export function mapWikiTrendingRows(rows: WikiTrendingRow[]): WikiTrendingHero[]
       name: r.name,
       image_url: r.image_url,
       portrait_url: r.portrait_url,
+      // Optional at the row level because the explore-bundle path that shares
+      // this mapper predates the column.
+      avatar_url: r.avatar_url ?? null,
       week: r.pageviews_week ?? 0,
       spikePct: Math.max(0, Math.round((spike - 1) * 100)),
     };

@@ -9,6 +9,8 @@ export interface DebutCharacter {
   name: string;
   image_url: string | null;
   portrait_url: string | null;
+  /** Flat head icon — famous tier only, so every consumer must degrade. */
+  avatar_url: string | null;
 }
 
 export interface DebutIssue {
