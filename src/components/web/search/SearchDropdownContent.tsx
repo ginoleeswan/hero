@@ -283,6 +283,7 @@ export function SearchDropdownContent({
               <HouseResultRow
                 key={h.slug}
                 house={h}
+                variant="dark"
                 active={h.slug === activeHouseSlug}
                 onPress={() => handleHousePress(h.slug)}
               />
