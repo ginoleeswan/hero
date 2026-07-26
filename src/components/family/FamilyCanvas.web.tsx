@@ -21,7 +21,7 @@ import { PlaceholderHead } from './PlaceholderHead';
 import { headShapeForRole } from '../../lib/family/kinshipGender';
 import { buildFamilyGraph } from '../../lib/family/buildFamilyGraph';
 import { treeDisplayName } from '../../lib/family/displayName';
-import { layoutFamily } from '../../lib/family/layoutFamily';
+import { layoutFamily, ROW_H } from '../../lib/family/layoutFamily';
 import type { FamilyMember, FamilyGraph } from '../../lib/family/types';
 import type { PositionedNode, FamilyLayout } from '../../lib/family/layoutFamily';
 
@@ -402,7 +402,27 @@ function FamilyStage({
               height={layout.bounds.height}
               style={StyleSheet.absoluteFill}
             >
+              {/* Generation bands. Thirteen rows of a dynasty are hard to hold
+                  in the eye; a ruled ledger banding makes each one a place.
+                  Bands rather than rules because a hairline would run behind
+                  the cut-out heads and show through their faces. */}
+              {layout.rows.map((row, i) =>
+                i % 2 === 1 ? (
+                  <Rect
+                    key={`band-${row.tier}`}
+                    x={0}
+                    y={row.y - ROW_H / 2}
+                    width={layout.bounds.width}
+                    height={ROW_H}
+                    fill="#f3ece0"
+                    opacity={0.55}
+                  />
+                ) : null,
+              )}
               {layout.edges.map((edge, i) => {
+                // Same-generation dashes were fragments of line drifting between
+                // heads; the band now carries "these belong together".
+                if (edge.kind === 'sibling') return null;
                 const a = nodeMap.get(edge.fromId);
                 const b = nodeMap.get(edge.toId);
                 if (!a || !b) return null;
@@ -925,7 +945,9 @@ const styles = StyleSheet.create({
   // Parchment cartouche under each head. Carries the name over the dotted
   // ground, and gives the row a baseline the loose heads would otherwise lack.
   namePlate: {
-    maxWidth: NODE_W,
+    // Fixed width, not hugging the text: plates that shrink-wrap turn a row into
+    // a picket fence of different-width tags.
+    width: NODE_W - 6,
     alignItems: 'center',
     backgroundColor: '#f7edd9',
     borderWidth: 1,

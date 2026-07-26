@@ -15,7 +15,7 @@ const NODE_W = 104;
 const GAP_X = 20;
 // A roundel plus two lines of name is ~108 tall; the rest is the gap the
 // connectors run through.
-const ROW_H = 150;
+export const ROW_H = 150;
 const PAD = NODE_W / 2 + 16;
 
 export interface PositionedNode {
