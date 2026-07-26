@@ -44,6 +44,12 @@ interface Spec {
   children: Spec[];
 }
 
+/** Sort every level of a spec tree by the source order of its members. */
+function orderByPosition(spec: Spec): void {
+  spec.children.sort((a, b) => (a.member?.position ?? 0) - (b.member?.position ?? 0));
+  for (const child of spec.children) orderByPosition(child);
+}
+
 export function layoutFamily(graph: FamilyGraph): FamilyLayout {
   const all: FamilyMember[] = graph.tiers.flatMap((t) => t.nodes.map((n) => n.member));
   const parentIn = (id: string | null, set: FamilyMember[]) =>
@@ -83,6 +89,10 @@ export function layoutFamily(graph: FamilyGraph): FamilyLayout {
       ancSpec.children.push({ id: g.id, member: g, children: ancChildren(g.id, t + 1) });
     }
   }
+  // Appending orphans put them at whichever end of the row d3 reached last,
+  // stranding a grandparent at the far edge with a connector running the width
+  // of the canvas to their own child. Source order keeps kin adjacent.
+  orderByPosition(ancSpec);
 
   // Descendants mirror the ancestor walk: a recorded line runs as deep downward
   // as it does upward, and Aegon the Conqueror's reaches thirteen generations.
@@ -112,6 +122,7 @@ export function layoutFamily(graph: FamilyGraph): FamilyLayout {
       descSpec.children.push({ id: g.id, member: g, children: descChildren(g.id, d + 1) });
     }
   }
+  orderByPosition(descSpec);
 
   const lay = tree<Spec>().nodeSize([NODE_W + GAP_X, ROW_H]);
   const ancRoot = lay(hierarchy(ancSpec));

@@ -111,15 +111,17 @@ function CanvasNode({
     // the hero misaligned against their own siblings.
     return (
       <View style={styles.cameoNode}>
-        <HeroAvatar
-          id={heroId ?? heroName}
-          name={heroName}
-          avatarUrl={heroAvatar}
-          fallbackUrl={heroImage}
-          size={HERO_CAMEO}
-          radius={HERO_CAMEO / 2}
-          bare
-        />
+        <View style={[styles.headDisc, styles.headDiscHero]}>
+          <HeroAvatar
+            id={heroId ?? heroName}
+            name={heroName}
+            avatarUrl={heroAvatar}
+            fallbackUrl={heroImage}
+            size={HERO_CAMEO}
+            radius={HERO_CAMEO / 2}
+            bare
+          />
+        </View>
         <View style={[styles.namePlate, styles.namePlateHero]}>
           <Text style={styles.heroName} numberOfLines={2}>
             {heroName}
@@ -151,22 +153,28 @@ function CanvasNode({
   // identifies nobody, while a silhouette at least reads as a person and is the
   // convention these charts have always used for a face nobody recorded.
   const face = hasRealArt(member.heroImage) || !!member.heroAvatar;
-  // Ring, not card. A traditional family tree is portrait roundels joined by
-  // fine rules — the head is the object and the name sits under it. Boxing each
-  // head in a padded white card made the container the loudest thing on the
-  // canvas and shrank the face to a thumbnail inside it.
-  const cameo = face ? (
-    <HeroAvatar
-      id={member.heroId ?? member.name}
-      name={member.name}
-      avatarUrl={member.heroAvatar}
-      fallbackUrl={member.heroImage}
-      size={CAMEO}
-      radius={CAMEO / 2}
-      bare
-    />
-  ) : (
-    <PlaceholderHead shape={headShapeForRole(member.role)} size={CAMEO} />
+  // Every head sits on the same disc. Three art sources land here — flat cut-out
+  // avatars, circle-cropped comic panels, and featureless silhouettes — and left
+  // bare they read as three different languages in one row: some with a hard
+  // circular edge, some with hair straying off into the canvas. The disc is a
+  // footprint, not a card: barely visible on its own, but it gives every head
+  // the same silhouette and the same optical weight.
+  const cameo = (
+    <View style={styles.headDisc}>
+      {face ? (
+        <HeroAvatar
+          id={member.heroId ?? member.name}
+          name={member.name}
+          avatarUrl={member.heroAvatar}
+          fallbackUrl={member.heroImage}
+          size={CAMEO}
+          radius={CAMEO / 2}
+          bare
+        />
+      ) : (
+        <PlaceholderHead shape={headShapeForRole(member.role)} size={CAMEO} />
+      )}
+    </View>
   );
 
   // The head sits flat on the canvas; the name gets the plate. A cartouche is
@@ -174,9 +182,11 @@ function CanvasNode({
   // legible over the dotted ground without boxing in the portrait.
   const label = (
     <View style={[styles.namePlate, dead && styles.namePlateDead]}>
+      {/* A rule struck through the name, not a dagger appended to it: the mark
+          belongs to the typography rather than being a symbol the reader has to
+          learn, and it never competes with the name for width. */}
       <Text style={[styles.nodeName, dead && styles.deadText]} numberOfLines={2}>
         {shownName}
-        {dead ? ' ✝' : ''}
       </Text>
       {role ? (
         <Text style={styles.roleText} numberOfLines={1}>
@@ -202,34 +212,6 @@ function CanvasNode({
   }
 
   return <View style={styles.cameoNode}>{cameo}{label}</View>;
-}
-
-// ── Legend ───────────────────────────────────────────────────────────────────
-function Legend({ large = false }: { large?: boolean }): ReactElement {
-  const txt = [styles.legendText, large && styles.legendTextLarge];
-  const dot = (bg: string) => [
-    styles.legendDot,
-    large && styles.legendDotLarge,
-    { backgroundColor: bg },
-  ];
-  return (
-    <View style={[styles.legend, large && styles.legendLarge]}>
-      <View style={styles.legendItem}>
-        <View style={dot('#c3b59c')} />
-        <Text style={txt}>Bloodline</Text>
-      </View>
-      <Text style={[styles.legendSep, large && styles.legendTextLarge]}>·</Text>
-      <View style={styles.legendItem}>
-        <View style={dot('#E0A335')} />
-        <Text style={txt}>Marriage</Text>
-      </View>
-      <Text style={[styles.legendSep, large && styles.legendTextLarge]}>·</Text>
-      <View style={styles.legendItem}>
-        <View style={[styles.legendDash, large && styles.legendDashLarge]} />
-        <Text style={txt}>Same generation</Text>
-      </View>
-    </View>
-  );
 }
 
 // ── Interactive stage: gutter + pannable/zoomable viewport ───────────────────
@@ -506,11 +488,6 @@ function FamilyStage({
           </View>
         ) : null}
 
-        {fullscreen ? (
-          <View style={styles.fsLegend}>
-            <Legend large />
-          </View>
-        ) : null}
       </View>
     </View>
   );
@@ -586,8 +563,6 @@ export function FamilyCanvas({
           compact={!isDesktop}
           onToggleFullscreen={() => setFullscreen(true)}
         />
-
-        <Legend />
 
         {/* Asides (variants) */}
         {graph.asides.length > 0 ? (
@@ -854,52 +829,7 @@ const styles = StyleSheet.create({
   },
   fsTitleAvatar: { width: 34, height: 34, borderRadius: 9 },
   fsTitleText: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.black },
-  fsLegend: {
-    // Sits with the title bar rather than floating over the canvas, where it
-    // covered whichever generation happened to be at the bottom of the view.
-    position: 'absolute',
-    top: 20,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    zIndex: 4,
-  },
 
-  // Legend
-  legend: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginTop: 14,
-    flexWrap: 'wrap',
-  },
-  legendLarge: {
-    gap: 16,
-    paddingVertical: 9,
-    paddingHorizontal: 18,
-    backgroundColor: 'white',
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#ece3d4',
-    boxShadow: '0 2px 10px rgba(41,60,67,0.06)',
-  } as object,
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendDotLarge: { width: 11, height: 11, borderRadius: 6 },
-  legendDashLarge: { width: 20, height: 3, borderTopWidth: 3 },
-  legendTextLarge: { fontSize: 12.5, color: '#5e5447' },
-  legendDash: {
-    width: 16,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: '#cbbfa9',
-    borderStyle: 'dashed',
-    borderTopWidth: 2,
-    borderTopColor: '#cbbfa9',
-  },
-  legendSep: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: '#b3a791' },
-  legendText: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: '#7a6f5c' },
 
   // Node visuals (shared with inline nodes below the canvas)
   heroAnchor: {
@@ -942,6 +872,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   } as object,
+  // The common footprint every head sits on, whatever its art source.
+  headDisc: {
+    width: CAMEO,
+    height: CAMEO,
+    borderRadius: CAMEO / 2,
+    backgroundColor: 'rgba(41,60,67,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  } as object,
+  headDiscHero: {
+    width: HERO_CAMEO,
+    height: HERO_CAMEO,
+    borderRadius: HERO_CAMEO / 2,
+    backgroundColor: 'rgba(41,60,67,0.10)',
+  } as object,
   // Parchment cartouche under each head. Carries the name over the dotted
   // ground, and gives the row a baseline the loose heads would otherwise lack.
   namePlate: {
@@ -976,7 +922,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  deadText: { color: '#8d8375' },
+  deadText: {
+    color: '#8d8375',
+    textDecorationLine: 'line-through',
+    textDecorationColor: '#bcae97',
+  } as object,
   linkNode: {
     flexDirection: 'row',
     alignItems: 'center',
