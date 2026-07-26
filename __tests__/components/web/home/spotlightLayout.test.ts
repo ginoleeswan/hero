@@ -10,10 +10,21 @@ describe('spotlightLayout', () => {
     // The bug this whole module exists to prevent: a fixed stage height with
     // shrinking card widths took the crop to 0.31 at 820px.
     for (const w of WIDTHS) {
-      const { cardWidth, stageHeight } = spotlightLayout(w);
+      const { state, cardWidth, stageHeight } = spotlightLayout(w);
       const aspect = cardWidth / stageHeight;
       expect(aspect).toBeGreaterThanOrEqual(0.5);
-      expect(aspect).toBeLessThanOrEqual(1.0);
+      // A card in a row has to stay portrait. The stacked masthead is a
+      // different object — full-bleed art under the nav — so it may run wide,
+      // but never so wide it stops being a portrait crop.
+      expect(aspect).toBeLessThanOrEqual(state === 'stacked' ? 1.6 : 1.0);
+    }
+  });
+
+  it('bleeds the stacked masthead to the full viewport', () => {
+    for (const w of [320, 390, 430, 560, 719]) {
+      const l = spotlightLayout(w);
+      expect(l.state).toBe('stacked');
+      expect(l.cardWidth).toBe(w);
     }
   });
 

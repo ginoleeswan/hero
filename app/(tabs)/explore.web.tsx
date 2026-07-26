@@ -36,6 +36,7 @@ import {
   TodaysMatchupSkeleton,
 } from '../../src/components/web/home/TodaysMatchup';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
+import { BrandLogoView } from '../../src/components/PublisherBadge';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { idlePrefetchTopUniverses } from '../../src/lib/query/prefetchBrowse';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
@@ -261,6 +262,34 @@ function StatChip({
 // the light falling on them.
 const SLIVER_OPACITY = [1, 0.82, 0.66, 0.54, 0.44, 0.36, 0.28, 0.2];
 
+// The dark stage's own clearance for the floating nav on phones. The stacked
+// spotlight cancels it with a negative margin so its poster runs up behind the
+// bar — one number, two places, or the art tears away from the top edge.
+const MOBILE_STAGE_TOP = TOPBAR_HEIGHT - 4;
+
+// The plate's motion, in raw CSS. Injected once rather than driven from JS: a
+// 7-second drift and a 6-second dwell shouldn't cost a frame of main-thread
+// work, and the reduced-motion query below turns all three off at the source,
+// so no component has to remember to check.
+const PLATE_KEYFRAMES_ID = 'mythique-spotlight-keyframes';
+function ensurePlateKeyframes() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById(PLATE_KEYFRAMES_ID)) return;
+  const style = document.createElement('style');
+  style.id = PLATE_KEYFRAMES_ID;
+  style.textContent = `
+    @keyframes spotlightIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes spotlightDrift { from { transform: scale(1.07); } to { transform: scale(1); } }
+    @keyframes spotlightDwell { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    [data-plate-art] { animation: spotlightIn 700ms ease-out both, spotlightDrift 7s ease-out both; }
+    [data-rail-run] { animation: spotlightDwell 6s linear forwards; }
+    @media (prefers-reduced-motion: reduce) {
+      [data-plate-art] { animation: none; }
+      [data-rail-run] { animation: none; transform: scaleX(1); }
+    }`;
+  document.head.appendChild(style);
+}
+
 // Four states, one rule: the portrait's aspect ratio is the invariant and the
 // stage height follows the card width, so the art never gets sliced into a
 // ribbon to make a fixed-height billboard fit. `spotlightLayout` owns the
@@ -277,6 +306,8 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   const layout = spotlightLayout(width);
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+
+  useEffect(ensurePlateKeyframes, []);
 
   // Auto-advance lives here — only re-renders this component, not the whole
   // page. Paused while the pointer rests on the stage (never yank the hero away
@@ -332,7 +363,8 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
     layout;
   // Publisher-tinted ambience: the primary orb warms toward the featured
   // hero's brand colour (Marvel red, DC blue…), easing over 800ms per turn.
-  const brandGlow = glowColor(brandForPublisher(hero.publisher)?.color, 0.16);
+  const brand = brandForPublisher(hero.publisher);
+  const brandGlow = glowColor(brand?.color, 0.16);
   const backdropSize = Math.min(260, Math.max(140, Math.round(width * 0.15)));
   const align = alignmentLabel(hero.alignment);
 
@@ -363,49 +395,144 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
     </Pressable>
   );
 
-  // ── Stacked (<720): one column, the poster leads ────────────────────────────
+  // ── Stacked (<720): the plate ───────────────────────────────────────────────
+  // Edge to edge and pulled up under the floating nav, so the art is the first
+  // thing on the page. What the portraits are decides the rest of it: a profile
+  // head-and-shoulders painted on a flat field, so the sides are croppable at no
+  // cost and the shoulder zone at the foot is the one place type can sit without
+  // covering anything. Hence full-bleed art, a lip at the bottom rather than a
+  // long dissolve, and the name in the shoulders.
+  //
+  //  · The art is the link. A "View Profile" button under a tappable portrait
+  //    is the same instruction printed twice, so the button is gone and the
+  //    name carries a chevron to say the same thing once.
+  //  · No blurb. It was the only thing between the art and the next section, it
+  //    arrived truncated mid-sentence, and its quality swings with whatever the
+  //    database holds for that character — which is not what belongs in the most
+  //    valuable 60px on the page. The panel states keep it, where it runs
+  //    untruncated and has room to be worth reading.
+  //  · The rail is a clock, not a legend: its active segment fills across the
+  //    dwell, so the deck reads as moving rather than as eight inert dots.
   if (state === 'stacked') {
     return (
-      <View style={[pss.stack, { paddingHorizontal: gutter }] as object} {...swipeHandlers}>
+      <View style={pss.stack as object} {...swipeHandlers}>
+        {/* The character's own colour spills out of the plate and onto the page
+            beneath it, so the masthead tints the screen rather than sitting on
+            it. Free, because these portraits are painted on a flat field. */}
+        <View style={[pss.plateGlow, { backgroundColor: brandGlow }] as object} />
         <View
           style={
-            [pss.poster, { width: cardWidth, height: stageHeight, alignSelf: 'center' }] as object
+            [
+              pss.plate,
+              { height: stageHeight + MOBILE_STAGE_TOP, marginTop: -MOBILE_STAGE_TOP },
+            ] as object
           }
         >
-          <HeroImage
-            id={String(hero.id)}
-            name={hero.name}
-            imageUrl={hero.image_url}
-            portraitUrl={hero.portrait_url}
-            imageMdUrl={hero.image_md_url ?? null}
-            grid
-            contentFit="cover"
-            contentPosition={{ top: 0, left: '50%' }}
+          {/* The art is the link. Nothing is nested inside it, so the deck rail
+              below can take its own taps. */}
+          <Pressable
+            onPress={() => onViewProfile(String(hero.id))}
+            accessibilityRole="link"
+            accessibilityLabel={`View ${hero.name}`}
             style={StyleSheet.absoluteFill}
-            recyclingKey={String(hero.id)}
-          />
-          <View style={pss.posterScrim as object} />
-          <View style={pss.posterCaption as object}>
-            <Text style={pss.glassPanelEyebrow as object}>Featured Character</Text>
-            <Text style={pss.posterName as object} numberOfLines={2}>
-              {hero.name}
+          >
+            {/* Keyed on the hero so each turn mounts a fresh layer: it fades up
+                from the one beneath and drifts 1.06 → 1.00 across the dwell, so
+                the deck moves rather than blinks. Both are CSS animations, so
+                they cost no JS per frame, and both are off under
+                prefers-reduced-motion. */}
+            <View
+              key={String(hero.id)}
+              {...({ dataSet: { plateArt: 'true' } } as object)}
+              style={pss.plateArt as object}
+            >
+              <HeroImage
+                id={String(hero.id)}
+                name={hero.name}
+                imageUrl={hero.image_url}
+                portraitUrl={hero.portrait_url}
+                imageMdUrl={hero.image_md_url ?? null}
+                grid
+                contentFit="cover"
+                // These portraits are a profile head-and-shoulders on a flat
+                // field: the face sits in the upper third and the sides are
+                // background. Anchor high so the crop keeps the head whole and
+                // spends the loss on empty colour.
+                contentPosition={{ top: '4%', left: '50%' }}
+                style={StyleSheet.absoluteFill}
+                recyclingKey={String(hero.id)}
+              />
+            </View>
+          </Pressable>
+          <View style={pss.posterNavScrim as object} pointerEvents="none" />
+          <View style={pss.posterScrim as object} pointerEvents="none" />
+
+          {/* Type sits in the shoulder zone — the one part of this art that
+              carries no information, so the name costs the portrait nothing.
+              Poster hierarchy: a small kicker that carries real metadata, then
+              the name at display size. A 34px name under a 500px portrait read
+              as a caption on a photo; this reads as a billboard. */}
+          <Pressable
+            onPress={() => onViewProfile(String(hero.id))}
+            accessibilityRole="link"
+            style={[pss.plateCaption, { paddingHorizontal: gutter }] as object}
+          >
+            <Text style={pss.plateKicker as object} numberOfLines={1}>
+              {[hero.publisher, align].filter(Boolean).join('  ·  ')}
             </Text>
-            {!!hero.publisher && (
-              <Text style={pss.glassPanelPub as object} numberOfLines={1}>
-                {hero.publisher}
+            <View style={pss.posterNameRow as object}>
+              <Text style={pss.posterName as object} numberOfLines={2}>
+                {hero.name}
               </Text>
-            )}
-          </View>
-        </View>
-        <View style={pss.stackBody}>
-          {!!hero.summary && (
-            <Text style={pss.stackSummary as object} numberOfLines={3}>
-              {hero.summary}
+              <MaterialCommunityIcons name="chevron-right" size={30} color={COLORS.orange} />
+            </View>
+          </Pressable>
+
+          {/* The deck as a rail on the plate's own foot: how many, which one,
+              and — since it advances on a timer — how far through you are.
+              Eight dots floating in the caption said less and cost a row. */}
+          {/* Position and time, once each: the plate number says where in the
+              deck you are, the rail says how long this one has left. The mark
+              that used to sit between them was a third way of saying the same
+              thing the kicker already says in words. */}
+          <View style={[pss.railRow, { paddingHorizontal: gutter }] as object}>
+            <Text style={pss.plateNo as object}>
+              {String(activeIndex + 1).padStart(2, '0')}
+              <Text
+                style={pss.plateNoTotal as object}
+              >{` / ${String(heroes.length).padStart(2, '0')}`}</Text>
             </Text>
-          )}
-          <View style={pss.panelFooter}>
-            {cta('View Profile →')}
-            {dots}
+            <View style={pss.rail as object}>
+              {heroes.map((h, i) => (
+                <Pressable
+                  key={h.id}
+                  onPress={() => setActiveIndex(i)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Show featured character ${i + 1} of ${heroes.length}`}
+                  style={pss.railHit as object}
+                >
+                  <View style={pss.railSeg as object}>
+                    {/* Segments behind the playhead read as filled; the live one
+                      fills across the dwell so the rail is a clock, not a
+                      legend. Keyed on the index so each turn restarts it. */}
+                    <View
+                      key={`${i}-${activeIndex}`}
+                      {...(i === activeIndex && !paused
+                        ? ({ dataSet: { railRun: 'true' } } as object)
+                        : null)}
+                      style={
+                        [
+                          pss.railFill,
+                          i < activeIndex && (pss.railFillPast as object),
+                          (i < activeIndex || (i === activeIndex && paused)) &&
+                            (pss.railFillDone as object),
+                        ] as object
+                      }
+                    />
+                  </View>
+                </Pressable>
+              ))}
+            </View>
           </View>
         </View>
       </View>
@@ -477,7 +604,12 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
           return (
             <Pressable
               key={h.id}
-              onPress={() => setActiveIndex(index)}
+              // A sliver is a card you bring forward; the front card is the
+              // character. Same rule the phone masthead follows, so pressing
+              // the art always means the same thing.
+              onPress={() => (isActive ? onViewProfile(String(h.id)) : setActiveIndex(index))}
+              accessibilityRole={isActive ? 'link' : 'button'}
+              accessibilityLabel={isActive ? `View ${h.name}` : `Show ${h.name}`}
               style={[
                 pss.card,
                 {
@@ -881,39 +1013,128 @@ const pss = StyleSheet.create({
   // ── Stacked (<720): the poster leads, the reading follows ──────────────────
   // One column. The identity rides the poster's own lower edge — art and name
   // as one object — and only the summary, the CTA and the deck sit under it.
-  stack: { gap: 14, marginTop: 6, marginBottom: 22 } as object,
-  poster: {
-    borderRadius: 18,
+  stack: { gap: 12, marginBottom: 18 } as object,
+  // ── The plate ───────────────────────────────────────────────────────────────
+  // Full-bleed and running up under the nav, with a soft lip at the foot: a
+  // deliberate edge the page slides under, rather than a long dissolve that
+  // left the art looking like it was evaporating.
+  plate: {
+    width: '100%',
+    position: 'relative',
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
-    position: 'relative',
-    boxShadow: '0 22px 44px rgba(0,0,0,0.32)',
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
+    cursor: 'pointer',
   } as object,
+  // The featured character's colour, thrown onto the page under the plate.
+  plateGlow: {
+    position: 'absolute',
+    top: 0,
+    left: '10%',
+    right: '10%',
+    height: 200,
+    borderRadius: 200,
+    filter: 'blur(60px)',
+    opacity: 0.9,
+    transition: 'background-color 800ms ease',
+    pointerEvents: 'none',
+  } as object,
+  // Each turn mounts a new art layer that fades up over the outgoing one and
+  // drifts in slowly — the difference between a deck that moves and one that
+  // blinks. Held off entirely under prefers-reduced-motion (see the keyframes).
+  plateArt: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object,
+  plateCaption: { position: 'absolute', left: 0, right: 0, bottom: 46, gap: 6 } as object,
+  // Kicker: universe · alignment. Real metadata rather than a "Featured
+  // Character" label, which named a thing the page already makes obvious.
+  plateKicker: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10.5,
+    letterSpacing: 2.2,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.72)',
+    textShadow: '0 1px 8px rgba(0,0,0,0.8)',
+  } as object,
+  // Name and its affordance on one baseline: the chevron says "this opens"
+  // without a button repeating what the whole plate already offers.
+  posterNameRow: { flexDirection: 'row', alignItems: 'center', gap: 2 } as object,
+  // Display size. The whole point of a masthead is that the name is the second
+  // thing you see after the face, not a caption you find afterwards.
+  posterName: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 46,
+    lineHeight: 54,
+    color: COLORS.beige,
+    paddingBottom: 2,
+    textShadow: '0 3px 22px rgba(0,0,0,0.72)',
+    flexShrink: 1,
+  } as object,
+  // Ground for the nav glyphs where they cross the art.
+  posterNavScrim: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 132,
+    backgroundImage:
+      'linear-gradient(to bottom, rgba(11,24,32,0.72) 0%, rgba(11,24,32,0.28) 55%, transparent 100%)',
+  } as object,
+  // Seats the type in the shoulder zone without dimming the face above it.
   posterScrim: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: '62%',
+    height: '46%',
     backgroundImage:
-      'linear-gradient(to top, rgba(11,24,32,0.96) 0%, rgba(11,24,32,0.62) 42%, transparent 100%)',
+      'linear-gradient(to top, rgba(11,24,32,0.94) 0%, rgba(11,24,32,0.58) 32%, transparent 100%)',
   } as object,
-  posterCaption: { position: 'absolute', left: 18, right: 18, bottom: 16, gap: 2 } as object,
-  posterName: {
+  // Deck rail on the plate's foot — count, position, and (since it advances on
+  // a timer) progress, in one hairline.
+  // Plate number, mark, rail — one row on the plate's foot. The number is the
+  // codex device: this is plate 03 of 08, not dot three of eight.
+  railRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingBottom: 12,
+  } as object,
+  plateNo: {
     fontFamily: 'Flame-Regular',
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 15,
+    lineHeight: 19,
     color: COLORS.beige,
-    paddingBottom: 2,
-    textShadow: '0 2px 12px rgba(0,0,0,0.75)',
+    letterSpacing: 1,
   } as object,
-  stackBody: { gap: 4 } as object,
-  stackSummary: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    lineHeight: 22,
-    color: INK_TEXT.muted,
+  plateNoTotal: { color: 'rgba(245,235,220,0.45)' } as object,
+  rail: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 } as object,
+  railHit: { flex: 1, paddingVertical: 9, cursor: 'pointer' } as object,
+  // A hairline rule, not a loading bar: 2px at 14% until it's the live one.
+  railSeg: {
+    height: 2,
+    borderRadius: 2,
+    backgroundColor: 'rgba(245,235,220,0.14)',
+    overflow: 'hidden',
+    transition: 'height 200ms ease, background-color 200ms ease',
   } as object,
+  railSegLive: { height: 3, backgroundColor: 'rgba(245,235,220,0.24)' } as object,
+  railFill: {
+    height: '100%',
+    width: '100%',
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+    transformOrigin: 'left center',
+    transform: [{ scaleX: 0 }],
+  } as object,
+  railFillDone: { transform: [{ scaleX: 1 }] } as object,
+  // Turns already spent hold their fill at half strength, so the live segment
+  // is the only bright mark on the rule.
+  railFillPast: { opacity: 0.42 } as object,
+  metaRowTight: { flexDirection: 'row', alignItems: 'center', gap: 10 } as object,
   // Caption state runs the name a step smaller — the panel is narrower there and
   // a 34px display face wrapping to two lines eats the summary's room.
   glassPanelNameLean: { fontSize: 28, lineHeight: 36 } as object,
@@ -1374,14 +1595,6 @@ export default function WebHomeScreen() {
           <View
             style={[styles.darkStage, isMobile && (styles.darkStageMobile as object)] as object}
           >
-            {/* Masthead dateline — the page is fresh *today*; Wednesdays get
-                the comics-culture nod. */}
-            <Text style={[styles.dateline, { paddingHorizontal: gutter }] as object}>
-              {new Date()
-                .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-                .toUpperCase()}
-              {new Date().getDay() === 3 ? '  ·  NEW COMICS DAY' : ''}
-            </Text>
             {(homeData.spotlight?.length ?? 0) > 0 && (
               <PortraitStripSpotlight
                 heroes={homeData.spotlight!.slice(
@@ -1656,15 +1869,7 @@ const styles = StyleSheet.create({
     paddingTop: TOPBAR_HEIGHT + 10,
     paddingBottom: 28,
   } as object,
-  darkStageMobile: { paddingTop: TOPBAR_HEIGHT - 4, paddingBottom: 16 } as object,
-  // Masthead dateline above the spotlight.
-  dateline: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 2.5,
-    color: INK_TEXT.faint,
-    marginBottom: 14,
-  } as object,
+  darkStageMobile: { paddingTop: MOBILE_STAGE_TOP, paddingBottom: 16 } as object,
 
   // Beige canvas owns the carousel section (sits on the dark scroll surface).
   // Comic-paper tactility — a faint halftone ink-dot grid + a whisper of vertical

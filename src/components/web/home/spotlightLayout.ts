@@ -81,18 +81,19 @@ export function spotlightLayout(width: number): SpotlightLayout {
   // displays, so the gutter IS the centring — subtract it, don't cap twice.
   const available = width - gutter * 2;
 
-  // ── Stacked: one column, portrait leads ──────────────────────────────────
+  // ── Stacked: the poster IS the masthead ──────────────────────────────────
+  // Edge to edge and running up under the floating nav, so the art is the first
+  // thing on the page rather than a card sitting on a dark band. cardWidth is
+  // the viewport, not the gutter-inset column; `gutter` still spaces the copy
+  // beneath it. Height is the visible part below the nav — the component adds
+  // the bar's own height on top for the part that passes behind it.
   if (width < 720) {
-    // Full-bleed on a phone; on a wide-but-short window the poster stops
-    // growing and centres instead, because a 655px-wide crop of portrait art is
-    // a letterbox with the head cut off. Capped at 480 so the aspect stays in
-    // poster territory rather than turning into a banner.
-    const raw = Math.min(available, 480);
-    const stageHeight = Math.round(clamp(320, raw / 0.85, 460));
     return {
       state: 'stacked',
-      cardWidth: Math.min(raw, Math.round(stageHeight * 0.85)),
-      stageHeight,
+      cardWidth: width,
+      // Tall enough to lead the page, short enough that the row under it is
+      // visible before you scroll.
+      stageHeight: Math.round(clamp(360, width * 1.14, 500)),
       tail: [],
       detail: 'minimal',
       showGhostName: false,

@@ -4,6 +4,10 @@ import { COLORS, pageGutter } from '../../constants/colors';
 import { spotlightLayout } from './home/spotlightLayout';
 import { TOPBAR_HEIGHT } from './TopBar';
 
+// Matches MOBILE_STAGE_TOP in explore.web.tsx — the stage's phone clearance,
+// which the bleeding masthead cancels.
+const MOBILE_STAGE_TOP = TOPBAR_HEIGHT - 4;
+
 const ROW_CARD_WIDTH = 220;
 const ROW_CARD_HEIGHT = 310;
 
@@ -16,18 +20,26 @@ function SpotlightSkeleton({ opacity, dark }: { opacity: Opacity; dark: boolean 
   const { state, stageHeight, cardWidth, tail, gutter } = spotlightLayout(width);
 
   if (state === 'stacked') {
+    // The plate, exactly: full-bleed, pulled up under the nav, and lipped at the
+    // foot. Nothing sits under it any more — the masthead carries its own name,
+    // kicker and rail — so reserving a row below would push the page down and
+    // then snap it back when the real thing lands.
     return (
-      <View style={{ gap: 14, marginTop: 6, marginBottom: 22, paddingHorizontal: gutter }}>
-        <View style={{ alignSelf: 'center' }}>
-          <SkeletonBlock
-            opacity={opacity}
-            dark={dark}
-            width={cardWidth}
-            height={stageHeight}
-            borderRadius={18}
-          />
-        </View>
-        <SkeletonBlock opacity={opacity} dark={dark} height={64} borderRadius={10} />
+      <View style={{ marginBottom: 18 }}>
+        <SkeletonBlock
+          opacity={opacity}
+          dark={dark}
+          width={cardWidth}
+          height={stageHeight + MOBILE_STAGE_TOP}
+          borderRadius={0}
+          style={
+            {
+              marginTop: -MOBILE_STAGE_TOP,
+              borderBottomLeftRadius: 22,
+              borderBottomRightRadius: 22,
+            } as object
+          }
+        />
       </View>
     );
   }
@@ -260,12 +272,6 @@ export function WebHomeSkeleton() {
       {/* Dark-stage skeleton at all widths — mirrors the unified dark stage
           so there's no beige flash on refresh. */}
       <View style={[skel.darkStage, isMobile && (skel.darkStageMobile as object)] as object}>
-        {/* Masthead dateline — the real stage opens with "THURSDAY, JULY 16"
-            above the spotlight; reserve it so the strip doesn't sit too high
-            and shove the page down on load. */}
-        <View style={{ paddingHorizontal: pagePad, marginBottom: 14 }}>
-          <SkeletonBlock opacity={opacity} dark width={150} height={10} borderRadius={3} />
-        </View>
         <SpotlightSkeleton opacity={opacity} dark />
         <StatPodsSkeleton opacity={opacity} pagePad={pagePad} />
         <EngageSkeleton opacity={opacity} pagePad={pagePad} isMobile={isMobile} />
