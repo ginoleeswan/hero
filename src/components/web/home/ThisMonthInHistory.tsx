@@ -142,6 +142,7 @@ export function ThisMonthInHistory({
                       style={
                         [
                           s.charAvatar,
+                          c.avatar_url && (s.faceBare as object),
                           { width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2 },
                         ] as object
                       }
@@ -374,6 +375,14 @@ const s = StyleSheet.create({
     flexShrink: 0,
   } as object,
   charChipHover: { opacity: 0.7 } as object,
+  // A cut-out head needs neither fill nor ring, and HeroAvatar renders a
+  // sized image rather than an absolute fill — so the slot centres it.
+  faceBare: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as object,
   charAvatar: {
     overflow: 'hidden',
     backgroundColor: COLORS.navy,

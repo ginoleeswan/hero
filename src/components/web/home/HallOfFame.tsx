@@ -91,7 +91,7 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
                   <Text style={[s.rank, { color: rankColor(i) }] as object}>
                     {String(i + 2).padStart(2, '0')}
                   </Text>
-                  <View style={s.thumb}>
+                  <View style={[s.thumb, h.avatar_url && s.faceBare] as object}>
                     {h.avatar_url ? (
                       <HeroAvatar
                         id={String(h.id)}
@@ -312,6 +312,14 @@ const s = StyleSheet.create({
   } as object,
 
   // Circular portrait — reads as a character, not an app icon
+  // A cut-out head needs neither fill nor ring, and HeroAvatar renders a sized
+  // image rather than an absolute fill — so the slot has to centre it itself.
+  faceBare: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as object,
   thumb: {
     width: THUMB,
     height: THUMB,

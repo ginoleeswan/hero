@@ -98,6 +98,7 @@ function CampaignAvatar({
         style={
           [
             ch.avatar,
+            character.avatar_url && (ch.faceBare as object),
             hovered &&
               ({
                 transform: [{ translateY: -4 }, { scale: 1.18 }],
@@ -731,6 +732,13 @@ const ch = StyleSheet.create({
   avatars: { flexDirection: 'row' },
   // Non-clipping interaction/stacking slot so the tooltip can sit above the chip.
   avatarSlot: { width: 42, height: 42, cursor: 'pointer' } as object,
+  // Fill dropped — a head needs no plate — but the ring stays: these chips
+  // overlap, and the outline keeps one head from merging into the next.
+  faceBare: {
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as object,
   avatar: {
     width: 42,
     height: 42,

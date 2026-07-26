@@ -28,7 +28,7 @@ function MoverRow({
       }
     >
       <Text style={[s.rank, lead && (s.rankLead as object)] as object}>{i + 1}</Text>
-      <View style={[s.face, lead && (s.faceLead as object)] as object}>
+      <View style={[s.face, lead && (s.faceLead as object), h.avatar_url && s.faceBare] as object}>
         {h.avatar_url ? (
           <HeroAvatar id={h.id} name={h.name} avatarUrl={h.avatar_url} size={FACE} bare />
         ) : (
@@ -150,6 +150,13 @@ const s = StyleSheet.create({
   } as object,
   rankLead: {
     color: 'rgba(245,235,220,0.55)',
+  } as object,
+  // Fill dropped — a head needs no plate — but the ring stays: it carries
+  // rank. HeroAvatar renders a sized image, so the slot must centre it.
+  faceBare: {
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
   } as object,
   face: {
     width: FACE,

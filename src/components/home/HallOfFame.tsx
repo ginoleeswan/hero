@@ -58,7 +58,7 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
         {rest.map((h, i) => (
           <Pressable key={h.id} style={s.row} onPress={() => onPress(String(h.id))}>
             <Text style={[s.rank, { color: rankColor(i) }]}>{String(i + 2).padStart(2, '0')}</Text>
-            <View style={s.thumb}>
+            <View style={[s.thumb, h.avatar_url && s.faceBare] as object}>
               {/* The pool is the top 25 by fame, which is the tier with full
                   avatar coverage — so these rows are heads, not crops. */}
               {h.avatar_url ? (
@@ -159,6 +159,14 @@ const s = StyleSheet.create({
     textAlign: 'right',
   },
   // Circular portrait — reads as a character, not an app icon (matches web)
+  // A cut-out head needs neither fill nor ring, and HeroAvatar renders a sized
+  // image rather than an absolute fill — so the slot has to centre it itself.
+  faceBare: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as object,
   thumb: {
     width: 50,
     height: 50,

@@ -20,7 +20,17 @@ export function TopResultRow({ top, onPress }: { top: TopResult; onPress: () => 
   const { name, typeLabel, subtitle, thumb, round } = describe(top);
   return (
     <PressScale onPress={onPress} style={styles.card}>
-      <View style={[styles.thumb, round && styles.thumbRound]}>{thumb}</View>
+      <View
+        style={
+          [
+            styles.thumb,
+            round && styles.thumbRound,
+            top.kind === 'hero' && top.hero.avatar_url && styles.thumbBare,
+          ] as object
+        }
+      >
+        {thumb}
+      </View>
       <View style={styles.text}>
         <View style={styles.titleRow}>
           <Text style={styles.name} numberOfLines={1}>
@@ -171,6 +181,14 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     overflow: 'hidden',
   },
+  // A head is drawn to its own edges, so a circular clip would shave its
+  // silhouette; and HeroAvatar renders a sized image rather than an absolute
+  // fill, so the slot has to centre it.
+  thumbBare: {
+    overflow: 'visible',
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as object,
   thumbRound: { borderRadius: 27 },
   tile: {
     width: '100%',

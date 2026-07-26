@@ -39,7 +39,7 @@ export function TrendingMovers({
             style={({ pressed }) => [s.row, pressed && s.rowPressed]}
           >
             <Text style={s.rank}>{i + 1}</Text>
-            <View style={[s.face, lead && s.faceLead]}>
+            <View style={[s.face, lead && s.faceLead, h.avatar_url && s.faceBare]}>
               {/* A head needs no disc behind it; the crop does, to read as a
                   face at all. */}
               {h.avatar_url ? (
@@ -119,6 +119,13 @@ const s = StyleSheet.create({
     width: 14,
     textAlign: 'center',
   },
+  // Fill dropped — a head needs no plate — but the ring stays: it carries
+  // rank. HeroAvatar renders a sized image, so the slot must centre it.
+  faceBare: {
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as object,
   face: {
     width: FACE,
     height: FACE,

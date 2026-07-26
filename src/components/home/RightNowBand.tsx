@@ -131,6 +131,7 @@ function CampaignHero({
                 // the left chip's edge sits on top instead of being clipped.
                 style={[
                   hero.avatar,
+                  c.avatar_url && hero.faceBare,
                   { marginLeft: i === 0 ? 0 : -10, zIndex: avatarChars.length - i },
                 ]}
               >
@@ -361,6 +362,13 @@ const hero = StyleSheet.create({
     marginTop: 14,
   },
   avatars: { flexDirection: 'row' },
+  // Fill dropped — a head needs no plate — but the ring stays: these chips
+  // overlap, and the outline keeps one head from merging into the next.
+  faceBare: {
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as object,
   avatar: {
     width: 34,
     height: 34,
