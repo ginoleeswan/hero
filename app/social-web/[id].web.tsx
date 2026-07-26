@@ -285,7 +285,7 @@ export default function SocialWebExplorer() {
         />
       ) : null}
 
-      {narrow && focusNode ? null : (
+      {focusNode ? null : (
         <Text style={[styles.hint, narrow && styles.hintNarrow] as object}>
           {narrow
             ? 'Drag to orbit · pinch to zoom · tap a head'

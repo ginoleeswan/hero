@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, INK_TEXT } from '../../constants/colors';
+import { COLORS, INK_TEXT, SURFACE } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
 import { deriveCharacterTheme, accentButtonColors } from '../../lib/accent';
 import { describeRelationship } from '../../lib/graph/relationshipReason';
@@ -83,7 +83,10 @@ export function SocialWebFocusCard({
   onCompare?: () => void;
   onClose: () => void;
 }) {
-  const narrow = useWindowDimensions().width < 760;
+  const { width: vw } = useWindowDimensions();
+  const narrow = vw < 760;
+  // Four columns need real room; below this the posters step aside.
+  const roomy = vw >= 1180;
   const chipCap = narrow ? 2 : 3;
   const align = alignmentLabel(node.alignment);
   const kindColor = kind ? KIND_COLOR[kind] : accent;
@@ -121,6 +124,147 @@ export function SocialWebFocusCard({
     node.name,
     subjectName,
   );
+
+  const relationLine = blurb ?? summary;
+
+  /**
+   * Desktop: a lower third, not a card.
+   *
+   * The floating panel was the most conventional container available — a
+   * rounded rectangle in a corner, which every graph tool ships — and it was
+   * disembodied: the head it described sat hundreds of pixels away with
+   * nothing connecting them, while the panel itself covered a quarter of the
+   * stage and rendered the best portrait art in the app at 76px.
+   *
+   * The constellation is a centred ellipse, so the strip along the bottom of
+   * the screen is space it never occupies. Putting the dossier there costs the
+   * scene nothing, and buys a horizontal composition: the portrait can run
+   * large, and the written note gets set as a pull quote rather than as body
+   * copy in a box.
+   *
+   * No border and no radius, deliberately. It rises out of the ink scrim
+   * already at the foot of the page, which is the whole difference between a
+   * panel floating over a canvas and a page that looks composed.
+   */
+  if (!narrow) {
+    return (
+      <View style={styles.band} pointerEvents="box-none">
+        <View
+          style={
+            [
+              StyleSheet.absoluteFill,
+              {
+                backgroundImage: `linear-gradient(to top, ${SURFACE.ink} 0%, ${SURFACE.ink}f0 46%, transparent 100%)`,
+              },
+            ] as object
+          }
+          pointerEvents="none"
+        />
+        {/* The character's own colour, as a glow off the floor rather than a
+            wash across a box — identity without a border doing the talking. */}
+        <View
+          style={
+            [
+              StyleSheet.absoluteFill,
+              { backgroundImage: `linear-gradient(to top, ${tint}30, transparent 58%)` },
+            ] as object
+          }
+          pointerEvents="none"
+        />
+
+        <View style={styles.bandInner}>
+          <View style={styles.bigPortrait}>
+            <HeroImage
+              id={node.id}
+              name={node.name}
+              imageUrl={node.image_url}
+              portraitUrl={node.portrait_url}
+              imageMdUrl={node.image_md_url}
+              blurhash={node.portrait_blurhash}
+              grid
+              contentFit="cover"
+              contentPosition={{ top: '18%', left: '50%' }}
+              style={StyleSheet.absoluteFill}
+              recyclingKey={node.id}
+            />
+          </View>
+
+          <View style={styles.bandMain}>
+            <View style={styles.meta}>
+              {kind ? (
+                <View style={[styles.kindPill, { backgroundColor: kindColor + '26' }] as object}>
+                  <Text style={[styles.kindText, { color: kindColor }] as object}>
+                    {(kind === 'family' && relation) || KIND_LABEL[kind]}
+                  </Text>
+                </View>
+              ) : null}
+              {align ? (
+                <View style={[styles.badge, { borderColor: align.color + '80' }] as object}>
+                  <Text style={[styles.badgeText, { color: align.color }] as object}>
+                    {align.label}
+                  </Text>
+                </View>
+              ) : null}
+              {node.publisher ? (
+                <Text style={styles.publisher} numberOfLines={1}>
+                  {node.publisher}
+                </Text>
+              ) : null}
+            </View>
+
+            <Text style={styles.bandName} numberOfLines={1}>
+              {node.name}
+            </Text>
+
+            {relationLine ? (
+              <Text style={styles.quote} numberOfLines={3}>
+                {relationLine}
+              </Text>
+            ) : null}
+
+            <View style={styles.bandActions}>
+              <Pressable
+                onPress={onView}
+                style={[styles.primary, { backgroundColor: button.background }] as object}
+              >
+                <Text style={[styles.primaryText, { color: button.ink }] as object}>
+                  View dossier
+                </Text>
+                <Ionicons name="chevron-forward" size={13} color={button.ink} />
+              </Pressable>
+              {verdict && onCompare ? (
+                <Pressable onPress={onCompare} style={styles.verdictRow}>
+                  <Ionicons name="flash" size={12} color={INK_TEXT.faint} />
+                  <Text style={styles.verdictText} numberOfLines={1}>
+                    {verdict}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={11} color={INK_TEXT.faint} />
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+
+          {/* The evidence column is the first thing to go when the window is
+              too narrow to hold four columns without crushing the quote. */}
+          {roomy && shared ? (
+            <View style={styles.evidenceCol}>
+              <SharedTitlesStrip shared={shared} />
+            </View>
+          ) : null}
+
+          {subject && subject.id !== node.id ? (
+            <View style={styles.voteCol}>
+              <UniverseVote subject={subject} node={node} subjectName={subjectName} />
+            </View>
+          ) : null}
+        </View>
+
+        <Pressable onPress={onClose} style={styles.bandClose} hitSlop={10}>
+          <Ionicons name="close" size={18} color={INK_TEXT.muted} />
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.card, narrow && styles.cardNarrow] as object}>
@@ -367,6 +511,66 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   } as object,
 
+  band: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingTop: 62,
+    // The portrait is the tallest thing in the band and sits on this floor, so
+    // it needs real clearance — at 22 it read as falling off the screen.
+    paddingBottom: 34,
+    paddingHorizontal: 40,
+  } as object,
+  bandInner: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 28,
+    width: '100%',
+    maxWidth: 1440,
+    alignSelf: 'center',
+  } as object,
+  bigPortrait: {
+    width: 128,
+    height: 168,
+    borderRadius: 14,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+  } as object,
+  bandMain: { flex: 1, maxWidth: 620, gap: 7 },
+  bandName: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 32,
+    // Flame's ink spans ~119% of its em box, and this line is clamped.
+    lineHeight: 40,
+    color: INK_TEXT.primary,
+  } as object,
+  // The best writing in the app, set as a pull quote rather than body copy.
+  quote: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 16.5,
+    lineHeight: 26,
+    color: INK_TEXT.primary,
+  },
+  bandActions: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingTop: 4 },
+  evidenceCol: { width: 210 },
+  voteCol: { width: 236 },
+  // Given a chip of its own: as a bare glyph on open canvas it read as a
+  // stray mark rather than as this band's control.
+  bandClose: {
+    position: 'absolute',
+    top: 26,
+    right: 40,
+    width: 32,
+    height: 32,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(11,24,32,0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.18)',
+  } as object,
   verdictRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 2 },
   verdictText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: INK_TEXT.faint },
   faces: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
