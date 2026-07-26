@@ -26,9 +26,9 @@ import { UniverseChip } from '../../../src/components/web/search/UniverseChip';
 import { TeamResultRow } from '../../../src/components/web/search/TeamResultRow';
 import { TitleRail } from '../../../src/components/web/search/TitleRail';
 import { TopResultRow } from '../../../src/components/web/search/TopResultRow';
-import { HeroRail, type RailHero } from '../../../src/components/web/search/HeroRail';
+import { HeroRail } from '../../../src/components/web/search/HeroRail';
 import { pickTopResult, topResultKey, type TopResult } from '../../../src/lib/search/topResult';
-import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
+import { useRecentlyViewed } from '../../../src/hooks/useRecentlyViewed';
 import { SEARCH_UNIVERSES } from '../../../src/constants/publishers';
 import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
 import { SearchBrowse } from '../../../src/components/web/search/SearchBrowse';
@@ -232,14 +232,8 @@ export default function WebSearchScreen() {
     queryFn: () => getSearchIdleHeroes(20),
     staleTime: 1000 * 60 * 30,
   });
-  const recentQ = useQuery({
-    queryKey: ['search', 'recentlyViewed', user?.id ?? 'anon'],
-    queryFn: () => getRecentlyViewed(user!.id, 16),
-    enabled: !!user?.id,
-    staleTime: 1000 * 60 * 5,
-  });
   const popular = popularQ.data ?? [];
-  const recentlyViewed = user?.id ? (recentQ.data ?? []) : [];
+  const recentlyViewed = useRecentlyViewed(user?.id);
 
   // Search is a dark discovery surface (like Explore / Versus): the whole page —
   // status-bar zone, header and body — is one continuous deep-ink ground so the

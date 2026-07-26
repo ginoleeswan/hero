@@ -48,10 +48,18 @@ export const exploreKeys = {
   bundle: ['explore', 'bundle'] as const,
   matchup: ['explore', 'matchup'] as const,
   debateYesterday: ['explore', 'debateYesterday'] as const,
-  recentlyViewed: (userId: string) => ['explore', 'recentlyViewed', userId] as const,
   favourites: (userId: string) => ['explore', 'favourites', userId] as const,
   trendingForUser: (userId: string) => ['explore', 'trendingForUser', userId] as const,
   forYou: (userId: string) => ['explore', 'forYou', userId] as const,
+};
+
+// Recently-viewed characters. Its own root (not under 'explore') because three
+// surfaces read the same rows — the home rail, the /search landing and the
+// desktop search palette — so whichever loads first warms the other two, and a
+// view can invalidate all of them at once.
+export const viewHistoryKeys = {
+  root: ['viewHistory'] as const,
+  recent: (userId: string) => ['viewHistory', 'recent', userId] as const,
 };
 
 // Title (film/TV/game) detail-screen keys, under a 'titles' root so the whole

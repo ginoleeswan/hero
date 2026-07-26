@@ -21,7 +21,7 @@ import {
 import { type NewComic } from '../db/comics';
 import { type DebutIssue } from '../db/anniversaries';
 import { getTodaysMatchupFromPool, type TodaysMatchup } from '../matchup';
-import { getRecentlyViewed } from '../db/viewHistory';
+import { useRecentlyViewed } from '../../hooks/useRecentlyViewed';
 import { BROWSE_PODS } from '../../components/home/CategoryPodGrid';
 import { useAuth } from '../../hooks/useAuth';
 import { exploreKeys } from './keys';
@@ -137,11 +137,9 @@ export function useExploreData(): ExploreData {
 
   // Personalised rows — keyed by userId so they refetch on account change and
   // never leak across accounts; disabled (→ empty) when logged out.
-  const recentlyViewed = useQuery({
-    queryKey: exploreKeys.recentlyViewed(userId ?? ''),
-    queryFn: () => getRecentlyViewed(userId!),
-    enabled: !!userId,
-  });
+  // Shared with both search surfaces (one cache key) — opening the search
+  // palette after the home page paints its rail with no round trip.
+  const recentlyViewed = useRecentlyViewed(userId);
   const favourites = useQuery({
     queryKey: exploreKeys.favourites(userId ?? ''),
     queryFn: () => getUserFavouriteHeroes(userId!),
@@ -182,7 +180,7 @@ export function useExploreData(): ExploreData {
       matchup: matchup.isPending ? undefined : (matchup.data ?? null),
       heroCount: b?.heroCount ?? null,
       trendingForUser: userId ? (trendingForUser.data ?? EMPTY) : EMPTY,
-      recentlyViewed: userId ? (recentlyViewed.data ?? EMPTY) : EMPTY,
+      recentlyViewed,
       favourites: userId ? (favourites.data ?? EMPTY) : EMPTY,
       forYou: userId ? (forYou.data ?? EMPTY) : EMPTY,
     }),
@@ -196,7 +194,7 @@ export function useExploreData(): ExploreData {
       matchup.data,
       userId,
       trendingForUser.data,
-      recentlyViewed.data,
+      recentlyViewed,
       favourites.data,
       forYou.data,
     ],

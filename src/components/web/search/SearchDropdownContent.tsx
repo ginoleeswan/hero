@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../constants/colors';
@@ -7,7 +7,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { useSearchHistory } from '../../../hooks/useSearchHistory';
 import { useUnifiedSearch } from '../../../hooks/useUnifiedSearch';
 import { useIdleHeroes } from '../../../hooks/useIdleHeroes';
-import { getRecentlyViewed } from '../../../lib/db/viewHistory';
+import { useRecentlyViewed } from '../../../hooks/useRecentlyViewed';
 import type { RailHero } from './HeroRail';
 import { IdleSuggestions } from './IdleSuggestions';
 import { SuggestionsList } from './SuggestionsList';
@@ -85,25 +85,10 @@ export function SearchDropdownContent({
   const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(isEmptyQuery, 14);
 
   // The signed-in user's recently-viewed characters ("jump back in"), shown as a
-  // portrait rail at the top of the idle palette. Only fetched while idle.
-  const [recentlyViewed, setRecentlyViewed] = useState<RailHero[]>([]);
-  useEffect(() => {
-    if (!isEmptyQuery || !user?.id) {
-      // Only the idle palette shows history; clear otherwise. Effect-based fetch.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setRecentlyViewed([]);
-      return;
-    }
-    let cancelled = false;
-    getRecentlyViewed(user.id, 16)
-      .then((rows) => {
-        if (!cancelled) setRecentlyViewed(rows);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [isEmptyQuery, user?.id]);
+  // portrait rail at the top of the idle palette. Cached under the shared key,
+  // so re-opening the palette paints the rail immediately instead of refetching.
+  const recent = useRecentlyViewed(user?.id);
+  const recentlyViewed: RailHero[] = isEmptyQuery ? recent : [];
 
   // Which sections show, and how many — narrowed by the active scope. A scoped
   // view shows just that type (no top result), with a bigger cap.
