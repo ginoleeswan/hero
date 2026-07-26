@@ -1,9 +1,6 @@
 // src/components/family/StageSwitch.tsx
-// Two looks at one house: the line of one person, or the whole ladder.
-//
-// A switch rather than two stacked sections, because they answer the same
-// question at two scales and stacking them would make the page twice as long to
-// say one thing twice.
+// Two looks at one house: the line of one person, or the whole ladder. A switch
+// rather than two stacked sections — they answer one question at two scales.
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';

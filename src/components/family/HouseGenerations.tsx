@@ -1,13 +1,11 @@
 // src/components/family/HouseGenerations.tsx
 // The house as a whole: every member on the rung they stand on.
 //
-// The chart answers "who is this person's family", which is a different
-// question from "what is this house" — rooted on Daenerys it can only ever show
-// the twenty-two people she is recorded against, and the other thirty-three
-// exist on the page as names in a list. This view is the other half: no edges,
-// no panning, just the generational ladder with everyone on it, oldest at the
-// top. Picking anyone drops you back into their line, so the two views are a
-// loop rather than a fork.
+// The chart answers "who is this person's family" — rooted on Daenerys it shows
+// the twenty-two she is recorded against, and the other thirty-three are just
+// names in a list. This is the other half: no edges, no panning, the whole
+// ladder oldest-first. Picking anyone drops back into their line, so the two
+// views are a loop rather than a fork.
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
@@ -45,11 +43,7 @@ const NUMERALS: [number, string][] = [
   [1, 'I'],
 ];
 
-/**
- * Roman numerals for the rungs. The numbering is not decoration — generations
- * are a real sequence and the reader needs the order — and a dynasty is the one
- * subject where the form is the native one rather than a borrowed flourish.
- */
+/** Numbered because generations are a real sequence, not for decoration. */
 export function roman(n: number): string {
   let left = n;
   let out = '';
@@ -78,8 +72,7 @@ export function HouseGenerations({
 }) {
   const { bands, unplaced } = generations;
   const wash = mixHex(tint, '#ffffff', 0.87);
-  // A 62px gutter is a sixth of a phone. Below this the numeral goes inline
-  // above its rung instead, or every name gets a row to itself.
+  // A 62px gutter is a sixth of a phone; below this the numeral goes inline.
   const { width } = useWindowDimensions();
   const stacked = width < 640;
 
@@ -94,8 +87,7 @@ export function HouseGenerations({
       <View style={styles.divider} />
 
       {bands.map((band) => {
-        // Each rung's own dates, so the ladder is anchored in time wherever the
-        // catalogue can manage it and silent where it can't.
+        // Anchored in time where the catalogue manages it, silent where not.
         const era = recordedSpan(band.members);
         return (
           <View key={band.depth} style={[styles.band, stacked && styles.bandStacked] as object}>
@@ -193,8 +185,7 @@ function Person({
         radius={17}
         bare
       />
-      {/* Chip: name over dates. Row: name left, dates right, so a column of
-          reigns lines up down the edge the way the roster's does. */}
+      {/* Chip: name over dates. Row: dates right, so the reigns line up. */}
       <View style={[styles.personMeta, stacked && styles.personMetaStacked] as object}>
         <Text style={styles.personName} numberOfLines={1}>
           {member.name}
@@ -239,8 +230,7 @@ const styles = StyleSheet.create({
   },
   divider: { height: 1, backgroundColor: '#f0e6d4', marginTop: 12, marginBottom: 4 },
 
-  // Numeral rail on the left, people on the right — the same grammar as the
-  // chart's tier gutter, so the two views read as two looks at one structure.
+  // Same grammar as the chart's tier gutter: gutter left, content right.
   band: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingVertical: 12 },
   bandStacked: { flexDirection: 'column', gap: 8 },
   rail: { width: 62, flexGrow: 0, flexShrink: 0, gap: 2, paddingTop: 6 },
@@ -267,10 +257,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-  // A chip that never fits two to a line is just a row with a ragged right
-  // edge, so on a phone it becomes one.
-  // `nowrap` matters: a wrapping column sizes its children to their content, so
-  // the rows came out as ragged chips again.
+  // A chip that never fits two to a line is a row with a ragged right edge.
+  // `nowrap` matters: a wrapping column sizes children to content, not width.
   peopleStacked: { flexDirection: 'column', flexWrap: 'nowrap', gap: 6, alignSelf: 'stretch' },
 
   person: {

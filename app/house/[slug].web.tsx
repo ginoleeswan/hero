@@ -9,7 +9,7 @@
 //
 // All state lives in the URL — ?focus re-roots the tree, ?with lights the
 // kinship path — so every view a reader reaches is a link they can send.
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { COLORS, SURFACE } from '../../src/constants/colors';
@@ -19,6 +19,7 @@ import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
 import { HouseBanner } from '../../src/components/family/HouseBanner';
 import { RelationConsole } from '../../src/components/family/RelationConsole';
 import { HouseRoster } from '../../src/components/family/HouseRoster';
+import { HousePicker, type PickerMode } from '../../src/components/family/HousePicker';
 import { HouseGenerations } from '../../src/components/family/HouseGenerations';
 import { StageSwitch, type StageView } from '../../src/components/family/StageSwitch';
 import { useHouse } from '../../src/hooks/useHouse';
@@ -44,15 +45,15 @@ export default function HousePage() {
   const stageView: StageView = view === 'house' ? 'house' : 'line';
   const { width, height: winHeight } = useWindowDimensions();
   const twoColumn = width >= TWO_COLUMN;
-  // On a character page the chart is a band inside a longer read, so 460px is
-  // right. Here the chart IS the page — letterboxing a thirteen-generation
-  // lineage into a fixed strip wastes the whole lower half of the screen. It
-  // stops short of the full viewport on purpose: the console has to stay on
-  // screen beside it, or clicking a face down at the bottom of the chart puts
-  // the answer somewhere you can't see.
+  // Here the chart IS the page, so it gets far more than the 460px a character
+  // page allots it — but stops short of the viewport on purpose, or clicking a
+  // face at the bottom of the chart puts the answer somewhere you can't see.
   const stageHeight =
-    width >= 700 ? Math.min(780, Math.max(460, Math.round(winHeight - 340))) : undefined;
+    width >= 700
+      ? Math.min(780, Math.max(460, Math.round(winHeight - 340)))
+      : Math.min(560, Math.max(380, Math.round(winHeight * 0.56)));
   const stageRef = useRef<View | null>(null);
+  const [picking, setPicking] = useState<PickerMode | null>(null);
 
   // Ink canvas so iOS Safari's status zone matches the band; the beige body is
   // painted by this screen and closed onto the ink floor by PageEndCap.
@@ -72,10 +73,11 @@ export default function HousePage() {
     error,
   } = useHouse(slug, focus ?? null, withId ?? null);
 
-  // Stacked, the console is above the roster you just clicked — so bring it
-  // back into view, or the answer arrives off-screen and reads as nothing.
+  // The rail is a browse surface, not the only control: picking from it while
+  // it sits a screen below the console still needs the answer brought back.
   const revealStage = useCallback(() => {
     if (twoColumn) return;
+    (document.activeElement as HTMLElement | null)?.blur?.();
     const node = stageRef.current as unknown as HTMLElement | null;
     node?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   }, [twoColumn]);
@@ -158,6 +160,8 @@ export default function HousePage() {
             tint={tint}
             wide={twoColumn}
             onCompare={(id) => setParams({ with: id })}
+            onPickRoot={() => setPicking('root')}
+            onPickPartner={() => setPicking('with')}
             onSwap={() =>
               compared && rooted ? setParams({ focus: compared.id, with: rooted.id }) : undefined
             }
@@ -175,8 +179,6 @@ export default function HousePage() {
               focusId={focusId}
               pathIds={pathIds}
               tint={tint}
-              // Picking anyone here drops back into their line, so the two
-              // views are a loop rather than a fork.
               onSelect={(id) => setParams({ focus: id, with: null, view: 'line' })}
             />
           ) : relatives.length > 0 && rooted ? (
@@ -200,26 +202,41 @@ export default function HousePage() {
           )}
         </View>
 
-        <View style={[styles.rail, twoColumn && (styles.railSticky as object)] as object}>
-          <HouseRoster
-            members={members}
-            focusId={focusId}
-            withId={withId ?? null}
-            pathIds={pathIds}
-            tint={tint}
-            // The rail has its own scroll; stacked under the chart it does not.
-            initialVisible={twoColumn ? undefined : 14}
-            onCompare={(id) => {
-              setParams({ with: id });
-              revealStage();
-            }}
-            onRoot={(id) => {
-              setParams({ focus: id, with: null });
-              revealStage();
-            }}
-          />
-        </View>
+        {/* Only where it can sit beside the thing it drives. Stacked it was
+            three thousand pixels below the console, so every change meant a
+            scroll down and a scroll back — the seats open a picker instead. */}
+        {twoColumn ? (
+          <View style={[styles.rail, styles.railSticky as object] as object}>
+            <HouseRoster
+              members={members}
+              focusId={focusId}
+              withId={withId ?? null}
+              pathIds={pathIds}
+              tint={tint}
+              onCompare={(id) => {
+                setParams({ with: id });
+                revealStage();
+              }}
+              onRoot={(id) => {
+                setParams({ focus: id, with: null });
+                revealStage();
+              }}
+            />
+          </View>
+        ) : null}
       </View>
+
+      <HousePicker
+        mode={picking}
+        members={members}
+        excludeId={picking === 'root' ? (withId ?? null) : focusId}
+        onClose={() => setPicking(null)}
+        onPick={(id) => {
+          setParams(picking === 'root' ? { focus: id, with: null } : { with: id });
+          setPicking(null);
+          revealStage();
+        }}
+      />
 
       <PageEndCap />
     </View>

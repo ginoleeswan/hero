@@ -47,13 +47,17 @@ export function HouseBanner({
     <View style={[styles.band, paddingTop !== undefined && { paddingTop }] as object}>
       <View style={[styles.inner, { maxWidth }] as object}>
         <View style={wide ? styles.rowWide : styles.rowNarrow}>
-          <HouseCrest name={name} tint={tint} size={wide ? 116 : 84} />
+          <HouseCrest name={name} tint={tint} size={wide ? 116 : 68} />
 
           <View style={[styles.identity, wide && styles.identityWide] as object}>
             <Text style={styles.eyebrow}>{universe}</Text>
             <Text style={[styles.title, !wide && styles.titleNarrow] as object}>{name}</Text>
             {words ? <Text style={styles.words}>“{words}”</Text> : null}
-            {blurb ? <Text style={styles.blurb}>{blurb}</Text> : null}
+            {blurb ? (
+              <Text style={styles.blurb} numberOfLines={wide ? undefined : 3}>
+                {blurb}
+              </Text>
+            ) : null}
 
             {/* What can only be said about the set. Each one drops out silently
                 where the catalogue has nothing, so a house with no recorded

@@ -2,9 +2,8 @@
 // Native house page. Thin view over useHouse, same as the web one — expo-router
 // resolves by platform extension and both files must exist or it throws.
 //
-// One column here, so the roster sits below the tree it drives; picking a name
-// scrolls back up to the console, otherwise the answer lands off-screen and the
-// tap reads as nothing happening.
+// One column, so names are chosen in a sheet over the console rather than from
+// a list a screen below it.
 import { useCallback, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -13,7 +12,7 @@ import { COLORS } from '../../src/constants/colors';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas';
 import { HouseBanner } from '../../src/components/family/HouseBanner';
 import { RelationConsole } from '../../src/components/family/RelationConsole';
-import { HouseRoster } from '../../src/components/family/HouseRoster';
+import { HousePicker, type PickerMode } from '../../src/components/family/HousePicker';
 import { HouseGenerations } from '../../src/components/family/HouseGenerations';
 import { StageSwitch, type StageView } from '../../src/components/family/StageSwitch';
 import { useHouse } from '../../src/hooks/useHouse';
@@ -53,11 +52,12 @@ export default function HousePage() {
   // screen rather than the 360px a character page allots it.
   const stageHeight = Math.max(380, Math.round(winHeight * 0.62));
 
+  const [picking, setPicking] = useState<PickerMode | null>(null);
   const scrollRef = useRef<ScrollView | null>(null);
-  const [stageY, setStageY] = useState(0);
+  const [bodyY, setBodyY] = useState(0);
   const revealStage = useCallback(() => {
-    scrollRef.current?.scrollTo({ y: Math.max(0, stageY - 8), animated: true });
-  }, [stageY]);
+    scrollRef.current?.scrollTo({ y: Math.max(0, bodyY - 8), animated: true });
+  }, [bodyY]);
 
   const setParams = useCallback(
     (next: { focus?: string | null; with?: string | null; view?: StageView }) => {
@@ -112,13 +112,15 @@ export default function HousePage() {
           tint={tint}
         />
 
-        <View style={styles.body} onLayout={(e) => setStageY(e.nativeEvent.layout.y)}>
+        <View style={styles.body} onLayout={(e) => setBodyY(e.nativeEvent.layout.y)}>
           <RelationConsole
             root={rooted}
             partner={compared}
             kinship={kinship}
             tint={tint}
             onCompare={(id) => setParams({ with: id })}
+            onPickRoot={() => setPicking('root')}
+            onPickPartner={() => setPicking('with')}
             onSwap={() =>
               compared && rooted ? setParams({ focus: compared.id, with: rooted.id }) : undefined
             }
@@ -136,10 +138,7 @@ export default function HousePage() {
               focusId={focusId}
               pathIds={pathIds}
               tint={tint}
-              onSelect={(id) => {
-                setParams({ focus: id, with: null, view: 'line' });
-                revealStage();
-              }}
+              onSelect={(id) => setParams({ focus: id, with: null, view: 'line' })}
             />
           ) : relatives.length > 0 && rooted ? (
             <FamilyCanvas
@@ -160,25 +159,20 @@ export default function HousePage() {
               </Text>
             </View>
           )}
-
-          <HouseRoster
-            members={members}
-            focusId={focusId}
-            withId={withId ?? null}
-            pathIds={pathIds}
-            tint={tint}
-            initialVisible={14}
-            onCompare={(id) => {
-              setParams({ with: id });
-              revealStage();
-            }}
-            onRoot={(id) => {
-              setParams({ focus: id, with: null });
-              revealStage();
-            }}
-          />
         </View>
       </ScrollView>
+
+      <HousePicker
+        mode={picking}
+        members={members}
+        excludeId={picking === 'root' ? (withId ?? null) : focusId}
+        onClose={() => setPicking(null)}
+        onPick={(id) => {
+          setParams(picking === 'root' ? { focus: id, with: null } : { with: id });
+          setPicking(null);
+          revealStage();
+        }}
+      />
     </View>
   );
 }

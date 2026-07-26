@@ -83,10 +83,8 @@ export function lifeLine(d: LifeDates): string | null {
 }
 
 /**
- * The outer bounds of every date a group of people carries: "1–305 AC".
- *
- * Mixed eras return null rather than a range across an epoch nobody named the
- * same way — "48 BC – 103 AC" is arithmetic, not a fact the catalogue holds.
+ * Outer bounds of every date a group carries: "1–305 AC". Mixed eras return
+ * null — "48 BC – 103 AC" is arithmetic, not a fact the catalogue holds.
  */
 export function recordedSpan(people: LifeDates[]): string | null {
   const stamps: Stamp[] = [];

@@ -1,16 +1,11 @@
 // src/lib/family/generations.ts
 // Placing every member of a house on a single generational ladder.
 //
-// The chart is rooted on one person and shows their relatives, which is the
-// right view for "who is Jon to Daenerys" and the wrong one for "what is this
-// house". Nothing in the data says what generation anybody belongs to — the
-// edges only ever say what two people are to *each other* — so the ladder is
-// derived: seed one person at zero and walk outward, adding the generational
-// distance each relation carries.
-//
-// Pure and I/O-free, like kinshipPath. Breadth-first, so where a dynasty that
-// married its cousins offers two routes to the same person the shorter one
-// wins, which is also the one least likely to have compounded a bad edge.
+// Nothing in the data says what generation anybody belongs to — edges only say
+// what two people are to *each other* — so it is derived: seed one person at
+// zero and walk outward, adding the distance each relation carries. Pure and
+// I/O-free, like kinshipPath. Breadth-first, so where a dynasty that married
+// its cousins offers two routes the shorter one wins.
 
 /** One recorded relation, in the direction it was recorded. */
 export interface GenerationEdge {
@@ -23,12 +18,9 @@ export interface GenerationEdge {
 }
 
 /**
- * How many generations up a forebear stands, read off the label.
- *
- * `ancestor` and `descendant` carry no count in the relation word, so a
- * ten-generation gap and a two-generation one arrive identical; the recorded
- * role is the only place the distance exists. Anything unparseable counts as
- * one, which understates rather than invents.
+ * How many generations up a forebear stands, read off the label. `ancestor`
+ * carries no count in the relation word, so the role is the only place the
+ * distance exists. Unparseable counts as one — understating, never inventing.
  */
 export function roleDepth(role: string | null): number {
   const r = (role ?? '').toLowerCase();
@@ -80,19 +72,12 @@ export interface GenerationBand<M> {
 
 export interface Generations<M> {
   bands: GenerationBand<M>[];
-  /**
-   * Members no chain of generational relations reaches from the seed. They are
-   * of the house — they just have no recorded rung, and saying so is better
-   * than inventing one.
-   */
+  /** Of the house, but no chain reaches them — better said than invented. */
   unplaced: M[];
 }
 
 /**
- * Sort every member onto a generational ladder.
- *
- * @param members ordered as they should appear within a band (the house payload
- *                arrives most-famous first, which is the right order here too)
+ * @param members in the order they should appear within a band
  * @param edges   every recorded relation in the house, either direction
  */
 export function assignGenerations<M extends { id: string }>(
@@ -118,8 +103,7 @@ export function assignGenerations<M extends { id: string }>(
     push(e.related_hero_id, e.hero_id, -offset);
   }
 
-  // Seed on the first member — the most famous, and so the one whose edges the
-  // catalogue is likeliest to have right.
+  // The most famous member, whose edges the catalogue is likeliest to have right.
   const generation = new Map<string, number>([[members[0].id, 0]]);
   let frontier = [members[0].id];
   while (frontier.length) {
@@ -139,9 +123,7 @@ export function assignGenerations<M extends { id: string }>(
   const unplaced = members.filter((m) => !generation.has(m.id));
   if (placed.length === 0) return { bands: [], unplaced };
 
-  // Rebase so the oldest recorded generation is depth 0. The seed's own zero is
-  // an accident of who happened to be most famous, and it is not a fact about
-  // the house.
+  // Rebase so the oldest rung is 0 — the seed's zero is an accident of fame.
   const oldest = Math.min(...placed.map((m) => generation.get(m.id)!));
   const byDepth = new Map<number, M[]>();
   for (const m of placed) {

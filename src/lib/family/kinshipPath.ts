@@ -255,11 +255,7 @@ export interface KinshipStop {
   name: string;
   /** "10× great-grandfather" — null on the first stop, which starts the walk. */
   role: string | null;
-  /**
-   * The raw relation kind behind `role` — 'parent', 'descendant', 'spouse', …
-   * The word alone can't tell a reader which way the walk moved; this lets the
-   * console mark each hop as up, down, or sideways through the generations.
-   */
+  /** The raw kind behind `role`, so a hop can be marked up, down, or level. */
   relation: string | null;
 }
 
@@ -267,10 +263,8 @@ export interface KinshipDescription {
   /** "Daenerys Targaryen is Jon Snow's aunt" — null when no word fits. */
   headline: string | null;
   /**
-   * The relation on its own — "aunt", "10× great-grandson" — or null when the
-   * chain is too long for a word to exist. Held apart from the headline because
-   * the console leads with the relation and gets the two names from the seats
-   * already on screen; parsing it back out of the sentence would be worse.
+   * The relation alone — "aunt", "10× great-grandson" — or null when no word
+   * fits. Kept apart from the headline so the console needn't parse it back out.
    */
   relation: string | null;
   /** Always present: the chain, step by step. */
@@ -319,8 +313,7 @@ export function describeKinship(
     })),
   ];
 
-  // One source for both renderings, so the sentence a screen reader hears can
-  // never drift from the chips a sighted reader sees.
+  // One source for both, so the spoken sentence can't drift from the chips.
   const chain = route.map((r) => (r.role ? `${r.role} ${r.name}` : r.name)).join(' → ');
 
   return { headline, relation, chain, route, steps: steps.length };

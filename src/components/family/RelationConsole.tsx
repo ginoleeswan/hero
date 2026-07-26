@@ -42,6 +42,8 @@ export function RelationConsole({
   onClear,
   onRootPartner,
   onCompare,
+  onPickRoot,
+  onPickPartner,
 }: {
   root: ConsoleSeat | null;
   partner: ConsoleSeat | null;
@@ -56,6 +58,9 @@ export function RelationConsole({
   onRootPartner: () => void;
   /** Trace against someone else — used by the people standing in the route. */
   onCompare?: (id: string) => void;
+  /** Open the name picker for each seat. */
+  onPickRoot?: () => void;
+  onPickPartner?: () => void;
 }) {
   const router = useRouter();
   return (
@@ -63,7 +68,7 @@ export function RelationConsole({
       <Text style={styles.eyebrow}>Trace the line</Text>
 
       <View style={styles.seats}>
-        <Seat member={root} caption="Root of the tree" />
+        <Seat member={root} caption="Root of the tree" onPress={onPickRoot} />
 
         {partner ? (
           <Pressable
@@ -83,13 +88,17 @@ export function RelationConsole({
         )}
 
         {partner ? (
-          <Seat member={partner} caption="Compared with" accent={tint} onClear={onClear} />
+          <Seat
+            member={partner}
+            caption="Compared with"
+            accent={tint}
+            onClear={onClear}
+            onPress={onPickPartner}
+          />
         ) : (
-          <View style={styles.emptySeat}>
-            {/* The instruction lives in the slot it fills, so the idle console is
-                one row rather than an empty form with a paragraph under it. */}
-            <Text style={styles.emptySeatText}>Pick a second name to trace the line</Text>
-          </View>
+          /* The ask lives in the slot it fills, and is the control rather than
+             a caption about one somewhere else. */
+          <PickSeat onPress={onPickPartner} />
         )}
       </View>
 
@@ -97,11 +106,8 @@ export function RelationConsole({
         <>
           <View style={styles.rule} />
 
-          {/* Two columns where there is room: the finding on the left, who the
-              compared person actually is on the right. Stacked, the verdict's
-              display line left three-quarters of the card empty beside it while
-              the summary ran on below — one column of content down the left of a
-              very wide card. */}
+          {/* The finding left, who they are right. Stacked, the verdict's
+              display line left three-quarters of the card empty beside it. */}
           <View style={[styles.body, wide && styles.bodyWide] as object}>
             <View style={[styles.finding, wide && styles.findingWide] as object}>
               {kinship && root ? (
@@ -113,8 +119,8 @@ export function RelationConsole({
               )}
             </View>
 
-            {/* Who they actually are. Clicking a face in the chart should tell
-                you something about the person, not just re-arrange the chart. */}
+            {/* Clicking a face should tell you about the person, not only
+                re-arrange the chart. */}
             <Dossier member={partner} wide={wide} />
           </View>
 
@@ -122,9 +128,8 @@ export function RelationConsole({
             <Route kinship={kinship} tint={tint} onCompare={onCompare} />
           ) : null}
 
-          {/* Named buttons, not icons: the chart's own click is ambiguous
-              between "who is this" and "centre on them", so both get said. The
-              filled one is the one that changes this page. */}
+          {/* Named, not icons: a click on the chart is ambiguous between "who
+              is this" and "centre on them". Filled = changes this page. */}
           <View style={styles.actions}>
             <ConsoleAction
               icon="locate-outline"
@@ -146,13 +151,39 @@ export function RelationConsole({
   );
 }
 
+function PickSeat({ onPress }: { onPress?: () => void }) {
+  const label = 'Pick a second name to trace the line';
+  if (!onPress) {
+    return (
+      <View style={styles.emptySeat}>
+        <Text style={styles.emptySeatText}>{label}</Text>
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Pick a second name from the house"
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+        [
+          styles.emptySeat,
+          styles.emptySeatLink,
+          hovered && (styles.emptySeatHover as object),
+        ] as object
+      }
+    >
+      <Ionicons name="search" size={15} color="#a99b84" />
+      <Text style={styles.emptySeatText}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const firstName = (name: string) => name.split(' ')[0];
 
 /**
- * Which way through the generations a hop moves. The relation *word* can't say
- * this — "10× great-grandfather" and "10× great-grandson" look alike at a
- * glance — so the arrow carries it, and a route that climbs to a shared
- * ancestor and comes back down reads as ↑↓ without anyone parsing the labels.
+ * Which way a hop moves. "10× great-grandfather" and "10× great-grandson" look
+ * alike at a glance, so the arrow carries the direction instead of the word.
  */
 const HOP_ARROW: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
   parent: 'arrow-up',
@@ -169,11 +200,8 @@ const hopArrow = (relation: string | null): keyof typeof MaterialCommunityIcons.
   (relation && HOP_ARROW[relation]) || 'arrow-right';
 
 /**
- * The finding: what the two people are to each other.
- *
- * The relation leads, at display size, because that is the answer — the two
- * names sit in the seats directly above, so a headline that repeated them both
- * spent its largest type restating what was already on screen.
+ * The relation leads at display size because it is the answer — the two names
+ * are in the seats above, so a headline repeating them says nothing new.
  */
 function Verdict({
   kinship,
@@ -202,12 +230,9 @@ function Verdict({
 }
 
 /**
- * The route that proves the finding — full width under both columns, because it
- * is the one thing on the card that genuinely wants the whole of it.
- *
- * The people standing in the middle of a line are the most interesting names on
- * the page: they are the reason two houses touch at all. Naming them and then
- * refusing the click was the page's one dead end, so each is a way to re-trace.
+ * The route that proves the finding — full width, and the only thing on the
+ * card that wants it. The people mid-line are why two houses touch at all, so
+ * each is a way to re-trace rather than a name you cannot act on.
  */
 function Route({
   kinship,
@@ -229,8 +254,7 @@ function Route({
         </Text>
       </View>
 
-      {/* Grouped for assistive tech: the chips are a typeset sentence, and
-          `chain` is that same sentence generated from the same array. */}
+      {/* Grouped for assistive tech: `chain` is the same array as prose. */}
       <View style={styles.route} accessible accessibilityLabel={kinship.chain}>
         {kinship.route.map((stop, i) => (
           <Fragment key={`${stop.id}-${i}`}>
@@ -244,8 +268,7 @@ function Route({
             ) : null}
             <Stop
               stop={stop}
-              // The ends are already the two seats above; only the people
-              // between them are somewhere new to go.
+              // The ends are the two seats above; only the middle is new.
               onPress={onCompare && i > 0 && i < last ? () => onCompare(stop.id) : undefined}
               accent={i === last ? tint : undefined}
             />
@@ -289,17 +312,13 @@ function Stop({
   );
 }
 
-/**
- * The compared member in their own right. A reign and a lifespan are different
- * facts, so both can show — but most of the catalogue has neither, and a blank
- * meta line is worse than no line.
- */
+/** The compared member in their own right. Most of the catalogue has no dates
+ * at all, and a blank meta line is worse than none. */
 function Dossier({ member, wide }: { member: ConsoleSeat; wide?: boolean }) {
   const reign = reignLine(member);
   const life = lifeLine(member);
-  // The glyph does the labelling, so each chip can be the fact and nothing
-  // else: a crown says "reign" faster than the word "Reigned" reads, and it is
-  // what separates two date ranges that would otherwise look identical.
+  // The glyph labels it, which is what separates two date ranges that would
+  // otherwise read identically.
   const facts: { icon: keyof typeof MaterialCommunityIcons.glyphMap; text: string }[] = [];
   if (reign) facts.push({ icon: 'crown-outline', text: reign.replace(/^Reigned /, '') });
   if (life) facts.push({ icon: 'calendar-range', text: life });
@@ -327,15 +346,17 @@ function Seat({
   caption,
   accent,
   onClear,
+  onPress,
 }: {
   member: ConsoleSeat | null;
   caption: string;
   accent?: string;
   onClear?: () => void;
+  onPress?: () => void;
 }) {
   if (!member) return <View style={styles.emptySeat} />;
-  return (
-    <View style={[styles.seat, accent ? { borderColor: accent } : null] as object}>
+  const body = (
+    <>
       <HeroAvatar
         id={member.id}
         name={member.name}
@@ -353,6 +374,25 @@ function Seat({
           {caption}
         </Text>
       </View>
+    </>
+  );
+  return (
+    <View style={[styles.seat, accent ? { borderColor: accent } : null] as object}>
+      {onPress ? (
+        <Pressable
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel={`Change who sits in ${caption.toLowerCase()} — currently ${member.name}`}
+          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+            [styles.seatMain, hovered && (styles.seatMainHover as object)] as object
+          }
+        >
+          {body}
+          <Ionicons name="chevron-down" size={14} color="#b3a894" style={styles.seatCaret} />
+        </Pressable>
+      ) : (
+        <View style={styles.seatMain}>{body}</View>
+      )}
       {onClear ? (
         <Pressable
           onPress={onClear}
@@ -422,14 +462,27 @@ const styles = StyleSheet.create({
     flexBasis: 210,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
     backgroundColor: '#fffaf0',
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: '#e7dcc9',
-    paddingVertical: 9,
-    paddingHorizontal: 12,
+    paddingRight: 8,
   },
+  seatMain: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 12,
+    paddingVertical: 9,
+    paddingLeft: 12,
+    paddingRight: 6,
+    cursor: 'pointer',
+  } as object,
+  seatMainHover: { backgroundColor: '#f7eeda' } as object,
+  seatCaret: { marginLeft: 'auto' } as object,
   seatMeta: { flexShrink: 1, minWidth: 0 },
   seatName: { fontFamily: 'Flame-Regular', fontSize: 17, lineHeight: 22, color: COLORS.black },
   seatCaption: {
@@ -439,7 +492,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: '#a99b84',
   },
-  clear: { marginLeft: 'auto', padding: 2 },
+  clear: { padding: 4 },
   emptySeat: {
     flexGrow: 1,
     flexShrink: 1,
@@ -453,6 +506,8 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     paddingHorizontal: 12,
   },
+  emptySeatLink: { flexDirection: 'row', gap: 8, cursor: 'pointer' } as object,
+  emptySeatHover: { borderColor: '#cdbfa6', backgroundColor: '#fffaf0' } as object,
   emptySeatText: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: '#a99b84' },
   swap: {
     width: 32,
@@ -469,8 +524,7 @@ const styles = StyleSheet.create({
   swapIdle: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   rule: { height: 1, backgroundColor: '#f0e6d4' },
   body: { gap: 12 },
-  // Never `flex: 1` on the columns: in the stacked case that resolves to
-  // flex-basis 0 inside an auto-height column and collapses them to nothing.
+  // Never `flex: 1` here — flex-basis 0 in an auto-height column collapses it.
   bodyWide: { flexDirection: 'row', alignItems: 'flex-start', gap: 28 },
   finding: {},
   findingWide: { flexGrow: 1, flexShrink: 1, flexBasis: 300, minWidth: 0 },
@@ -485,8 +539,6 @@ const styles = StyleSheet.create({
   verdict: { fontFamily: 'Flame-Regular', fontSize: 34, lineHeight: 42, color: COLORS.black },
 
   routeBlock: { gap: 9 },
-  // Label, hairline, count — the rule does the separating so the count can sit
-  // at the end of the line it belongs to instead of floating over the chips.
   routeHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   routeLabel: {
     fontFamily: 'Nunito_700Bold',
@@ -526,9 +578,7 @@ const styles = StyleSheet.create({
   },
 
   dossier: { gap: 8 },
-  // Wide enough for a comfortable measure, narrow enough that the verdict keeps
-  // the emphasis. Caps rather than shares, so a member with no summary doesn't
-  // leave half the card blank.
+  // Caps rather than shares, so a member with no summary leaves no gap.
   dossierWide: { flexGrow: 0, flexShrink: 1, flexBasis: 420, minWidth: 0 },
   facts: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   fact: {

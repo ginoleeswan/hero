@@ -45,10 +45,8 @@ export function HouseRoster({
   pathIds: Set<string>;
   tint: string;
   /**
-   * Rows to show before "show all". Omit where the list has its own scroll
-   * container — in the desktop rail a long list costs nothing, but stacked
-   * under the chart fifty-five rows are three thousand pixels of wall between
-   * the reader and the end of the page.
+   * Rows before "show all". Omit where the list has its own scroll container —
+   * stacked under the chart, fifty-five rows are three thousand pixels of wall.
    */
   initialVisible?: number;
   onCompare: (id: string) => void;
@@ -56,7 +54,6 @@ export function HouseRoster({
 }) {
   const [query, setQuery] = useState('');
   const [showAll, setShowAll] = useState(false);
-
   const matched = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return members;
@@ -105,9 +102,8 @@ export function HouseRoster({
           const isRoot = m.id === focusId;
           const isWith = m.id === withId;
           const onPath = !isRoot && !isWith && pathIds.has(m.id);
-          // Only reigns, not lifespans. It is the fact that separates the
-          // rulers from the rest of the name-bearers, and at fifty-five rows a
-          // date on every line would be a second wall rather than a signal.
+          // Reigns only: at fifty-five rows a date on every line is a wall,
+          // and this is the one that separates the rulers from the rest.
           const reign = m.reign_start
             ? nodeDates({ reign_start: m.reign_start, reign_end: m.reign_end })
             : null;
@@ -164,10 +160,8 @@ export function HouseRoster({
                     [styles.rootBtn, hovered && (styles.rootBtnHover as object)] as object
                   }
                 >
-                  {/* The same crosshair the console's filled button carries, so
-                      the glyph is taught once and then repeated fifty-four times
-                      without fifty-four copies of the word shouting over the
-                      names they sit beside. */}
+                  {/* The console's filled button teaches this glyph once, so
+                      fifty-four repeats of it need no word beside them. */}
                   <Ionicons name="locate-outline" size={15} color="#b3a894" />
                 </Pressable>
               )}
@@ -245,8 +239,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   name: { fontFamily: 'FlameSans-Regular', fontSize: 13.5, color: COLORS.black, flexShrink: 1 },
-  // Right-aligned so the reigns line up as a column the eye can run down —
-  // which is what turns a phone book into a list of rulers.
+  // Right-aligned so the reigns line up as a column the eye can run down.
   reign: { flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 'auto' } as object,
   reignText: {
     fontFamily: 'Nunito_700Bold',

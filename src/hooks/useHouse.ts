@@ -111,12 +111,8 @@ export function relativesOf(payload: HousePayload, focusId: string): FamilyMembe
 }
 
 /**
- * What the house is, as a house — the facts you can only state about the set.
- *
- * Derived rather than stored: the banner had two facts (members, seat) and half
- * a band of empty ink beside them, and both of these fall out of rows already
- * loaded. Anything the catalogue doesn't record comes back null and the banner
- * simply doesn't show it.
+ * What can only be said about the set. Derived from rows already loaded; null
+ * where the catalogue records nothing, and the banner then omits it.
  */
 export interface DynastyFacts {
   /** How many of them wore a crown. */
@@ -145,11 +141,7 @@ export interface UseHouseResult {
   members: HouseMember[];
   /** House-level facts for the banner, derived from the members. */
   dynasty: DynastyFacts;
-  /**
-   * Every member on one generational ladder — the house as a whole, rather than
-   * one person's relatives. Derived, because nothing in the data records a
-   * generation; see `lib/family/generations`.
-   */
+  /** Every member on one ladder — see `lib/family/generations`. */
   generations: Generations<HouseMember>;
   /** Relatives of the focused member, ready for FamilyCanvas. */
   relatives: FamilyMember[];

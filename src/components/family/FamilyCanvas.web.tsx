@@ -340,14 +340,10 @@ function FamilyStage({
       const hx = fitsX ? bw / 2 : (hero?.x ?? bw / 2);
       const hy = fitsY ? bh / 2 : (hero?.y ?? bh / 2);
 
-      // Never open past an edge of the tree. Centring on the hero is right, but
-      // the hero of a thirteen-generation dynasty usually sits near the bottom
-      // of it — one row of children below, twelve of forebears above — so a
-      // straight centring spent the lower third of the canvas on empty grid
-      // while the ancestors that fill it sat just off the top.
-      //
-      // The canvas scales about its CENTRE, so canvas-y 0 lands on screen at
-      // ty + (bh/2)(1−s); everything below is offset by the same term.
+      // Never open past an edge. The hero of a thirteen-generation dynasty sits
+      // near the bottom of it, so straight centring spent the lower third of the
+      // canvas on empty grid while the ancestors that fill it sat off the top.
+      // Scaling is about the CENTRE, hence the (bh/2)(1−s) term.
       const clampAxis = (want: number, extent: number, viewport: number) => {
         const off = (extent / 2) * (1 - s);
         const span = extent * s;
@@ -363,10 +359,8 @@ function FamilyStage({
     },
     [layout, fullscreen],
   );
-  // The stage should never be taller than the tree it holds. The height the page
-  // offers is sized for a thirteen-generation dynasty; a house that records four
-  // was getting the same box, and the surplus showed up as a third of a screen
-  // of empty dotted grid under the last row.
+  // Never taller than the tree it holds: the height the page offers is sized
+  // for thirteen generations, and a house with four got the same box.
   const stageHeight = inlineHeight
     ? Math.min(
         inlineHeight,
@@ -653,9 +647,8 @@ export function FamilyCanvas({
   const relativesCount = (
     <>
       {members.length} {members.length === 1 ? 'relative' : 'relatives'}
-      {/* Only worth saying when it differs. On a house page every relative is a
-          member of the house and so already on Mythique, which made the line
-          "22 relatives · 22 on Mythique" — the same fact, counted twice. */}
+      {/* Only worth saying when it differs: on a house page every relative is
+          already on Mythique, so the line counted one fact twice. */}
       {linkedCount > 0 && linkedCount < members.length ? ` · ${linkedCount} on Mythique` : ''}
     </>
   );
