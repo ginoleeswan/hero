@@ -13,6 +13,7 @@ export type FamilyRelation =
   | 'cousin'
   | 'in_law'
   | 'ancestor'
+  | 'descendant'
   | 'clone'
   | 'other';
 

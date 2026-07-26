@@ -4,14 +4,7 @@
 // hero spine, or a specific parent when the kinship resolver supplied one), with
 // resolved children clustered next to their parent's column.
 import type { ConnTarget, FamilyGraph, FamilyMember, GraphNode, GraphTier } from './types';
-
-const TIER_LABELS: Record<number, string> = {
-  2: 'Grandparents · Ancestors',
-  1: 'Parents · Aunts & Uncles',
-  0: 'Same generation',
-  [-1]: 'Children',
-  [-2]: 'Grandchildren',
-};
+import { GRAPH_TIER_LABELS, tierLabel } from './tierLabels';
 
 const NONFAMILY = /girlfriend|boyfriend|fianc|lover|paramour/i;
 const COLLAPSE_AFTER = 6;
@@ -53,8 +46,13 @@ export function buildFamilyGraph(members: FamilyMember[]): FamilyGraph {
     return [orderInTier.get(x.id) ?? x.position, x.position];
   };
 
+  // Walk whatever generations the data actually holds, deepest ancestor first,
+  // rather than a fixed +2..-2 window that silently dropped recorded lineage.
+  // Tier 9 is the clone/aside escape hatch and never becomes a row.
+  const orderedTiers = [...byTier.keys()].filter((t) => t !== 9).sort((a, b) => b - a);
+
   const tiers: GraphTier[] = [];
-  for (const t of [2, 1, 0, -1, -2]) {
+  for (const t of orderedTiers) {
     const list = byTier.get(t);
     if (!list || list.length === 0) continue;
     const nodes: GraphNode[] = [...list]
@@ -66,9 +64,11 @@ export function buildFamilyGraph(members: FamilyMember[]): FamilyGraph {
       .map((member) => ({ member, connectTo: connFor(member) }));
     tiers.push({
       tier: t,
-      label: TIER_LABELS[t],
+      label: tierLabel(t, GRAPH_TIER_LABELS),
       nodes,
-      collapsedByDefault: t === 2 || nodes.length > COLLAPSE_AFTER,
+      // Anything beyond the immediate family starts collapsed: a dynasty runs a
+      // dozen generations each way and would otherwise bury the character.
+      collapsedByDefault: t >= 2 || t <= -2 || nodes.length > COLLAPSE_AFTER,
     });
   }
 

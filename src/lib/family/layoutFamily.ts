@@ -4,6 +4,7 @@
 // at the hero), the hero's generation is a horizontal band. (x,y) are node CENTERS.
 import { hierarchy, tree } from 'd3-hierarchy';
 import type { FamilyGraph, FamilyMember } from './types';
+import { LAYOUT_TIER_LABELS, tierLabel } from './tierLabels';
 
 export const HERO_ID = '__hero__';
 
@@ -38,53 +39,74 @@ interface Spec {
   children: Spec[];
 }
 
-const TIER_LABELS: Record<number, string> = {
-  2: 'Grandparents',
-  1: 'Parents · aunts',
-  0: 'Hero · siblings',
-  [-1]: 'Children',
-  [-2]: 'Grandchildren',
-};
 
 export function layoutFamily(graph: FamilyGraph): FamilyLayout {
   const all: FamilyMember[] = graph.tiers.flatMap((t) => t.nodes.map((n) => n.member));
   const parentIn = (id: string | null, set: FamilyMember[]) =>
     id && set.some((s) => s.id === id) ? id : null;
 
-  const tier1 = all.filter((mm) => mm.tier === 1);
-  const tier2 = all.filter((mm) => mm.tier === 2);
-  const tierM1 = all.filter((mm) => mm.tier === -1);
-  const tierM2 = all.filter((mm) => mm.tier === -2);
   const band = all.filter((mm) => mm.tier === 0);
+
+  // Ancestors nest to whatever depth the data records, not a fixed two rows.
+  // tier 9 is the clone/aside escape hatch, so it is excluded from the walk.
+  const ancestors = all.filter((mm) => mm.tier > 0 && mm.tier !== 9);
+  const atTier = (t: number) => ancestors.filter((mm) => mm.tier === t);
+  const maxAncTier = ancestors.length ? Math.max(...ancestors.map((mm) => mm.tier)) : 0;
+
+  // Each generation hangs off the specific forebear it descends through
+  // (tree_parent_id), so the line reads as a lineage instead of a flat row.
+  const ancChildren = (parentId: string, tier: number): Spec[] =>
+    tier > maxAncTier
+      ? []
+      : atTier(tier)
+          .filter((g) => g.treeParentId === parentId)
+          .map((g) => ({ id: g.id, member: g, children: ancChildren(g.id, tier + 1) }));
 
   const ancSpec: Spec = {
     id: HERO_ID,
     member: null,
-    children: tier1.map((p) => ({
+    children: atTier(1).map((p) => ({
       id: p.id,
       member: p,
-      children: tier2
-        .filter((g) => parentIn(g.treeParentId, tier1) === p.id)
-        .map((g) => ({ id: g.id, member: g, children: [] })),
+      children: ancChildren(p.id, 2),
     })),
   };
-  for (const g of tier2.filter((g) => parentIn(g.treeParentId, tier1) === null)) {
-    ancSpec.children.push({ id: g.id, member: g, children: [] });
+  // Anyone whose forebear is missing from the set would otherwise vanish with
+  // the branch it was meant to hang from; attach those to the hero directly.
+  for (let t = 2; t <= maxAncTier; t++) {
+    const above = atTier(t - 1);
+    for (const g of atTier(t).filter((gg) => parentIn(gg.treeParentId, above) === null)) {
+      ancSpec.children.push({ id: g.id, member: g, children: ancChildren(g.id, t + 1) });
+    }
   }
+
+  // Descendants mirror the ancestor walk: a recorded line runs as deep downward
+  // as it does upward, and Aegon the Conqueror's reaches thirteen generations.
+  const descendants = all.filter((mm) => mm.tier < 0 && mm.tier !== 9);
+  const atDepth = (d: number) => descendants.filter((mm) => mm.tier === -d);
+  const maxDescDepth = descendants.length ? Math.max(...descendants.map((mm) => -mm.tier)) : 0;
+
+  const descChildren = (parentId: string, depth: number): Spec[] =>
+    depth > maxDescDepth
+      ? []
+      : atDepth(depth)
+          .filter((g) => g.treeParentId === parentId)
+          .map((g) => ({ id: g.id, member: g, children: descChildren(g.id, depth + 1) }));
 
   const descSpec: Spec = {
     id: HERO_ID,
     member: null,
-    children: tierM1.map((c) => ({
+    children: atDepth(1).map((c) => ({
       id: c.id,
       member: c,
-      children: tierM2
-        .filter((g) => parentIn(g.treeParentId, tierM1) === c.id)
-        .map((g) => ({ id: g.id, member: g, children: [] })),
+      children: descChildren(c.id, 2),
     })),
   };
-  for (const g of tierM2.filter((g) => parentIn(g.treeParentId, tierM1) === null)) {
-    descSpec.children.push({ id: g.id, member: g, children: [] });
+  for (let d = 2; d <= maxDescDepth; d++) {
+    const above = atDepth(d - 1);
+    for (const g of atDepth(d).filter((gg) => parentIn(gg.treeParentId, above) === null)) {
+      descSpec.children.push({ id: g.id, member: g, children: descChildren(g.id, d + 1) });
+    }
   }
 
   const lay = tree<Spec>().nodeSize([NODE_W + GAP_X, ROW_H]);
@@ -164,7 +186,7 @@ export function layoutFamily(graph: FamilyGraph): FamilyLayout {
   for (const n of nodes) if (n.member) tierY.set(n.member.tier, n.y);
   const rows = [...tierY.entries()]
     .sort((a, b) => a[1] - b[1])
-    .map(([tier, y]) => ({ tier, label: TIER_LABELS[tier] ?? '', y }));
+    .map(([tier, y]) => ({ tier, label: tierLabel(tier, LAYOUT_TIER_LABELS), y }));
 
   return { nodes, edges, rows, bounds: { width: maxX + PAD, height: maxY + PAD } };
 }

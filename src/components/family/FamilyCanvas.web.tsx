@@ -26,6 +26,8 @@ import type { PositionedNode, FamilyLayout } from '../../lib/family/layoutFamily
 // Node nominal dimensions (must match layoutFamily constants)
 const NODE_W = 158;
 const NODE_H = 50;
+/** Below this, node names stop being readable — never auto-fit past it. */
+const MIN_LEGIBLE_SCALE = 0.85;
 
 function alignColor(alignment: string | null): string {
   if (alignment === 'good') return COLORS.blue;
@@ -212,10 +214,28 @@ function FamilyStage({
       const { width: bw, height: bh } = layout.bounds;
       const pad = fullscreen ? 40 : 24;
       const fit = Math.min((vpW - pad) / bw, (vpH - pad) / bh);
-      const s = Math.min(fullscreen ? 2.2 : 1.2, Math.max(0.45, fit));
-      // RN scales transforms around the element CENTRE, so centring is just
-      // viewportCentre − boundsCentre (no scale factor in the translate).
-      return { tx: vpW / 2 - bw / 2, ty: vpH / 2 - bh / 2, scale: s };
+      // Fit the whole tree when it fits, but stop shrinking at a legible floor.
+      // A recorded dynasty is thirteen generations tall: fitting all of it puts
+      // every name below reading size and lands the viewport in the middle of
+      // some remote descendant.
+      const s = Math.min(fullscreen ? 2.2 : 1.2, Math.max(MIN_LEGIBLE_SCALE, fit));
+
+      // Anchor on the hero, not the midpoint of the bounds — you should open on
+      // the character whose page this is, with their immediate family around
+      // them, and pan out to the rest.
+      //
+      // RN scales around the element CENTRE, so a point p lands at
+      // centre + (p − centre) · s. Solving for the translate that puts the hero
+      // at the viewport centre gives the term below; for p = centre it reduces
+      // to the old viewportCentre − boundsCentre.
+      const hero = layout.nodes.find((n) => n.isHero);
+      const hx = hero?.x ?? bw / 2;
+      const hy = hero?.y ?? bh / 2;
+      return {
+        tx: vpW / 2 - bw / 2 - (hx - bw / 2) * s,
+        ty: vpH / 2 - bh / 2 - (hy - bh / 2) * s,
+        scale: s,
+      };
     },
     [layout, fullscreen],
   );
