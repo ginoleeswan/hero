@@ -963,7 +963,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 20,
     color: COLORS.beige,
-    lineHeight: 24,
+    lineHeight: 25,
     flexShrink: 0,
   } as object,
   titleDesktop: {
