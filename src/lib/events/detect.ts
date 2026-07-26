@@ -78,23 +78,40 @@ export interface EventDetection {
 }
 
 // ── thresholds ───────────────────────────────────────────────────────────────
-// Seeded from two measured events (SDCC 2026 live, NYCC 2026 dormant) — enough
-// to place them, not enough to call them final. Re-tune against a few more real
-// conventions before trusting the `live` verdict unattended.
+// Seeded from two measured events (SDCC 2026 live, NYCC 2026 dormant) and then
+// checked against a full 20-row production run — enough to place them, not
+// enough to call them final. Re-tune when a second convention actually runs.
 
 /** Days counted as "recent" for both the pageview peak and the edit burst. */
 export const RECENT_DAYS = 4;
 /** Pageview lift required. SDCC measured 3.35x; NYCC 1.74x. */
 export const SPIKE_MIN = 2.5;
-/** Edit-rate multiple required. SDCC measured ~65x. */
+/** Edit-rate multiple required. SDCC measured 21.5x in production. */
 export const EDIT_BURST_MIN = 4;
 /** Floor on absolute recent edits, so a near-dormant article can't turn one
  *  drive-by edit into a huge ratio. This is the guard that actually rejects a
- *  dormant con: NYCC's single edit still scored ~5x off its years-long baseline,
- *  clearing EDIT_BURST_MIN — one edit is not a burst regardless of ratio. */
+ *  dormant con: in the production run NYCC's single edit scored 4.32x off its
+ *  years-long baseline, clearing EDIT_BURST_MIN. One edit is not a burst
+ *  regardless of ratio. */
 export const EDITS_ABS_MIN = 3;
+/** Absolute floor on the recent peak, because a ratio alone is meaningless on a
+ *  low-traffic article. Measured medians on the smallest watched articles: CCXP
+ *  40/day, Angoulême 61, Lucca 66 — so CCXP's 2.5x gate is just 100 views, and
+ *  its ordinary noise peak of 93 nearly clears it. Three edits from one keen
+ *  editor would then read as a live convention.
+ *
+ *  250 sits above every noise peak measured across the six smallest articles
+ *  (max 230) and far below SDCC's 3,688. The cost is that a convention which is
+ *  genuinely big but small *on en.wikipedia* (CCXP is a ~250k-attendee Brazilian
+ *  show read mostly in Portuguese) needs real traffic to trigger. Revisit — and
+ *  consider a per-row override column — the first time one of those actually
+ *  runs. */
+export const MIN_PEAK_VIEWS = 250;
 /** Below this, an article's long-run edit rate is treated as this value rather
- *  than dividing by ~zero. */
+ *  than dividing by ~zero. Note this floor dominates on any article whose
+ *  sampled history is sparse: with only a handful of older revisions the burst
+ *  ratio reports the floor rather than a real rate (a trimmed test fixture reads
+ *  65x where production, sampling 100 revisions, reads 21.5x for the same days). */
 export const MIN_EDIT_BASELINE = 0.05;
 /** Multiple of baseline a day must clear to count as part of the event window.
  *  Higher than SPIKE_MIN on purpose: it trims the ramp-up so the window lands
@@ -186,7 +203,9 @@ export function detectEvent(signals: EventSignals): EventDetection {
   const recentPerDay = recentEdits.length / RECENT_DAYS;
   const editBurstRatio = recentPerDay / Math.max(olderPerDay, MIN_EDIT_BASELINE);
 
-  const viewsHot = spikeRatio >= SPIKE_MIN;
+  // A lift is only meaningful if there's enough traffic for the ratio to mean
+  // anything — see MIN_PEAK_VIEWS.
+  const viewsHot = spikeRatio >= SPIKE_MIN && peak >= MIN_PEAK_VIEWS;
   const editsHot = recentEdits.length >= EDITS_ABS_MIN && editBurstRatio >= EDIT_BURST_MIN;
   const verdict: EventVerdict =
     viewsHot && editsHot ? 'live' : viewsHot || editsHot ? 'watch' : 'idle';

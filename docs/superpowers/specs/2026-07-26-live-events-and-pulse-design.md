@@ -73,8 +73,28 @@ So "New trailer · 3h ago" costs **no additional API calls**. Needed:
   (`supabase/migrations/20260713140000_fix_refresh_tmdb_trending_cron.sql`),
   far too slow to catch a trailer on the day it lands.
 
-> Not verified live — there's no TMDB key in the web container (`.env.local` is
-> gitignored). Confirm the field names against one real response before building.
+**Independently confirmed 2026-07-26:** `titles.details` stores `writers`,
+`certification`, `productionCountries`, `collection`, `keywords`, `voteCount`,
+`reviews`, `genres`, `tagline`, `externalIds`, `budget`, `recommendations`,
+`originalLanguage`, `status`, `director`, `spokenLanguages`,
+`productionCompanies` (+ `networks`, `seasons`, `episodes`, `episode_runtime`
+for TV) — and **no `videos`**. Everything but `.key` really is dropped.
+
+The documented video object is:
+
+```
+iso_639_1, iso_3166_1, name, key, site, size, type, official, published_at, id
+```
+
+`published_at` is ISO-8601 UTC, `type` ∈ Trailer / Teaser / Clip / Featurette /
+Behind the Scenes / Bloopers, `id` is TMDB's video id (distinct from `key`, the
+YouTube id already kept).
+
+> `site`, `type` and `key` are confirmed by working production code —
+> `enrich-tmdb-batch:168` filters on `v.type === 'Trailer'` and trailers do land.
+> `published_at` and `official` are from the documented schema only; there's no
+> TMDB key in either checkout. Read them **defensively** (warn when absent) so a
+> naming surprise is a one-line fix, not a blocker.
 
 ### 3.2 The daily pageview series (already fetched, 12 of 14 days discarded)
 
@@ -127,17 +147,21 @@ actually running:
 | --------------- | ------------------------- | ----------------- |
 | Pageview lift   | **3.35×** (1,099 → 3,688) | 1.74× (143 → 250) |
 | Edits in 4 days | **13**                    | 1                 |
-| Edit-rate burst | ~65×                      | ~5×               |
+| Edit-rate burst | **21.5×**                 | 4.32×             |
 | Verdict         | `live`                    | `idle`            |
+
+Burst figures are the **production** values from the §7 run. An earlier draft of
+this doc claimed ~65× / ~5× from the test fixtures; that was wrong, and the
+reason is worth knowing — see §5.4.
 
 **Both signals are required.** Pageviews alone would have flagged NYCC too — a
 quiet news week lifts every convention article a little.
 
 **`EDITS_ABS_MIN` is the guard that actually rejects a dormant con.** NYCC's
-single edit still scored ~5× against a years-dormant baseline, clearing the
-ratio gate. One edit is not a burst regardless of ratio. (An earlier draft of
-this design assumed the ratio would do the rejecting; it doesn't. There's a test
-asserting exactly this.)
+single edit scored 4.32× against a years-dormant baseline, clearing
+`EDIT_BURST_MIN = 4`. One edit is not a burst regardless of ratio. (An earlier
+draft assumed the ratio would do the rejecting; it doesn't. There's a test
+asserting exactly this, and production confirmed it.)
 
 **Result:** from attention alone, with no schedule consulted, the detector placed
 SDCC's window at **2026-07-23 → 07-25, ongoing**. 07-23 was opening day.
@@ -153,31 +177,73 @@ SDCC's window at **2026-07-23 → 07-25, ongoing**. 07-23 was opening day.
 Different shapes want different copy and different decay half-lives. A single
 week-over-week ratio flattens all three.
 
+### 5.4 Two threshold corrections from the production run
+
+**The edit-burst ratio can report a floor, not a rate.** The test fixtures keep
+every recent revision plus one old anchor, so their older-edit density is far
+below what the live function sees (it samples 100 revisions). With so few older
+edits `olderPerDay` falls under `MIN_EDIT_BASELINE`, and the ratio becomes
+`recentPerDay ÷ 0.05` — a constant. That's the whole 65× vs 21.5× gap: same days,
+same 13 recent edits, different denominator. Feeding 87 older revisions across
+the real ~575-day span reproduces 21.48 exactly. Both numbers are now pinned by
+tests so nobody "fixes" the discrepancy later.
+
+Consequence for tuning: **`EDIT_BURST_MIN` is a weaker gate than it looks** on
+any sparsely-edited article, because the floor inflates it. The `live` verdict
+leans on `EDITS_ABS_MIN`, which is what production demonstrated.
+
+**A ratio is meaningless on a low-traffic article — so there's now a peak floor.**
+Measured medians on the smallest watched articles:
+
+| Article               | Median/day | 2.5× gate | Noise peak (28d) |
+| --------------------- | ---------- | --------- | ---------------- |
+| CCXP                  | 40         | 100       | 93               |
+| Angoulême             | 61         | 152       | 198              |
+| Lucca Comics & Games  | 66         | 166       | 218              |
+| WonderCon             | 108        | 271       | 154              |
+| PAX                   | 194        | 485       | 230              |
+| Comiket               | 293        | 732       | 373              |
+
+CCXP's ordinary noise already reaches 2.3× — a hair under `SPIKE_MIN`. Three
+edits from one keen editor and it would have read as a live convention. So
+`viewsHot` now also requires **`peak >= MIN_PEAK_VIEWS` (250)**, which sits above
+every noise peak measured here (max 230) and far below SDCC's 3,688.
+
+The cost is real and worth stating: a convention that is genuinely large but
+small *on en.wikipedia* — CCXP is a ~250k-attendee Brazilian show read mostly in
+Portuguese — now needs real English traffic to trigger. Revisit the first time
+one of those actually runs, and consider a per-row override column rather than a
+global constant.
+
 ---
 
 ## 6. What shipped on this branch
 
-Commit `7e9e763` — `yarn typecheck` clean, `yarn test:ci` **944 passing / 128
-suites**, eslint + prettier clean.
+Landed on `main` via `08418f96`. Thresholds since revised — see §5.4.
 
 | File                                                    | Role                                                                                                                                                                |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/lib/events/detect.ts`                              | Pure detector. Clock-free (`asOf` injected) so it's deterministic in tests. Exports tunable thresholds.                                                             |
-| `__tests__/lib/events/detect.test.ts`                   | 18 tests. Fixtures are the real measured curves above, inlined (no helper files under `__tests__` — jest treats every `.ts` there as a suite).                      |
+| `__tests__/lib/events/detect.test.ts`                   | 23 tests. Fixtures are the real measured curves above, inlined (no helper files under `__tests__` — jest treats every `.ts` there as a suite).                      |
 | `supabase/migrations/20260726150000_watched_events.sql` | `watched_events` table, 20 seeded events, `get_live_events()`, 3 admin RPCs, cron at `7,37 * * * *`.                                                                |
 | `supabase/functions/sync-watched-events/index.ts`       | Poller. Mirrors `detect.ts` (Deno can't import from `src/`) — same convention as `enrich-tmdb-batch` mirroring `src/lib/tmdb/mapFilm.ts`. **Change both together.** |
-| `src/lib/db/events.ts` + test                           | Client reader. Uses `as never` on the RPC until types are regenerated.                                                                                              |
+| `src/lib/db/events.ts` + test                           | Client reader. Typed against the generated RPC, widened to the nullable row shape it guards for.                                                                    |
 
 ### Thresholds (`src/lib/events/detect.ts`)
 
 ```
 RECENT_DAYS       = 4     days counted as "recent" for both signals
 SPIKE_MIN         = 2.5   pageview lift required   (SDCC 3.35 / NYCC 1.74)
-EDIT_BURST_MIN    = 4     edit-rate multiple       (SDCC ~65)
+MIN_PEAK_VIEWS    = 250   absolute peak floor      (added §5.4 — kills tiny-article noise)
+EDIT_BURST_MIN    = 4     edit-rate multiple       (SDCC 21.5 in production)
 EDITS_ABS_MIN     = 3     absolute recent edits    (the real NYCC veto)
-MIN_EDIT_BASELINE = 0.05  floor, avoids ÷~0
+MIN_EDIT_BASELINE = 0.05  floor, avoids ÷~0        (but see §5.4 — it can dominate)
 WINDOW_ENTER      = 2     multiple to count a day as inside the window
 ```
+
+`live` requires `spikeRatio >= SPIKE_MIN` **and** `peak >= MIN_PEAK_VIEWS` **and**
+`editsRecent >= EDITS_ABS_MIN` **and** `editBurstRatio >= EDIT_BURST_MIN`. Any
+subset is `watch`.
 
 ### Seeded watch list (20 rows)
 
@@ -213,6 +279,51 @@ the veto §5.2 says it is.
 One gotcha for whoever automates the gate: `admin_set_watched_event_approval`
 checks `auth.uid()`, which is null over the MCP service role, so it raises
 `not authorized` there. Approval was set with the equivalent `update` instead.
+
+### The full run — all 20 rows, 2026-07-26
+
+Kept because it's the only baseline sample of the whole watch list in a quiet
+week, which is what `MIN_PEAK_VIEWS` was calibrated against.
+
+| slug              | verdict | spike | shape       | window                | ongoing |
+| ----------------- | ------- | ----- | ----------- | --------------------- | ------- |
+| `sdcc`            | live    | 3.35  | sustained   | 2026-07-23 → 07-25    | yes     |
+| `nycc`            | idle    | 1.74  | sustained   | —                     | no      |
+| `d23`             | idle    | 1.54  | sustained   | 2026-07-14 → 07-14    | no      |
+| `gamescom`        | idle    | 1.54  | easing      | —                     | no      |
+| `wondercon`       | idle    | 1.42  | sustained   | —                     | no      |
+| `swce`            | idle    | 1.34  | sustained   | —                     | no      |
+| `eccc`            | idle    | 1.31  | sustained   | 2026-07-01 → 07-02    | no      |
+| `dragon-con`      | idle    | 1.28  | easing      | —                     | no      |
+| `ccxp`            | idle    | 1.27  | sustained   | 2026-07-14 → 07-14    | no      |
+| `mcm-london`      | idle    | 1.26  | sustained   | —                     | no      |
+| `fan-expo-canada` | idle    | 1.25  | decaying    | 2026-07-14 → 07-14    | no      |
+| `dc-fandome`      | idle    | 1.21  | sustained   | —                     | no      |
+| `comiket`         | idle    | 1.15  | flat        | —                     | no      |
+| `nintendo-direct` | idle    | 1.15  | flat        | —                     | no      |
+| `lucca`           | idle    | 1.14  | flat        | 2026-07-01 → 07-01    | no      |
+| `angouleme`       | idle    | 1.13  | flat        | 2026-07-07 → 07-07    | no      |
+| `pax`             | idle    | 1.03  | flat        | —                     | no      |
+| `game-awards`     | idle    | 1.00  | flat        | —                     | no      |
+| `summer-game-fest`| idle    | 0.97  | flat        | —                     | no      |
+| `anime-expo`      | idle    | 0.65  | flat        | 2026-07-02 → 07-08    | no      |
+
+Two things to read out of it:
+
+- **Single-day windows on quiet articles are noise**, not events (`d23`, `ccxp`,
+  `fan-expo-canada` all landed on 07-14). They're harmless because `verdict`
+  gates surfacing, and `get_live_events` gates again on the window containing
+  today — but they're the exact failure mode `MIN_PEAK_VIEWS` now blocks.
+- **`anime-expo` at 0.65 with a real 07-02 → 07-08 window** is the detector
+  working backwards correctly: Anime Expo ran in early July, so its recent peak
+  now sits *below* its own median. Historical windows are reported but never
+  surfaced.
+
+### Outstanding — needs a redeploy
+
+`MIN_PEAK_VIEWS` was added after this run (§5.4). The deployed
+`sync-watched-events` predates it, so **redeploy the function** — batch it with
+whatever §8 needs.
 The RPC is fine from a signed-in admin client — it just can't be driven from MCP.
 
 1. **Apply the migration** via `mcp__supabase__apply_migration` —

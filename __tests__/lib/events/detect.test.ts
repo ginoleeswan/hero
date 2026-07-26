@@ -1,7 +1,11 @@
 import {
   detectEvent,
   median,
+  EDIT_BURST_MIN,
   EDITS_ABS_MIN,
+  MIN_EDIT_BASELINE,
+  MIN_PEAK_VIEWS,
+  RECENT_DAYS,
   SPIKE_MIN,
   type DailyViews,
 } from '../../../src/lib/events/detect';
@@ -59,9 +63,14 @@ const MOTU_VIEWS = daily(
   ],
 );
 
-// Revision timestamps, newest first, with the oldest of the 100 sampled kept as
-// the baseline anchor: SDCC's 100 revisions reach back to 2024-12, NYCC's to
-// 2021-11, so both long-run rates are genuinely low and the burst is the signal.
+// Revision timestamps, newest first. These lists are TRIMMED — every recent
+// revision plus one old anchor — which means their older-edit density is far
+// below production's (which samples 100 revisions over the same span). The
+// consequence is deliberate and asserted below: with so few older edits,
+// `olderPerDay` falls under MIN_EDIT_BASELINE, so editBurstRatio reports the
+// floor (65) rather than production's real 21.5 for the same days. The ratio
+// magnitude here is therefore a property of the floor, not a measurement —
+// which is exactly why the `live` verdict leans on editsRecent, not on it.
 const SDCC_EDITS = [
   '2026-07-26T10:57:42Z',
   '2026-07-25T04:46:36Z',
@@ -126,9 +135,9 @@ describe('detectEvent — the live event (SDCC 2026)', () => {
     expect(d.peak).toBe(3688);
   });
 
-  it('measures the edit burst', () => {
+  it('counts the recent edits', () => {
     expect(d.editsRecent).toBe(13);
-    expect(d.editBurstRatio).toBeGreaterThan(20);
+    expect(d.editBurstRatio).toBeGreaterThan(EDIT_BURST_MIN);
   });
 
   it('infers the event window from the elevated run', () => {
@@ -163,6 +172,70 @@ describe('detectEvent — the dormant event (NYCC, same days)', () => {
     expect(d.liveFrom).toBeNull();
     expect(d.liveTo).toBeNull();
     expect(d.ongoing).toBe(false);
+  });
+});
+
+describe('detectEvent — the edit-baseline floor', () => {
+  // The production run of 2026-07-26 reported 21.48 for SDCC where the trimmed
+  // fixture above reports 65. Both are correct: the fixture's sparse older
+  // history sits under MIN_EDIT_BASELINE, so it divides by the floor. Pinning
+  // both numbers here stops anyone "fixing" the discrepancy later.
+  const views = Array.from({ length: 28 }, (_, i) => ({
+    date: new Date(Date.UTC(2026, 5, 28 + i)).toISOString().slice(0, 10),
+    views: i >= 25 ? 3688 : 1099,
+  }));
+  const recent = SDCC_EDITS.filter((t) => t >= '2026-07-23');
+
+  it('divides by the floor when the sampled history is sparse', () => {
+    const sparse = [...recent, '2026-07-21T00:00:00Z', '2024-12-25T00:00:00Z'];
+    const d = detectEvent({ views, editTimestamps: sparse, asOf: AS_OF });
+    expect(d.editBurstRatio).toBeCloseTo(recent.length / RECENT_DAYS / MIN_EDIT_BASELINE, 1);
+  });
+
+  it('reproduces production once the older-edit density is realistic', () => {
+    // 87 older revisions spread across the same ~575-day span the real article
+    // covers — the density the live function actually sees.
+    const dense = [...recent];
+    for (let i = 0; i < 87; i++) {
+      dense.push(new Date(Date.parse('2024-12-25T00:00:00Z') + i * 6.6 * MS_PER_DAY).toISOString());
+    }
+    const d = detectEvent({ views, editTimestamps: dense, asOf: AS_OF });
+    expect(d.editBurstRatio).toBeCloseTo(21.48, 1);
+    expect(d.editBurstRatio).toBeGreaterThan(EDIT_BURST_MIN);
+  });
+});
+
+describe('detectEvent — the low-traffic floor', () => {
+  // CCXP's real median is 40 views/day, so SPIKE_MIN alone is a 100-view gate
+  // and its ordinary noise peak of 93 nearly clears it. Without MIN_PEAK_VIEWS,
+  // three edits from one keen editor would read as a live convention.
+  const tiny = (peak: number): DailyViews[] =>
+    Array.from({ length: 28 }, (_, i) => ({
+      date: new Date(Date.UTC(2026, 5, 28 + i)).toISOString().slice(0, 10),
+      views: i >= 25 ? peak : 40,
+    }));
+  const threeEdits = ['2026-07-26T01:00:00Z', '2026-07-25T01:00:00Z', '2026-07-24T01:00:00Z'];
+  const withAnchor = [...threeEdits, '2024-12-25T00:00:00Z'];
+
+  it('refuses to call a tiny article live on a big ratio alone', () => {
+    const d = detectEvent({ views: tiny(200), editTimestamps: withAnchor, asOf: AS_OF });
+    expect(d.spikeRatio).toBeGreaterThan(SPIKE_MIN);
+    expect(d.editsRecent).toBe(3);
+    // Both original gates pass; the peak floor is the only thing rejecting it.
+    expect(d.peak).toBeLessThan(MIN_PEAK_VIEWS);
+    expect(d.verdict).toBe('watch');
+  });
+
+  it('lets the same article through once real traffic arrives', () => {
+    const d = detectEvent({ views: tiny(600), editTimestamps: withAnchor, asOf: AS_OF });
+    expect(d.verdict).toBe('live');
+  });
+
+  it('leaves a busy article unaffected', () => {
+    expect(SDCC_VIEWS.some((v) => v.views >= MIN_PEAK_VIEWS)).toBe(true);
+    expect(
+      detectEvent({ views: SDCC_VIEWS, editTimestamps: SDCC_EDITS, asOf: AS_OF }).verdict,
+    ).toBe('live');
   });
 });
 

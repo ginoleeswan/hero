@@ -64,6 +64,10 @@ const RECENT_DAYS = 4;
 const SPIKE_MIN = 2.5;
 const EDIT_BURST_MIN = 4;
 const EDITS_ABS_MIN = 3;
+// A ratio is meaningless on a low-traffic article: CCXP's median is 40 views/day,
+// so its 2.5x gate is 100 views and its ordinary noise peak of 93 nearly clears
+// it. See src/lib/events/detect.ts for the measured justification.
+const MIN_PEAK_VIEWS = 250;
 const MIN_EDIT_BASELINE = 0.05;
 const WINDOW_ENTER = 2;
 const MS_PER_DAY = 86_400_000;
@@ -136,7 +140,7 @@ function detectEvent(signals: {
   const recentPerDay = recentEdits.length / RECENT_DAYS;
   const editBurstRatio = recentPerDay / Math.max(olderPerDay, MIN_EDIT_BASELINE);
 
-  const viewsHot = spikeRatio >= SPIKE_MIN;
+  const viewsHot = spikeRatio >= SPIKE_MIN && peak >= MIN_PEAK_VIEWS;
   const editsHot = recentEdits.length >= EDITS_ABS_MIN && editBurstRatio >= EDIT_BURST_MIN;
   const verdict: EventVerdict =
     viewsHot && editsHot ? 'live' : viewsHot || editsHot ? 'watch' : 'idle';
