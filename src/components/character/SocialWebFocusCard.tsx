@@ -7,6 +7,7 @@ import { HeroAvatar } from '../HeroAvatar';
 import { deriveCharacterTheme, accentButtonColors } from '../../lib/accent';
 import { describeRelationship } from '../../lib/graph/relationshipReason';
 import { topStatEdges, matchupVerdict } from '../../lib/graph/statEdge';
+import { UniverseVote } from './UniverseVote';
 import type { NeighborKind, NeighborNode } from '../../lib/db/heroes/neighborhood';
 
 const KIND_LABEL: Record<string, string> = {
@@ -239,6 +240,12 @@ export function SocialWebFocusCard({
             );
           })}
         </View>
+      ) : null}
+
+      {/* Straight after the stat comparison, which is the moment the viewer has
+          just formed an opinion and is most likely to want to register it. */}
+      {subject && subject.id !== node.id ? (
+        <UniverseVote subject={subject} node={node} subjectName={subjectName} />
       ) : null}
 
       {mutuals.length > 0 ? (

@@ -164,7 +164,9 @@ export default function SocialWebExplorer() {
             edges={data.edges}
             focusId={focusId}
             onSelect={async (nodeId: string) => {
-              setFocusId(nodeId);
+              // The empty id is how Escape asks for the dossier to close.
+              setFocusId(nodeId || null);
+              if (!nodeId) return;
               // Travel is always preceded by selecting the same head — a
               // double-click fires click first, and on touch the first tap of a
               // double tap does too. Warming that character's cast here means

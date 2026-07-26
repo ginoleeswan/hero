@@ -169,6 +169,10 @@ export interface Cluster {
   faction: Faction;
   label: string;
   count: number;
+  /** Members in drawn order — also the order arrow keys walk them in. */
+  ids: string[];
+  /** Names, parallel to `ids`, for the screen-reader list. */
+  names: string[];
   /** Where the heading floats — above the middle of the group. */
   anchor: THREE.Vector3;
 }
@@ -302,6 +306,8 @@ function factionLayout(nodes: UniverseNode[]): {
       faction,
       label: FACTION_LABEL[faction],
       count: members.length,
+      ids: members.map((m) => m.id),
+      names: members.map((m) => m.name),
       // Just beyond the outermost row, on the faction's centre line — outside
       // the heads it names rather than floating over them.
       anchor: new THREE.Vector3(
@@ -335,6 +341,7 @@ export default function UniverseScene({
   const mountRef = useRef<HTMLDivElement | null>(null);
   const labelRef = useRef<HTMLDivElement | null>(null);
   const clusterLayerRef = useRef<HTMLDivElement | null>(null);
+  const srLayerRef = useRef<HTMLDivElement | null>(null);
   // Held in refs so the render loop reads the latest values without tearing the
   // whole scene down and rebuilding it every time a callback or focus changes.
   const selectRef = useRef(onSelect);
@@ -383,6 +390,15 @@ export default function UniverseScene({
     // reaches the scene on mobile Safari.
     renderer.domElement.style.touchAction = 'none';
     renderer.domElement.style.overscrollBehavior = 'none';
+    // Focusable, named, and driveable — without this the canvas is a dead
+    // rectangle to anyone not using a mouse.
+    renderer.domElement.tabIndex = 0;
+    renderer.domElement.setAttribute('role', 'application');
+    renderer.domElement.setAttribute(
+      'aria-label',
+      'Character universe. Arrow keys move between characters, Page Up and Page Down jump between groups, Enter opens a dossier, Shift+Enter travels there.',
+    );
+    renderer.domElement.style.outlineOffset = '-3px';
 
     const scene = new THREE.Scene();
     const FOV = 46;
@@ -407,6 +423,13 @@ export default function UniverseScene({
       panTarget: new THREE.Vector3(),
       /** Heads are still easing into a new arrangement until this moment. */
       settleUntil: 0,
+      clusters: [] as Cluster[],
+      /**
+       * The keyboard cursor — a lightweight hover you can drive with arrows,
+       * deliberately separate from `focusId`. Stepping through 24 characters
+       * shouldn't fire off 24 dossiers; you move the cursor, then choose.
+       */
+      kbId: null as string | null,
     };
 
     // How far back the camera must sit for the whole system to fit the frame.
@@ -809,11 +832,114 @@ export default function UniverseScene({
       }
       reindex();
 
+      state.clusters = clusters;
+      // A cursor left on someone who isn't in this universe any more would be
+      // pointing at nothing; start the new one on its first nemesis instead.
+      if (state.kbId && !seen.has(state.kbId)) state.kbId = null;
+
       buildLines(es);
       lastLead = undefined; // force the next frame to re-light
       buildChips(clusters);
+      buildScreenReaderList(clusters, subject.name);
     };
     applyRef.current = applyData;
+
+    /**
+     * The scene, said in words.
+     *
+     * Everything above this point is pixels in a canvas: there is no tab order,
+     * no roles, and nothing for a screen reader to read — the entire feature was
+     * invisible to assistive tech and unusable without a mouse. This mirrors the
+     * same cast, in the same groups and the same order, as real buttons.
+     *
+     * They sit at tabIndex -1 on purpose. Visually-hidden controls in the tab
+     * order strand sighted keyboard users on things they cannot see; a screen
+     * reader still reaches these in browse mode and can activate them, while
+     * sighted keyboard users drive the canvas itself with the arrow keys.
+     */
+    const srLayer = srLayerRef.current;
+    const buildScreenReaderList = (clusters: Cluster[], subjectName: string) => {
+      if (!srLayer) return;
+      srLayer.replaceChildren();
+      const heading = document.createElement('h2');
+      heading.textContent = `${subjectName}'s universe`;
+      srLayer.appendChild(heading);
+      for (const c of clusters) {
+        const group = document.createElement('section');
+        const title = document.createElement('h3');
+        title.textContent = `${c.label} (${c.count})`;
+        group.appendChild(title);
+        const list = document.createElement('ul');
+        c.ids.forEach((id, i) => {
+          const li = document.createElement('li');
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.tabIndex = -1;
+          btn.textContent = `${c.names[i]} — ${c.label}`;
+          btn.onclick = () => void selectRef.current?.(id);
+          li.appendChild(btn);
+          list.appendChild(li);
+        });
+        group.appendChild(list);
+        srLayer.appendChild(group);
+      }
+    };
+
+    /** Flat reading order across the clusters, matching how they're drawn. */
+    const kbOrder = (): string[] => state.clusters.flatMap((c) => c.ids);
+
+    const moveCursor = (delta: number) => {
+      const order = kbOrder();
+      if (order.length === 0) return;
+      const at = state.kbId ? order.indexOf(state.kbId) : -1;
+      const next =
+        at < 0 ? (delta > 0 ? 0 : order.length - 1) : (at + delta + order.length) % order.length;
+      state.kbId = order[next];
+    };
+
+    /** Up/down jump a whole faction, so a 20-strong cluster isn't a 20-key walk. */
+    const moveCluster = (delta: number) => {
+      const cs = state.clusters;
+      if (cs.length === 0) return;
+      const at = state.kbId ? cs.findIndex((c) => c.ids.includes(state.kbId as string)) : -1;
+      const next = at < 0 ? 0 : (at + delta + cs.length) % cs.length;
+      state.kbId = cs[next].ids[0] ?? null;
+    };
+
+    const onKeyDown = (ev: KeyboardEvent) => {
+      switch (ev.key) {
+        case 'ArrowRight':
+        case 'ArrowDown':
+          moveCursor(ev.key === 'ArrowDown' ? 1 : 1);
+          break;
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          moveCursor(-1);
+          break;
+        case 'PageDown':
+          moveCluster(1);
+          break;
+        case 'PageUp':
+          moveCluster(-1);
+          break;
+        case 'Enter':
+        case ' ':
+          if (!state.kbId) return;
+          // Enter opens the dossier; shift-Enter travels, mirroring the
+          // click / double-click pair rather than inventing a third gesture.
+          if (ev.shiftKey) startTravel(state.kbId);
+          else void selectRef.current?.(state.kbId);
+          break;
+        case 'Escape':
+          state.kbId = null;
+          void selectRef.current?.('');
+          break;
+        default:
+          return;
+      }
+      // Only reached when a key was handled — arrows must not scroll the page.
+      ev.preventDefault();
+    };
 
     // ── Interaction ──────────────────────────────────────────────────────────
     const raycaster = new THREE.Raycaster();
@@ -982,6 +1108,7 @@ export default function UniverseScene({
     window.addEventListener('pointercancel', onPointerUp);
     el.addEventListener('click', onClick);
     el.addEventListener('dblclick', onDoubleClick);
+    el.addEventListener('keydown', onKeyDown);
 
     // ── Resize ───────────────────────────────────────────────────────────────
     // Measure the viewport, not the mount. This component renders inside its own
@@ -1068,27 +1195,31 @@ export default function UniverseScene({
           hovered = id;
           el.style.cursor = id ? 'pointer' : 'grab';
         }
-        const hit = hovered ? placed.get(hovered) : null;
-        if (hit && !busy) {
-          const v = hit.sprite.position.clone();
-          world.localToWorld(v);
-          v.project(camera);
-          const rect = el.getBoundingClientRect();
-          setLabel(
-            hit.node.name,
-            (v.x * 0.5 + 0.5) * rect.width - rect.width / 2,
-            (-v.y * 0.5 + 0.5) * rect.height - rect.height / 2,
-          );
-        } else {
-          setLabel(null);
-        }
+      }
+
+      // The name follows the mouse OR the keyboard cursor — the two are the
+      // same affordance reached by different means, so they get the same label.
+      const namedId = hovered ?? state.kbId;
+      const hit = namedId ? placed.get(namedId) : null;
+      if (hit && !busy) {
+        const v = hit.sprite.position.clone();
+        world.localToWorld(v);
+        v.project(camera);
+        const rect = el.getBoundingClientRect();
+        setLabel(
+          hit.node.name,
+          (v.x * 0.5 + 0.5) * rect.width - rect.width / 2,
+          (-v.y * 0.5 + 0.5) * rect.height - rect.height / 2,
+        );
+      } else {
+        setLabel(null);
       }
 
       // Lines follow whichever head is being pointed at or held in focus. The
       // buffer is rewritten every frame while one is lit, because the endpoints
       // are live sprite positions that may still be easing into place.
       const focused = focusRef.current;
-      const lead = busy ? null : (hovered ?? focused);
+      const lead = busy ? null : (hovered ?? state.kbId ?? focused);
       if (lead !== lastLead || lead !== null) {
         lastLead = lead;
         litEdgesFor(lead);
@@ -1136,7 +1267,7 @@ export default function UniverseScene({
         }
 
         const isDestination = state.travelId === p.node.id;
-        const active = p.node.id === hovered || p.node.id === focused;
+        const active = p.node.id === hovered || p.node.id === focused || p.node.id === state.kbId;
         const lift = active && !state.travelId ? 1.18 : 1;
         // A slow per-node bob, phase-shifted by id, so the field breathes
         // instead of sitting rigid.
@@ -1192,6 +1323,7 @@ export default function UniverseScene({
       window.removeEventListener('pointercancel', onPointerUp);
       el.removeEventListener('click', onClick);
       el.removeEventListener('dblclick', onDoubleClick);
+      el.removeEventListener('keydown', onKeyDown);
       for (const { el: chip } of chips) chip.remove();
       for (const p of placed.values()) retire(p);
       placed.clear();
@@ -1210,6 +1342,19 @@ export default function UniverseScene({
   return (
     <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh' }}>
       <div ref={mountRef} style={{ width: '100vw', height: '100vh' }} />
+      {/* The cast as real markup for assistive tech — visually hidden, but the
+          only reason this feature exists for a screen reader at all. */}
+      <div
+        ref={srLayerRef}
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          overflow: 'hidden',
+          clipPath: 'inset(50%)',
+          whiteSpace: 'nowrap',
+        }}
+      />
       {/* Faction headings live here, positioned per frame from the scene. */}
       <div
         ref={clusterLayerRef}
