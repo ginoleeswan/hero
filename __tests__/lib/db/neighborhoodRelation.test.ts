@@ -1,5 +1,6 @@
 import {
   relationLabel,
+  subjectBlurb,
   subjectKind,
   subjectRelation,
   type NeighborEdge,
@@ -55,6 +56,21 @@ describe('subjectRelation', () => {
     expect(subjectRelation(backwards, SUBJECT, 'jor-el')).toBeNull();
     // The kind still resolves from either end — only the wording is directional.
     expect(subjectKind(backwards, SUBJECT, 'jor-el')).toBe('family');
+  });
+
+  it('reads the curated note from either end of the pair', () => {
+    const withBlurb: NeighborEdge[] = [
+      { from: SUBJECT, to: 'lex', kind: 'enemy', blurb: 'A written note.' },
+      { from: 'lois', to: SUBJECT, kind: 'family', relation: 'spouse', blurb: 'Another note.' },
+    ];
+    // Unlike `relation`, a note describes the PAIR and so is not directional.
+    expect(subjectBlurb(withBlurb, SUBJECT, 'lex')).toBe('A written note.');
+    expect(subjectBlurb(withBlurb, SUBJECT, 'lois')).toBe('Another note.');
+  });
+
+  it('has no note for an uncurated pair', () => {
+    expect(subjectBlurb(edges, SUBJECT, 'supergirl')).toBeNull();
+    expect(subjectBlurb(edges, SUBJECT, 'batman')).toBeNull();
   });
 
   it('is quiet for the subject itself and for strangers', () => {

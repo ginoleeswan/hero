@@ -55,6 +55,7 @@ export function SocialWebFocusCard({
   subjectTeams,
   kind,
   relation,
+  blurb,
   degree,
   accent,
   mutuals = [],
@@ -71,6 +72,8 @@ export function SocialWebFocusCard({
   kind: NeighborKind | null;
   /** For kin: the named role ("Cousin"), when hero_relatives states one. */
   relation?: string | null;
+  /** A hand-written note on this pair, when one exists. Outranks the rest. */
+  blurb?: string | null;
   degree: number;
   /** Page accent — the fallback when this character has no usable colour. */
   accent: string;
@@ -189,7 +192,14 @@ export function SocialWebFocusCard({
         </Pressable>
       </View>
 
-      {summary ? <Text style={styles.reason}>{summary}</Text> : null}
+      {/* A written note beats anything derived. The inferred line ("both
+          serving in the Justice League") only appears where nobody has said
+          something better. */}
+      {blurb ? (
+        <Text style={styles.reason}>{blurb}</Text>
+      ) : summary ? (
+        <Text style={styles.reason}>{summary}</Text>
+      ) : null}
 
       {sharedTeams.length > 0 ? (
         <View style={styles.chips}>

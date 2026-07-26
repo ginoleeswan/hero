@@ -43,6 +43,12 @@ export interface NeighborEdge {
    * this reads as the neighbour's role in the subject's life.
    */
   relation?: string | null;
+  /**
+   * A hand-written note on what this pair's relationship actually is. Present
+   * only on subject-incident edges, and only for the pairs that have been
+   * curated — see hero_relationship_blurbs.
+   */
+  blurb?: string | null;
 }
 
 /** Kin roles as they're written in hero_relatives, in reader's English. */
@@ -108,6 +114,15 @@ export function subjectKind(
   nodeId: string,
 ): NeighborEdge['kind'] | null {
   return subjectEdge(edges, subjectId, nodeId)?.kind ?? null;
+}
+
+/** The curated note for this pair, if one has been written. */
+export function subjectBlurb(
+  edges: NeighborEdge[],
+  subjectId: string,
+  nodeId: string,
+): string | null {
+  return subjectEdge(edges, subjectId, nodeId)?.blurb ?? null;
 }
 
 /**

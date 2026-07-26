@@ -7,6 +7,7 @@ import { SURFACE, INK_TEXT } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import {
   getHeroNeighborhood,
+  subjectBlurb,
   subjectKind,
   subjectRelation,
 } from '../../src/lib/db/heroes/neighborhood';
@@ -98,6 +99,7 @@ export default function SocialWebExplorer() {
   const focusNode = (focusId && data?.nodes.find((n) => n.id === focusId)) || null;
   const focusKind = focusNode ? subjectKind(data!.edges, focusSubject, focusNode.id) : null;
   const focusRelation = focusNode ? subjectRelation(data!.edges, focusSubject, focusNode.id) : null;
+  const focusBlurb = focusNode ? subjectBlurb(data!.edges, focusSubject, focusNode.id) : null;
   const focusDegree = focusNode ? nodeDegree(data!.edges, focusNode.id) : 0;
   // Characters connected to BOTH ends — the card renders them as faces, which
   // is the most legible answer to "how do these two actually overlap".
@@ -273,6 +275,7 @@ export default function SocialWebExplorer() {
           onPickMutual={(mid) => setFocusId(mid)}
           kind={focusKind}
           relation={focusRelation}
+          blurb={focusBlurb}
           degree={focusDegree}
           accent={theme.accent}
           onView={() =>
