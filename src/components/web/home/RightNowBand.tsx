@@ -510,8 +510,15 @@ export function RightNowBand({
     isDesktop && campaign && campaign.characters.length > 0
       ? new Set(hotTitles.slice(0, 6).map((t) => t.id))
       : new Set<string>();
-  const railTitles = mergeTrendingTitles(onScreen, comingSoon, streaming).filter(
-    (t) => !sidebarShown.has(t.id),
+  // Drop the sidebar's titles BEFORE the merge caps at 12, not after. Filtering
+  // afterwards spends cap slots on titles that then get removed, so a pool
+  // larger than the cap would silently leave the rail short on desktop only.
+  // (No visible change today: the pool is 11, under the cap.)
+  const notInSidebar = (t: TrendingTitle) => !sidebarShown.has(t.id);
+  const railTitles = mergeTrendingTitles(
+    onScreen.filter(notInSidebar),
+    comingSoon.filter(notInSidebar),
+    streaming.filter(notInSidebar),
   );
 
   return (
