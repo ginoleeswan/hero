@@ -106,6 +106,7 @@ function CanvasNode({
   heroAvatar,
   heroId,
   onNavigate,
+  onSelectMember,
 }: {
   node: PositionedNode;
   heroName: string;
@@ -113,6 +114,12 @@ function CanvasNode({
   heroAvatar: string | null;
   heroId: string | null;
   onNavigate?: () => void;
+  /**
+   * Given, a node press re-centres the chart on that person instead of leaving
+   * for their character page. The house page owns a tree you walk; a character
+   * page shows one you read.
+   */
+  onSelectMember?: (heroId: string, name: string) => void;
 }): ReactElement {
   const router = useRouter();
 
@@ -215,7 +222,15 @@ function CanvasNode({
       <TouchableOpacity
         activeOpacity={0.75}
         style={styles.cameoNode}
+        accessibilityRole="button"
+        accessibilityLabel={
+          onSelectMember ? `Centre the chart on ${member.name}` : `Open ${member.name}`
+        }
         onPress={() => {
+          if (onSelectMember) {
+            onSelectMember(member.heroId!, member.name);
+            return;
+          }
           onNavigate?.();
           router.push(`/character/${member.heroId}?name=${encodeURIComponent(member.name)}`);
         }}
@@ -246,6 +261,8 @@ function FamilyStage({
   onToggleFullscreen,
   onClose,
   onNavigate,
+  onSelectMember,
+  inlineHeight,
 }: {
   layout: FamilyLayout;
   heroName: string;
@@ -257,6 +274,8 @@ function FamilyStage({
   onToggleFullscreen: () => void;
   onClose?: () => void;
   onNavigate?: () => void;
+  onSelectMember?: (heroId: string, name: string) => void;
+  inlineHeight?: number;
 }): ReactElement {
   const [vp, setVp] = useState({ w: 0, h: 0 });
   const tx = useSharedValue(0);
@@ -349,7 +368,13 @@ function FamilyStage({
   };
 
   return (
-    <View style={[styles.stage, fullscreen ? styles.stageFlat : styles.stageInline]}>
+    <View
+      style={[
+        styles.stage,
+        fullscreen ? styles.stageFlat : styles.stageInline,
+        !fullscreen && inlineHeight ? { height: inlineHeight } : null,
+      ]}
+    >
       {showAxis ? (
         <View style={styles.axisGutter} pointerEvents="none">
           {layout.rows.map((row) => (
@@ -472,6 +497,7 @@ function FamilyStage({
                   heroAvatar={heroAvatar}
                   heroId={heroId}
                   onNavigate={onNavigate}
+                  onSelectMember={onSelectMember}
                 />
               </View>
             ))}
@@ -521,6 +547,8 @@ export function FamilyCanvas({
   heroId = null,
   members,
   label = 'Family',
+  stageHeight,
+  onSelectMember,
 }: {
   heroName: string;
   heroImage?: string | null;
@@ -532,6 +560,13 @@ export function FamilyCanvas({
    * names the line instead, so the section doesn't repeat its own page header.
    */
   label?: string;
+  /**
+   * Inline viewport height. The default suits a band inside a character page;
+   * where the chart IS the page it should take the screen.
+   */
+  stageHeight?: number;
+  /** Given, nodes re-centre the chart instead of leaving for a character page. */
+  onSelectMember?: (heroId: string, name: string) => void;
 }): ReactElement | null {
   const [fullscreen, setFullscreen] = useState(false);
   if (members.length === 0) return null;
@@ -567,6 +602,8 @@ export function FamilyCanvas({
           heroId={heroId}
           fullscreen={false}
           showAxis={false}
+          inlineHeight={stageHeight}
+          onSelectMember={onSelectMember}
           onToggleFullscreen={() => setFullscreen(true)}
         />
 
@@ -576,7 +613,7 @@ export function FamilyCanvas({
             <Text style={styles.tierLabel}>Variants</Text>
             <View style={styles.tierRow}>
               {graph.asides.map((mem) => (
-                <AsideMemberNode key={mem.id} member={mem} />
+                <AsideMemberNode key={mem.id} member={mem} onSelectMember={onSelectMember} />
               ))}
             </View>
           </View>
@@ -589,7 +626,7 @@ export function FamilyCanvas({
             <Text style={styles.tierLabel}>Earlier forebears · generation unrecorded</Text>
             <View style={styles.tierRow}>
               {graph.unplaced.map((mem) => (
-                <AsideMemberNode key={mem.id} member={mem} />
+                <AsideMemberNode key={mem.id} member={mem} onSelectMember={onSelectMember} />
               ))}
             </View>
           </View>
@@ -620,6 +657,14 @@ export function FamilyCanvas({
             showAxis={false}
             onToggleFullscreen={() => setFullscreen(false)}
             onClose={() => setFullscreen(false)}
+            onSelectMember={
+              onSelectMember
+                ? (id, name) => {
+                    setFullscreen(false);
+                    onSelectMember(id, name);
+                  }
+                : undefined
+            }
             onNavigate={() => setFullscreen(false)}
           />
         </View>
@@ -647,7 +692,13 @@ function AxisLabel({
 }
 
 // Inline member node for asides section (outside the canvas)
-function AsideMemberNode({ member }: { member: FamilyMember }): ReactElement {
+function AsideMemberNode({
+  member,
+  onSelectMember,
+}: {
+  member: FamilyMember;
+  onSelectMember?: (heroId: string, name: string) => void;
+}): ReactElement {
   const router = useRouter();
   const dead = member.status === 'deceased';
 
@@ -658,7 +709,9 @@ function AsideMemberNode({ member }: { member: FamilyMember }): ReactElement {
         activeOpacity={0.75}
         style={[styles.linkNode, { borderColor: tint + '66' }]}
         onPress={() =>
-          router.push(`/character/${member.heroId}?name=${encodeURIComponent(member.name)}`)
+          onSelectMember
+            ? onSelectMember(member.heroId!, member.name)
+            : router.push(`/character/${member.heroId}?name=${encodeURIComponent(member.name)}`)
         }
       >
         {member.heroPower != null && member.heroPower > 0 ? (

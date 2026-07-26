@@ -59,6 +59,9 @@ export function HouseRoster({
         <Text style={styles.title}>The house</Text>
         <Text style={styles.count}>{shown.length}</Text>
       </View>
+      {/* One line, because a list with two verbs on every row teaches nothing on
+          its own — and "Root" here is the same word the console's caption uses. */}
+      <Text style={styles.direction}>Tap a name to see how they’re related.</Text>
 
       {members.length >= SEARCH_THRESHOLD ? (
         <View style={styles.search}>
@@ -131,7 +134,7 @@ export function HouseRoster({
                     [styles.rootBtn, hovered && (styles.rootBtnHover as object)] as object
                   }
                 >
-                  <Ionicons name="git-network-outline" size={15} color={COLORS.navy} />
+                  <Text style={styles.rootBtnText}>Root</Text>
                 </Pressable>
               )}
             </View>
@@ -147,6 +150,7 @@ export function HouseRoster({
 const styles = StyleSheet.create({
   panel: { gap: 12 },
   head: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  direction: { fontFamily: 'FlameSans-Regular', fontSize: 12.5, color: '#a99b84', marginTop: -6 },
   title: { fontFamily: 'Flame-Regular', fontSize: 21, lineHeight: 27, color: COLORS.black },
   count: {
     fontFamily: 'Nunito_700Bold',
@@ -203,13 +207,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   rootBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 9,
+    borderWidth: 1,
+    borderColor: '#eadfcb',
     cursor: 'pointer',
   } as object,
-  rootBtnHover: { backgroundColor: '#f0e6d4' } as object,
+  rootBtnHover: { backgroundColor: '#f0e6d4', borderColor: '#cdbfa6' } as object,
+  rootBtnText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9.5,
+    letterSpacing: 0.9,
+    textTransform: 'uppercase',
+    color: COLORS.navy,
+  },
   empty: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: '#8d8375', paddingVertical: 8 },
 });

@@ -6,7 +6,7 @@
 // scrolls back up to the console, otherwise the answer lands off-screen and the
 // tap reads as nothing happening.
 import { useCallback, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../src/constants/colors';
@@ -29,6 +29,11 @@ export default function HousePage() {
     focus ?? null,
     withId ?? null,
   );
+
+  const { height: winHeight } = useWindowDimensions();
+  // The chart is the page here, not a band inside one — give it most of the
+  // screen rather than the 360px a character page allots it.
+  const stageHeight = Math.max(380, Math.round(winHeight * 0.62));
 
   const scrollRef = useRef<ScrollView | null>(null);
   const [stageY, setStageY] = useState(0);
@@ -102,6 +107,8 @@ export default function HousePage() {
           {relatives.length > 0 && rooted ? (
             <FamilyCanvas
               label={`The line of ${rooted.name}`}
+              stageHeight={stageHeight}
+              onSelectMember={(id) => setParams({ focus: id, with: null })}
               heroName={rooted.name}
               heroImage={rooted.portrait_url ?? rooted.image_md_url ?? rooted.image_url}
               heroAvatar={rooted.avatar_url}

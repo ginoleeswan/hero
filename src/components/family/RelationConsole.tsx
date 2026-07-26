@@ -8,6 +8,7 @@
 // below; seat two is whoever you're measuring against.
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import type { KinshipDescription } from '../../lib/family/kinshipPath';
@@ -67,28 +68,26 @@ export function RelationConsole({
           <Seat member={partner} caption="Compared with" accent={tint} onClear={onClear} />
         ) : (
           <View style={styles.emptySeat}>
-            <Text style={styles.emptySeatText}>Pick anyone from the house</Text>
+            {/* The instruction lives in the slot it fills, so the idle console is
+                one row rather than an empty form with a paragraph under it. */}
+            <Text style={styles.emptySeatText}>Pick a second name to trace the line</Text>
           </View>
         )}
       </View>
 
-      <View style={styles.rule} />
-
-      {kinship ? (
-        <View style={styles.answer}>
-          <Text style={styles.headline}>{kinship.headline}</Text>
-          <Text style={styles.chain}>{kinship.chain}</Text>
-        </View>
-      ) : partner ? (
-        <Text style={styles.hint}>
-          No line runs between these two in the records we hold.
-        </Text>
-      ) : (
-        <Text style={styles.hint}>
-          Choose a second name and Mythique walks the family graph between them — cousins,
-          great-uncles, and the long way round included.
-        </Text>
-      )}
+      {partner ? (
+        <>
+          <View style={styles.rule} />
+          {kinship ? (
+            <View style={styles.answer}>
+              <Text style={styles.headline}>{kinship.headline}</Text>
+              <Text style={styles.chain}>{kinship.chain}</Text>
+            </View>
+          ) : (
+            <Text style={styles.hint}>No line runs between these two in the records we hold.</Text>
+          )}
+        </>
+      ) : null}
     </View>
   );
 }
@@ -104,26 +103,41 @@ function Seat({
   accent?: string;
   onClear?: () => void;
 }) {
+  const router = useRouter();
   if (!member) return <View style={styles.emptySeat} />;
   return (
     <View style={[styles.seat, accent ? { borderColor: accent } : null] as object}>
-      <HeroAvatar
-        id={member.id}
-        name={member.name}
-        avatarUrl={member.avatar_url}
-        fallbackUrl={art(member)}
-        size={40}
-        radius={20}
-        bare
-      />
-      <View style={styles.seatMeta}>
-        <Text style={styles.seatName} numberOfLines={1}>
-          {member.name}
-        </Text>
-        <Text style={styles.seatCaption} numberOfLines={1}>
-          {caption}
-        </Text>
-      </View>
+      {/* Nodes in the chart re-root it now, so the seats are how you leave the
+          house page for the person themselves. */}
+      <Pressable
+        style={styles.seatOpen}
+        accessibilityRole="link"
+        accessibilityLabel={`Open ${member.name}`}
+        onPress={() =>
+          router.push(`/character/${member.id}?name=${encodeURIComponent(member.name)}`)
+        }
+      >
+        <HeroAvatar
+          id={member.id}
+          name={member.name}
+          avatarUrl={member.avatar_url}
+          fallbackUrl={art(member)}
+          size={40}
+          radius={20}
+          bare
+        />
+        <View style={styles.seatMeta}>
+          <View style={styles.seatNameRow}>
+            <Text style={styles.seatName} numberOfLines={1}>
+              {member.name}
+            </Text>
+            <Ionicons name="chevron-forward" size={13} color="#c4b8a3" />
+          </View>
+          <Text style={styles.seatCaption} numberOfLines={1}>
+            {caption}
+          </Text>
+        </View>
+      </Pressable>
       {onClear ? (
         <Pressable
           onPress={onClear}
@@ -170,7 +184,15 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 12,
   },
+  seatOpen: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minWidth: 0,
+  },
   seatMeta: { flexShrink: 1, minWidth: 0 },
+  seatNameRow: { flexDirection: 'row', alignItems: 'center', gap: 3, minWidth: 0 },
   seatName: { fontFamily: 'Flame-Regular', fontSize: 17, lineHeight: 22, color: COLORS.black },
   seatCaption: {
     fontFamily: 'Nunito_700Bold',
@@ -179,7 +201,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: '#a99b84',
   },
-  clear: { marginLeft: 'auto', padding: 2 },
+  clear: { padding: 2 },
   emptySeat: {
     flexGrow: 1,
     flexShrink: 1,
