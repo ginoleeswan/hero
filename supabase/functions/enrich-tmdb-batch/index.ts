@@ -13,6 +13,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { mapVideoRows } from '../_shared/videos.ts';
 
 type SB = ReturnType<typeof createClient>;
 
@@ -306,6 +307,19 @@ async function runEnrich(sb: SB, limit: number): Promise<number> {
         .from('titles')
         .update({ ...mapped, enrich_status: 'done', enriched_at: new Date().toISOString() })
         .eq('id', t.id);
+
+      // Persist the whole video list, not just the one trailer key the mappers
+      // above keep. These were already fetched by the append_to_response on this
+      // very request, so it costs no extra call — and published_at is the only
+      // "a trailer just dropped" timestamp available anywhere in the stack.
+      // Best-effort: a failure here must never undo the enrichment above.
+      const { rows: videos } = mapVideoRows(t.id, body?.videos?.results);
+      if (videos.length > 0) {
+        const { error: vErr } = await sb
+          .from('title_videos')
+          .upsert(videos, { onConflict: 'id' });
+        if (vErr) console.warn('[enrich-tmdb-batch] title_videos upsert', t.id, vErr.message);
+      }
     } catch (err) {
       console.error('[enrich-tmdb-batch] enrich threw', t.id, err); // leave pending
     }

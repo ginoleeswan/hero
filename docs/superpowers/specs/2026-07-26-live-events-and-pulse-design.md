@@ -321,9 +321,23 @@ Two things to read out of it:
 
 ### Outstanding — needs a redeploy
 
-`MIN_PEAK_VIEWS` was added after this run (§5.4). The deployed
-`sync-watched-events` predates it, so **redeploy the function** — batch it with
-whatever §8 needs.
+Batch these into one trip (nothing breaks meanwhile — the live detector is just
+slightly more permissive than the code, and the trailer feature is inert until
+applied):
+
+1. **Redeploy `sync-watched-events`** — `MIN_PEAK_VIEWS` was added after the run
+   above (§5.4) and the deployed copy predates it.
+2. **Apply `20260726210000_title_videos.sql`** (§8.1a).
+3. **Regenerate types**, then drop the `as never` in `src/lib/db/videos.ts`.
+4. **Deploy `sync-title-videos`**, and **redeploy `enrich-tmdb-batch`** (it now
+   persists videos via `_shared/videos.ts`).
+5. **Invoke `sync-title-videos`** with `{"limit":40,"triggeredBy":"manual"}` and
+   report `{checked, upserted, undated, trailerKeysChanged}`. **`undated` is the
+   number that matters** — if it equals `upserted`, TMDB's `published_at` is named
+   something else and the mapper needs a one-line fix. A loud `console.warn` fires
+   in that case.
+6. **Spot-check** `get_recent_trailers(720, 12)` — a 30-day window, since a
+   72-hour one may legitimately be empty on any given day.
 The RPC is fine from a signed-in admin client — it just can't be driven from MCP.
 
 1. **Apply the migration** via `mcp__supabase__apply_migration` —
@@ -341,7 +355,7 @@ The RPC is fine from a signed-in admin client — it just can't be driven from M
 
 ## 8. Then, in impact order
 
-1. **Persist the TMDB videos** (§3.1) — highest value, no new API cost.
+1. ~~**Persist the TMDB videos**~~ — **BUILT 2026-07-26, awaiting apply. See §8.1a.**
 2. **Make the freshness label true** — expose `refreshed_at` in the bundle
    payload, derive the label from the freshest event, delete the hardcoded
    `"Updated today"` from both band files.
@@ -357,6 +371,41 @@ The RPC is fine from a signed-in admin client — it just can't be driven from M
 6. **Event push** — `send-daily-push` already runs a VAPID pipeline. Match new
    events against favourites. **Cap volume hard from day one** or you train
    people to disable notifications and lose the channel permanently.
+
+### 8.1a Trailer events — built, awaiting apply
+
+| File | Role |
+| --- | --- |
+| `supabase/migrations/20260726210000_title_videos.sql` | `title_videos` table + partial recency index, `titles.videos_checked_at` cursor, `get_recent_trailers()`, cron `40 6 * * *`. |
+| `supabase/functions/_shared/videos.ts` | The mapper, shared by both consumers (`_shared` is the repo's existing convention — see `comicvineMatch.ts`). |
+| `src/lib/tmdb/mapVideos.ts` + 21 tests | The TS original the `_shared` copy mirrors. All parsing rules are pinned here. |
+| `supabase/functions/sync-title-videos/index.ts` | The daily `/videos` sweep. |
+| `supabase/functions/enrich-tmdb-batch/index.ts` | Now persists the video list it was already fetching. |
+| `src/lib/db/videos.ts` + 6 tests | Client reader. `as never` until types are regenerated. |
+
+Decisions worth not re-litigating:
+
+- **A table, not `videos jsonb` on `titles`.** The query that matters is "event-worthy
+  videos published in the last N hours, newest first, across the catalogue" — an
+  indexed range scan here, a full scan plus unnest against jsonb.
+- **A dedicated sweep, not a wider `refresh-tmdb-trending`.** That job only
+  re-flips rows untouched for 14 days, which can't catch a same-day trailer, and
+  driving it harder would re-run the full `append_to_response` (credits, images,
+  reviews) to re-read one array. `/videos` is a tiny endpoint.
+- **`videos_checked_at` lives on `titles`, not derived from `title_videos`.**
+  "Checked, found nothing" and "never checked" must be distinguishable or a title
+  with no videos is re-fetched forever.
+- **`pickTrailerKey` reproduces the incumbent precedence exactly** (first YouTube
+  `Trailer`, else first YouTube anything), with a test asserting it, so persisting
+  the full list can't quietly change which trailer the app already plays.
+- **Everything about `published_at` is defensive.** Absent or malformed yields
+  null plus an `undated` count, and the sweep logs a loud warning if *every* video
+  in a run parses undated — which is exactly what a wrong field name looks like.
+  Nothing is `NOT NULL`, so a naming surprise costs a one-line mapper fix, not a
+  failed migration.
+
+**Not yet done:** `get_recent_trailers` isn't folded into `get_explore_bundle` and
+no UI consumes it. That's step 4.
 
 ### The ranking model
 
