@@ -508,7 +508,6 @@ function FamilyStage({
             <Text style={styles.fsTitleText}>{heroName}</Text>
           </View>
         ) : null}
-
       </View>
     </View>
   );
@@ -808,7 +807,6 @@ const styles = StyleSheet.create({
   },
   fsTitleAvatar: { width: 34, height: 34, borderRadius: 9 },
   fsTitleText: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.black },
-
 
   // Node visuals
   heroAnchor: {

@@ -201,7 +201,11 @@ function CanvasNode({
   // legible over the dotted ground without boxing in the portrait.
   const label = (
     <View
-      style={[styles.namePlate, !lineal && styles.namePlateCollateral, dead && styles.namePlateDead]}
+      style={[
+        styles.namePlate,
+        !lineal && styles.namePlateCollateral,
+        dead && styles.namePlateDead,
+      ]}
     >
       {/* A dagger, not a rule struck through the name. Striking it through was
           the wrong call: most of a Kryptonian or Targaryen line is dead, so at
@@ -237,7 +241,12 @@ function CanvasNode({
     );
   }
 
-  return <View style={styles.cameoNode}>{cameo}{label}</View>;
+  return (
+    <View style={styles.cameoNode}>
+      {cameo}
+      {label}
+    </View>
+  );
 }
 
 // ── Interactive stage: gutter + pannable/zoomable viewport ───────────────────
@@ -529,7 +538,6 @@ function FamilyStage({
             <Text style={styles.fsTitleText}>{heroName}</Text>
           </View>
         ) : null}
-
       </View>
     </View>
   );
@@ -623,9 +631,7 @@ export function FamilyCanvas({
             place in the lineage nobody actually recorded. */}
         {graph.unplaced.length > 0 ? (
           <View style={styles.asideBlock}>
-            <Text style={styles.tierLabel}>
-              Earlier forebears · generation unrecorded
-            </Text>
+            <Text style={styles.tierLabel}>Earlier forebears · generation unrecorded</Text>
             <View style={styles.tierRow}>
               {graph.unplaced.map((mem) => (
                 <AsideMemberNode key={mem.id} member={mem} />
@@ -887,7 +893,6 @@ const styles = StyleSheet.create({
   },
   fsTitleAvatar: { width: 34, height: 34, borderRadius: 9 },
   fsTitleText: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.black },
-
 
   // Node visuals (shared with inline nodes below the canvas)
   heroAnchor: {

@@ -63,7 +63,9 @@ describe('buildFamilyGraph — unplaced forebears', () => {
   });
 
   it('does not list an ancestor whose chain points at someone absent', () => {
-    const g = buildFamilyGraph([mk({ id: 'ghost', relation: 'ancestor', tier: 3, treeParentId: 'gone' })]);
+    const g = buildFamilyGraph([
+      mk({ id: 'ghost', relation: 'ancestor', tier: 3, treeParentId: 'gone' }),
+    ]);
     expect(g.unplaced.map((x) => x.id)).toEqual(['ghost']);
   });
 });
