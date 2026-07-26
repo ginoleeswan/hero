@@ -73,7 +73,10 @@ export function newestStamp(input: FreshnessInput): number | null {
   return newest;
 }
 
-function ageLabel(hours: number): string {
+/** Terse relative age for the band's micro-labels. Exported so the Pulse rail's
+ *  card timestamps use the same register as the header — two formatters would
+ *  drift and read as two different products. */
+export function relativeAgeLabel(hours: number): string {
   if (hours < 1) return 'JUST NOW';
   if (hours < 24) return `${Math.floor(hours)}H AGO`;
   if (hours < 48) return 'YESTERDAY';
@@ -106,7 +109,7 @@ export function computeFreshness(input: FreshnessInput): Freshness {
   if (ageHours > STALE_AFTER_HOURS) return { label: null, ageHours, pulse: false };
 
   return {
-    label: ageLabel(ageHours),
+    label: relativeAgeLabel(ageHours),
     ageHours,
     pulse: ageHours <= PULSE_WITHIN_HOURS,
   };

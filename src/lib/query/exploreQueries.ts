@@ -13,14 +13,13 @@ import { getForYou } from '../db/forYou';
 import {
   getTrendingForUser,
   synthesizeCampaignFromPool,
-  TRAILER_HERO_MAX_AGE_HOURS,
   type TrendingTitle,
   type WikiTrendingHero,
   type Campaign,
   type TrendingTitleCharacter,
 } from '../db/trending';
-import { getLiveEvents, type LiveEvent } from '../db/events';
-import { getRecentTrailers, type TrailerEvent } from '../db/videos';
+import { getPulseCandidates } from '../db/pulse';
+import { livePulseEvent, rankPulse, trailerPicks, type PulseEvent } from '../home/pulse';
 import { type NewComic } from '../db/comics';
 import { type DebutIssue } from '../db/anniversaries';
 import { getTodaysMatchupFromPool, type TodaysMatchup } from '../matchup';
@@ -58,11 +57,11 @@ export interface ExploreData {
   streaming: TrendingTitle[];
   campaigns: Campaign[];
   newComics: NewComic[];
-  /** Trailer/teaser drops inside the recency window, newest first. */
-  recentTrailers: TrailerEvent[];
-  /** The loudest real-world event currently running, or null. Drives the band's
-   *  live header (and, at §8.5, the takeover skin). */
-  liveEvent: LiveEvent | null;
+  /** The Pulse rail: every timestamped event, ranked. Live events pinned first. */
+  pulse: PulseEvent[];
+  /** Name of the real-world event currently running, or null. Drives the band's
+   *  live header. */
+  liveEventName: string | null;
   /** `undefined` while loading, `null` when there's no matchup today. */
   matchup: TodaysMatchup | null | undefined;
   /** `null` while loading; a count once resolved. */
@@ -108,18 +107,21 @@ export function useExploreData(): ExploreData {
   });
   const b: ExploreBundle | undefined = bundle.data;
 
-  // Two reads that aren't in the bundle yet. Both are cheap, cached, and degrade
-  // to empty on error, so a miss just means the band falls back to its old
-  // behaviour rather than breaking. §8.4 folds them into get_explore_bundle so
-  // Explore is one round trip again.
-  const liveEvents = useQuery({
-    queryKey: exploreKeys.liveEvents,
-    queryFn: () => getLiveEvents(),
+  // The one read not yet in the bundle. It replaced two (live events + recent
+  // trailers) because the Pulse candidates already carry both, so the rail, the
+  // header's live label and the auto-hero all agree on what today's news is
+  // instead of asking separately and disagreeing. Degrades to [] on error — or on
+  // an unapplied migration — leaving the band exactly as it was.
+  const pulseQuery = useQuery({
+    queryKey: exploreKeys.pulse,
+    queryFn: () => getPulseCandidates(),
   });
-  const recentTrailers = useQuery({
-    queryKey: exploreKeys.recentTrailers(TRAILER_HERO_MAX_AGE_HOURS),
-    queryFn: () => getRecentTrailers(TRAILER_HERO_MAX_AGE_HOURS),
-  });
+  // Ranked once per payload, not per render, so the order is stable while the
+  // snapshot lives. Recomputes when the query refetches.
+  const pulse = useMemo(
+    () => (pulseQuery.data ? rankPulse(pulseQuery.data) : EMPTY),
+    [pulseQuery.data],
+  );
 
   // Billboard: sample once per bundle payload (not per render), so the lineup
   // rotates on refetch but stays stable while the snapshot lives.
@@ -140,20 +142,15 @@ export function useExploreData(): ExploreData {
   // from the already-bundled trending buckets (on-screen leads, streaming
   // fallback). A title whose trailer dropped inside the window beats the random
   // popularity pick — the newsiest thing available, not the luckiest.
-  const trailers = recentTrailers.data ?? EMPTY;
   const campaigns = useMemo(() => {
     if (!b) return EMPTY;
     if (b.campaigns.length > 0) return b.campaigns;
     const auto = synthesizeCampaignFromPool(
       [b.titleBuckets.on_screen, b.titleBuckets.streaming],
-      trailers.map((t) => ({
-        titleId: t.titleId,
-        publishedAt: t.publishedAt,
-        videoType: t.videoType,
-      })),
+      trailerPicks(pulse),
     );
     return auto ? [auto] : EMPTY;
-  }, [b, trailers]);
+  }, [b, pulse]);
 
   // Daily matchup: the pair comes from the bundled iconic pool (first 24, same
   // as getTodaysMatchup's own pool); only the per-pair cached verdict costs a
@@ -207,9 +204,8 @@ export function useExploreData(): ExploreData {
       streaming: b?.titleBuckets.streaming ?? EMPTY,
       campaigns,
       newComics: b?.newComics ?? EMPTY,
-      recentTrailers: trailers,
-      // The RPC already orders by loudness and caps at 4; the band shows one.
-      liveEvent: liveEvents.data?.[0] ?? null,
+      pulse,
+      liveEventName: livePulseEvent(pulse)?.headline ?? null,
       matchup: matchup.isPending ? undefined : (matchup.data ?? null),
       heroCount: b?.heroCount ?? null,
       trendingForUser: userId ? (trendingForUser.data ?? EMPTY) : EMPTY,
@@ -223,8 +219,7 @@ export function useExploreData(): ExploreData {
       iconic,
       b,
       campaigns,
-      trailers,
-      liveEvents.data,
+      pulse,
       matchup.isPending,
       matchup.data,
       userId,

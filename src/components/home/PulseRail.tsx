@@ -1,0 +1,226 @@
+// src/components/home/PulseRail.tsx — the Pulse: one rail of timestamped events,
+// newest-and-loudest first, sitting at the top of the Right Now band.
+//
+// Sibling of ComicCoverRail and TitlePosterRail, but where those rails each show
+// one *category*, this one shows mixed *events* — a trailer that dropped this
+// morning next to a convention that's running next to a comic that hit shelves.
+// The colour-coded badge carries the kind so the rail reads at a glance, and the
+// relative timestamp is what makes it feel current rather than merely accurate.
+//
+// Ranking, decay and every string live in src/lib/home/pulse.ts. This is a view.
+import { View, Text, FlatList, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS } from '../../constants/colors';
+import type { PulseEvent, PulseKind } from '../../lib/home/pulse';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_W = Math.min(168, Math.round(SCREEN_WIDTH * 0.44));
+const CARD_H = Math.round(CARD_W * 1.42);
+
+/** Badge tint per kind. Orange is reserved for *now* (a drop), gold for a live
+ *  event, green for print — so the reader learns the palette in one scroll. */
+const KIND_TINT: Record<PulseKind, string> = {
+  live_event: COLORS.goldAccent,
+  trailer: COLORS.orange,
+  issue: COLORS.green,
+};
+
+/** Fallback grounds when an event has no art of its own (live events don't). */
+const KIND_GROUND: Record<PulseKind, string> = {
+  live_event: '#3a2c08',
+  trailer: '#2a1016',
+  issue: '#1e3410',
+};
+
+export interface PulseRailProps {
+  events: PulseEvent[];
+  /** A trailer or title card → the title page. */
+  onTitlePress: (titleId: string) => void;
+  /** A comic → the issue page. */
+  onIssuePress: (issueId: string) => void;
+  disabled?: boolean;
+}
+
+export function PulseRail({
+  events,
+  onTitlePress,
+  onIssuePress,
+  disabled = false,
+}: PulseRailProps) {
+  if (events.length === 0) return null;
+
+  const open = (e: PulseEvent) => {
+    if (e.kind === 'issue') onIssuePress(e.entityId);
+    else if (e.kind === 'trailer') onTitlePress(e.entityId);
+    // A live event has no destination of its own yet — the takeover hero is where
+    // it leads. Tapping the card is a no-op rather than a dead route.
+  };
+
+  return (
+    <View style={s.section}>
+      <View style={s.header}>
+        <View style={[s.accentBar, { backgroundColor: COLORS.orange }]} />
+        <View>
+          <Text style={[s.label, { color: COLORS.orange }]}>Latest</Text>
+          <Text style={s.title}>Just Happened</Text>
+        </View>
+      </View>
+      <FlatList
+        horizontal
+        data={events}
+        keyExtractor={(e) => e.eventId}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={s.strip}
+        removeClippedSubviews
+        initialNumToRender={4}
+        renderItem={({ item }) => {
+          const tint = KIND_TINT[item.kind];
+          const tappable = item.kind !== 'live_event';
+          return (
+            <Pressable
+              style={s.card}
+              onPress={() => open(item)}
+              disabled={disabled || !tappable}
+              accessibilityRole={tappable ? 'button' : undefined}
+              accessibilityLabel={`${item.badge}: ${item.headline}`}
+            >
+              {item.imageUrl ? (
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  contentFit="cover"
+                  contentPosition="center"
+                  style={StyleSheet.absoluteFill}
+                  recyclingKey={item.eventId}
+                  transition={180}
+                />
+              ) : (
+                <View
+                  style={[
+                    StyleSheet.absoluteFill,
+                    { backgroundColor: item.accent ?? KIND_GROUND[item.kind] },
+                  ]}
+                />
+              )}
+              <LinearGradient
+                colors={['rgba(11,24,32,0.05)', 'rgba(11,24,32,0.55)', 'rgba(11,24,32,0.96)']}
+                locations={[0, 0.45, 1]}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={[s.badge, { backgroundColor: tint }]}>
+                <Text style={[s.badgeText, item.kind === 'live_event' && s.badgeTextDark]}>
+                  {item.badge}
+                </Text>
+              </View>
+              {!!item.mediaKey && (
+                <View style={s.play}>
+                  <Text style={s.playGlyph}>▶</Text>
+                </View>
+              )}
+              <View style={s.body}>
+                <Text style={s.headline} numberOfLines={2}>
+                  {item.headline}
+                </Text>
+                <View style={s.metaRow}>
+                  {/* A live event says "on now" through its badge; repeating an age
+                      here would just be noise. */}
+                  {!!item.ageLabel && <Text style={s.age}>{item.ageLabel}</Text>}
+                  {!!item.ageLabel && !!item.subtitle && <Text style={s.sep}>·</Text>}
+                  {!!item.subtitle && (
+                    <Text style={s.meta} numberOfLines={1}>
+                      {item.subtitle}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </Pressable>
+          );
+        }}
+      />
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  section: { marginBottom: 20 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 11,
+    paddingHorizontal: 15,
+    marginBottom: 12,
+  },
+  accentBar: { width: 4, borderRadius: 2 },
+  label: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  // Flame needs lineHeight >= 1.22x fontSize; this is unclamped but kept in step
+  // with the band's other shelf titles.
+  title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.beige, lineHeight: 28 },
+  strip: { gap: 10, paddingHorizontal: 15, paddingBottom: 4 },
+  card: {
+    width: CARD_W,
+    height: CARD_H,
+    borderRadius: 14,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+    justifyContent: 'flex-end',
+  },
+  badge: {
+    position: 'absolute',
+    top: 9,
+    left: 9,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderCurve: 'continuous',
+  },
+  badgeText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: '#fff',
+  },
+  // Gold is too light for white text.
+  badgeTextDark: { color: COLORS.deepNavy },
+  play: {
+    position: 'absolute',
+    top: '42%',
+    alignSelf: 'center',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(245,235,220,0.93)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playGlyph: { color: COLORS.deepNavy, fontSize: 13, marginLeft: 2 },
+  body: { padding: 10 },
+  headline: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 15,
+    // Clamped Flame text needs lineHeight >= 1.22x fontSize or descenders clip.
+    lineHeight: 19,
+    color: COLORS.beige,
+    marginBottom: 5,
+  },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  age: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.5,
+    color: 'rgba(245,235,220,0.82)',
+  },
+  sep: { fontSize: 10, color: 'rgba(245,235,220,0.4)' },
+  meta: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 10,
+    color: 'rgba(245,235,220,0.62)',
+    flexShrink: 1,
+  },
+});

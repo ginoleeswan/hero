@@ -3,8 +3,9 @@
 **Date:** 2026-07-26
 **Status:** Detection layer built and **live** — §7 done 2026-07-26, now on `main`.
 Migration applied (as version `20260726183108`), function deployed, cron running,
-SDCC approved. §8 steps 1-3 built (step 1 awaits an apply; 2-3 are live in the
-band already). Steps 4-6 remain.
+SDCC approved. §8 steps 1-4 built — steps 2-3 are live in the band already;
+steps 1 and 4 need two migrations applied and three functions deployed (see §7
+"Outstanding"). Steps 5-6 remain.
 **Visual proposal:** https://claude.ai/code/artifact/18490f5f-7323-4041-bcce-ba1e78becb42
 
 ---
@@ -323,10 +324,22 @@ Batch these into one trip (nothing breaks meanwhile — the live detector is jus
 slightly more permissive than the code, and the trailer feature is inert until
 applied):
 
+**Merge this branch to `main` first.** Both migrations live only on
+`claude/explore-right-now-freshness-4jo1wp`. Applying them while the code sits on an
+unmerged branch is the exact hazard that forced the cleanup on 2026-07-26 — this
+time mirrored: prod would get a `title_videos` table and two crons calling functions
+whose source isn't on `main`.
+
+Then, one trip:
+
 1. **Redeploy `sync-watched-events`** — `MIN_PEAK_VIEWS` was added after the run
    above (§5.4) and the deployed copy predates it.
-2. **Apply `20260726210000_title_videos.sql`** (§8.1a).
-3. **Regenerate types**, then drop the `as never` in `src/lib/db/videos.ts`.
+2. **Apply `20260726210000_title_videos.sql`** (§8.1a) and
+   **`20260726220000_pulse_candidates.sql`** (§8.4a), in that order — the second
+   reads `title_videos`. **Neither has been executed anywhere**; there's no Postgres
+   in the web container, so they're unvalidated SQL. Expect to fix a typo.
+3. **Regenerate types**, then drop the `as never` casts in `src/lib/db/videos.ts`
+   and `src/lib/db/pulse.ts`.
 4. **Deploy `sync-title-videos`**, and **redeploy `enrich-tmdb-batch`** (it now
    persists videos via `_shared/videos.ts`).
 5. **Invoke `sync-title-videos`** with `{"limit":40,"triggeredBy":"manual"}` and
@@ -335,7 +348,13 @@ applied):
    something else and the mapper needs a one-line fix. A loud `console.warn` fires
    in that case.
 6. **Spot-check** `get_recent_trailers(720, 12)` — a 30-day window, since a
-   72-hour one may legitimately be empty on any given day.
+   72-hour one may legitimately be empty on any given day — and
+   `get_pulse_candidates(20)`, which should return `sdcc` plus this week's issues
+   even before any trailer lands.
+
+Until step 2 lands, `get_pulse_candidates` 404s, the reader returns `[]`, and the
+rail renders nothing. That's the designed degradation, not a failure — the band
+looks exactly as it did, minus the honest freshness label which is already live.
 The RPC is fine from a signed-in admin client — it just can't be driven from MCP.
 
 1. **Apply the migration** via `mcp__supabase__apply_migration` —
@@ -356,9 +375,7 @@ The RPC is fine from a signed-in admin client — it just can't be driven from M
 1. ~~**Persist the TMDB videos**~~ — **BUILT 2026-07-26, awaiting apply. See §8.1a.**
 2. ~~**Make the freshness label true**~~ — **BUILT 2026-07-26. See §8.2a.**
 3. ~~**Give the auto-hero a news sense**~~ — **BUILT 2026-07-26. See §8.2a.**
-4. **Build the Pulse rail** — a `get_pulse_events` RPC over the unified score
-   below, folded into `get_explore_bundle` so Explore stays one round trip.
-   Countdown chips ride along here.
+4. ~~**Build the Pulse rail**~~ — **BUILT 2026-07-26, awaiting apply. See §8.4a.**
 5. **Takeover mode + approve gate** — one `takeover` flag re-skins the band from
    the campaign accent, renames the kicker ("SDCC 2026 · Live"), swaps in an
    event hero. Cards may go live on detection alone; the skin needs the tap.
@@ -448,7 +465,69 @@ affordance is §8.4.
 consolidated to one. Both are React-Query cached and degrade to empty on error.
 §8.4 folds them into `get_explore_bundle` and takes it back to one.
 
+### 8.4a The Pulse rail — built, awaiting apply
+
+| File | Role |
+| --- | --- |
+| `supabase/migrations/20260726220000_pulse_candidates.sql` | `get_pulse_candidates()` — a union of everything with a real event time. Selection only. |
+| `src/lib/home/pulse.ts` + 29 tests | **The ranking model.** Weights, half-lives, relevance, de-dup, badges, subtitles. |
+| `src/lib/db/pulse.ts` | Reader. Drops rows of unknown `kind` rather than scoring them as `undefined`. |
+| `src/components/home/PulseRail.tsx` | Native rail. |
+| `src/components/web/home/PulseRail.tsx` | Web rail — hover lift, wider cards, `ScrollView`. |
+| `RightNowBand.tsx` ×2, `explore.tsx` ×2 | Rail mounted at the top of the band; `liveEvent` prop became `pulse` + `liveEventName`. |
+
+**The load-bearing decision: SQL selects, TypeScript scores.** The RPC does an
+indexed recency scan per kind and returns *facts* — no scoring, no prebuilt copy.
+Ranking, decay, relevance and every user-facing string live in `pulse.ts`, because
+in SQL the most judgemental part of the feature would have been the one part with
+no tests. It has 29.
+
+```
+score = weight(kind) × decay(age) × relevance
+decay(h) = 2 ^ (−h / halfLife(kind))
+```
+
+| Kind | Weight | Half-life | Source |
+| --- | --- | --- | --- |
+| `live_event` | pinned (`PIN_SCORE`) | never decays in-window | `get_live_events()` |
+| `trailer` | 1.0 | 48h | `title_videos.published_at` |
+| `issue` | 0.55 | 96h | `comic_issues.store_date` |
+
+Half-lives rather than raw weights because that's the arguable number: after
+`halfLife` hours an event is worth half what it was. Live events are **pinned**, not
+weighted — which is what makes SDCC outrank a good trailer *and* vanish cleanly
+when the window closes rather than lingering at a decayed-but-nonzero score.
+
+`relevance` gates on whether the catalogue can illustrate the event: cast breadth
+(saturating — six recognisable characters isn't six times one) × top fame. Zero
+relevance means the card never appears. Issues are exempt, because a comic cover
+illustrates itself. Without this the rail inherits the Trending-Movers failure mode.
+
+De-duplication is by **entity**, not event: a title that dropped a teaser and then
+a trailer is one story, and showing it twice makes a short rail look thin.
+
+**Two event types from the model below are deliberately absent.** Both would have
+been dishonest today:
+
+- **Streaming debut** needs a `watch_providers` *delta*, and no provider history is
+  kept — "landed on Disney+ Tuesday" isn't knowable.
+- **Pageview surge** has no event time. `pageviews_spike` is week-over-week and
+  `pageviews_at` is when *we looked*. Needs §3.2 (store the daily series) first. An
+  undated row in a timestamped feed would undermine the whole premise, so surges
+  stay in Trending Movers.
+
+**Round trips went down, not up.** The two reads added in §8.2a became one: Pulse
+candidates already carry the live event and the trailer drops, so the rail, the
+header's live label and the auto-hero all agree on today's news instead of asking
+separately and disagreeing. `getLiveEvents` / `getRecentTrailers` remain as the
+tables' public readers (both tested) but Explore no longer calls them. Folding this
+last query into `get_explore_bundle` still wants doing — it needs the current
+`compute_explore_bundle` body, which has changed several times on `main`, so it
+should be done with DB access rather than reconstructed blind.
+
 ### The ranking model
+
+Superseded by §8.4a for the three implemented kinds; kept for the two that aren't.
 
 ```
 score = w_type × exp(−ln2 × age_hours / half_life) × relevance

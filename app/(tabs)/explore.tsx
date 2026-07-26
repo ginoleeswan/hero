@@ -40,7 +40,7 @@ import {
 } from '../../src/lib/db/trending';
 import type { NewComic } from '../../src/lib/db/comics';
 import type { DebutIssue } from '../../src/lib/db/anniversaries';
-import type { LiveEvent } from '../../src/lib/db/events';
+import type { PulseEvent } from '../../src/lib/home/pulse';
 import { type TodaysMatchup as Matchup } from '../../src/lib/matchup';
 import { RightNowBand } from '../../src/components/home/RightNowBand';
 import { TodaysMatchup } from '../../src/components/home/TodaysMatchup';
@@ -82,7 +82,8 @@ type FeedRow =
       newComics: NewComic[];
       wikiTrending: WikiTrendingHero[];
       debuts: DebutIssue[];
-      liveEvent: LiveEvent | null;
+      pulse: PulseEvent[];
+      liveEventName: string | null;
     }
   | { type: 'chapter'; kicker: string; title: string }
   | { type: 'halloffame'; heroes: Hero[] }
@@ -131,7 +132,8 @@ export default function HomeScreen() {
     streaming,
     wikiTrending,
     debutsThisMonth,
-    liveEvent,
+    pulse,
+    liveEventName,
     campaigns,
     trendingForUser,
     matchup,
@@ -261,7 +263,8 @@ export default function HomeScreen() {
         newComics,
         wikiTrending,
         debuts: debutsThisMonth,
-        liveEvent,
+        pulse,
+        liveEventName,
       });
     }
     if (recentlyViewed.length > 0)
@@ -307,7 +310,8 @@ export default function HomeScreen() {
     streaming,
     wikiTrending,
     debutsThisMonth,
-    liveEvent,
+    pulse,
+    liveEventName,
     campaigns,
     trendingForUser,
     newComics,
@@ -407,7 +411,8 @@ export default function HomeScreen() {
                 newComics={item.newComics}
                 wikiTrending={item.wikiTrending}
                 debuts={item.debuts}
-                liveEvent={item.liveEvent}
+                pulse={item.pulse}
+                liveEventName={item.liveEventName}
                 onHeroPress={handlePress}
                 onTitlePress={handleTitlePress}
                 onIssuePress={handleIssuePress}

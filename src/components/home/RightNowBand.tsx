@@ -19,6 +19,7 @@ import { TitlePosterRail } from './TitlePosterRail';
 import { ComicCoverRail } from './ComicCoverRail';
 import { TrendingMovers } from './TrendingMovers';
 import { ThisMonthInHistory } from './ThisMonthInHistory';
+import { PulseRail } from './PulseRail';
 import {
   mergeTrendingTitles,
   type Campaign,
@@ -28,8 +29,8 @@ import {
 } from '../../lib/db/trending';
 import type { NewComic } from '../../lib/db/comics';
 import type { DebutIssue } from '../../lib/db/anniversaries';
-import type { LiveEvent } from '../../lib/db/events';
 import { computeFreshness } from '../../lib/home/freshness';
+import type { PulseEvent } from '../../lib/home/pulse';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -48,9 +49,11 @@ export interface RightNowBandProps {
   newComics: NewComic[];
   wikiTrending: WikiTrendingHero[];
   debuts: DebutIssue[];
-  /** A detected real-world event in progress (SDCC, a Direct). Drives the header's
-   *  live label; absent means the band falls back to content timestamps. */
-  liveEvent?: LiveEvent | null;
+  /** Ranked timestamped events — the Pulse rail at the top of the band. */
+  pulse?: PulseEvent[];
+  /** Name of a detected real-world event in progress (SDCC, a Direct). Drives the
+   *  header's live label; absent means the band falls back to content timestamps. */
+  liveEventName?: string | null;
   onHeroPress: HeroPress;
   onTitlePress: (titleId: string) => void;
   onIssuePress: (issueId: string) => void;
@@ -230,7 +233,8 @@ export function RightNowBand({
   newComics,
   wikiTrending,
   debuts,
-  liveEvent,
+  pulse = [],
+  liveEventName,
   onHeroPress,
   onTitlePress,
   onIssuePress,
@@ -244,15 +248,19 @@ export function RightNowBand({
     personalized.length > 0 ||
     newComics.length > 0 ||
     wikiTrending.length > 0 ||
+    pulse.length > 0 ||
     debuts.length > 0;
   if (!hasAny) return null;
 
   // Derived from the freshest real event in the band, not from a hardcoded
   // string. Suppressed entirely once the content is stale — see freshness.ts.
   const fresh = computeFreshness({
+    // The Pulse carries the sharpest timestamps (trailer drops); comics are the
+    // fallback when it's empty or the migration hasn't landed.
+    publishedAt: pulse.map((e) => e.occurredAt),
     storeDates: newComics.map((c) => c.storeDate),
-    liveEventOngoing: liveEvent?.ongoing,
-    liveEventLabel: liveEvent?.headline,
+    liveEventOngoing: !!liveEventName,
+    liveEventLabel: liveEventName,
   });
 
   return (
@@ -263,6 +271,13 @@ export function RightNowBand({
         <View style={{ flex: 1 }} />
         {!!fresh.label && <Text style={bandStyles.fresh}>{fresh.label}</Text>}
       </View>
+
+      <PulseRail
+        events={pulse}
+        onTitlePress={onTitlePress}
+        onIssuePress={onIssuePress}
+        disabled={disabled}
+      />
 
       {campaign && campaign.characters.length > 0 && (
         <CampaignHero

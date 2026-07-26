@@ -47,10 +47,8 @@ export const exploreKeys = {
   /** Every anonymous section in one get_explore_bundle RPC round trip. */
   bundle: ['explore', 'bundle'] as const,
   matchup: ['explore', 'matchup'] as const,
-  /** Detected real-world events currently running (SDCC, a Direct). */
-  liveEvents: ['explore', 'liveEvents'] as const,
-  /** Trailer/teaser drops inside the recency window. */
-  recentTrailers: (hours: number) => ['explore', 'recentTrailers', hours] as const,
+  /** Pulse candidates — live events, trailer drops and new issues in one read. */
+  pulse: ['explore', 'pulse'] as const,
   debateYesterday: ['explore', 'debateYesterday'] as const,
   favourites: (userId: string) => ['explore', 'favourites', userId] as const,
   trendingForUser: (userId: string) => ['explore', 'trendingForUser', userId] as const,
