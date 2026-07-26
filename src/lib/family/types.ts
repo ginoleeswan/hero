@@ -71,8 +71,14 @@ export interface GraphTier {
 }
 
 export interface FamilyGraph {
-  tiers: GraphTier[]; // ordered 2 → -2; empty omitted
+  tiers: GraphTier[]; // deepest ancestor → deepest descendant; empty omitted
   asides: FamilyMember[]; // clones / variants
   footnotes: FamilyMember[]; // non-family entries (girlfriend, fiancé…)
+  /**
+   * Forebears with no generation anyone recorded — a bare list of names the
+   * source called "ancestor" and nothing more. They cannot be placed in a
+   * generational chart honestly, so they are listed rather than drawn.
+   */
+  unplaced: FamilyMember[];
   spouse: FamilyMember | null; // extracted for the hero's gold tie
 }

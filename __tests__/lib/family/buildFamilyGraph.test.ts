@@ -22,6 +22,52 @@ function m(p: Partial<FamilyMember> & { id: string }): FamilyMember {
   };
 }
 
+describe('buildFamilyGraph — unplaced forebears', () => {
+  const mk = (p: Partial<FamilyMember> & { id: string }): FamilyMember => ({
+    name: p.id,
+    alias: null,
+    role: 'role',
+    relation: 'other',
+    tier: 0,
+    modifiers: [],
+    status: null,
+    position: 0,
+    heroId: null,
+    heroImage: null,
+    heroAvatar: null,
+    heroPower: null,
+    heroAlignment: null,
+    treeParentId: null,
+    branchSide: null,
+    ...p,
+  });
+
+  it('lists an unchained ancestor instead of drawing it as a grandparent', () => {
+    const g = buildFamilyGraph([
+      mk({ id: 'gran', relation: 'grandparent', tier: 2 }),
+      mk({ id: 'kordax', relation: 'ancestor', tier: 2 }),
+      mk({ id: 'dardanus', relation: 'ancestor', tier: 2 }),
+    ]);
+    expect(g.unplaced.map((x) => x.id).sort()).toEqual(['dardanus', 'kordax']);
+    const tier2 = g.tiers.find((t) => t.tier === 2);
+    expect(tier2?.nodes.map((n) => n.member.id)).toEqual(['gran']);
+  });
+
+  it('keeps a derived dynasty in the chart, because its line is recorded', () => {
+    const g = buildFamilyGraph([
+      mk({ id: 'gramp', relation: 'grandparent', tier: 2 }),
+      mk({ id: 'great', relation: 'ancestor', tier: 3, treeParentId: 'gramp' }),
+    ]);
+    expect(g.unplaced).toHaveLength(0);
+    expect(g.tiers.find((t) => t.tier === 3)?.nodes).toHaveLength(1);
+  });
+
+  it('does not list an ancestor whose chain points at someone absent', () => {
+    const g = buildFamilyGraph([mk({ id: 'ghost', relation: 'ancestor', tier: 3, treeParentId: 'gone' })]);
+    expect(g.unplaced.map((x) => x.id)).toEqual(['ghost']);
+  });
+});
+
 describe('buildFamilyGraph', () => {
   it('orders tiers +2..-2 and omits empties', () => {
     const g = buildFamilyGraph([
@@ -64,8 +110,10 @@ describe('buildFamilyGraph', () => {
   });
 
   it('extracts the spouse and flags ancestors + big tiers as collapsed', () => {
+    // Grandparents rather than bare `ancestor` rows: an ancestor with nothing
+    // chaining it to anyone is no longer a generation, it goes to `unplaced`.
     const big = Array.from({ length: 7 }, (_, i) =>
-      m({ id: `a${i}`, relation: 'ancestor', tier: 2, position: i }),
+      m({ id: `a${i}`, relation: 'grandparent', tier: 2, position: i }),
     );
     const g = buildFamilyGraph([...big, m({ id: 'sp', relation: 'spouse', tier: 0 })]);
     expect(g.spouse?.id).toBe('sp');

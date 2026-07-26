@@ -577,6 +577,19 @@ export function FamilyCanvas({
           </View>
         ) : null}
 
+        {/* Forebears with no recorded generation — a list, because that is all
+            the source gives. */}
+        {graph.unplaced.length > 0 ? (
+          <View style={styles.asideBlock}>
+            <Text style={styles.tierLabel}>Earlier forebears · generation unrecorded</Text>
+            <View style={styles.tierRow}>
+              {graph.unplaced.map((mem) => (
+                <AsideMemberNode key={mem.id} member={mem} />
+              ))}
+            </View>
+          </View>
+        ) : null}
+
         {/* Footnotes */}
         {graph.footnotes.length > 0 ? (
           <Text style={styles.footnote}>

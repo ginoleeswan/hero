@@ -141,14 +141,16 @@ describe('layoutFamily', () => {
       expect(label(6)).toBe('4× great-grandparents');
     });
 
-    it('attaches an ancestor whose forebear is missing to the hero, not nowhere', () => {
-      // g3's treeParentId points at a tier-2 node that is not in the set.
+    it('attaches a forebear whose own parent is missing to the hero, not nowhere', () => {
+      // gp's treeParentId points at a tier-1 node that is not in the set. A bare
+      // `ancestor` would be relegated to the unplaced list by buildFamilyGraph;
+      // a named generation still belongs in the chart.
       const out = layout([
         m({ id: 'g1', relation: 'parent', tier: 1 }),
-        m({ id: 'g3', relation: 'ancestor', tier: 3, treeParentId: 'absent' }),
+        m({ id: 'gp', relation: 'grandparent', tier: 2, treeParentId: 'absent' }),
       ]);
-      expect(out.nodes.map((n) => n.id)).toContain('g3');
-      expect(out.edges.find((e) => e.toId === 'g3')?.fromId).toBe(HERO_ID);
+      expect(out.nodes.map((n) => n.id)).toContain('gp');
+      expect(out.edges.find((e) => e.toId === 'gp')?.fromId).toBe(HERO_ID);
     });
   });
 

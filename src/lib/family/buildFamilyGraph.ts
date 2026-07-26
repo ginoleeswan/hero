@@ -13,11 +13,26 @@ export function buildFamilyGraph(members: FamilyMember[]): FamilyGraph {
   const present = new Set(members.map((x) => x.id));
   const asides: FamilyMember[] = [];
   const footnotes: FamilyMember[] = [];
+  const unplaced: FamilyMember[] = [];
   const byTier = new Map<number, FamilyMember[]>();
+
+  // A row of "ancestor" with nothing chaining it to anyone is not a generation.
+  // Aquaman carries nineteen of them — Manu, Kordax, Dardanus — a free-text list
+  // of distant Atlanteans the parser dropped on the grandparents row because it
+  // had nowhere else to put them. Drawn as nodes they claim a place in the
+  // lineage that nobody recorded, and they crowd out his two actual
+  // grandparents. Listed instead, they say exactly what they are.
+  //
+  // Only the unchained ones: a derived dynasty sets tree_parent_id on every
+  // ancestor, and those describe a real line that must stay in the chart.
+  const unplacedGeneration = (x: FamilyMember): boolean =>
+    (x.relation === 'ancestor' || x.relation === 'descendant') &&
+    !(x.treeParentId && present.has(x.treeParentId));
 
   for (const x of members) {
     if (x.tier === 9 || x.relation === 'clone') asides.push(x);
     else if (x.relation === 'other' && NONFAMILY.test(x.role)) footnotes.push(x);
+    else if (unplacedGeneration(x)) unplaced.push(x);
     else {
       const list = byTier.get(x.tier) ?? [];
       list.push(x);
@@ -72,5 +87,5 @@ export function buildFamilyGraph(members: FamilyMember[]): FamilyGraph {
     });
   }
 
-  return { tiers, asides, footnotes, spouse };
+  return { tiers, asides, footnotes, unplaced, spouse };
 }
