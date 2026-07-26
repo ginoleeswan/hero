@@ -36,9 +36,12 @@ export default function HousePage() {
   const twoColumn = width >= TWO_COLUMN;
   // On a character page the chart is a band inside a longer read, so 460px is
   // right. Here the chart IS the page — letterboxing a thirteen-generation
-  // lineage into a fixed strip wastes the whole lower half of the screen.
+  // lineage into a fixed strip wastes the whole lower half of the screen. It
+  // stops short of the full viewport on purpose: the console has to stay on
+  // screen beside it, or clicking a face down at the bottom of the chart puts
+  // the answer somewhere you can't see.
   const stageHeight =
-    width >= 700 ? Math.min(880, Math.max(500, Math.round(winHeight - 300))) : undefined;
+    width >= 700 ? Math.min(780, Math.max(460, Math.round(winHeight - 340))) : undefined;
   const stageRef = useRef<View | null>(null);
 
   // Ink canvas so iOS Safari's status zone matches the band; the beige body is
@@ -131,13 +134,16 @@ export default function HousePage() {
                 : undefined
             }
             onClear={() => setParams({ with: null })}
+            onRootPartner={() =>
+              compared ? setParams({ focus: compared.id, with: null }) : undefined
+            }
           />
 
           {relatives.length > 0 && rooted ? (
             <FamilyCanvas
               label={`The line of ${rooted.name}`}
               stageHeight={stageHeight}
-              onSelectMember={(id) => setParams({ focus: id, with: null })}
+              onSelectMember={(id) => setParams({ with: id })}
               heroName={rooted.name}
               heroImage={rooted.portrait_url ?? rooted.image_md_url ?? rooted.image_url}
               heroAvatar={rooted.avatar_url}

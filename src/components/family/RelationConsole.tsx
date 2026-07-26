@@ -16,6 +16,7 @@ import type { KinshipDescription } from '../../lib/family/kinshipPath';
 export interface ConsoleSeat {
   id: string;
   name: string;
+  summary: string | null;
   avatar_url: string | null;
   portrait_url: string | null;
   image_md_url: string | null;
@@ -31,6 +32,7 @@ export function RelationConsole({
   tint,
   onSwap,
   onClear,
+  onRootPartner,
 }: {
   root: ConsoleSeat | null;
   partner: ConsoleSeat | null;
@@ -39,7 +41,10 @@ export function RelationConsole({
   /** Make the compared member the root of the tree, and vice versa. */
   onSwap: () => void;
   onClear: () => void;
+  /** Re-centre the chart on the compared member and drop the comparison. */
+  onRootPartner: () => void;
 }) {
+  const router = useRouter();
   return (
     <View style={styles.card}>
       <Text style={styles.eyebrow}>Trace the line</Text>
@@ -86,6 +91,22 @@ export function RelationConsole({
           ) : (
             <Text style={styles.hint}>No line runs between these two in the records we hold.</Text>
           )}
+
+          {/* Who they actually are. Clicking a face in the chart should tell you
+              something about the person, not just re-arrange the chart. */}
+          {partner.summary ? <Text style={styles.summary}>{partner.summary}</Text> : null}
+
+          {/* Named buttons, not icons: the chart's own click is ambiguous
+              between "who is this" and "centre on them", so both get said. */}
+          <View style={styles.actions}>
+            <ConsoleAction label={`Centre the chart on ${partner.name.split(' ')[0]}`} onPress={onRootPartner} />
+            <ConsoleAction
+              label="Open profile"
+              onPress={() =>
+                router.push(`/character/${partner.id}?name=${encodeURIComponent(partner.name)}`)
+              }
+            />
+          </View>
         </>
       ) : null}
     </View>
@@ -103,41 +124,26 @@ function Seat({
   accent?: string;
   onClear?: () => void;
 }) {
-  const router = useRouter();
   if (!member) return <View style={styles.emptySeat} />;
   return (
     <View style={[styles.seat, accent ? { borderColor: accent } : null] as object}>
-      {/* Nodes in the chart re-root it now, so the seats are how you leave the
-          house page for the person themselves. */}
-      <Pressable
-        style={styles.seatOpen}
-        accessibilityRole="link"
-        accessibilityLabel={`Open ${member.name}`}
-        onPress={() =>
-          router.push(`/character/${member.id}?name=${encodeURIComponent(member.name)}`)
-        }
-      >
-        <HeroAvatar
-          id={member.id}
-          name={member.name}
-          avatarUrl={member.avatar_url}
-          fallbackUrl={art(member)}
-          size={40}
-          radius={20}
-          bare
-        />
-        <View style={styles.seatMeta}>
-          <View style={styles.seatNameRow}>
-            <Text style={styles.seatName} numberOfLines={1}>
-              {member.name}
-            </Text>
-            <Ionicons name="chevron-forward" size={13} color="#c4b8a3" />
-          </View>
-          <Text style={styles.seatCaption} numberOfLines={1}>
-            {caption}
-          </Text>
-        </View>
-      </Pressable>
+      <HeroAvatar
+        id={member.id}
+        name={member.name}
+        avatarUrl={member.avatar_url}
+        fallbackUrl={art(member)}
+        size={40}
+        radius={20}
+        bare
+      />
+      <View style={styles.seatMeta}>
+        <Text style={styles.seatName} numberOfLines={1}>
+          {member.name}
+        </Text>
+        <Text style={styles.seatCaption} numberOfLines={1}>
+          {caption}
+        </Text>
+      </View>
       {onClear ? (
         <Pressable
           onPress={onClear}
@@ -150,6 +156,20 @@ function Seat({
         </Pressable>
       ) : null}
     </View>
+  );
+}
+
+function ConsoleAction({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+        [styles.action, hovered && (styles.actionHover as object)] as object
+      }
+    >
+      <Text style={styles.actionText}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -184,15 +204,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 12,
   },
-  seatOpen: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    minWidth: 0,
-  },
   seatMeta: { flexShrink: 1, minWidth: 0 },
-  seatNameRow: { flexDirection: 'row', alignItems: 'center', gap: 3, minWidth: 0 },
   seatName: { fontFamily: 'Flame-Regular', fontSize: 17, lineHeight: 22, color: COLORS.black },
   seatCaption: {
     fontFamily: 'Nunito_700Bold',
@@ -201,7 +213,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: '#a99b84',
   },
-  clear: { padding: 2 },
+  clear: { marginLeft: 'auto', padding: 2 },
   emptySeat: {
     flexGrow: 1,
     flexShrink: 1,
@@ -233,6 +245,25 @@ const styles = StyleSheet.create({
   answer: { gap: 6 },
   headline: { fontFamily: 'Flame-Regular', fontSize: 26, lineHeight: 33, color: COLORS.black },
   chain: { fontFamily: 'FlameSans-Regular', fontSize: 13.5, lineHeight: 21, color: '#5a6a72' },
+  summary: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13.5,
+    lineHeight: 21,
+    color: '#5a6a72',
+    maxWidth: 620,
+  },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2 },
+  action: {
+    borderWidth: 1,
+    borderColor: '#e7dcc9',
+    backgroundColor: '#fffaf0',
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    cursor: 'pointer',
+  } as object,
+  actionHover: { borderColor: '#cdbfa6', backgroundColor: '#f7eeda' } as object,
+  actionText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.navy },
   hint: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13.5,

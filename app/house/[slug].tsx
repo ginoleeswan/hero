@@ -102,13 +102,16 @@ export default function HousePage() {
                 : undefined
             }
             onClear={() => setParams({ with: null })}
+            onRootPartner={() =>
+              compared ? setParams({ focus: compared.id, with: null }) : undefined
+            }
           />
 
           {relatives.length > 0 && rooted ? (
             <FamilyCanvas
               label={`The line of ${rooted.name}`}
               stageHeight={stageHeight}
-              onSelectMember={(id) => setParams({ focus: id, with: null })}
+              onSelectMember={(id) => setParams({ with: id })}
               heroName={rooted.name}
               heroImage={rooted.portrait_url ?? rooted.image_md_url ?? rooted.image_url}
               heroAvatar={rooted.avatar_url}

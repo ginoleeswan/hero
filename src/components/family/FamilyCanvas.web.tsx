@@ -117,9 +117,9 @@ function CanvasNode({
   heroId: string | null;
   onNavigate?: () => void;
   /**
-   * Given, a node press re-centres the chart on that person instead of leaving
-   * for their character page. The house page owns a tree you walk; a character
-   * page shows one you read.
+   * Given, a node press hands the person back to the host instead of leaving for
+   * their character page — the house page answers in place (who they are, how
+   * they're related) rather than navigating away mid-exploration.
    */
   onSelectMember?: (heroId: string, name: string) => void;
 }): ReactElement {
@@ -239,7 +239,7 @@ function CanvasNode({
         style={styles.cameoNode}
         accessibilityRole="button"
         accessibilityLabel={
-          onSelectMember ? `Centre the chart on ${member.name}` : `Open ${member.name}`
+          onSelectMember ? `Select ${member.name}` : `Open ${member.name}`
         }
         onPress={() => {
           if (onSelectMember) {
@@ -590,7 +590,7 @@ export function FamilyCanvas({
    * page; where the chart IS the page it should take the screen.
    */
   stageHeight?: number;
-  /** Given, nodes re-centre the chart instead of leaving for a character page. */
+  /** Given, nodes report the press back instead of leaving for a character page. */
   onSelectMember?: (heroId: string, name: string) => void;
 }): ReactElement | null {
   const [fullscreen, setFullscreen] = useState(false);
