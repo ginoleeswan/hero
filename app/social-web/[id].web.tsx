@@ -307,16 +307,29 @@ export default function SocialWebExplorer() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: SURFACE.ink },
+  // 100dvh, not flex:1 of the layout viewport: on iOS Safari the layout viewport
+  // is the LARGE one (browser chrome collapsed), so a full-height scene ran
+  // taller than the visible area — the page could scroll, which slid this
+  // screen's own header up under the fixed TopBar (title landing on top of the
+  // logo, Share on top of the avatar) and pushed the focus card's lower half
+  // behind the toolbar. dvh is the viewport you can actually see.
+  screen: {
+    flex: 1,
+    height: '100dvh',
+    maxHeight: '100dvh',
+    backgroundColor: SURFACE.ink,
+  } as object,
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 16,
     paddingHorizontal: 16,
-    paddingTop: TOPBAR_HEIGHT + 14,
+    // The TopBar's real height is TOPBAR_HEIGHT + the status-bar inset, so the
+    // clearance has to carry the inset too or the header rides up into it.
+    paddingTop: `calc(${TOPBAR_HEIGHT + 14}px + env(safe-area-inset-top))`,
     paddingBottom: 8,
-  },
+  } as object,
   back: { padding: 6 },
   titleWrap: { flex: 1, gap: 3 },
   title: {
@@ -332,7 +345,7 @@ const styles = StyleSheet.create({
     flexWrap: 'nowrap',
     alignItems: 'center',
     gap: 8,
-    paddingTop: TOPBAR_HEIGHT + 8,
+    paddingTop: `calc(${TOPBAR_HEIGHT + 8}px + env(safe-area-inset-top))`,
   } as object,
   titleNarrow: { fontSize: 19, lineHeight: 24 } as object,
   // Header controls sit above the scene so the search panel can hang over it.

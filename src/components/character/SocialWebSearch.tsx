@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   panelNarrow: { width: 268 } as object,
   // The list has to stay inside the viewport on a phone, where the panel opens
   // just under a header that already owns the top of the screen.
-  scroll: { maxHeight: '52vh', overflowY: 'auto' } as object,
+  scroll: { maxHeight: '52dvh', overflowY: 'auto' } as object,
   groupHead: {
     flexDirection: 'row',
     alignItems: 'center',
