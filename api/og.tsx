@@ -882,7 +882,26 @@ function universeCard(hero: OgHero, img: string | null, uni: OgUniverse) {
   );
 }
 
-const art = (h: OgHero) => h.portrait_url || h.image_url;
+/**
+ * Ask Cloudinary for a card-sized derivative instead of the original.
+ *
+ * The stored portraits are full-resolution — Wonder Woman's is 623KB — and
+ * satori has to fetch and decode every image inline while it streams the
+ * response. At that size the render dies partway through, and because the
+ * function has already emitted `200 image/png`, the failure surfaces as an
+ * EMPTY body rather than reaching the catch that redirects to the static
+ * brand card. Every character and VS unfurl was serving a blank image.
+ *
+ * Cards are 1200x630 and no portrait occupies more than 440 of it, so 720px
+ * is generous. Non-Cloudinary sources pass through untouched.
+ */
+const sized = (url: string, w = 720) =>
+  url.includes('/upload/') ? url.replace('/upload/', `/upload/w_${w},q_auto/`) : url;
+
+const art = (h: OgHero) => {
+  const u = h.portrait_url || h.image_url;
+  return u ? sized(u) : null;
+};
 
 export default async function handler(req: Request) {
   try {
