@@ -290,6 +290,26 @@ async function main() {
   // Dynamic content — each source is independently fail-soft so one Supabase
   // blip can't wipe the others (or break the deploy).
   if (SUPABASE_URL && SUPABASE_KEY) {
+    // Houses. Small and curated, but these are the pages built to be found:
+    // "House Targaryen family tree" is a query people actually type, which is
+    // the reason the tree got a URL of its own.
+    try {
+      const rows = await fetchRows('houses', 'slug');
+      await writeFile(
+        join(SITEMAP_DIR, 'houses.xml'),
+        urlSet(
+          rows.map((h) => ({
+            loc: `/house/${encodeURIComponent(String(h.slug))}`,
+            changefreq: 'weekly',
+          })),
+        ),
+        'utf8',
+      );
+      indexFiles.push('houses.xml');
+    } catch (err) {
+      console.warn('[sitemap] houses skipped:', err?.message ?? err);
+    }
+
     // Characters, WITH portrait images for the Google Images vertical. Quality
     // gate: only heroes with real content (a summary) — ~16k of 34k.
     try {

@@ -9,6 +9,8 @@ import { NotFoundView, LoadErrorView } from '../../src/components/NotFoundView';
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { loginHref } from '../../src/lib/loginRedirect';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
+import { useHeroHouses } from '../../src/hooks/useHeroHouses';
+import { HouseLinks } from '../../src/components/family/HouseLinks';
 import { groupPowers } from '../../src/constants/powerIcons';
 import { useHeroDetail } from '../../src/hooks/useHeroDetail';
 import { useHeroTeams } from '../../src/hooks/useHeroTeams';
@@ -550,6 +552,8 @@ export default function WebCharacterScreen() {
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   const skeletonOpacity = useSkeletonAnim();
+  // Houses this character belongs to — the link out of the family section and
+  // into the whole dynasty. Jon Snow is in two.
   const {
     data,
     setData,
@@ -579,6 +583,7 @@ export default function WebCharacterScreen() {
     allyNames,
     teammateNames,
   } = useHeroDetail({ id });
+  const heroHouses = useHeroHouses(heroRow?.id ?? null);
 
   // Portrait morph arrival: if we got here by tapping a hero card, the card
   // stashed its art here so we can paint the portrait immediately — even in the
@@ -667,6 +672,7 @@ export default function WebCharacterScreen() {
       endMorphReturn();
       document.documentElement.classList.remove('vt-returning');
     };
+
     // Un-tag the card once the morph settles (or immediately on the fallback
     // path); a timer backstops a transition that never resolves.
     if (t?.finished) {
@@ -1942,6 +1948,7 @@ export default function WebCharacterScreen() {
                     heroId={heroRow?.id ?? null}
                     members={family}
                   />
+                  <HouseLinks houses={heroHouses} heroId={heroRow?.id ?? null} />
                 </View>
               ) : null}
             </>
