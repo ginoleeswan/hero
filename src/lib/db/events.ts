@@ -62,13 +62,13 @@ export function mapLiveEventRows(rows: LiveEventRow[]): LiveEvent[] {
 /** Events running right now. Degrades to [] so a DB hiccup never errors the
  *  Explore band — an empty result is the honest "nothing is on" state. */
 export async function getLiveEvents(): Promise<LiveEvent[]> {
-  // `as never`: the RPC lands with the migration, so it isn't in
-  // database.generated.ts until that's applied and types are regenerated.
-  // Same pattern as getTrendingOnScreen.
-  const { data, error } = await supabase.rpc('get_live_events' as never);
+  const { data, error } = await supabase.rpc('get_live_events');
   if (error) {
     console.warn('[getLiveEvents] error:', error.message);
     return [];
   }
-  return mapLiveEventRows((data ?? []) as unknown as LiveEventRow[]);
+  // The generated Returns type marks every column non-null — a RETURNS TABLE
+  // signature carries no nullability — so widen to the row shape we actually
+  // guard against before mapping.
+  return mapLiveEventRows((data ?? []) as LiveEventRow[]);
 }

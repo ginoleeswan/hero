@@ -1011,6 +1011,7 @@ export type Database = {
           alter_egos: string | null
           avatar_url: string | null
           base: string | null
+          born: string | null
           category: string | null
           combat: number | null
           comicvine_enriched_at: string | null
@@ -1018,6 +1019,7 @@ export type Database = {
           comicvine_status: string | null
           creators: string[] | null
           description: string | null
+          died: string | null
           durability: number | null
           enemies: string[] | null
           enriched_at: string | null
@@ -1068,6 +1070,8 @@ export type Database = {
           powerstats_total: number | null
           publisher: string | null
           race: string | null
+          reign_end: string | null
+          reign_start: string | null
           relatives: string | null
           search_text: string | null
           speed: number | null
@@ -1092,6 +1096,7 @@ export type Database = {
           alter_egos?: string | null
           avatar_url?: string | null
           base?: string | null
+          born?: string | null
           category?: string | null
           combat?: number | null
           comicvine_enriched_at?: string | null
@@ -1099,6 +1104,7 @@ export type Database = {
           comicvine_status?: string | null
           creators?: string[] | null
           description?: string | null
+          died?: string | null
           durability?: number | null
           enemies?: string[] | null
           enriched_at?: string | null
@@ -1149,6 +1155,8 @@ export type Database = {
           powerstats_total?: number | null
           publisher?: string | null
           race?: string | null
+          reign_end?: string | null
+          reign_start?: string | null
           relatives?: string | null
           search_text?: string | null
           speed?: number | null
@@ -1173,6 +1181,7 @@ export type Database = {
           alter_egos?: string | null
           avatar_url?: string | null
           base?: string | null
+          born?: string | null
           category?: string | null
           combat?: number | null
           comicvine_enriched_at?: string | null
@@ -1180,6 +1189,7 @@ export type Database = {
           comicvine_status?: string | null
           creators?: string[] | null
           description?: string | null
+          died?: string | null
           durability?: number | null
           enemies?: string[] | null
           enriched_at?: string | null
@@ -1230,6 +1240,8 @@ export type Database = {
           powerstats_total?: number | null
           publisher?: string | null
           race?: string | null
+          reign_end?: string | null
+          reign_start?: string | null
           relatives?: string | null
           search_text?: string | null
           speed?: number | null
@@ -1278,6 +1290,75 @@ export type Database = {
           name?: string | null
           publisher?: string | null
           snapshot_at?: string | null
+        }
+        Relationships: []
+      }
+      house_members: {
+        Row: {
+          hero_id: string
+          house_slug: string
+          via: string
+        }
+        Insert: {
+          hero_id: string
+          house_slug: string
+          via: string
+        }
+        Update: {
+          hero_id?: string
+          house_slug?: string
+          via?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_members_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "house_members_house_slug_fkey"
+            columns: ["house_slug"]
+            isOneToOne: false
+            referencedRelation: "houses"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      houses: {
+        Row: {
+          blurb: string | null
+          created_at: string
+          name: string
+          position: number
+          seat: string | null
+          sigil_tint: string | null
+          slug: string
+          universe: string
+          words: string | null
+        }
+        Insert: {
+          blurb?: string | null
+          created_at?: string
+          name: string
+          position?: number
+          seat?: string | null
+          sigil_tint?: string | null
+          slug: string
+          universe: string
+          words?: string | null
+        }
+        Update: {
+          blurb?: string | null
+          created_at?: string
+          name?: string
+          position?: number
+          seat?: string | null
+          sigil_tint?: string | null
+          slug?: string
+          universe?: string
+          words?: string | null
         }
         Relationships: []
       }
@@ -2091,6 +2172,81 @@ export type Database = {
         }
         Relationships: []
       }
+      watched_events: {
+        Row: {
+          accent: string | null
+          approval: string
+          approval_at: string | null
+          baseline: number | null
+          blurb: string | null
+          checked_at: string | null
+          created_at: string
+          edit_burst_ratio: number | null
+          edits_recent: number | null
+          enabled: boolean
+          enwiki_title: string
+          first_detected_at: string | null
+          headline: string
+          live_from: string | null
+          live_to: string | null
+          ongoing: boolean
+          peak: number | null
+          shape: string | null
+          slug: string
+          spike_ratio: number | null
+          verdict: string
+          views_daily: Json | null
+        }
+        Insert: {
+          accent?: string | null
+          approval?: string
+          approval_at?: string | null
+          baseline?: number | null
+          blurb?: string | null
+          checked_at?: string | null
+          created_at?: string
+          edit_burst_ratio?: number | null
+          edits_recent?: number | null
+          enabled?: boolean
+          enwiki_title: string
+          first_detected_at?: string | null
+          headline: string
+          live_from?: string | null
+          live_to?: string | null
+          ongoing?: boolean
+          peak?: number | null
+          shape?: string | null
+          slug: string
+          spike_ratio?: number | null
+          verdict?: string
+          views_daily?: Json | null
+        }
+        Update: {
+          accent?: string | null
+          approval?: string
+          approval_at?: string | null
+          baseline?: number | null
+          blurb?: string | null
+          checked_at?: string | null
+          created_at?: string
+          edit_burst_ratio?: number | null
+          edits_recent?: number | null
+          enabled?: boolean
+          enwiki_title?: string
+          first_detected_at?: string | null
+          headline?: string
+          live_from?: string | null
+          live_to?: string | null
+          ongoing?: boolean
+          peak?: number | null
+          shape?: string | null
+          slug?: string
+          spike_ratio?: number | null
+          verdict?: string
+          views_daily?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -2126,6 +2282,39 @@ export type Database = {
           p_target_field: string
         }
         Returns: Json
+      }
+      admin_list_watched_events: {
+        Args: never
+        Returns: {
+          accent: string | null
+          approval: string
+          approval_at: string | null
+          baseline: number | null
+          blurb: string | null
+          checked_at: string | null
+          created_at: string
+          edit_burst_ratio: number | null
+          edits_recent: number | null
+          enabled: boolean
+          enwiki_title: string
+          first_detected_at: string | null
+          headline: string
+          live_from: string | null
+          live_to: string | null
+          ongoing: boolean
+          peak: number | null
+          shape: string | null
+          slug: string
+          spike_ratio: number | null
+          verdict: string
+          views_daily: Json | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "watched_events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       admin_mark_comicvine_unmatched: {
         Args: { p_hero_id: string }
@@ -2187,6 +2376,14 @@ export type Database = {
         Args: { p_hero_id: string; p_publisher: string }
         Returns: Json
       }
+      admin_set_watched_event_approval: {
+        Args: { p_approval: string; p_slug: string }
+        Returns: number
+      }
+      admin_set_watched_event_enabled: {
+        Args: { p_enabled: boolean; p_slug: string }
+        Returns: number
+      }
       admin_snapshot_now: { Args: never; Returns: undefined }
       admin_stop_run: { Args: { p_run_id: number }; Returns: boolean }
       admin_toggle_cron: {
@@ -2211,6 +2408,16 @@ export type Database = {
         Returns: string
       }
       auto_tier_unrated_pool: { Args: never; Returns: number }
+      browse_cover_pool: {
+        Args: { p_limit: number; p_slug: string }
+        Returns: {
+          id: string
+          image_md_url: string
+          image_url: string
+          name: string
+          portrait_url: string
+        }[]
+      }
       cache_hero_comicvine_data: {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined
@@ -2234,6 +2441,15 @@ export type Database = {
       }
       catalog_distributions: { Args: never; Returns: Json }
       catalog_health: { Args: never; Returns: Json }
+      category_base_rows: {
+        Args: { p_search?: string; p_slug: string }
+        Returns: {
+          alignment: string
+          gender: string
+          powerstats_total: number
+          publisher: string
+        }[]
+      }
       category_facet_counts: {
         Args: {
           p_alignment?: string
@@ -2350,6 +2566,21 @@ export type Database = {
       get_hero_neighborhood: {
         Args: { p_hero_id: string; p_limit?: number }
         Returns: Json
+      }
+      get_house: { Args: { p_slug: string }; Returns: Json }
+      get_live_events: {
+        Args: never
+        Returns: {
+          accent: string
+          blurb: string
+          headline: string
+          live_from: string
+          live_to: string
+          ongoing: boolean
+          shape: string
+          slug: string
+          spike_ratio: number
+        }[]
       }
       get_matchup_tally: { Args: { p_a: string; p_b: string }; Returns: Json }
       get_matchup_tally_v2: {
@@ -2538,7 +2769,7 @@ export type Database = {
       }
       get_trending_titles: {
         Args: {
-          p_bucket?: string
+          p_bucket: string
           p_chars_per_title?: number
           p_title_limit?: number
         }
@@ -2553,6 +2784,7 @@ export type Database = {
           overview: string
           poster_url: string
           provider: string
+          provider_logo: string
           release_date: string
           title: string
           title_id: string
@@ -2576,6 +2808,7 @@ export type Database = {
           overview: string
           poster_url: string
           provider: string
+          provider_logo: string
           release_date: string
           title: string
           title_id: string
