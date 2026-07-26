@@ -265,6 +265,9 @@ export interface Campaign {
   poster_url: string | null;
   /** Linked title id — tapping the hero cover routes here (the media page). */
   title_id: string | null;
+  /** YouTube key, when this campaign was chosen *because* of a trailer drop.
+   *  Null for manual campaigns and for popularity-picked heroes. */
+  trailer_key: string | null;
   characters: TrendingTitleCharacter[];
 }
 
@@ -300,6 +303,7 @@ export function groupCampaignRows(rows: CampaignRow[]): Campaign[] {
         backdrop_url: r.backdrop_url,
         poster_url: r.poster_url,
         title_id: r.title_id,
+        trailer_key: null,
         characters: [],
       };
       byId.set(r.campaign_id, c);
@@ -342,31 +346,105 @@ export async function getActiveCampaigns(limit = 3, chars = 16): Promise<Campaig
   return auto ? [auto] : [];
 }
 
-/** Build a one-off Campaign from a random popular trending title — the automatic
- *  fallback for the "Right Now" hero when no editorial campaign is scheduled.
- *  Pools are tried in order (on-screen leads, streaming as fallback); pure aside
- *  from the random pick, so the explore bundle can feed it already-fetched
- *  bucket lists instead of re-fetching. */
-export function synthesizeCampaignFromPool(pools: TrendingTitle[][]): Campaign | null {
+/** A trailer drop, as far as the hero picker cares. Structurally the subset of
+ *  db/videos.ts's TrailerEvent that matters here, so this module needn't import it. */
+export interface TrailerPick {
+  titleId: string;
+  /** ISO-8601. */
+  publishedAt: string;
+  /** 'Trailer' | 'Teaser'. */
+  videoType?: string | null;
+}
+
+/** How recent a trailer has to be to outrank the popularity pick. Beyond three
+ *  days it isn't news any more and a random popular title is the better hero. */
+export const TRAILER_HERO_MAX_AGE_HOURS = 72;
+
+/**
+ * Build a one-off Campaign for the "Right Now" hero when no editorial campaign is
+ * scheduled.
+ *
+ * Precedence: **the newsiest title, not the luckiest.** If any pool title had a
+ * trailer or teaser published inside TRAILER_HERO_MAX_AGE_HOURS, the newest such
+ * drop wins — that is the single most current thing the catalogue knows. Only
+ * when there's no recent drop does it fall back to the original behaviour, a
+ * random pick from the popularity+character-gated pool (which keeps the hero
+ * rotating on refresh instead of pinning one title for a whole staleTime).
+ *
+ * Pools are tried in order for the random fallback (on-screen leads, streaming
+ * second), but the trailer search spans *all* pools — a streaming title with a
+ * trailer from this morning beats a theatrical title with none.
+ *
+ * Pure aside from the random pick and, for the age cutoff, the clock — both
+ * injectable so the explore bundle can feed already-fetched buckets and tests can
+ * pin the outcome.
+ */
+export function synthesizeCampaignFromPool(
+  pools: TrendingTitle[][],
+  trailers: readonly TrailerPick[] = [],
+  now: number = Date.now(),
+): Campaign | null {
   const usable = (ts: TrendingTitle[]) =>
     ts.filter((t) => t.backdrop_url && t.characters.length > 0);
+
+  // News first, across every pool.
+  const newsworthy = newestTrailerHero(pools.map(usable).flat(), trailers, now);
+  if (newsworthy) return newsworthy;
+
   let pool: TrendingTitle[] = [];
   for (const candidates of pools) {
     pool = usable(candidates);
     if (pool.length > 0) break;
   }
   if (pool.length === 0) return null;
-  const t = pool[Math.floor(Math.random() * pool.length)];
-  const badge = trendingBadge(t);
+  return campaignFromTitle(pool[Math.floor(Math.random() * pool.length)], null, null);
+}
+
+/** The pool title with the newest in-window trailer, as a Campaign. Null when no
+ *  pool title has one. */
+function newestTrailerHero(
+  candidates: TrendingTitle[],
+  trailers: readonly TrailerPick[],
+  now: number,
+): Campaign | null {
+  if (candidates.length === 0 || trailers.length === 0) return null;
+  const byId = new Map(candidates.map((t) => [t.id, t]));
+
+  let best: { title: TrendingTitle; pick: TrailerPick; at: number } | null = null;
+  for (const pick of trailers) {
+    const title = byId.get(pick.titleId);
+    if (!title) continue;
+    const at = Date.parse(pick.publishedAt);
+    if (Number.isNaN(at)) continue;
+    const ageHours = (now - at) / 3_600_000;
+    // Future-dated stamps are bad data; treat them as age 0 rather than letting a
+    // typo'd year win forever.
+    if (ageHours > TRAILER_HERO_MAX_AGE_HOURS) continue;
+    if (best === null || at > best.at) best = { title, pick, at };
+  }
+  if (!best) return null;
+
+  const label = best.pick.videoType === 'Teaser' ? 'New Teaser' : 'New Trailer';
+  return campaignFromTitle(best.title, label, best.title.trailer_key);
+}
+
+/** One TrendingTitle → the auto-hero Campaign shape. `label` overrides the
+ *  contextual badge when the news itself is the label. */
+function campaignFromTitle(
+  t: TrendingTitle,
+  label: string | null,
+  trailerKey: string | null,
+): Campaign {
   return {
     id: `auto:${t.id}`,
-    label: badge?.label ?? 'Trending Now',
+    label: label ?? trendingBadge(t)?.label ?? 'Trending Now',
     headline: t.title,
     blurb: firstSentence(t.overview),
     accent: null, // UI defaults to the brand orange
     backdrop_url: t.backdrop_url,
     poster_url: t.poster_url,
     title_id: t.id,
+    trailer_key: trailerKey,
     characters: t.characters,
   };
 }

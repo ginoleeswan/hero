@@ -21,6 +21,8 @@ import type { NewComic } from '../../../lib/db/comics';
 import { TrendingMovers } from './TrendingMovers';
 import { ThisMonthInHistory } from './ThisMonthInHistory';
 import type { DebutIssue } from '../../../lib/db/anniversaries';
+import type { LiveEvent } from '../../../lib/db/events';
+import { computeFreshness } from '../../../lib/home/freshness';
 
 const BADGE_ICON: Record<BadgeTone, 'ticket-outline' | 'calendar-outline' | null> = {
   theaters: 'ticket-outline',
@@ -46,6 +48,9 @@ interface RightNowBandProps {
   newComics: NewComic[];
   wikiTrending: WikiTrendingHero[];
   debuts: DebutIssue[];
+  /** A detected real-world event in progress (SDCC, a Direct). Drives the header's
+   *  live label; absent means the band falls back to content timestamps. */
+  liveEvent?: LiveEvent | null;
   onHeroPress: (id: string) => void;
   onTitlePress: (id: string) => void;
   onIssuePress: (issueId: string) => void;
@@ -518,6 +523,7 @@ export function RightNowBand({
   newComics,
   wikiTrending,
   debuts,
+  liveEvent,
   onHeroPress,
   onTitlePress,
   onIssuePress,
@@ -536,6 +542,14 @@ export function RightNowBand({
     wikiTrending.length > 0 ||
     debuts.length > 0;
   if (!hasAny) return null;
+
+  // Derived from the freshest real event in the band, not a hardcoded string.
+  // Suppressed entirely once the content is stale — see freshness.ts.
+  const fresh = computeFreshness({
+    storeDates: newComics.map((c) => c.storeDate),
+    liveEventOngoing: liveEvent?.ongoing,
+    liveEventLabel: liveEvent?.headline,
+  });
 
   // "What's Hot" is the real TMDB daily-trending feed (trendingOnScreen). On the
   // rare day nothing trending is in the catalogue, fall back to the live release
@@ -575,10 +589,12 @@ export function RightNowBand({
             The movies, shows and comics moving the multiverse this week.
           </Text>
         </View>
-        <View style={band.freshChip as object}>
-          <View style={band.pulse as object} />
-          <Text style={band.fresh as object}>Updated today</Text>
-        </View>
+        {!!fresh.label && (
+          <View style={band.freshChip as object}>
+            <View style={[band.pulse, !fresh.pulse && band.pulseIdle] as object} />
+            <Text style={band.fresh as object}>{fresh.label}</Text>
+          </View>
+        )}
       </View>
 
       {isDesktop && campaign && campaign.characters.length > 0 ? (
@@ -687,6 +703,8 @@ const band = StyleSheet.create({
     backgroundColor: COLORS.orange,
     boxShadow: `0 0 0 4px ${COLORS.orange}33`,
   } as object,
+  // Stale content gets a dimmed, halo-less dot rather than a confident live one.
+  pulseIdle: { backgroundColor: COLORS.grey, boxShadow: 'none' } as object,
   kicker: {
     ...EYEBROW,
     letterSpacing: 2.5,
@@ -706,7 +724,8 @@ const band = StyleSheet.create({
     marginTop: 4,
     maxWidth: 560,
   } as object,
-  // "Updated today" as a live chip — dot + label, bottom-aligned with the title.
+  // The freshness chip — dot + derived label, bottom-aligned with the title.
+  // Hidden entirely when the band has no honest claim to make.
   freshChip: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -3,7 +3,8 @@
 **Date:** 2026-07-26
 **Status:** Detection layer built and **live** — §7 done 2026-07-26, now on `main`.
 Migration applied (as version `20260726183108`), function deployed, cron running,
-SDCC approved. UI not wired — §8 is untouched.
+SDCC approved. §8 steps 1-3 built (step 1 awaits an apply; 2-3 are live in the
+band already). Steps 4-6 remain.
 **Visual proposal:** https://claude.ai/code/artifact/18490f5f-7323-4041-bcce-ba1e78becb42
 
 ---
@@ -20,12 +21,9 @@ Audit findings from the same session (all verified against the live DB via
 
 - The section **is** genuinely dynamic and today's data **is** fresh. Rolling
   windows are `current_date`-relative; the crons are all running.
-- `"Updated today"` in the band header is a **hardcoded string** —
-  `src/components/home/RightNowBand.tsx:244` and
-  `src/components/web/home/RightNowBand.tsx:523`. True today, but it's an
-  unconditional claim; if a cron stalls it lies.
-  `explore_bundle_cache.refreshed_at` exists but `get_explore_bundle` returns
-  only `payload`, so the client can't know.
+- ~~`"Updated today"` in the band header is a **hardcoded string**~~ — **fixed,
+  §8.2a.** It was an unconditional claim: true that day, but it would keep
+  asserting freshness over week-old content if a cron stalled.
 - `get_new_comics` orders each issue's cast by **global** `fame_score`, so Joker
   leads Green Lantern #37 and Action Comics #1100. Manga anthologies also carry
   junk `comic_issue_appearances` links (Weekly Young Jump → Joker, Batman,
@@ -356,12 +354,8 @@ The RPC is fine from a signed-in admin client — it just can't be driven from M
 ## 8. Then, in impact order
 
 1. ~~**Persist the TMDB videos**~~ — **BUILT 2026-07-26, awaiting apply. See §8.1a.**
-2. **Make the freshness label true** — expose `refreshed_at` in the bundle
-   payload, derive the label from the freshest event, delete the hardcoded
-   `"Updated today"` from both band files.
-3. **Give the auto-hero a news sense** — `synthesizeCampaignFromPool` currently
-   uses `Math.random()` over the trending pool
-   (`src/lib/db/trending.ts:352`). A trailer inside 72h should beat a random pick.
+2. ~~**Make the freshness label true**~~ — **BUILT 2026-07-26. See §8.2a.**
+3. ~~**Give the auto-hero a news sense**~~ — **BUILT 2026-07-26. See §8.2a.**
 4. **Build the Pulse rail** — a `get_pulse_events` RPC over the unified score
    below, folded into `get_explore_bundle` so Explore stays one round trip.
    Countdown chips ride along here.
@@ -406,6 +400,53 @@ Decisions worth not re-litigating:
 
 **Not yet done:** `get_recent_trailers` isn't folded into `get_explore_bundle` and
 no UI consumes it. That's step 4.
+
+### 8.2a Honest freshness label + news-sense hero — built, no migration
+
+| File | Role |
+| --- | --- |
+| `src/lib/home/freshness.ts` + 17 tests | Pure, clock-injectable. Derives the header claim from the freshest real event in the band. |
+| `src/components/home/RightNowBand.tsx` | Hardcoded `"Updated today"` gone. `PulseDot` now takes `animate`. |
+| `src/components/web/home/RightNowBand.tsx` | Same, plus the chip hides entirely when there's no claim. |
+| `src/lib/db/trending.ts` + 16 tests | `synthesizeCampaignFromPool` prefers a recent trailer drop over the random pick. `Campaign` gains `trailer_key`. |
+| `src/lib/query/exploreQueries.ts`, `keys.ts` | Two new cached reads: `getLiveEvents`, `getRecentTrailers`. |
+| `app/(tabs)/explore.tsx`, `explore.web.tsx` | Thread `liveEvent` to the band. |
+
+**The doc's own recommendation for step 2 was wrong and is superseded.** It said to
+expose `explore_bundle_cache.refreshed_at`. But that cache recomputes every ten
+minutes whether or not content changed, so `refreshed_at` is *always* under ten
+minutes old — a label built on it would be a more precise version of the same lie.
+The label now measures the freshest actual **event**, which is the thing a reader
+means by "updated". No migration needed, and it gets sharper on its own as event
+sources land.
+
+The policy, not just the formatting:
+
+- `JUST NOW` → `3H AGO` → `YESTERDAY` → `4D AGO`, then **null past 7 days** — the
+  caller renders nothing rather than "9D AGO". Silence is the honest presentation
+  of a stalled pipeline.
+- The pulse dot stops animating at **48h**, before the label disappears at 7 days.
+  A four-day-old band should say so quietly, not throb.
+- A running `liveEvent` outranks every timestamp: `SAN DIEGO COMIC-CON · LIVE`.
+  This is the first thing on screen that uses the detector.
+- Bare `store_date` values parse as UTC midnight, which *understates* freshness by
+  up to a day. That's the right direction to be wrong in.
+
+**Visible change today:** the band will read `4D AGO` rather than `Updated today`,
+because the freshest dated content is Wednesday's comics. That's the point — it
+was never "today". It becomes hours once trailer events land (§8.1a).
+
+For the hero: a trailer or teaser inside `TRAILER_HERO_MAX_AGE_HOURS` (72) now
+beats the `Math.random()` pick, labelled `New Trailer` / `New Teaser`, and the
+search spans **all** pools so a streaming title with this morning's trailer beats
+a theatrical one with none. Past the window it falls back to the random pick —
+deliberately, since rotation is what keeps the hero from being pinned for a whole
+staleTime. `Campaign.trailer_key` is carried but not yet rendered; the play
+affordance is §8.4.
+
+**Note on round trips:** this adds two queries to a hook that was deliberately
+consolidated to one. Both are React-Query cached and degrade to empty on error.
+§8.4 folds them into `get_explore_bundle` and takes it back to one.
 
 ### The ranking model
 

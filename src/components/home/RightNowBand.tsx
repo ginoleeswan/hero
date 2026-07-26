@@ -28,6 +28,8 @@ import {
 } from '../../lib/db/trending';
 import type { NewComic } from '../../lib/db/comics';
 import type { DebutIssue } from '../../lib/db/anniversaries';
+import type { LiveEvent } from '../../lib/db/events';
+import { computeFreshness } from '../../lib/home/freshness';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -46,23 +48,32 @@ export interface RightNowBandProps {
   newComics: NewComic[];
   wikiTrending: WikiTrendingHero[];
   debuts: DebutIssue[];
+  /** A detected real-world event in progress (SDCC, a Direct). Drives the header's
+   *  live label; absent means the band falls back to content timestamps. */
+  liveEvent?: LiveEvent | null;
   onHeroPress: HeroPress;
   onTitlePress: (titleId: string) => void;
   onIssuePress: (issueId: string) => void;
   disabled?: boolean;
 }
 
-function PulseDot() {
+/** The live dot. Only animates when the band's content is genuinely recent — a
+ *  throbbing dot over week-old cards reads as an abandoned app. */
+function PulseDot({ animate }: { animate: boolean }) {
   const v = useSharedValue(1);
   useEffect(() => {
+    if (!animate) {
+      v.value = 1;
+      return;
+    }
     v.value = withRepeat(
       withSequence(withTiming(0.3, { duration: 800 }), withTiming(1, { duration: 800 })),
       -1,
       false,
     );
-  }, [v]);
+  }, [v, animate]);
   const style = useAnimatedStyle(() => ({ opacity: v.value }));
-  return <Animated.View style={[bandStyles.pulse, style]} />;
+  return <Animated.View style={[bandStyles.pulse, !animate && bandStyles.pulseIdle, style]} />;
 }
 
 function CampaignHero({
@@ -219,6 +230,7 @@ export function RightNowBand({
   newComics,
   wikiTrending,
   debuts,
+  liveEvent,
   onHeroPress,
   onTitlePress,
   onIssuePress,
@@ -235,13 +247,21 @@ export function RightNowBand({
     debuts.length > 0;
   if (!hasAny) return null;
 
+  // Derived from the freshest real event in the band, not from a hardcoded
+  // string. Suppressed entirely once the content is stale — see freshness.ts.
+  const fresh = computeFreshness({
+    storeDates: newComics.map((c) => c.storeDate),
+    liveEventOngoing: liveEvent?.ongoing,
+    liveEventLabel: liveEvent?.headline,
+  });
+
   return (
     <View style={bandStyles.band}>
       <View style={bandStyles.header}>
-        <PulseDot />
+        <PulseDot animate={fresh.pulse} />
         <Text style={bandStyles.kicker}>Right Now</Text>
         <View style={{ flex: 1 }} />
-        <Text style={bandStyles.fresh}>Updated today</Text>
+        {!!fresh.label && <Text style={bandStyles.fresh}>{fresh.label}</Text>}
       </View>
 
       {campaign && campaign.characters.length > 0 && (
@@ -290,6 +310,8 @@ const bandStyles = StyleSheet.create({
     marginBottom: 14,
   },
   pulse: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.orange },
+  // Stale content gets a dimmed, still dot rather than a confident live one.
+  pulseIdle: { backgroundColor: COLORS.grey },
   kicker: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
