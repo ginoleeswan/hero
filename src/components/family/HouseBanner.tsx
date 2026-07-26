@@ -5,6 +5,7 @@
 // body over the shared seam hairline — but the crest is the house page's alone,
 // and it's what makes the band read as a charter rather than another title bar.
 import { View, Text, Platform, StyleSheet, useWindowDimensions } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SURFACE_GRADIENT, SEAM_COLOR, INK_TEXT, EYEBROW } from '../../constants/colors';
 import { HouseCrest } from './HouseCrest';
@@ -19,6 +20,8 @@ export function HouseBanner({
   seat,
   blurb,
   memberCount,
+  crowned = 0,
+  span = null,
   tint,
   maxWidth = 1180,
 }: {
@@ -28,6 +31,10 @@ export function HouseBanner({
   seat: string | null;
   blurb: string | null;
   memberCount: number;
+  /** How many members wore a crown. Omitted from the band when none did. */
+  crowned?: number;
+  /** Outer bounds of every date the house carries: "1–305 AC". */
+  span?: string | null;
   tint: string;
   maxWidth?: number;
 }) {
@@ -48,8 +55,23 @@ export function HouseBanner({
             {words ? <Text style={styles.words}>“{words}”</Text> : null}
             {blurb ? <Text style={styles.blurb}>{blurb}</Text> : null}
 
+            {/* What can only be said about the set. Each one drops out silently
+                where the catalogue has nothing, so a house with no recorded
+                dates shows two facts rather than two facts and two blanks. */}
             <View style={styles.facts}>
               <Fact label={memberCount === 1 ? 'Member' : 'Members'} value={String(memberCount)} />
+              {crowned > 0 ? (
+                <>
+                  <View style={styles.factRule} />
+                  <Fact label="Crowned" value={String(crowned)} icon="crown-outline" />
+                </>
+              ) : null}
+              {span ? (
+                <>
+                  <View style={styles.factRule} />
+                  <Fact label="Recorded" value={span} />
+                </>
+              ) : null}
               {seat ? (
                 <>
                   <View style={styles.factRule} />
@@ -64,10 +86,21 @@ export function HouseBanner({
   );
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
+function Fact({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon?: keyof typeof MaterialCommunityIcons.glyphMap;
+}) {
   return (
     <View style={styles.fact}>
-      <Text style={styles.factValue}>{value}</Text>
+      <View style={styles.factValueRow}>
+        {icon ? <MaterialCommunityIcons name={icon} size={17} color={COLORS.goldAccent} /> : null}
+        <Text style={styles.factValue}>{value}</Text>
+      </View>
       <Text style={styles.factLabel}>{label}</Text>
     </View>
   );
@@ -115,6 +148,7 @@ const styles = StyleSheet.create({
   },
   facts: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 14, flexWrap: 'wrap' },
   fact: { gap: 1 },
+  factValueRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   factValue: { fontFamily: 'Flame-Regular', fontSize: 20, lineHeight: 26, color: COLORS.beige },
   factLabel: {
     fontFamily: 'Nunito_700Bold',

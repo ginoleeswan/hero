@@ -590,7 +590,8 @@ export function FamilyCanvas({
         <View style={styles.header}>
           <Text style={styles.count}>
             {members.length} {members.length === 1 ? 'relative' : 'relatives'}
-            {linkedCount > 0 ? ` · ${linkedCount} on Mythique` : ''}
+            {/* Only worth saying when it differs — see the web canvas. */}
+            {linkedCount > 0 && linkedCount < members.length ? ` · ${linkedCount} on Mythique` : ''}
           </Text>
           <Text style={styles.title}>{label}</Text>
         </View>

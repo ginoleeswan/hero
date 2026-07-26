@@ -12,7 +12,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
-import type { KinshipDescription } from '../../lib/family/kinshipPath';
+import type { KinshipDescription, KinshipStop } from '../../lib/family/kinshipPath';
 import { reignLine, lifeLine } from '../../lib/family/lifespan';
 import { mixHex } from './HouseCrest';
 
@@ -37,19 +37,25 @@ export function RelationConsole({
   partner,
   kinship,
   tint,
+  wide = false,
   onSwap,
   onClear,
   onRootPartner,
+  onCompare,
 }: {
   root: ConsoleSeat | null;
   partner: ConsoleSeat | null;
   kinship: KinshipDescription | null;
   tint: string;
+  /** Room for the finding and the person to sit side by side. */
+  wide?: boolean;
   /** Make the compared member the root of the tree, and vice versa. */
   onSwap: () => void;
   onClear: () => void;
   /** Re-centre the chart on the compared member and drop the comparison. */
   onRootPartner: () => void;
+  /** Trace against someone else — used by the people standing in the route. */
+  onCompare?: (id: string) => void;
 }) {
   const router = useRouter();
   return (
@@ -90,15 +96,31 @@ export function RelationConsole({
       {partner ? (
         <>
           <View style={styles.rule} />
-          {kinship && root ? (
-            <Verdict kinship={kinship} root={root} partner={partner} tint={tint} />
-          ) : (
-            <Text style={styles.hint}>No line runs between these two in the records we hold.</Text>
-          )}
 
-          {/* Who they actually are. Clicking a face in the chart should tell you
-              something about the person, not just re-arrange the chart. */}
-          <Dossier member={partner} />
+          {/* Two columns where there is room: the finding on the left, who the
+              compared person actually is on the right. Stacked, the verdict's
+              display line left three-quarters of the card empty beside it while
+              the summary ran on below — one column of content down the left of a
+              very wide card. */}
+          <View style={[styles.body, wide && styles.bodyWide] as object}>
+            <View style={[styles.finding, wide && styles.findingWide] as object}>
+              {kinship && root ? (
+                <Verdict kinship={kinship} root={root} partner={partner} tint={tint} />
+              ) : (
+                <Text style={styles.hint}>
+                  No line runs between these two in the records we hold.
+                </Text>
+              )}
+            </View>
+
+            {/* Who they actually are. Clicking a face in the chart should tell
+                you something about the person, not just re-arrange the chart. */}
+            <Dossier member={partner} wide={wide} />
+          </View>
+
+          {kinship && kinship.route.length > 1 ? (
+            <Route kinship={kinship} tint={tint} onCompare={onCompare} />
+          ) : null}
 
           {/* Named buttons, not icons: the chart's own click is ambiguous
               between "who is this" and "centre on them", so both get said. The
@@ -147,19 +169,16 @@ const hopArrow = (relation: string | null): keyof typeof MaterialCommunityIcons.
   (relation && HOP_ARROW[relation]) || 'arrow-right';
 
 /**
- * The finding: what the two people are to each other, and the route that proves
- * it.
+ * The finding: what the two people are to each other.
  *
  * The relation leads, at display size, because that is the answer — the two
  * names sit in the seats directly above, so a headline that repeated them both
- * spent its largest type restating what was already on screen. The step count
- * moves out of the sentence and onto the route, which is the thing it measures.
+ * spent its largest type restating what was already on screen.
  */
 function Verdict({
   kinship,
   root,
   partner,
-  tint,
 }: {
   kinship: KinshipDescription;
   root: ConsoleSeat;
@@ -172,60 +191,101 @@ function Verdict({
   // Only the first letter — CSS `capitalize` would make "10× Great-Grandson".
   const relation = kinship.relation ?? 'distant kin';
   const verdict = relation.charAt(0).toUpperCase() + relation.slice(1);
-  const last = kinship.route.length - 1;
 
   return (
     <View style={styles.answer}>
       <Text style={styles.lead}>{lead}</Text>
       {/* Not clamped, so no line-height floor is needed to keep descenders. */}
       <Text style={styles.verdict}>{verdict}</Text>
-
-      {kinship.route.length > 1 ? (
-        <View style={styles.routeBlock}>
-          <View style={styles.routeHead}>
-            <Text style={styles.routeLabel}>The line</Text>
-            <View style={styles.routeRule} />
-            <Text style={styles.routeCount}>
-              {kinship.steps} {kinship.steps === 1 ? 'step' : 'steps'}
-            </Text>
-          </View>
-
-          {/* Grouped for assistive tech: the chips are a typeset sentence, and
-              `chain` is that same sentence generated from the same array. */}
-          <View style={styles.route} accessible accessibilityLabel={kinship.chain}>
-            {kinship.route.map((stop, i) => (
-              <Fragment key={`${stop.id}-${i}`}>
-                {stop.role ? (
-                  <View style={styles.link}>
-                    <View style={styles.linkRule} />
-                    <MaterialCommunityIcons
-                      name={hopArrow(stop.relation)}
-                      size={13}
-                      color="#b3a48b"
-                    />
-                    <Text style={styles.linkRole}>{stop.role}</Text>
-                    <View style={styles.linkRule} />
-                  </View>
-                ) : null}
-                <View
-                  style={
-                    [
-                      styles.stop,
-                      i === last && {
-                        borderColor: tint,
-                        backgroundColor: mixHex(tint, '#ffffff', 0.93),
-                      },
-                    ] as object
-                  }
-                >
-                  <Text style={styles.stopName}>{stop.name}</Text>
-                </View>
-              </Fragment>
-            ))}
-          </View>
-        </View>
-      ) : null}
     </View>
+  );
+}
+
+/**
+ * The route that proves the finding — full width under both columns, because it
+ * is the one thing on the card that genuinely wants the whole of it.
+ *
+ * The people standing in the middle of a line are the most interesting names on
+ * the page: they are the reason two houses touch at all. Naming them and then
+ * refusing the click was the page's one dead end, so each is a way to re-trace.
+ */
+function Route({
+  kinship,
+  tint,
+  onCompare,
+}: {
+  kinship: KinshipDescription;
+  tint: string;
+  onCompare?: (id: string) => void;
+}) {
+  const last = kinship.route.length - 1;
+  return (
+    <View style={styles.routeBlock}>
+      <View style={styles.routeHead}>
+        <Text style={styles.routeLabel}>The line</Text>
+        <View style={styles.routeRule} />
+        <Text style={styles.routeCount}>
+          {kinship.steps} {kinship.steps === 1 ? 'step' : 'steps'}
+        </Text>
+      </View>
+
+      {/* Grouped for assistive tech: the chips are a typeset sentence, and
+          `chain` is that same sentence generated from the same array. */}
+      <View style={styles.route} accessible accessibilityLabel={kinship.chain}>
+        {kinship.route.map((stop, i) => (
+          <Fragment key={`${stop.id}-${i}`}>
+            {stop.role ? (
+              <View style={styles.link}>
+                <View style={styles.linkRule} />
+                <MaterialCommunityIcons name={hopArrow(stop.relation)} size={13} color="#b3a48b" />
+                <Text style={styles.linkRole}>{stop.role}</Text>
+                <View style={styles.linkRule} />
+              </View>
+            ) : null}
+            <Stop
+              stop={stop}
+              // The ends are already the two seats above; only the people
+              // between them are somewhere new to go.
+              onPress={onCompare && i > 0 && i < last ? () => onCompare(stop.id) : undefined}
+              accent={i === last ? tint : undefined}
+            />
+          </Fragment>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function Stop({
+  stop,
+  accent,
+  onPress,
+}: {
+  stop: KinshipStop;
+  accent?: string;
+  onPress?: () => void;
+}) {
+  const tinted = accent
+    ? { borderColor: accent, backgroundColor: mixHex(accent, '#ffffff', 0.93) }
+    : null;
+  if (!onPress) {
+    return (
+      <View style={[styles.stop, tinted] as object}>
+        <Text style={styles.stopName}>{stop.name}</Text>
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Trace the line to ${stop.name} instead`}
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+        [styles.stop, styles.stopLink, tinted, hovered && (styles.stopHover as object)] as object
+      }
+    >
+      <Text style={styles.stopName}>{stop.name}</Text>
+    </Pressable>
   );
 }
 
@@ -234,7 +294,7 @@ function Verdict({
  * facts, so both can show — but most of the catalogue has neither, and a blank
  * meta line is worse than no line.
  */
-function Dossier({ member }: { member: ConsoleSeat }) {
+function Dossier({ member, wide }: { member: ConsoleSeat; wide?: boolean }) {
   const reign = reignLine(member);
   const life = lifeLine(member);
   // The glyph does the labelling, so each chip can be the fact and nothing
@@ -246,7 +306,7 @@ function Dossier({ member }: { member: ConsoleSeat }) {
 
   if (!facts.length && !member.summary) return null;
   return (
-    <View style={styles.dossier}>
+    <View style={[styles.dossier, wide && styles.dossierWide] as object}>
       {facts.length ? (
         <View style={styles.facts}>
           {facts.map((fact) => (
@@ -332,7 +392,9 @@ function ConsoleAction({
       }
     >
       <Ionicons name={icon} size={14} color={primary ? '#fdf6e8' : COLORS.navy} />
-      <Text style={[styles.actionText, primary && styles.actionTextPrimary] as object}>{label}</Text>
+      <Text style={[styles.actionText, primary && styles.actionTextPrimary] as object}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -406,6 +468,12 @@ const styles = StyleSheet.create({
   swapHover: { borderColor: '#cdbfa6', backgroundColor: '#f7eeda' } as object,
   swapIdle: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   rule: { height: 1, backgroundColor: '#f0e6d4' },
+  body: { gap: 12 },
+  // Never `flex: 1` on the columns: in the stacked case that resolves to
+  // flex-basis 0 inside an auto-height column and collapses them to nothing.
+  bodyWide: { flexDirection: 'row', alignItems: 'flex-start', gap: 28 },
+  finding: {},
+  findingWide: { flexGrow: 1, flexShrink: 1, flexBasis: 300, minWidth: 0 },
   answer: { gap: 2 },
   lead: {
     fontFamily: 'Nunito_700Bold',
@@ -416,7 +484,7 @@ const styles = StyleSheet.create({
   },
   verdict: { fontFamily: 'Flame-Regular', fontSize: 34, lineHeight: 42, color: COLORS.black },
 
-  routeBlock: { gap: 9, marginTop: 12 },
+  routeBlock: { gap: 9 },
   // Label, hairline, count — the rule does the separating so the count can sit
   // at the end of the line it belongs to instead of floating over the chips.
   routeHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -444,6 +512,8 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 12,
   },
+  stopLink: { cursor: 'pointer' } as object,
+  stopHover: { borderColor: '#cdbfa6', backgroundColor: '#f7eeda' } as object,
   stopName: { fontFamily: 'Flame-Regular', fontSize: 15, lineHeight: 20, color: COLORS.black },
   link: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   linkRule: { width: 12, height: 1, backgroundColor: '#e2d6c1' },
@@ -456,6 +526,10 @@ const styles = StyleSheet.create({
   },
 
   dossier: { gap: 8 },
+  // Wide enough for a comfortable measure, narrow enough that the verdict keeps
+  // the emphasis. Caps rather than shares, so a member with no summary doesn't
+  // leave half the card blank.
+  dossierWide: { flexGrow: 0, flexShrink: 1, flexBasis: 420, minWidth: 0 },
   facts: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   fact: {
     flexDirection: 'row',

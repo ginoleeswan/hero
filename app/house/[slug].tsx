@@ -14,6 +14,8 @@ import { FamilyCanvas } from '../../src/components/family/FamilyCanvas';
 import { HouseBanner } from '../../src/components/family/HouseBanner';
 import { RelationConsole } from '../../src/components/family/RelationConsole';
 import { HouseRoster } from '../../src/components/family/HouseRoster';
+import { HouseGenerations } from '../../src/components/family/HouseGenerations';
+import { StageSwitch, type StageView } from '../../src/components/family/StageSwitch';
 import { useHouse } from '../../src/hooks/useHouse';
 import { HouseSkeleton } from '../../src/components/skeletons/HouseSkeleton';
 
@@ -24,13 +26,27 @@ export default function HousePage() {
     slug,
     focus,
     with: withId,
+    view,
   } = useLocalSearchParams<{
     slug: string;
     focus?: string;
     with?: string;
+    view?: string;
   }>();
-  const { house, chrome, members, relatives, focusId, kinship, pathIds, isLoading, error } =
-    useHouse(slug, focus ?? null, withId ?? null);
+  const stageView: StageView = view === 'house' ? 'house' : 'line';
+  const {
+    house,
+    chrome,
+    members,
+    dynasty,
+    generations,
+    relatives,
+    focusId,
+    kinship,
+    pathIds,
+    isLoading,
+    error,
+  } = useHouse(slug, focus ?? null, withId ?? null);
 
   const { height: winHeight } = useWindowDimensions();
   // The chart is the page here, not a band inside one — give it most of the
@@ -44,12 +60,13 @@ export default function HousePage() {
   }, [stageY]);
 
   const setParams = useCallback(
-    (next: { focus?: string | null; with?: string | null }) => {
+    (next: { focus?: string | null; with?: string | null; view?: StageView }) => {
       const f = next.focus === undefined ? focusId : next.focus;
       const w = next.with === undefined ? (withId ?? null) : next.with;
-      router.setParams({ focus: f ?? '', with: w ?? '' });
+      const v = next.view ?? stageView;
+      router.setParams({ focus: f ?? '', with: w ?? '', view: v === 'line' ? '' : v });
     },
-    [router, focusId, withId],
+    [router, focusId, withId, stageView],
   );
 
   if (isLoading) {
@@ -90,6 +107,8 @@ export default function HousePage() {
           seat={house.seat}
           blurb={house.blurb}
           memberCount={members.length}
+          crowned={dynasty.crowned}
+          span={dynasty.span}
           tint={tint}
         />
 
@@ -99,6 +118,7 @@ export default function HousePage() {
             partner={compared}
             kinship={kinship}
             tint={tint}
+            onCompare={(id) => setParams({ with: id })}
             onSwap={() =>
               compared && rooted ? setParams({ focus: compared.id, with: rooted.id }) : undefined
             }
@@ -108,7 +128,20 @@ export default function HousePage() {
             }
           />
 
-          {relatives.length > 0 && rooted ? (
+          <StageSwitch value={stageView} onChange={(next) => setParams({ view: next })} />
+
+          {stageView === 'house' ? (
+            <HouseGenerations
+              generations={generations}
+              focusId={focusId}
+              pathIds={pathIds}
+              tint={tint}
+              onSelect={(id) => {
+                setParams({ focus: id, with: null, view: 'line' });
+                revealStage();
+              }}
+            />
+          ) : relatives.length > 0 && rooted ? (
             <FamilyCanvas
               label={`The line of ${rooted.name}`}
               stageHeight={stageHeight}

@@ -653,7 +653,10 @@ export function FamilyCanvas({
   const relativesCount = (
     <>
       {members.length} {members.length === 1 ? 'relative' : 'relatives'}
-      {linkedCount > 0 ? ` · ${linkedCount} on Mythique` : ''}
+      {/* Only worth saying when it differs. On a house page every relative is a
+          member of the house and so already on Mythique, which made the line
+          "22 relatives · 22 on Mythique" — the same fact, counted twice. */}
+      {linkedCount > 0 && linkedCount < members.length ? ` · ${linkedCount} on Mythique` : ''}
     </>
   );
 

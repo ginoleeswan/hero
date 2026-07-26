@@ -19,6 +19,8 @@ import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
 import { HouseBanner } from '../../src/components/family/HouseBanner';
 import { RelationConsole } from '../../src/components/family/RelationConsole';
 import { HouseRoster } from '../../src/components/family/HouseRoster';
+import { HouseGenerations } from '../../src/components/family/HouseGenerations';
+import { StageSwitch, type StageView } from '../../src/components/family/StageSwitch';
 import { useHouse } from '../../src/hooks/useHouse';
 import { HouseSkeleton } from '../../src/components/skeletons/HouseSkeleton';
 
@@ -32,11 +34,14 @@ export default function HousePage() {
     slug,
     focus,
     with: withId,
+    view,
   } = useLocalSearchParams<{
     slug: string;
     focus?: string;
     with?: string;
+    view?: string;
   }>();
+  const stageView: StageView = view === 'house' ? 'house' : 'line';
   const { width, height: winHeight } = useWindowDimensions();
   const twoColumn = width >= TWO_COLUMN;
   // On a character page the chart is a band inside a longer read, so 460px is
@@ -53,8 +58,19 @@ export default function HousePage() {
   // painted by this screen and closed onto the ink floor by PageEndCap.
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
-  const { house, chrome, members, relatives, focusId, kinship, pathIds, isLoading, error } =
-    useHouse(slug, focus ?? null, withId ?? null);
+  const {
+    house,
+    chrome,
+    members,
+    dynasty,
+    generations,
+    relatives,
+    focusId,
+    kinship,
+    pathIds,
+    isLoading,
+    error,
+  } = useHouse(slug, focus ?? null, withId ?? null);
 
   // Stacked, the console is above the roster you just clicked — so bring it
   // back into view, or the answer arrives off-screen and reads as nothing.
@@ -65,21 +81,23 @@ export default function HousePage() {
   }, [twoColumn]);
 
   const setParams = useCallback(
-    (next: { focus?: string | null; with?: string | null }) => {
+    (next: { focus?: string | null; with?: string | null; view?: StageView }) => {
       const f = next.focus === undefined ? focusId : next.focus;
       const w = next.with === undefined ? (withId ?? null) : next.with;
+      const v = next.view ?? stageView;
       const params = new URLSearchParams();
       if (f) params.set('focus', f);
       if (w) params.set('with', w);
+      if (v !== 'line') params.set('view', v);
       // setParams merges, so absent keys have to be blanked explicitly or a
       // cleared comparison survives the next re-root.
-      router.setParams({ focus: f ?? '', with: w ?? '' });
+      router.setParams({ focus: f ?? '', with: w ?? '', view: v === 'line' ? '' : v });
       if (typeof window !== 'undefined') {
         const qs = params.toString();
         window.history.replaceState(null, '', `/house/${slug}${qs ? `?${qs}` : ''}`);
       }
     },
-    [router, slug, focusId, withId],
+    [router, slug, focusId, withId, stageView],
   );
 
   if (isLoading) {
@@ -121,6 +139,8 @@ export default function HousePage() {
         seat={house.seat}
         blurb={house.blurb}
         memberCount={members.length}
+        crowned={dynasty.crowned}
+        span={dynasty.span}
         tint={tint}
         maxWidth={MAX_WIDTH}
       />
@@ -136,6 +156,8 @@ export default function HousePage() {
             partner={compared}
             kinship={kinship}
             tint={tint}
+            wide={twoColumn}
+            onCompare={(id) => setParams({ with: id })}
             onSwap={() =>
               compared && rooted ? setParams({ focus: compared.id, with: rooted.id }) : undefined
             }
@@ -145,7 +167,19 @@ export default function HousePage() {
             }
           />
 
-          {relatives.length > 0 && rooted ? (
+          <StageSwitch value={stageView} onChange={(next) => setParams({ view: next })} />
+
+          {stageView === 'house' ? (
+            <HouseGenerations
+              generations={generations}
+              focusId={focusId}
+              pathIds={pathIds}
+              tint={tint}
+              // Picking anyone here drops back into their line, so the two
+              // views are a loop rather than a fork.
+              onSelect={(id) => setParams({ focus: id, with: null, view: 'line' })}
+            />
+          ) : relatives.length > 0 && rooted ? (
             <FamilyCanvas
               label={`The line of ${rooted.name}`}
               stageHeight={stageHeight}

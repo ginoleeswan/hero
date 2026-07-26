@@ -83,6 +83,32 @@ export function lifeLine(d: LifeDates): string | null {
 }
 
 /**
+ * The outer bounds of every date a group of people carries: "1–305 AC".
+ *
+ * Mixed eras return null rather than a range across an epoch nobody named the
+ * same way — "48 BC – 103 AC" is arithmetic, not a fact the catalogue holds.
+ */
+export function recordedSpan(people: LifeDates[]): string | null {
+  const stamps: Stamp[] = [];
+  for (const p of people) {
+    for (const v of [p.born, p.died, p.reign_start, p.reign_end]) {
+      const s = read(v);
+      if (s?.year !== null && s !== null) stamps.push(s);
+    }
+  }
+  if (stamps.length < 2) return null;
+  let lo = stamps[0];
+  let hi = stamps[0];
+  for (const s of stamps) {
+    if (s.year! < lo.year!) lo = s;
+    if (s.year! > hi.year!) hi = s;
+  }
+  if (lo.year === hi.year) return null;
+  if (!lo.era || lo.era !== hi.era) return null;
+  return range(lo, hi);
+}
+
+/**
  * The single compact line a chart node can carry under a name — no verb, no
  * duration, because at 104px wide there is room for a date and nothing else.
  * A reign wins over a lifespan: in a dynasty it is the more telling fact, and

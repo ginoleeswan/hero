@@ -12,7 +12,8 @@ import {
 } from '../lib/family/kinshipPath';
 import type { FamilyMember, FamilyRelation, RelativeStatus } from '../lib/family/types';
 import type { BranchSide } from '../lib/family/resolveKinship';
-import { nodeDates } from '../lib/family/lifespan';
+import { nodeDates, recordedSpan } from '../lib/family/lifespan';
+import { assignGenerations, type Generations } from '../lib/family/generations';
 
 export interface House {
   slug: string;
@@ -109,6 +110,21 @@ export function relativesOf(payload: HousePayload, focusId: string): FamilyMembe
   });
 }
 
+/**
+ * What the house is, as a house — the facts you can only state about the set.
+ *
+ * Derived rather than stored: the banner had two facts (members, seat) and half
+ * a band of empty ink beside them, and both of these fall out of rows already
+ * loaded. Anything the catalogue doesn't record comes back null and the banner
+ * simply doesn't show it.
+ */
+export interface DynastyFacts {
+  /** How many of them wore a crown. */
+  crowned: number;
+  /** Outer bounds of every date the house carries: "1–305 AC". */
+  span: string | null;
+}
+
 /** The banner's worth of a house — everything but the graph. */
 export interface HouseChrome extends House {
   memberCount: number;
@@ -127,6 +143,14 @@ export interface UseHouseResult {
    */
   chrome: HouseChrome | null;
   members: HouseMember[];
+  /** House-level facts for the banner, derived from the members. */
+  dynasty: DynastyFacts;
+  /**
+   * Every member on one generational ladder — the house as a whole, rather than
+   * one person's relatives. Derived, because nothing in the data records a
+   * generation; see `lib/family/generations`.
+   */
+  generations: Generations<HouseMember>;
   /** Relatives of the focused member, ready for FamilyCanvas. */
   relatives: FamilyMember[];
   focusId: string | null;
@@ -189,6 +213,8 @@ export function useHouse(
       house: null,
       chrome: chrome ?? null,
       members: [],
+      dynasty: { crowned: 0, span: null },
+      generations: { bands: [], unplaced: [] },
       relatives: [],
       focusId: null,
       kinship: null,
@@ -202,7 +228,13 @@ export function useHouse(
     // edited link should still land on the house.
     const known = new Set(data.members.map((m) => m.id));
     const focusId = (focus && known.has(focus) ? focus : null) ?? data.members[0]?.id ?? null;
-    if (!focusId) return { ...empty, house: data.house, members: data.members };
+    const generations = assignGenerations(data.members, data.edges);
+    const dynasty: DynastyFacts = {
+      crowned: data.members.filter((m) => m.reign_start).length,
+      span: recordedSpan(data.members),
+    };
+    if (!focusId)
+      return { ...empty, house: data.house, members: data.members, dynasty, generations };
 
     let kinship: KinshipDescription | null = null;
     const pathIds = new Set<string>();
@@ -230,6 +262,8 @@ export function useHouse(
       house: data.house,
       chrome: chrome ?? null,
       members: data.members,
+      dynasty,
+      generations,
       relatives: relativesOf(data, focusId),
       focusId,
       kinship,
