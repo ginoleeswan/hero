@@ -1,4 +1,5 @@
 import {
+  railEvents,
   rankPulse,
   scoreCandidate,
   decay,
@@ -336,14 +337,14 @@ describe('rankPulse — volume must not crowd out news', () => {
   });
 });
 
-describe('rankPulse — nothing but comics is not news', () => {
+describe('railEvents — nothing but comics is not news', () => {
   it('renders no rail when only issues qualify', () => {
     // The band already has a dedicated ComicCoverRail; a "Just Happened" rail of
     // three comic covers would be strictly worse than it.
     const onlyIssues = Array.from({ length: 8 }, (_, i) =>
       issue({ eventId: `i${i}`, entityId: `cvi:${i}`, occurredAt: hoursAgo(20) }),
     );
-    expect(rankPulse(onlyIssues, NOW)).toEqual([]);
+    expect(railEvents(rankPulse(onlyIssues, NOW))).toEqual([]);
   });
 
   it('appears as soon as one real event joins them', () => {
@@ -353,13 +354,31 @@ describe('rankPulse — nothing but comics is not news', () => {
       ),
       trailer({ occurredAt: hoursAgo(5) }),
     ];
-    const out = rankPulse(withNews, NOW);
+    const out = railEvents(rankPulse(withNews, NOW));
     expect(out.length).toBeGreaterThan(0);
     expect(out.some((e) => e.kind === 'trailer')).toBe(true);
   });
 
   it('a live event alone is enough to justify the rail', () => {
-    const out = rankPulse([liveEvent(), issue({ occurredAt: hoursAgo(10) })], NOW);
+    const out = railEvents(rankPulse([liveEvent(), issue({ occurredAt: hoursAgo(10) })], NOW));
     expect(out).toHaveLength(2);
+  });
+});
+
+describe('railEvents — artwork', () => {
+  it('drops a media event with no artwork rather than rendering a colour block', () => {
+    const out = railEvents(
+      rankPulse([trailer({ imageUrl: null }), trailer({ entityId: 'b', eventId: 'vb' })], NOW),
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0].entityId).toBe('b');
+  });
+
+  it('keeps a live event, which never has artwork by design', () => {
+    // watched_events stores no image, and Wikipedia has no lead image for SDCC at
+    // all. Filtering it would hide the design problem rather than solve it — the
+    // live card gets its own treatment instead.
+    const out = railEvents(rankPulse([liveEvent({ imageUrl: null }), trailer()], NOW));
+    expect(out.some((e) => e.kind === 'live_event')).toBe(true);
   });
 });

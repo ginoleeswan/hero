@@ -19,7 +19,13 @@ import {
   type TrendingTitleCharacter,
 } from '../db/trending';
 import { getPulseCandidates } from '../db/pulse';
-import { livePulseEvent, rankPulse, trailerPicks, type PulseEvent } from '../home/pulse';
+import {
+  livePulseEvent,
+  railEvents,
+  rankPulse,
+  trailerPicks,
+  type PulseEvent,
+} from '../home/pulse';
 import { type NewComic } from '../db/comics';
 import { type DebutIssue } from '../db/anniversaries';
 import { getTodaysMatchupFromPool, type TodaysMatchup } from '../matchup';
@@ -118,10 +124,13 @@ export function useExploreData(): ExploreData {
   });
   // Ranked once per payload, not per render, so the order is stable while the
   // snapshot lives. Recomputes when the query refetches.
-  const pulse = useMemo(
+  const ranked = useMemo(
     () => (pulseQuery.data ? rankPulse(pulseQuery.data) : EMPTY),
     [pulseQuery.data],
   );
+  // Two views of one ranked list. The header's live label reads the full list;
+  // the rail only gets what it can render as a card — see railEvents.
+  const pulse = useMemo(() => railEvents(ranked), [ranked]);
 
   // Billboard: sample once per bundle payload (not per render), so the lineup
   // rotates on refetch but stays stable while the snapshot lives.
@@ -147,10 +156,10 @@ export function useExploreData(): ExploreData {
     if (b.campaigns.length > 0) return b.campaigns;
     const auto = synthesizeCampaignFromPool(
       [b.titleBuckets.on_screen, b.titleBuckets.streaming],
-      trailerPicks(pulse),
+      trailerPicks(ranked),
     );
     return auto ? [auto] : EMPTY;
-  }, [b, pulse]);
+  }, [b, ranked]);
 
   // Daily matchup: the pair comes from the bundled iconic pool (first 24, same
   // as getTodaysMatchup's own pool); only the per-pair cached verdict costs a
@@ -205,7 +214,7 @@ export function useExploreData(): ExploreData {
       campaigns,
       newComics: b?.newComics ?? EMPTY,
       pulse,
-      liveEventName: livePulseEvent(pulse)?.headline ?? null,
+      liveEventName: livePulseEvent(ranked)?.headline ?? null,
       matchup: matchup.isPending ? undefined : (matchup.data ?? null),
       heroCount: b?.heroCount ?? null,
       trendingForUser: userId ? (trendingForUser.data ?? EMPTY) : EMPTY,
@@ -220,6 +229,7 @@ export function useExploreData(): ExploreData {
       b,
       campaigns,
       pulse,
+      ranked,
       matchup.isPending,
       matchup.data,
       userId,

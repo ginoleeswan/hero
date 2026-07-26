@@ -243,10 +243,34 @@ export function rankPulse(
     if (out.length >= limit) break;
   }
 
-  // Nothing but comics isn't news — the band's own ComicCoverRail already covers
-  // the weekly shipment. Show no rail rather than a redundant one.
-  if (out.length - taken.issue < MIN_NEWS_EVENTS) return [];
   return out;
+}
+
+/**
+ * What the rail can actually put on screen, as opposed to what ranked.
+ *
+ * Two rules, both learned from the first render:
+ *
+ * 1. **A media event with no artwork can't be a card.** It becomes a flat colour
+ *    block beside real cover art and reads as a broken image. This catches a
+ *    trailer whose title has neither backdrop nor poster.
+ *
+ *    Live events are exempt: they never have art (`watched_events` stores none,
+ *    and Wikipedia's lead image is *absent* for San Diego Comic-Con and a crowd
+ *    photo or bare logo for the rest), so they get a purpose-built card treatment
+ *    instead of a poster they'll never have. Filtering them out here would only
+ *    hide the design problem.
+ * 2. **Nothing but comics isn't news.** The band renders a dedicated
+ *    `ComicCoverRail` below; three covers under a "Just Happened" heading is
+ *    strictly worse than it, and claims something happened when the only thing
+ *    that happened is the weekly shipment.
+ *
+ * Kept here rather than in either rail so both platforms can't drift.
+ */
+export function railEvents(events: readonly PulseEvent[]): PulseEvent[] {
+  const withArt = events.filter((e) => e.kind === 'live_event' || !!e.imageUrl);
+  const news = withArt.filter((e) => e.kind !== 'issue').length;
+  return news >= MIN_NEWS_EVENTS ? withArt : [];
 }
 
 /** The live event in a ranked list, if any — what the band header's "· LIVE"
