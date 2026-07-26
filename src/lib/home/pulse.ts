@@ -91,6 +91,37 @@ export const MAX_AGE_HOURS = 24 * 14;
  *  cover illustrates itself. */
 export const MIN_CHARACTERS = 1;
 
+/**
+ * Per-kind ceiling on the rail, because score alone can't defend against volume.
+ *
+ * Measured against the first real production payload (2026-07-26): 20 issues, 2
+ * trailers, 1 live event. Comics ship ~20 at a time on a Wednesday, so a dozen of
+ * them sit at 3-4 days old scoring ~0.28 — which beat a 6-day-old trailer at
+ * 0.12 and pushed it off the rail entirely. The rail rendered 1 event + 1 trailer
+ * + 10 comics.
+ *
+ * That's the ComicCoverRail with timestamps, and the band already renders a full
+ * ComicCoverRail directly below. A regular weekly cadence must not crowd out the
+ * irregular things the rail exists to report, however fresh the cadence is.
+ *
+ * Live events and trailers are uncapped: there are only ever a handful, and they
+ * are the point.
+ */
+export const KIND_CAP: Record<PulseKind, number> = {
+  live_event: Infinity,
+  trailer: Infinity,
+  issue: 3,
+};
+
+/**
+ * The rail needs at least this many non-issue events to appear at all.
+ *
+ * With zero, "Just Happened" would be three comic covers — strictly worse than
+ * the dedicated comics rail sitting below it, and a claim that something happened
+ * when the only thing that happened is the weekly shipment. Fail toward silence.
+ */
+export const MIN_NEWS_EVENTS = 1;
+
 const MS_PER_HOUR = 3_600_000;
 
 /** 2 ^ (−age / halfLife). 1 at age 0, 0.5 at one half-life, and exactly 1 for a
@@ -199,13 +230,22 @@ export function rankPulse(
   scored.sort((a, b) => b.score - a.score || Date.parse(b.occurredAt!) - Date.parse(a.occurredAt!));
 
   const seen = new Set<string>();
+  const taken: Record<PulseKind, number> = { live_event: 0, trailer: 0, issue: 0 };
   const out: PulseEvent[] = [];
   for (const e of scored) {
     if (seen.has(e.entityId)) continue;
+    // Volume gate, not a score gate — see KIND_CAP. Skip rather than break, so a
+    // lower-scoring trailer still gets the slot a surplus comic would have taken.
+    if (taken[e.kind] >= KIND_CAP[e.kind]) continue;
     seen.add(e.entityId);
+    taken[e.kind]++;
     out.push(e);
     if (out.length >= limit) break;
   }
+
+  // Nothing but comics isn't news — the band's own ComicCoverRail already covers
+  // the weekly shipment. Show no rail rather than a redundant one.
+  if (out.length - taken.issue < MIN_NEWS_EVENTS) return [];
   return out;
 }
 

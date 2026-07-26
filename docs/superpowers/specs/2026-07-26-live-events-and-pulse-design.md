@@ -564,6 +564,58 @@ last query into `get_explore_bundle` still wants doing — it needs the current
 `compute_explore_bundle` body, which has changed several times on `main`, so it
 should be done with DB access rather than reconstructed blind.
 
+### 8.4b Volume caps — a defect the first production payload exposed
+
+The ranking model was tuned on synthetic mixes. Fed the **real** 2026-07-26 payload
+(20 issues, 2 trailers, 1 live event) it rendered:
+
+```
+1 live event + 1 trailer + 10 comics      ← and dropped the second trailer entirely
+```
+
+Comics ship ~20 at a time on a Wednesday, so a dozen sit at 3-4 days old scoring
+~0.28 — beating a 6-day-old trailer at 0.12 and taking every remaining slot. That
+is the `ComicCoverRail` with timestamps, and the band renders a full
+`ComicCoverRail` directly below it.
+
+**Score alone cannot defend against volume.** Two additions:
+
+- **`KIND_CAP`** — `issue: 3`, live events and trailers uncapped. A surplus comic
+  is *skipped*, not a `break`, so a lower-scoring trailer still gets the slot it
+  vacates.
+- **`MIN_NEWS_EVENTS = 1`** — the rail renders nothing unless at least one
+  non-issue event qualifies. A "Just Happened" rail of three comic covers is
+  strictly worse than the dedicated rail below it, and claims something happened
+  when the only thing that happened is the weekly shipment.
+
+Same payload after:
+
+```
+1. Live now     San Diego Comic-Con        ON NOW   Happening now
+2. New teaser   Spider-Man: Brand New Day  2D AGO   In cinemas in 2 days
+3. On shelves   …                          3D AGO
+4. On shelves   …                          3D AGO
+5. On shelves   …                          3D AGO
+6. New teaser   Masters of the Universe    6D AGO   In cinemas now
+```
+
+Six cards, mixed, news-led. Shorter and honest beats long and padded — and it
+grows on its own as the trailer lane fills (§8.4c).
+
+### 8.4c The real constraint: the catalogue is historical
+
+Worth restating next to the caps, because it's the reason the rail is short rather
+than any fault in the ranking: **only 9 of 2,507 TMDB titles were released in the
+last year, and exactly one has a future release date.** The forward-looking window
+`sync-title-videos` was designed around is effectively empty, so the nightly job
+re-checks the same ~9 rows regardless of its limit.
+
+Nothing in §8.1a is wrong. It's feeding a catalogue that is almost entirely
+historical. **Ingesting upcoming titles is the highest-value next lever for this
+whole feature** — TMDB `/discover` on a forward release window, same class of gap
+as the `/movie/changes` firehose already listed under "not yet built". Until then
+the trailer lane carries a couple of cards, not a stream.
+
 ### The ranking model
 
 Superseded by §8.4a for the three implemented kinds; kept for the two that aren't.

@@ -7,6 +7,7 @@ import {
   subtitleFor,
   livePulseEvent,
   trailerPicks,
+  KIND_CAP,
   KIND_HALF_LIFE,
   MAX_AGE_HOURS,
   PIN_SCORE,
@@ -271,5 +272,94 @@ describe('derived selectors', () => {
       publishedAt: hoursAgo(3),
       videoType: 'Trailer',
     });
+  });
+});
+
+describe('rankPulse — volume must not crowd out news', () => {
+  // Modelled on the first real production payload (2026-07-26): 20 issues, 2
+  // trailers, 1 live event. Before KIND_CAP this rendered 1 event + 1 trailer +
+  // 10 comics, and dropped the second trailer off the rail entirely.
+  const production = (): PulseCandidate[] => [
+    liveEvent({ occurredAt: hoursAgo(72) }),
+    trailer({
+      eventId: 'v:bnd',
+      entityId: 'tmdb:bnd',
+      headline: 'Spider-Man: Brand New Day',
+      occurredAt: hoursAgo(48),
+      characterCount: 5,
+      maxFame: 100,
+    }),
+    trailer({
+      eventId: 'v:motu',
+      entityId: 'tmdb:motu',
+      headline: 'Masters of the Universe',
+      occurredAt: hoursAgo(144),
+      releaseDate: '2026-06-03',
+      characterCount: 7,
+      maxFame: 94,
+    }),
+    ...Array.from({ length: 20 }, (_, i) =>
+      issue({
+        eventId: `issue:${i}`,
+        entityId: `cvi:${i}`,
+        headline: `Series ${i}`,
+        occurredAt: hoursAgo(90 + (i % 3) * 24),
+        characterCount: 4 + (i % 4),
+        maxFame: 90 + (i % 10),
+      }),
+    ),
+  ];
+
+  it('caps comics so a weekly shipment cannot become the rail', () => {
+    const out = rankPulse(production(), NOW, 12);
+    expect(out.filter((e) => e.kind === 'issue')).toHaveLength(KIND_CAP.issue);
+  });
+
+  it('keeps the second trailer that volume used to push off', () => {
+    const out = rankPulse(production(), NOW, 12);
+    expect(out.some((e) => e.entityId === 'tmdb:motu')).toBe(true);
+  });
+
+  it('still leads with the live event, then the freshest trailer', () => {
+    const out = rankPulse(production(), NOW, 12);
+    expect(out[0].kind).toBe('live_event');
+    expect(out[1].entityId).toBe('tmdb:bnd');
+  });
+
+  it('skips a surplus comic rather than ending the fill early', () => {
+    // A lower-scoring trailer must still get the slot a capped comic vacates.
+    const out = rankPulse(production(), NOW, 12);
+    const motu = out.findIndex((e) => e.entityId === 'tmdb:motu');
+    const issues = out.filter((e) => e.kind === 'issue');
+    expect(motu).toBeGreaterThan(-1);
+    expect(issues.length).toBeLessThanOrEqual(KIND_CAP.issue);
+  });
+});
+
+describe('rankPulse — nothing but comics is not news', () => {
+  it('renders no rail when only issues qualify', () => {
+    // The band already has a dedicated ComicCoverRail; a "Just Happened" rail of
+    // three comic covers would be strictly worse than it.
+    const onlyIssues = Array.from({ length: 8 }, (_, i) =>
+      issue({ eventId: `i${i}`, entityId: `cvi:${i}`, occurredAt: hoursAgo(20) }),
+    );
+    expect(rankPulse(onlyIssues, NOW)).toEqual([]);
+  });
+
+  it('appears as soon as one real event joins them', () => {
+    const withNews = [
+      ...Array.from({ length: 8 }, (_, i) =>
+        issue({ eventId: `i${i}`, entityId: `cvi:${i}`, occurredAt: hoursAgo(20) }),
+      ),
+      trailer({ occurredAt: hoursAgo(5) }),
+    ];
+    const out = rankPulse(withNews, NOW);
+    expect(out.length).toBeGreaterThan(0);
+    expect(out.some((e) => e.kind === 'trailer')).toBe(true);
+  });
+
+  it('a live event alone is enough to justify the rail', () => {
+    const out = rankPulse([liveEvent(), issue({ occurredAt: hoursAgo(10) })], NOW);
+    expect(out).toHaveLength(2);
   });
 });
