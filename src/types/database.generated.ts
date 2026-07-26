@@ -1281,6 +1281,75 @@ export type Database = {
         }
         Relationships: []
       }
+      house_members: {
+        Row: {
+          hero_id: string
+          house_slug: string
+          via: string
+        }
+        Insert: {
+          hero_id: string
+          house_slug: string
+          via: string
+        }
+        Update: {
+          hero_id?: string
+          house_slug?: string
+          via?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "house_members_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "house_members_house_slug_fkey"
+            columns: ["house_slug"]
+            isOneToOne: false
+            referencedRelation: "houses"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      houses: {
+        Row: {
+          blurb: string | null
+          created_at: string
+          name: string
+          position: number
+          seat: string | null
+          sigil_tint: string | null
+          slug: string
+          universe: string
+          words: string | null
+        }
+        Insert: {
+          blurb?: string | null
+          created_at?: string
+          name: string
+          position?: number
+          seat?: string | null
+          sigil_tint?: string | null
+          slug: string
+          universe: string
+          words?: string | null
+        }
+        Update: {
+          blurb?: string | null
+          created_at?: string
+          name?: string
+          position?: number
+          seat?: string | null
+          sigil_tint?: string | null
+          slug?: string
+          universe?: string
+          words?: string | null
+        }
+        Relationships: []
+      }
       igdb_ingestion_state: {
         Row: {
           franchise: string
@@ -2351,6 +2420,7 @@ export type Database = {
         Args: { p_hero_id: string; p_limit?: number }
         Returns: Json
       }
+      get_house: { Args: { p_slug: string }; Returns: Json }
       get_matchup_tally: { Args: { p_a: string; p_b: string }; Returns: Json }
       get_matchup_tally_v2: {
         Args: { p_a: string; p_b: string; p_voter_key: string }
