@@ -1,14 +1,27 @@
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
+import { TOPBAR_HEIGHT } from '../TopBar';
 
-// Quiet fixed dot-rail on the far left of the desktop dossier: one dot per
-// section, active dot tracks scroll, click jumps. Labels appear on hover only.
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+export type RailSection = { id: string; label: string; icon: IoniconName };
+
+// The fixed TopBar overlays the top of the document, so a bare
+// scrollIntoView({block:'start'}) parks the section heading underneath it.
+// Offset the jump by the bar plus a little breathing room.
+const JUMP_OFFSET = TOPBAR_HEIGHT + 24;
+
+// Quiet fixed rail on the far left of the desktop dossier: one icon per section,
+// outline while resting and filled in the character's accent when active. No
+// chrome behind the icons — the rail floats directly on the page. The active
+// mark tracks scroll, click jumps. Labels appear on hover only.
 export function SectionDotRail({
   sections,
   accent,
 }: {
-  sections: { id: string; label: string }[];
+  sections: RailSection[];
   accent: string;
 }) {
   const [active, setActive] = useState(sections[0]?.id ?? '');
@@ -34,36 +47,50 @@ export function SectionDotRail({
   }, [sections]);
 
   const jump = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Light up immediately — the observer only catches up once the smooth scroll
+    // settles, which would leave the tapped icon dim for the whole glide.
+    setActive(id);
+    const top = el.getBoundingClientRect().top + window.scrollY - JUMP_OFFSET;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
   };
 
   return (
     <View style={styles.rail}>
       {sections.map((s) => {
         const isActive = active === s.id;
+        const isHovered = hovered === s.id;
         return (
           <Pressable
             key={s.id}
             onPress={() => jump(s.id)}
             onHoverIn={() => setHovered(s.id)}
             onHoverOut={() => setHovered(null)}
-            style={styles.dotHit}
+            style={styles.hit}
             accessibilityRole="button"
             accessibilityLabel={`Jump to ${s.label}`}
           >
             <View
               style={
                 [
-                  styles.dot,
+                  styles.iconBox,
                   {
-                    backgroundColor: isActive ? accent : 'rgba(41,60,67,0.25)',
-                    transform: [{ scale: isActive ? 1.35 : 1 }],
-                    transition: 'background-color 200ms ease, transform 200ms ease',
+                    transform: [{ scale: isActive ? 1.1 : 1 }],
+                    transition: 'transform 200ms ease',
                   },
                 ] as object
               }
-            />
-            {hovered === s.id ? (
+            >
+              <Ionicons
+                name={isActive ? s.icon : (`${s.icon}-outline` as IoniconName)}
+                size={18}
+                color={
+                  isActive ? accent : isHovered ? 'rgba(41,60,67,0.78)' : 'rgba(41,60,67,0.34)'
+                }
+              />
+            </View>
+            {isHovered ? (
               <View style={styles.labelBubble}>
                 <Text style={styles.labelText}>{s.label}</Text>
               </View>
@@ -78,18 +105,19 @@ export function SectionDotRail({
 const styles = StyleSheet.create({
   rail: {
     position: 'fixed',
-    left: 'max(14px, env(safe-area-inset-left))' as unknown as number,
+    left: 'max(12px, env(safe-area-inset-left))' as unknown as number,
     top: '50%',
     transform: [{ translateY: '-50%' as unknown as number }],
-    gap: 10,
+    gap: 4,
     zIndex: 40,
     alignItems: 'center',
   } as object,
-  dotHit: { padding: 5, flexDirection: 'row', alignItems: 'center' },
-  dot: { width: 8, height: 8, borderRadius: 4 } as object,
+  hit: { flexDirection: 'row', alignItems: 'center' },
+  // Sizing + hit target only — deliberately no background, the rail floats on the page.
+  iconBox: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   labelBubble: {
     position: 'absolute',
-    left: 24,
+    left: 34,
     backgroundColor: COLORS.navy,
     borderRadius: 8,
     paddingHorizontal: 10,

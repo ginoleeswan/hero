@@ -43,7 +43,7 @@ import { PullQuoteBio } from '../../src/components/character/PullQuoteBio';
 import { LegendBand } from '../../src/components/web/character/LegendBand';
 import { PowerStatCell, statDisplayValue } from '../../src/components/web/character/PowerStatCell';
 import { Reveal } from '../../src/components/web/Reveal';
-import { SectionDotRail } from '../../src/components/web/character/SectionDotRail';
+import { SectionDotRail, type RailSection } from '../../src/components/web/character/SectionDotRail';
 import {
   SignaturePowerTiles,
   pickSignaturePowers,
@@ -95,6 +95,16 @@ const STAT_MEDIANS: Record<string, number> = {
 // skeleton crossfades out OVER the settled content, so any drift here shows up as a
 // vertical jump of the body as the skeleton dissolves.
 const M_HERO_RATIO = 0.9;
+
+// Stable identity — SectionDotRail re-attaches its IntersectionObserver whenever
+// this array changes, so it must not be re-created on every render.
+const RAIL_SECTIONS: RailSection[] = [
+  { id: 'sec-power', label: 'Power', icon: 'flash' },
+  { id: 'sec-abilities', label: 'Abilities', icon: 'sparkles' },
+  { id: 'sec-relations', label: 'Relations', icon: 'people' },
+  { id: 'sec-legend', label: 'Legend', icon: 'ribbon' },
+  { id: 'sec-print', label: 'In Print', icon: 'library' },
+];
 
 // Map the raw alignment value to a display label (mirrors the Explore stage).
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
@@ -1137,13 +1147,7 @@ export default function WebCharacterScreen() {
               {width >= 1180 ? (
                 <SectionDotRail
                   accent={theme.accent}
-                  sections={[
-                    { id: 'sec-power', label: 'Power' },
-                    { id: 'sec-abilities', label: 'Abilities' },
-                    { id: 'sec-relations', label: 'Relations' },
-                    { id: 'sec-legend', label: 'Legend' },
-                    { id: 'sec-print', label: 'In Print' },
-                  ]}
+                  sections={RAIL_SECTIONS}
                 />
               ) : null}
               <View style={styles.bodyDesktopNew}>
