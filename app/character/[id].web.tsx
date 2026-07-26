@@ -98,7 +98,15 @@ const STAT_MEDIANS: Record<string, number> = {
 // the live page AND the loading skeleton so the two stay pixel-aligned — the
 // skeleton crossfades out OVER the settled content, so any drift here shows up as a
 // vertical jump of the body as the skeleton dissolves.
-const M_HERO_RATIO = 0.9;
+// Expressed in `svh`, not measured pixels. `svh` is the SMALL viewport height —
+// the viewport with the iOS toolbar expanded — so it never changes as the bar
+// collapses, which is the jitter a frozen JS measurement was there to avoid.
+// The measurement was the bug: it was captured once at mount, and any reading
+// taken before layout settles (hydration, a bfcache restore, a link opened
+// while the toolbar animates) was then permanent. Because the identity block is
+// bottom-anchored inside this box, a short box drives the name, chips and
+// vitals up the portrait and over the face. CSS has nothing to measure.
+const M_HERO_VH = '90svh';
 
 // Stable identity — SectionDotRail re-attaches its IntersectionObserver whenever
 // this array changes, so it must not be re-created on every render.
@@ -534,10 +542,7 @@ export default function WebCharacterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const pathname = usePathname();
-  const { width, height: winHeight } = useWindowDimensions();
-  // Freeze at mount: winHeight changes as the iOS toolbar collapses, which
-  // resized the hero mid-scroll and re-cropped the cover art (a "zoom" jitter).
-  const [mHeroHeight] = useState(() => Math.round(winHeight * M_HERO_RATIO));
+  const { width } = useWindowDimensions();
   const isDesktop = width >= 700;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
@@ -1955,7 +1960,7 @@ export default function WebCharacterScreen() {
             /* ── Mobile: native-style immersive single scroll ── */
             <View>
               {/* Immersive portrait header */}
-              <View style={[styles.mHero, { height: mHeroHeight }] as object}>
+              <View style={styles.mHero}>
                 {/* The morph tag lives on an IMAGE-ONLY layer, not the header:
                     tagging the whole header baked the identity overlay (name,
                     chips, vitals) into the transition snapshot, so a wall of
@@ -2829,8 +2834,7 @@ function CharacterSkeleton({
   onStageHeight?: (h: number) => void;
 }) {
   const opacity = useSkeletonAnim();
-  const { height: winH } = useWindowDimensions();
-  const heroH = Math.round(winH * M_HERO_RATIO);
+
   const divider = <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />;
 
   // Measure the stage so the overlapping side portrait anchors to the same
@@ -3027,7 +3031,7 @@ function CharacterSkeleton({
       ) : (
         // Mobile: native-style immersive skeleton (portrait header → beige sheet)
         <View style={sk.bodyWrap}>
-          <View style={[sk.mHero, { height: heroH }] as object}>
+          <View style={sk.mHero}>
             <View style={sk.mIdentitySkel}>
               <SkeletonBlock
                 opacity={opacity}
@@ -3247,10 +3251,11 @@ const sk = StyleSheet.create({
   // Mobile immersive skeleton
   mHero: {
     width: '100%',
+    height: M_HERO_VH,
     backgroundColor: COLORS.deepNavy,
     justifyContent: 'flex-end',
     overflow: 'hidden',
-  },
+  } as object,
   mIdentitySkel: { paddingHorizontal: 20, paddingBottom: 46 },
   mSheet: {
     backgroundColor: COLORS.beige,
@@ -3790,6 +3795,7 @@ const styles = StyleSheet.create({
   // ── Mobile native-style immersive layout ──
   mHero: {
     width: '100%',
+    height: M_HERO_VH,
     // The curtain: the portrait pins to the viewport while the beige sheet
     // (zIndex above) slides up OVER it on scroll.
     position: 'sticky' as unknown as 'relative',
@@ -3798,7 +3804,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     overflow: 'hidden',
     backgroundColor: COLORS.deepNavy,
-  },
+  } as object,
   // Deep-navy vignette over the top of the full-bleed portrait: opaque navy
   // through the status bar + back-button zone, easing to transparent below. It
   // fuses the navy status bar into the portrait (no hard cut), gives the head
