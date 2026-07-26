@@ -1906,6 +1906,56 @@ export type Database = {
         }
         Relationships: []
       }
+      title_videos: {
+        Row: {
+          first_seen_at: string
+          id: string
+          key: string
+          language: string | null
+          name: string | null
+          official: boolean | null
+          published_at: string | null
+          site: string | null
+          size: number | null
+          title_id: string
+          type: string | null
+        }
+        Insert: {
+          first_seen_at?: string
+          id: string
+          key: string
+          language?: string | null
+          name?: string | null
+          official?: boolean | null
+          published_at?: string | null
+          site?: string | null
+          size?: number | null
+          title_id: string
+          type?: string | null
+        }
+        Update: {
+          first_seen_at?: string
+          id?: string
+          key?: string
+          language?: string | null
+          name?: string | null
+          official?: boolean | null
+          published_at?: string | null
+          site?: string | null
+          size?: number | null
+          title_id?: string
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "title_videos_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       titles: {
         Row: {
           backdrop_url: string | null
@@ -1929,6 +1979,7 @@ export type Database = {
           trailer_key: string | null
           trending_at: string | null
           trending_rank: number | null
+          videos_checked_at: string | null
           vote_average: number | null
           watch_providers: Json | null
           year: number | null
@@ -1955,6 +2006,7 @@ export type Database = {
           trailer_key?: string | null
           trending_at?: string | null
           trending_rank?: number | null
+          videos_checked_at?: string | null
           vote_average?: number | null
           watch_providers?: Json | null
           year?: number | null
@@ -1981,6 +2033,7 @@ export type Database = {
           trailer_key?: string | null
           trending_at?: string | null
           trending_rank?: number | null
+          videos_checked_at?: string | null
           vote_average?: number | null
           watch_providers?: Json | null
           year?: number | null
@@ -2602,6 +2655,42 @@ export type Database = {
         }[]
       }
       get_pending_build_ids: { Args: { p_limit?: number }; Returns: string[] }
+      get_pulse_candidates: {
+        Args: { p_per_kind?: number }
+        Returns: {
+          accent: string
+          character_count: number
+          entity_id: string
+          event_id: string
+          headline: string
+          image_url: string
+          kind: string
+          max_fame: number
+          media_key: string
+          occurred_at: string
+          provider: string
+          publisher: string
+          release_date: string
+          subtype: string
+        }[]
+      }
+      get_recent_trailers: {
+        Args: { p_hours?: number; p_limit?: number }
+        Returns: {
+          backdrop_url: string
+          character_count: number
+          max_fame: number
+          media_type: string
+          poster_url: string
+          published_at: string
+          release_date: string
+          title: string
+          title_id: string
+          video_key: string
+          video_name: string
+          video_type: string
+        }[]
+      }
       get_related_heroes: {
         Args: {
           p_hero_id: string

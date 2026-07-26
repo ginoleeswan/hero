@@ -3,9 +3,11 @@
 **Date:** 2026-07-26
 **Status:** Detection layer built and **live** — §7 done 2026-07-26, now on `main`.
 Migration applied (as version `20260726183108`), function deployed, cron running,
-SDCC approved. §8 steps 1-4 built — steps 2-3 are live in the band already;
-steps 1 and 4 need two migrations applied and three functions deployed (see §7
-"Outstanding"). Steps 5-6 remain.
+SDCC approved. **§8 steps 1-4 are fully live** — all migrations applied, all
+functions deployed, `title_videos` populated and the Pulse rail fed (§7
+"Outstanding", done 2026-07-26). Steps 5-6 remain. Known limit: the catalogue
+holds only 9 titles released in the last year, so the trailer lane is thin until
+upcoming titles are ingested.
 **Visual proposal:** https://claude.ai/code/artifact/18490f5f-7323-4041-bcce-ba1e78becb42
 
 ---
@@ -89,11 +91,13 @@ iso_639_1, iso_3166_1, name, key, site, size, type, official, published_at, id
 Behind the Scenes / Bloopers, `id` is TMDB's video id (distinct from `key`, the
 YouTube id already kept).
 
-> `site`, `type` and `key` are confirmed by working production code —
-> `enrich-tmdb-batch:168` filters on `v.type === 'Trailer'` and trailers do land.
-> `published_at` and `official` are from the documented schema only; there's no
-> TMDB key in either checkout. Read them **defensively** (warn when absent) so a
-> naming surprise is a one-line fix, not a blocker.
+> **Verified in production 2026-07-26** (§7 "Outstanding"): the first
+> `sync-title-videos` run stored 471 videos with `published_at`, `official`,
+> `site`, `size`, `language`, `name` and `type` populated on **every one** —
+> `undated: 0`. The documented names are correct; nothing needs a defensive
+> fallback. One extra `type` value not in the list above turned up in the wild,
+> `Opening Credits`, so treat the vocabulary as open — filter on the types you
+> want, never `check` them.
 
 ### 3.2 The daily pageview series (already fetched, 12 of 14 days discarded)
 
@@ -194,14 +198,14 @@ leans on `EDITS_ABS_MIN`, which is what production demonstrated.
 **A ratio is meaningless on a low-traffic article — so there's now a peak floor.**
 Measured medians on the smallest watched articles:
 
-| Article               | Median/day | 2.5× gate | Noise peak (28d) |
-| --------------------- | ---------- | --------- | ---------------- |
-| CCXP                  | 40         | 100       | 93               |
-| Angoulême             | 61         | 152       | 198              |
-| Lucca Comics & Games  | 66         | 166       | 218              |
-| WonderCon             | 108        | 271       | 154              |
-| PAX                   | 194        | 485       | 230              |
-| Comiket               | 293        | 732       | 373              |
+| Article              | Median/day | 2.5× gate | Noise peak (28d) |
+| -------------------- | ---------- | --------- | ---------------- |
+| CCXP                 | 40         | 100       | 93               |
+| Angoulême            | 61         | 152       | 198              |
+| Lucca Comics & Games | 66         | 166       | 218              |
+| WonderCon            | 108        | 271       | 154              |
+| PAX                  | 194        | 485       | 230              |
+| Comiket              | 293        | 732       | 373              |
 
 CCXP's ordinary noise already reaches 2.3× — a hair under `SPIKE_MIN`. Three
 edits from one keen editor and it would have read as a live convention. So
@@ -209,7 +213,7 @@ edits from one keen editor and it would have read as a live convention. So
 every noise peak measured here (max 230) and far below SDCC's 3,688.
 
 The cost is real and worth stating: a convention that is genuinely large but
-small *on en.wikipedia* — CCXP is a ~250k-attendee Brazilian show read mostly in
+small _on en.wikipedia_ — CCXP is a ~250k-attendee Brazilian show read mostly in
 Portuguese — now needs real English traffic to trigger. Revisit the first time
 one of those actually runs, and consider a per-row override column rather than a
 global constant.
@@ -284,28 +288,28 @@ checks `auth.uid()`, which is null over the MCP service role, so it raises
 Kept because it's the only baseline sample of the whole watch list in a quiet
 week, which is what `MIN_PEAK_VIEWS` was calibrated against.
 
-| slug              | verdict | spike | shape       | window                | ongoing |
-| ----------------- | ------- | ----- | ----------- | --------------------- | ------- |
-| `sdcc`            | live    | 3.35  | sustained   | 2026-07-23 → 07-25    | yes     |
-| `nycc`            | idle    | 1.74  | sustained   | —                     | no      |
-| `d23`             | idle    | 1.54  | sustained   | 2026-07-14 → 07-14    | no      |
-| `gamescom`        | idle    | 1.54  | easing      | —                     | no      |
-| `wondercon`       | idle    | 1.42  | sustained   | —                     | no      |
-| `swce`            | idle    | 1.34  | sustained   | —                     | no      |
-| `eccc`            | idle    | 1.31  | sustained   | 2026-07-01 → 07-02    | no      |
-| `dragon-con`      | idle    | 1.28  | easing      | —                     | no      |
-| `ccxp`            | idle    | 1.27  | sustained   | 2026-07-14 → 07-14    | no      |
-| `mcm-london`      | idle    | 1.26  | sustained   | —                     | no      |
-| `fan-expo-canada` | idle    | 1.25  | decaying    | 2026-07-14 → 07-14    | no      |
-| `dc-fandome`      | idle    | 1.21  | sustained   | —                     | no      |
-| `comiket`         | idle    | 1.15  | flat        | —                     | no      |
-| `nintendo-direct` | idle    | 1.15  | flat        | —                     | no      |
-| `lucca`           | idle    | 1.14  | flat        | 2026-07-01 → 07-01    | no      |
-| `angouleme`       | idle    | 1.13  | flat        | 2026-07-07 → 07-07    | no      |
-| `pax`             | idle    | 1.03  | flat        | —                     | no      |
-| `game-awards`     | idle    | 1.00  | flat        | —                     | no      |
-| `summer-game-fest`| idle    | 0.97  | flat        | —                     | no      |
-| `anime-expo`      | idle    | 0.65  | flat        | 2026-07-02 → 07-08    | no      |
+| slug               | verdict | spike | shape     | window             | ongoing |
+| ------------------ | ------- | ----- | --------- | ------------------ | ------- |
+| `sdcc`             | live    | 3.35  | sustained | 2026-07-23 → 07-25 | yes     |
+| `nycc`             | idle    | 1.74  | sustained | —                  | no      |
+| `d23`              | idle    | 1.54  | sustained | 2026-07-14 → 07-14 | no      |
+| `gamescom`         | idle    | 1.54  | easing    | —                  | no      |
+| `wondercon`        | idle    | 1.42  | sustained | —                  | no      |
+| `swce`             | idle    | 1.34  | sustained | —                  | no      |
+| `eccc`             | idle    | 1.31  | sustained | 2026-07-01 → 07-02 | no      |
+| `dragon-con`       | idle    | 1.28  | easing    | —                  | no      |
+| `ccxp`             | idle    | 1.27  | sustained | 2026-07-14 → 07-14 | no      |
+| `mcm-london`       | idle    | 1.26  | sustained | —                  | no      |
+| `fan-expo-canada`  | idle    | 1.25  | decaying  | 2026-07-14 → 07-14 | no      |
+| `dc-fandome`       | idle    | 1.21  | sustained | —                  | no      |
+| `comiket`          | idle    | 1.15  | flat      | —                  | no      |
+| `nintendo-direct`  | idle    | 1.15  | flat      | —                  | no      |
+| `lucca`            | idle    | 1.14  | flat      | 2026-07-01 → 07-01 | no      |
+| `angouleme`        | idle    | 1.13  | flat      | 2026-07-07 → 07-07 | no      |
+| `pax`              | idle    | 1.03  | flat      | —                  | no      |
+| `game-awards`      | idle    | 1.00  | flat      | —                  | no      |
+| `summer-game-fest` | idle    | 0.97  | flat      | —                  | no      |
+| `anime-expo`       | idle    | 0.65  | flat      | 2026-07-02 → 07-08 | no      |
 
 Two things to read out of it:
 
@@ -315,60 +319,95 @@ Two things to read out of it:
   today — but they're the exact failure mode `MIN_PEAK_VIEWS` now blocks.
 - **`anime-expo` at 0.65 with a real 07-02 → 07-08 window** is the detector
   working backwards correctly: Anime Expo ran in early July, so its recent peak
-  now sits *below* its own median. Historical windows are reported but never
+  now sits _below_ its own median. Historical windows are reported but never
   surfaced.
 
-### Outstanding — needs a redeploy
+### Outstanding — needs a redeploy — **DONE 2026-07-26**
 
-Batch these into one trip (nothing breaks meanwhile — the live detector is just
-slightly more permissive than the code, and the trailer feature is inert until
-applied):
+All six ran. Both migrations applied **clean on the first attempt** — the
+"expect to fix a typo" warning was unnecessary. Applied as versions
+`20260726213808` (`title_videos`) and `20260726214042` (`pulse_candidates`);
+`sync-title-videos-daily` is registered at `40 6 * * *`.
 
-**Merge this branch to `main` first.** Both migrations live only on
-`claude/explore-right-now-freshness-4jo1wp`. Applying them while the code sits on an
-unmerged branch is the exact hazard that forced the cleanup on 2026-07-26 — this
-time mirrored: prod would get a `title_videos` table and two crons calling functions
-whose source isn't on `main`.
+Functions were deployed with the **Supabase CLI** (`supabase functions deploy`,
+already linked to `rpvgqfaeiowisdubgxkg`) rather than by pasting source through
+the MCP tool. It ships what's on disk, so the deployed copy can't drift from the
+repo through a transcription slip — and it bundles `_shared/videos.ts`
+automatically. Prefer it for anything with a relative import.
 
-Then, one trip:
+#### §3.1 is no longer unverified — the whole video object is confirmed
 
-1. **Redeploy `sync-watched-events`** — `MIN_PEAK_VIEWS` was added after the run
-   above (§5.4) and the deployed copy predates it.
-2. **Apply `20260726210000_title_videos.sql`** (§8.1a) and
-   **`20260726220000_pulse_candidates.sql`** (§8.4a), in that order — the second
-   reads `title_videos`. **Neither has been executed anywhere**; there's no Postgres
-   in the web container, so they're unvalidated SQL. Expect to fix a typo.
-3. **Regenerate types**, then drop the `as never` casts in `src/lib/db/videos.ts`
-   and `src/lib/db/pulse.ts`.
-4. **Deploy `sync-title-videos`**, and **redeploy `enrich-tmdb-batch`** (it now
-   persists videos via `_shared/videos.ts`).
-5. **Invoke `sync-title-videos`** with `{"limit":40,"triggeredBy":"manual"}` and
-   report `{checked, upserted, undated, trailerKeysChanged}`. **`undated` is the
-   number that matters** — if it equals `upserted`, TMDB's `published_at` is named
-   something else and the mapper needs a one-line fix. A loud `console.warn` fires
-   in that case.
-6. **Spot-check** `get_recent_trailers(720, 12)` — a 30-day window, since a
-   72-hour one may legitimately be empty on any given day — and
-   `get_pulse_candidates(20)`, which should return `sdcc` plus this week's issues
-   even before any trailer lands.
+`sync-title-videos` returned `{checked: 9, upserted: 471, undated: 0,
+trailerKeysChanged: 1}`. **`undated: 0`** — every one of the 471 videos parsed
+with a `published_at`, so the documented field name is right. Stronger than that,
+all seven mapped fields are populated on **471/471** rows: `published_at`,
+`official`, `site`, `size`, `language` (`iso_639_1`), `name`, `type`. Dates run
+2009-12-08 → 2026-07-26 17:00 UTC.
 
-Until step 2 lands, `get_pulse_candidates` 404s, the reader returns `[]`, and the
-rail renders nothing. That's the designed degradation, not a failure — the band
-looks exactly as it did, minus the honest freshness label which is already live.
-The RPC is fine from a signed-in admin client — it just can't be driven from MCP.
+Delete the "documented schema only, read defensively" caveat in §3.1 when
+convenient; it has now been observed in production.
 
-1. **Apply the migration** via `mcp__supabase__apply_migration` —
-   `supabase/migrations/20260726150000_watched_events.sql`. Confirm 20 seed rows
-   landed and the `sync-watched-events` cron is registered.
-2. **Regenerate types** with `mcp__supabase__generate_typescript_types` into
-   `src/types/database.generated.ts`, then drop the `as never` casts in
-   `src/lib/db/events.ts` (the comment there marks the spot).
-3. **Deploy the edge function** and invoke it once with
-   `{"triggeredBy":"manual"}`. Expected: `processed: 20`, and — if SDCC 2026 is
-   still inside its window — `live: ["sdcc"]`. Then check the row's
-   `spike_ratio`, `shape`, `live_from`/`live_to` against §5.2.
-4. **Approve SDCC** via `admin_set_watched_event_approval('sdcc','approved')`
-   and confirm `get_live_events()` returns it.
+One value the documented list doesn't mention turned up: **`Opening Credits`**
+(1 row). Harmless — the `type in ('Trailer','Teaser')` filters exclude it — but
+the type vocabulary is open, so never `check` it in SQL.
+
+Observed distribution across 471: Featurette 213, Teaser 190, Behind the Scenes
+25, Clip 21, **Trailer 21**, Opening Credits 1.
+
+#### The real constraint is catalogue coverage, not the pipeline
+
+`checked: 9` against a `limit` of 40 is **not** a failure — the candidate pool is
+genuinely 9 titles. Of 2,507 TMDB film/tv rows:
+
+| Measure                              | Count |
+| ------------------------------------ | ----- |
+| Released in the last 365 days        | 9     |
+| Released in the last 60 days         | 3     |
+| **Release date in the future**       | **1** |
+| In the sweep's −60/+365 day window   | 4     |
+| Trending in the last 7 days          | 9     |
+| Have ever been stamped `trending_at` | 11    |
+
+Newest release date in the whole catalogue: **2026-07-28**. So the sweep's
+forward-looking window — the one designed to catch a trailer before release — has
+essentially nothing in it, and the daily job will keep checking the same ~9 rows.
+
+**The trailer lane is structurally thin until upcoming titles get ingested.**
+Nothing in §8.1a is wrong; it's fed by a catalogue that is almost entirely
+historical. That's the next thing worth fixing if the Pulse rail is to carry
+trailers regularly — TMDB `/discover` on a forward release window would do it,
+and it's the same class of gap as the `/movie/changes` firehose in §8's
+"not yet built" list.
+
+#### Spot-checks
+
+`get_recent_trailers(720, 12)` → 4 rows, all **Teasers** (no `Trailer`-typed
+video has landed in 30 days):
+
+| Title                     | Type   | Published  | Chars | Max fame |
+| ------------------------- | ------ | ---------- | ----- | -------- |
+| Spider-Man: Brand New Day | Teaser | 2026-07-24 | 5     | 100      |
+| Masters of the Universe   | Teaser | 2026-07-20 | 7     | 94       |
+| Toy Story 5               | Teaser | 2026-07-10 | 7     | 94       |
+| Supergirl                 | Teaser | 2026-07-10 | 3     | 97       |
+
+`get_pulse_candidates(20)` → **23 rows**: 20 `issue` + 2 `trailer` + 1
+`live_event` (sdcc). The rail has real content on day one.
+
+The two trailer counts differ **by design** and it's worth not mistaking it for a
+bug: `get_recent_trailers` was asked for 720 hours, while `get_pulse_candidates`
+hard-codes a 14-day window, so the two 07-10 teasers are in one and not the
+other.
+
+#### The `MIN_PEAK_VIEWS` redeploy
+
+Re-invoked after deploying: `{processed: 20, live: ["sdcc"]}`, unchanged. SDCC
+clears the new floor by an order of magnitude (peak 3,688 vs 250).
+
+Worth logging for the October re-tune: **NYCC's peak is now exactly 250** — it
+sits precisely on `MIN_PEAK_VIEWS` with zero margin, so the new gate contributes
+nothing to rejecting it. `SPIKE_MIN` (1.74 < 2.5) and `EDITS_ABS_MIN` (1 < 3) are
+still doing all the work, exactly as §5.4 predicts.
 
 ## 8. Then, in impact order
 
@@ -385,14 +424,14 @@ The RPC is fine from a signed-in admin client — it just can't be driven from M
 
 ### 8.1a Trailer events — built, awaiting apply
 
-| File | Role |
-| --- | --- |
+| File                                                  | Role                                                                                                                         |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `supabase/migrations/20260726210000_title_videos.sql` | `title_videos` table + partial recency index, `titles.videos_checked_at` cursor, `get_recent_trailers()`, cron `40 6 * * *`. |
-| `supabase/functions/_shared/videos.ts` | The mapper, shared by both consumers (`_shared` is the repo's existing convention — see `comicvineMatch.ts`). |
-| `src/lib/tmdb/mapVideos.ts` + 21 tests | The TS original the `_shared` copy mirrors. All parsing rules are pinned here. |
-| `supabase/functions/sync-title-videos/index.ts` | The daily `/videos` sweep. |
-| `supabase/functions/enrich-tmdb-batch/index.ts` | Now persists the video list it was already fetching. |
-| `src/lib/db/videos.ts` + 6 tests | Client reader. `as never` until types are regenerated. |
+| `supabase/functions/_shared/videos.ts`                | The mapper, shared by both consumers (`_shared` is the repo's existing convention — see `comicvineMatch.ts`).                |
+| `src/lib/tmdb/mapVideos.ts` + 21 tests                | The TS original the `_shared` copy mirrors. All parsing rules are pinned here.                                               |
+| `supabase/functions/sync-title-videos/index.ts`       | The daily `/videos` sweep.                                                                                                   |
+| `supabase/functions/enrich-tmdb-batch/index.ts`       | Now persists the video list it was already fetching.                                                                         |
+| `src/lib/db/videos.ts` + 6 tests                      | Client reader. `as never` until types are regenerated.                                                                       |
 
 Decisions worth not re-litigating:
 
@@ -410,7 +449,7 @@ Decisions worth not re-litigating:
   `Trailer`, else first YouTube anything), with a test asserting it, so persisting
   the full list can't quietly change which trailer the app already plays.
 - **Everything about `published_at` is defensive.** Absent or malformed yields
-  null plus an `undated` count, and the sweep logs a loud warning if *every* video
+  null plus an `undated` count, and the sweep logs a loud warning if _every_ video
   in a run parses undated — which is exactly what a wrong field name looks like.
   Nothing is `NOT NULL`, so a naming surprise costs a one-line mapper fix, not a
   failed migration.
@@ -420,18 +459,18 @@ no UI consumes it. That's step 4.
 
 ### 8.2a Honest freshness label + news-sense hero — built, no migration
 
-| File | Role |
-| --- | --- |
-| `src/lib/home/freshness.ts` + 17 tests | Pure, clock-injectable. Derives the header claim from the freshest real event in the band. |
-| `src/components/home/RightNowBand.tsx` | Hardcoded `"Updated today"` gone. `PulseDot` now takes `animate`. |
-| `src/components/web/home/RightNowBand.tsx` | Same, plus the chip hides entirely when there's no claim. |
-| `src/lib/db/trending.ts` + 16 tests | `synthesizeCampaignFromPool` prefers a recent trailer drop over the random pick. `Campaign` gains `trailer_key`. |
-| `src/lib/query/exploreQueries.ts`, `keys.ts` | Two new cached reads: `getLiveEvents`, `getRecentTrailers`. |
-| `app/(tabs)/explore.tsx`, `explore.web.tsx` | Thread `liveEvent` to the band. |
+| File                                         | Role                                                                                                             |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `src/lib/home/freshness.ts` + 17 tests       | Pure, clock-injectable. Derives the header claim from the freshest real event in the band.                       |
+| `src/components/home/RightNowBand.tsx`       | Hardcoded `"Updated today"` gone. `PulseDot` now takes `animate`.                                                |
+| `src/components/web/home/RightNowBand.tsx`   | Same, plus the chip hides entirely when there's no claim.                                                        |
+| `src/lib/db/trending.ts` + 16 tests          | `synthesizeCampaignFromPool` prefers a recent trailer drop over the random pick. `Campaign` gains `trailer_key`. |
+| `src/lib/query/exploreQueries.ts`, `keys.ts` | Two new cached reads: `getLiveEvents`, `getRecentTrailers`.                                                      |
+| `app/(tabs)/explore.tsx`, `explore.web.tsx`  | Thread `liveEvent` to the band.                                                                                  |
 
 **The doc's own recommendation for step 2 was wrong and is superseded.** It said to
 expose `explore_bundle_cache.refreshed_at`. But that cache recomputes every ten
-minutes whether or not content changed, so `refreshed_at` is *always* under ten
+minutes whether or not content changed, so `refreshed_at` is _always_ under ten
 minutes old — a label built on it would be a more precise version of the same lie.
 The label now measures the freshest actual **event**, which is the thing a reader
 means by "updated". No migration needed, and it gets sharper on its own as event
@@ -446,7 +485,7 @@ The policy, not just the formatting:
   A four-day-old band should say so quietly, not throb.
 - A running `liveEvent` outranks every timestamp: `SAN DIEGO COMIC-CON · LIVE`.
   This is the first thing on screen that uses the detector.
-- Bare `store_date` values parse as UTC midnight, which *understates* freshness by
+- Bare `store_date` values parse as UTC midnight, which _understates_ freshness by
   up to a day. That's the right direction to be wrong in.
 
 **Visible change today:** the band will read `4D AGO` rather than `Updated today`,
@@ -467,17 +506,17 @@ consolidated to one. Both are React-Query cached and degrade to empty on error.
 
 ### 8.4a The Pulse rail — built, awaiting apply
 
-| File | Role |
-| --- | --- |
+| File                                                      | Role                                                                                     |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `supabase/migrations/20260726220000_pulse_candidates.sql` | `get_pulse_candidates()` — a union of everything with a real event time. Selection only. |
-| `src/lib/home/pulse.ts` + 29 tests | **The ranking model.** Weights, half-lives, relevance, de-dup, badges, subtitles. |
-| `src/lib/db/pulse.ts` | Reader. Drops rows of unknown `kind` rather than scoring them as `undefined`. |
-| `src/components/home/PulseRail.tsx` | Native rail. |
-| `src/components/web/home/PulseRail.tsx` | Web rail — hover lift, wider cards, `ScrollView`. |
-| `RightNowBand.tsx` ×2, `explore.tsx` ×2 | Rail mounted at the top of the band; `liveEvent` prop became `pulse` + `liveEventName`. |
+| `src/lib/home/pulse.ts` + 29 tests                        | **The ranking model.** Weights, half-lives, relevance, de-dup, badges, subtitles.        |
+| `src/lib/db/pulse.ts`                                     | Reader. Drops rows of unknown `kind` rather than scoring them as `undefined`.            |
+| `src/components/home/PulseRail.tsx`                       | Native rail.                                                                             |
+| `src/components/web/home/PulseRail.tsx`                   | Web rail — hover lift, wider cards, `ScrollView`.                                        |
+| `RightNowBand.tsx` ×2, `explore.tsx` ×2                   | Rail mounted at the top of the band; `liveEvent` prop became `pulse` + `liveEventName`.  |
 
 **The load-bearing decision: SQL selects, TypeScript scores.** The RPC does an
-indexed recency scan per kind and returns *facts* — no scoring, no prebuilt copy.
+indexed recency scan per kind and returns _facts_ — no scoring, no prebuilt copy.
 Ranking, decay, relevance and every user-facing string live in `pulse.ts`, because
 in SQL the most judgemental part of the feature would have been the one part with
 no tests. It has 29.
@@ -487,15 +526,15 @@ score = weight(kind) × decay(age) × relevance
 decay(h) = 2 ^ (−h / halfLife(kind))
 ```
 
-| Kind | Weight | Half-life | Source |
-| --- | --- | --- | --- |
-| `live_event` | pinned (`PIN_SCORE`) | never decays in-window | `get_live_events()` |
-| `trailer` | 1.0 | 48h | `title_videos.published_at` |
-| `issue` | 0.55 | 96h | `comic_issues.store_date` |
+| Kind         | Weight               | Half-life              | Source                      |
+| ------------ | -------------------- | ---------------------- | --------------------------- |
+| `live_event` | pinned (`PIN_SCORE`) | never decays in-window | `get_live_events()`         |
+| `trailer`    | 1.0                  | 48h                    | `title_videos.published_at` |
+| `issue`      | 0.55                 | 96h                    | `comic_issues.store_date`   |
 
 Half-lives rather than raw weights because that's the arguable number: after
 `halfLife` hours an event is worth half what it was. Live events are **pinned**, not
-weighted — which is what makes SDCC outrank a good trailer *and* vanish cleanly
+weighted — which is what makes SDCC outrank a good trailer _and_ vanish cleanly
 when the window closes rather than lingering at a decayed-but-nonzero score.
 
 `relevance` gates on whether the catalogue can illustrate the event: cast breadth
@@ -509,10 +548,10 @@ a trailer is one story, and showing it twice makes a short rail look thin.
 **Two event types from the model below are deliberately absent.** Both would have
 been dishonest today:
 
-- **Streaming debut** needs a `watch_providers` *delta*, and no provider history is
+- **Streaming debut** needs a `watch_providers` _delta_, and no provider history is
   kept — "landed on Disney+ Tuesday" isn't knowable.
 - **Pageview surge** has no event time. `pageviews_spike` is week-over-week and
-  `pageviews_at` is when *we looked*. Needs §3.2 (store the daily series) first. An
+  `pageviews_at` is when _we looked_. Needs §3.2 (store the daily series) first. An
   undated row in a timestamped feed would undermine the whole premise, so surges
   stay in Trending Movers.
 

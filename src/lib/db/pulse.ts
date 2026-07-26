@@ -54,17 +54,14 @@ export function mapPulseRows(rows: PulseCandidateRow[]): PulseCandidate[] {
 /** Degrades to [] so a DB hiccup — or an unapplied migration — leaves the band
  *  exactly as it was rather than erroring. */
 export async function getPulseCandidates(perKind = 20): Promise<PulseCandidate[]> {
-  // `as never`: the RPC lands with 20260726220000_pulse_candidates.sql, so it
-  // isn't in database.generated.ts until that's applied and types regenerated.
-  const { data, error } = await supabase.rpc(
-    'get_pulse_candidates' as never,
-    {
-      p_per_kind: perKind,
-    } as never,
-  );
+  const { data, error } = await supabase.rpc('get_pulse_candidates', {
+    p_per_kind: perKind,
+  });
   if (error) {
     console.warn('[getPulseCandidates] error:', error.message);
     return [];
   }
-  return mapPulseRows((data ?? []) as unknown as PulseCandidateRow[]);
+  // The generated Returns marks every column non-null — a RETURNS TABLE signature
+  // carries no nullability — so widen to the row shape this actually guards for.
+  return mapPulseRows((data ?? []) as PulseCandidateRow[]);
 }

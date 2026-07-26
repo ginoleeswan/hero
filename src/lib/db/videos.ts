@@ -61,19 +61,15 @@ export function mapTrailerRows(rows: TrailerEventRow[]): TrailerEvent[] {
 /** Trailers and teasers published inside the window, newest first. Degrades to []
  *  so a DB hiccup never errors the Explore band. */
 export async function getRecentTrailers(hours = 72, limit = 12): Promise<TrailerEvent[]> {
-  // `as never`: the RPC lands with 20260726210000_title_videos.sql, so it isn't in
-  // database.generated.ts until that migration is applied and types regenerated.
-  // Same pattern getLiveEvents used before its migration landed.
-  const { data, error } = await supabase.rpc(
-    'get_recent_trailers' as never,
-    {
-      p_hours: hours,
-      p_limit: limit,
-    } as never,
-  );
+  const { data, error } = await supabase.rpc('get_recent_trailers', {
+    p_hours: hours,
+    p_limit: limit,
+  });
   if (error) {
     console.warn('[getRecentTrailers] error:', error.message);
     return [];
   }
-  return mapTrailerRows((data ?? []) as unknown as TrailerEventRow[]);
+  // The generated Returns marks every column non-null — a RETURNS TABLE signature
+  // carries no nullability — so widen to the row shape this actually guards for.
+  return mapTrailerRows((data ?? []) as TrailerEventRow[]);
 }
