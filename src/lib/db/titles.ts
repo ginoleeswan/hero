@@ -272,7 +272,9 @@ export async function getCollectionTitles(t: HeroTitle): Promise<TitleRecommenda
 export async function getTitleHeroes(id: string): Promise<RelatedHeroCard[]> {
   const { data, error } = await supabase
     .from('hero_media_appearances')
-    .select('heroes ( id, name, image_url, image_md_url, portrait_url, publisher, alignment )')
+    .select(
+      'heroes ( id, name, avatar_url, image_url, image_md_url, portrait_url, publisher, alignment )',
+    )
     .eq('title_id', id)
     .order('rank', { ascending: false, nullsFirst: false })
     .limit(30);

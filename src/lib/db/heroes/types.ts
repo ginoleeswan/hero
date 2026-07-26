@@ -74,7 +74,15 @@ export type HeroPowerResult = Pick<
 export type RelatedHeroCard = Pick<
   Hero,
   'id' | 'name' | 'image_url' | 'image_md_url' | 'portrait_url' | 'publisher' | 'alignment'
->;
+> & {
+  /**
+   * The flat head icon, where the producer bothered to select it — the
+   * get_related_heroes RPC does not, while getTitleHeroes does. Optional twice
+   * over, since only the famous tier has one at all, so every consumer has to
+   * degrade rather than assume.
+   */
+  avatar_url?: string | null;
+};
 
 /** A hero-to-hero association grouping. Extend in lockstep with the DB `kind`s. */
 export type RelationKind = 'enemy' | 'ally' | 'teammate';

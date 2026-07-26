@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { HeroAvatar } from '../HeroAvatar';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 import { matchCharacterToHero } from '../../lib/db/titles';
@@ -31,10 +32,27 @@ function CastMember({
             <Ionicons name="person" size={24} color={COLORS.grey} />
           </View>
         )}
+        {/* The character, not a link glyph.
+            A cast row is the one place the app can show WHO an actor played
+            rather than only naming them, and the avatars are cut-outs with no
+            plate — so the head can overlap the headshot and read as one object.
+            Falls back to the link mark for anyone with no head yet. */}
         {hero ? (
-          <View style={styles.heroBadge}>
-            <Ionicons name="link" size={11} color="#fff" />
-          </View>
+          hero.avatar_url ? (
+            <View style={styles.heroHead}>
+              <HeroAvatar
+                id={hero.id}
+                name={hero.name}
+                avatarUrl={hero.avatar_url}
+                size={30}
+                bare
+              />
+            </View>
+          ) : (
+            <View style={styles.heroBadge}>
+              <Ionicons name="link" size={11} color="#fff" />
+            </View>
+          )
         ) : null}
       </View>
       <Text style={styles.name} numberOfLines={2}>
@@ -144,6 +162,9 @@ const styles = StyleSheet.create({
     height: 68,
     borderRadius: 34,
   },
+  // Bottom-right of the headshot, overlapping it — the cut-out needs no plate,
+  // and the overlap is what makes actor and character read as one unit.
+  heroHead: { position: 'absolute', right: -6, bottom: -4 },
   avatarPlaceholder: {
     backgroundColor: COLORS.navy + '14',
     alignItems: 'center',
