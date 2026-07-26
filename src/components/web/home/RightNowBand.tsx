@@ -504,6 +504,16 @@ export function RightNowBand({
   const slate = mergeTrendingTitles(onScreen, [], streaming);
   const hotTitles = trendingOnScreen.length > 0 ? trendingOnScreen : slate;
 
+  // What the sidebar renders, so the rail beneath it never repeats a poster.
+  // The sidebar only exists on the desktop campaign branch.
+  const sidebarShown =
+    isDesktop && campaign && campaign.characters.length > 0
+      ? new Set(hotTitles.slice(0, 6).map((t) => t.id))
+      : new Set<string>();
+  const railTitles = mergeTrendingTitles(onScreen, comingSoon, streaming).filter(
+    (t) => !sidebarShown.has(t.id),
+  );
+
   return (
     <View style={band.band}>
       {/* Chapter head — same kicker + Flame title grammar as The Library and
@@ -550,14 +560,17 @@ export function RightNowBand({
         )
       )}
 
-      {/* On desktop the campaign hero + ranked "What's Hot" sidebar already
-          carry the live slate; elsewhere, one calm merged poster rail does. */}
-      {!(isDesktop && campaign && campaign.characters.length > 0) && (
-        <PosterRail
-          titles={mergeTrendingTitles(onScreen, comingSoon, streaming)}
-          onTitlePress={onTitlePress}
-          pagePad={pagePad}
-        />
+      {/* The rail is the release slate — what's in cinemas now, what's coming,
+          what just landed on streaming. "What's Hot" is TMDB's trending feed,
+          which is a different list (usually TV). Suppressing the rail on desktop
+          therefore didn't avoid a duplicate, it dropped the cinema slate
+          entirely: at 1440 the page showed Bleach and Rick and Morty while
+          mobile showed the Mario movie and Zootopia 2. Keep the rail at every
+          width, minus anything the sidebar is already showing. */}
+      {railTitles.length > 0 && (
+        <View style={{ marginBottom: isDesktop ? 24 : 16 }}>
+          <PosterRail titles={railTitles} onTitlePress={onTitlePress} pagePad={pagePad} />
+        </View>
       )}
 
       {/* Comics + Movers: side-by-side on desktop when both have data */}
