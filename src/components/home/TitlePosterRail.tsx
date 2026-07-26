@@ -4,12 +4,21 @@
 import { View, Text, FlatList, StyleSheet, Pressable, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { trendingBadge, type BadgeTone, type TrendingTitle } from '../../lib/db/trending';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_W = Math.round(SCREEN_WIDTH * 0.34);
 const CARD_H = Math.round(CARD_W * 1.5);
+
+const BADGE_ICON: Record<BadgeTone, 'ticket-outline' | 'calendar-outline' | null> = {
+  theaters: 'ticket-outline',
+  coming: 'calendar-outline',
+  // Fallback for a streamer with no logo: the pill carries its name, and a name
+  // isn't a status, so it gets no borrowed glyph.
+  streaming: null,
+};
 
 const BADGE_COLOR: Record<BadgeTone, string> = {
   theaters: COLORS.orange,
@@ -63,13 +72,31 @@ export function TitlePosterRail({
                 locations={[0.45, 1]}
                 style={StyleSheet.absoluteFill}
               />
-              {badge && (
-                <View style={[s.badge, { backgroundColor: BADGE_COLOR[badge.tone] }]}>
+              {/* Mirrors the web rail: a streamer shows its own mark, a status
+                  shows a labelled pill. Different shapes for different kinds of
+                  fact — where you can watch it vs. when it lands. */}
+              {item.provider_logo ? (
+                <View style={s.providerMark} accessibilityLabel={item.provider ?? 'Streaming'}>
+                  <Image
+                    source={{ uri: item.provider_logo }}
+                    contentFit="cover"
+                    style={StyleSheet.absoluteFill}
+                  />
+                </View>
+              ) : badge ? (
+                <View style={s.badge}>
+                  {BADGE_ICON[badge.tone] ? (
+                    <Ionicons
+                      name={BADGE_ICON[badge.tone]!}
+                      size={10}
+                      color={BADGE_COLOR[badge.tone]}
+                    />
+                  ) : null}
                   <Text style={s.badgeText} numberOfLines={1}>
                     {badge.label}
                   </Text>
                 </View>
-              )}
+              ) : null}
               <Text style={s.cardName} numberOfLines={2}>
                 {item.title}
               </Text>
@@ -103,21 +130,44 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.navy,
     justifyContent: 'flex-end',
   },
+  // Dark chip rather than a block of colour, matching the web rail: a status
+  // shouldn't out-shout the brand marks or the poster art. Colour lives on the
+  // icon, where it still signals.
   badge: {
     position: 'absolute',
     top: 8,
     left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingVertical: 4,
+    borderRadius: 8,
     maxWidth: CARD_W - 16,
+    backgroundColor: 'rgba(11,24,32,0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.22)',
+  },
+  // Square, full-bleed, already brand-coloured — chrome would only get in the
+  // way. The hairline keeps the near-black marks off a dark poster edge.
+  providerMark: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.28)',
+    backgroundColor: COLORS.deepNavy,
   },
   badgeText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 8,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
-    color: '#fff',
+    color: COLORS.beige,
   },
   cardName: {
     fontFamily: 'Nunito_700Bold',

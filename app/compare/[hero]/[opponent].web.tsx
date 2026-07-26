@@ -207,7 +207,11 @@ export default function WebCompareScreen() {
   const { hero, opponent } = useLocalSearchParams<{ hero: string; opponent: string }>();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 768;
+  // The two-scorecard layout is built from fixed 380px cards that don't shrink,
+  // so it needs 932px to lay out. At the old 768 threshold an iPad in portrait —
+  // which is exactly 768 — got the desktop layout and overflowed by 164px.
+  // 960 matches WIDE_BREAKPOINT in DailyGame.
+  const isDesktop = width >= 960;
 
   // Document scroll so the mobile arena bleeds edge-to-edge under the iOS Safari
   // toolbar. Mobile ends on the beige sheet; desktop is a fixed navy arena.

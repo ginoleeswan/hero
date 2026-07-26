@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { searchUniverses, type UniverseResult } from '../lib/db/universes';
 import { searchTeams, type TeamSearchResult } from '../lib/db/teams';
 import { searchTitles, type TitleSearchResult } from '../lib/db/titles';
+import { searchHouses, type HouseSearchResult } from '../lib/db/houses';
 import { useHeroSearch } from './useHeroSearch';
 import { trackEvent } from '../lib/analytics';
 import type { HeroSearchResult } from '../lib/db/heroes';
@@ -11,6 +12,7 @@ export interface UnifiedSearch {
   teams: TeamSearchResult[];
   heroes: HeroSearchResult[];
   titles: TitleSearchResult[];
+  houses: HouseSearchResult[];
   loading: boolean;
   resultCount: number;
 }
@@ -47,13 +49,16 @@ function useDebouncedQuery<T>(
 
 // Grouped search across types. Universes resolve synchronously from the registry;
 // heroes ride the existing debounced RPC; teams + titles are debounced queries.
-// Section order (consumer): universes, teams, heroes, titles.
+// Section order (consumer): universes, houses, teams, heroes, titles. Houses sit
+// high because someone typing "targaryen" almost certainly wants the dynasty,
+// not the fifty-five characters who share the surname.
 export function useUnifiedSearch(query: string, heroLimit = 100): UnifiedSearch {
   const trimmed = query.trim();
   const universes = useMemo(() => searchUniverses(trimmed, 3), [trimmed]);
   const { results: heroes, loading } = useHeroSearch(query, 'All', heroLimit);
   const teams = useDebouncedQuery(trimmed, searchTeams, 6);
   const titles = useDebouncedQuery(trimmed, searchTitles, 6);
+  const houses = useDebouncedQuery(trimmed, searchHouses, 4);
 
   // One analytics event per settled query (not per keystroke): debounce on the
   // trimmed string and ignore 1-char noise. Query length only — never the term.
@@ -63,5 +68,5 @@ export function useUnifiedSearch(query: string, heroLimit = 100): UnifiedSearch 
     return () => clearTimeout(timer);
   }, [trimmed]);
 
-  return { universes, teams, heroes, titles, loading, resultCount: heroes.length };
+  return { universes, teams, heroes, titles, houses, loading, resultCount: heroes.length };
 }

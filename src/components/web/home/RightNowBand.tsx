@@ -5,6 +5,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../../HeroImage';
 import { COLORS, EYEBROW, INK_TEXT, pageGutter } from '../../../constants/colors';
 import {
@@ -20,6 +21,14 @@ import type { NewComic } from '../../../lib/db/comics';
 import { TrendingMovers } from './TrendingMovers';
 import { ThisMonthInHistory } from './ThisMonthInHistory';
 import type { DebutIssue } from '../../../lib/db/anniversaries';
+
+const BADGE_ICON: Record<BadgeTone, 'ticket-outline' | 'calendar-outline' | null> = {
+  theaters: 'ticket-outline',
+  coming: 'calendar-outline',
+  // No logo came back for this streamer, so the pill carries its name. A ticket
+  // would be a lie and a play glyph would imply we can start it.
+  streaming: null,
+};
 
 const BADGE_COLOR: Record<BadgeTone, string> = {
   theaters: COLORS.orange,
@@ -411,6 +420,13 @@ function ComicCoverRail({
   );
 }
 
+/**
+ * Ceiling on the poster rail. The bundle now returns ~19 distinct titles (12 per
+ * bucket), so the old default of 12 would have thrown a third of them away.
+ * It's a horizontal scroller, so extra titles cost scroll distance, not layout.
+ */
+const RAIL_CAP = 20;
+
 function PosterRail({
   titles,
   onTitlePress,
@@ -451,13 +467,36 @@ function PosterRail({
                 />
               ) : null}
               <View style={prw.overlay as object} />
-              {badge && (
-                <View style={[prw.badge, { backgroundColor: BADGE_COLOR[badge.tone] }] as object}>
+              {/* A streamer gets its own mark — a wordmark set in our type reads
+                  slower than the logo and forced "HBO Max Amazon Channel" to be
+                  truncated to fit. Theatrical and unreleased titles aren't
+                  brands, so they keep a labelled pill; the different shape is
+                  the point, it separates *where* from *when*. */}
+              {t.provider_logo ? (
+                <View
+                  style={prw.providerMark as object}
+                  accessibilityLabel={t.provider ?? 'Streaming'}
+                >
+                  <Image
+                    source={{ uri: t.provider_logo }}
+                    contentFit="cover"
+                    style={{ width: '100%', height: '100%' } as object}
+                  />
+                </View>
+              ) : badge ? (
+                <View style={prw.badge as object}>
+                  {BADGE_ICON[badge.tone] ? (
+                    <Ionicons
+                      name={BADGE_ICON[badge.tone]!}
+                      size={11}
+                      color={BADGE_COLOR[badge.tone]}
+                    />
+                  ) : null}
                   <Text style={prw.badgeText as object} numberOfLines={1}>
                     {badge.label}
                   </Text>
                 </View>
-              )}
+              ) : null}
               <Text style={prw.name as object} numberOfLines={2}>
                 {t.title}
               </Text>
@@ -503,6 +542,24 @@ export function RightNowBand({
   // slate so the sidebar is never empty.
   const slate = mergeTrendingTitles(onScreen, [], streaming);
   const hotTitles = trendingOnScreen.length > 0 ? trendingOnScreen : slate;
+
+  // What the sidebar renders, so the rail beneath it never repeats a poster.
+  // The sidebar only exists on the desktop campaign branch.
+  const sidebarShown =
+    isDesktop && campaign && campaign.characters.length > 0
+      ? new Set(hotTitles.slice(0, 6).map((t) => t.id))
+      : new Set<string>();
+  // Drop the sidebar's titles BEFORE the merge caps at 12, not after. Filtering
+  // afterwards spends cap slots on titles that then get removed, so a pool
+  // larger than the cap would silently leave the rail short on desktop only.
+  // (No visible change today: the pool is 11, under the cap.)
+  const notInSidebar = (t: TrendingTitle) => !sidebarShown.has(t.id);
+  const railTitles = mergeTrendingTitles(
+    onScreen.filter(notInSidebar),
+    comingSoon.filter(notInSidebar),
+    streaming.filter(notInSidebar),
+    RAIL_CAP,
+  );
 
   return (
     <View style={band.band}>
@@ -550,14 +607,17 @@ export function RightNowBand({
         )
       )}
 
-      {/* On desktop the campaign hero + ranked "What's Hot" sidebar already
-          carry the live slate; elsewhere, one calm merged poster rail does. */}
-      {!(isDesktop && campaign && campaign.characters.length > 0) && (
-        <PosterRail
-          titles={mergeTrendingTitles(onScreen, comingSoon, streaming)}
-          onTitlePress={onTitlePress}
-          pagePad={pagePad}
-        />
+      {/* The rail is the release slate — what's in cinemas now, what's coming,
+          what just landed on streaming. "What's Hot" is TMDB's trending feed,
+          which is a different list (usually TV). Suppressing the rail on desktop
+          therefore didn't avoid a duplicate, it dropped the cinema slate
+          entirely: at 1440 the page showed Bleach and Rick and Morty while
+          mobile showed the Mario movie and Zootopia 2. Keep the rail at every
+          width, minus anything the sidebar is already showing. */}
+      {railTitles.length > 0 && (
+        <View style={{ marginBottom: isDesktop ? 24 : 16 }}>
+          <PosterRail titles={railTitles} onTitlePress={onTitlePress} pagePad={pagePad} />
+        </View>
       )}
 
       {/* Comics + Movers: side-by-side on desktop when both have data */}
@@ -875,21 +935,46 @@ const prw = StyleSheet.create({
     inset: 0,
     backgroundImage: 'linear-gradient(to top, rgba(11,24,32,0.9) 0%, transparent 55%)',
   } as object,
+  // A dark chip, not a block of colour. On a rail whose job is to show posters,
+  // a solid orange "IN THEATERS" out-shouted the brand marks beside it and made
+  // a status louder than a name. Same footprint and weight as a provider logo
+  // now; the colour survives on the icon, where it still reads as a signal.
   badge: {
     position: 'absolute',
     top: 10,
     left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingVertical: 5,
+    borderRadius: 8,
     maxWidth: 130,
+    backgroundColor: 'rgba(11,24,32,0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.22)',
+  } as object,
+  // The provider logos are square, full-bleed and carry their own brand colour,
+  // so they need no chrome — only a hairline to hold their edge against a dark
+  // poster, since several of them are near-black themselves.
+  providerMark: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.28)',
+    backgroundColor: COLORS.deepNavy,
   } as object,
   badgeText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: '#fff',
+    color: COLORS.beige,
   } as object,
   name: {
     fontFamily: 'Nunito_700Bold',

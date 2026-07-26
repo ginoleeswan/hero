@@ -9,9 +9,12 @@ import {
   Dimensions,
   ActivityIndicator,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, usePathname, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HouseCard } from '../../src/components/family/HouseIndex';
+import { useUniverseHouses } from '../../src/hooks/useHouseList';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -59,6 +62,9 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'anime',
   'video-games',
   'horror',
+  'magic',
+  'aliens',
+  'mythology',
 ]);
 
 // A one-line editorial tagline per category — gives the navy header warmth and
@@ -79,6 +85,9 @@ const CATEGORY_TAGLINES: Record<CategorySlug, string> = {
   anime: 'Heroes and villains from the biggest anime and manga.',
   'video-games': 'Legends straight out of video-game history.',
   horror: 'The slashers and monsters of horror cinema.',
+  magic: 'Sorcerers, mystics, and wielders of the arcane.',
+  aliens: 'Born somewhere other than Earth.',
+  mythology: 'Gods, monsters, and legends out of myth.',
 };
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;
@@ -191,6 +200,10 @@ export default function CategoryScreen() {
     [],
   );
   const [peek, setPeek] = useState<PeekHero | null>(null);
+
+  // Charted houses for this world. Empty for almost every universe — the row
+  // renders nothing rather than an empty header.
+  const houses = useUniverseHouses(universeTerm ?? franchiseTerm);
 
   const queryClient = useQueryClient();
 
@@ -326,10 +339,28 @@ export default function CategoryScreen() {
 
         {/* Beige sheet rises up and overlaps the navy stage, then the grid. */}
         <View style={styles.sheetTop} />
+
+        {/* Houses, where this world has any. Sits above the character grid
+            because a dynasty is a way INTO the characters, not a sibling of
+            them — and it is the only route to the family trees from here. */}
+        {houses.length > 0 && (
+          <View style={styles.housesRow}>
+            <Text style={styles.housesLabel}>{houses.length === 1 ? 'House' : 'Houses'}</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.housesTrack}
+            >
+              {houses.map((h) => (
+                <HouseCard key={h.slug} house={h} width={172} />
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </>
     ),
 
-    [eyebrow, tagline, title, headerHeight, brand, brandLogo],
+    [eyebrow, tagline, title, headerHeight, brand, brandLogo, houses],
   );
 
   const visible = visibleFacets(categorySlug);
@@ -547,6 +578,16 @@ export default function CategoryScreen() {
 }
 
 const styles = StyleSheet.create({
+  housesRow: { paddingTop: 6, paddingBottom: 14, gap: 10 },
+  housesLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: '#a99b84',
+    paddingHorizontal: 16,
+  },
+  housesTrack: { flexDirection: 'row', gap: 12, paddingHorizontal: 16 },
   root: { flex: 1, backgroundColor: COLORS.navy },
   list: { flex: 1, backgroundColor: COLORS.navy },
   listContent: { backgroundColor: COLORS.beige, flexGrow: 1 },

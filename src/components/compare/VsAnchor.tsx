@@ -1,6 +1,6 @@
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { VsBadge } from './VsBadge';
-import { FighterAnchor, ANCHOR_H } from './FighterAnchor';
+import { FighterAnchor, ANCHOR_H, ANCHOR_W } from './FighterAnchor';
 import type { PickSubject } from '../../hooks/usePickOpponents';
 
 export interface AnchorPreview {
@@ -31,19 +31,44 @@ export function VsAnchor({
   morphName?: string;
 }) {
   const stage = tone === 'stage';
+  const { width } = useWindowDimensions();
+
+  // Two 128px anchors either side of a 48px badge with 16px gaps needs 336px,
+  // and the spotlight behind them is 520 — both wider than a 320px phone's
+  // content area, so the row spilled and the decorative glow made the document
+  // scroll sideways. Give them the space that exists instead.
+  const GUTTER = 32;
+  const BADGE = 48;
+  const gap = width < 380 ? 10 : 16;
+  const room = Math.floor((width - GUTTER - BADGE - gap * 2) / 2);
+  const anchorW = Math.max(92, Math.min(ANCHOR_W, room));
+  const spotWidth = Math.min(520, Math.max(240, width));
 
   return (
     <View style={styles.wrap}>
-      {stage && <View style={styles.spotlight as object} />}
+      {stage && <View style={[styles.spotlight, { width: spotWidth }] as object} />}
 
-      <View style={styles.row}>
-        <FighterAnchor fighter={subject} seatLabel={name} lit tone={tone} vtName={morphName} />
+      <View style={[styles.row, { gap }] as object}>
+        <FighterAnchor
+          fighter={subject}
+          seatLabel={name}
+          lit
+          tone={tone}
+          vtName={morphName}
+          w={anchorW}
+        />
 
         <View style={styles.vsWrap}>
-          <VsBadge size={48} variant={stage ? 'glass' : 'solid'} />
+          <VsBadge size={BADGE} variant={stage ? 'glass' : 'solid'} />
         </View>
 
-        <FighterAnchor fighter={preview ?? null} seatLabel="Your pick" flip tone={tone} />
+        <FighterAnchor
+          fighter={preview ?? null}
+          seatLabel="Your pick"
+          flip
+          tone={tone}
+          w={anchorW}
+        />
       </View>
     </View>
   );
@@ -64,6 +89,6 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
-  row: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 16 },
+  row: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center' },
   vsWrap: { height: ANCHOR_H, justifyContent: 'center' },
 });

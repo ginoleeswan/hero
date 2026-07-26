@@ -244,6 +244,10 @@ describe('heroRowToCharacterData', () => {
     pageviews_prev: null,
     pageviews_spike: null,
     pageviews_at: null,
+    born: null,
+    died: null,
+    reign_start: null,
+    reign_end: null,
   } satisfies Hero;
 
   it('maps powerstats to string values', () => {
@@ -445,6 +449,10 @@ const baseHero: HeroRow = {
   pageviews_prev: null,
   pageviews_spike: null,
   pageviews_at: null,
+  born: null,
+  died: null,
+  reign_start: null,
+  reign_end: null,
 };
 
 describe('heroRowToCharacterData — powers mapping', () => {

@@ -57,6 +57,8 @@ export interface TrendingTitle {
   backdrop_url: string | null;
   poster_url: string | null;
   provider: string | null;
+  /** The streamer's mark (TMDB w92). Null for theatrical/unreleased titles. */
+  provider_logo: string | null;
   /** TMDB synopsis — used as the auto-hero blurb. */
   overview: string | null;
   /** YouTube trailer key — present on trending-on-screen rows for a ▶ affordance. */
@@ -75,6 +77,7 @@ export interface TrendingTitleRow {
   backdrop_url: string | null;
   poster_url: string | null;
   provider: string | null;
+  provider_logo?: string | null;
   overview: string | null;
   hero_id: string;
   hero_name: string;
@@ -98,6 +101,7 @@ export function groupTitleRows(rows: TrendingTitleRow[]): TrendingTitle[] {
         backdrop_url: r.backdrop_url,
         poster_url: r.poster_url,
         provider: r.provider,
+        provider_logo: r.provider_logo ?? null,
         overview: r.overview,
         trailer_key: null,
         characters: [],
@@ -227,6 +231,9 @@ export function groupOnScreenRows(rows: TrendingOnScreenRow[]): TrendingTitle[] 
         backdrop_url: r.backdrop_url,
         poster_url: r.poster_url,
         provider: r.provider,
+        // get_trending_on_screen doesn't select a logo; the What's Hot sidebar
+        // this feeds shows a rank + name, not a provider mark.
+        provider_logo: null,
         overview: null,
         trailer_key: r.trailer_key,
         characters: [],

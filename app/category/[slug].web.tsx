@@ -42,7 +42,15 @@ import { FilterRail } from '../../src/components/web/category/FilterRail';
 import { FilterSheet } from '../../src/components/web/category/FilterSheet';
 import { ActiveFilterChips } from '../../src/components/web/category/ActiveFilterChips';
 import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS, SURFACE, SURFACE_GRADIENT, SEAM_COLOR } from '../../src/constants/colors';
+import {
+  COLORS,
+  SURFACE,
+  SURFACE_GRADIENT,
+  SEAM_COLOR,
+  CONTENT_MAX_WIDTH,
+} from '../../src/constants/colors';
+import { HouseCard } from '../../src/components/family/HouseIndex';
+import { useUniverseHouses } from '../../src/hooks/useHouseList';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { SEARCH_CHIP } from '../../src/components/web/searchChip';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
@@ -64,6 +72,9 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'anime',
   'video-games',
   'horror',
+  'magic',
+  'aliens',
+  'mythology',
 ]);
 
 // ── Skeleton card (mirrors HeroCard: same shape + a faint name-bar hint) ───────
@@ -300,6 +311,8 @@ export default function WebCategoryScreen() {
   // roster montage). The banner is always the identity, so the slim header
   // below is controls-only.
   const hasBanner = !!categorySlug || !!universeTerm || !!franchiseTerm;
+  // Charted houses for this world — empty for almost every universe.
+  const houses = useUniverseHouses(universeTerm ?? franchiseTerm);
 
   const { filters, setFilter, reset } = useCategoryFilters(categorySlug);
   const activeChips = activeFilterList(categorySlug, filters);
@@ -703,6 +716,23 @@ export default function WebCategoryScreen() {
         </View>
       )}
 
+      {/* Houses, where this world has any. Above the grid because a dynasty is a
+          way INTO the characters rather than a sibling of them — and it's the
+          only route from here to the family trees. Renders nothing for the ~200
+          universes with no houses charted. */}
+      {houses.length > 0 && (
+        <View style={[styles.housesRow, { paddingHorizontal: contentPad }] as object}>
+          <Text style={styles.housesLabel as object}>
+            {houses.length === 1 ? 'House' : 'Houses'}
+          </Text>
+          <View style={styles.housesTrack as object}>
+            {houses.map((h) => (
+              <HouseCard key={h.slug} house={h} width={186} />
+            ))}
+          </View>
+        </View>
+      )}
+
       {/* ── Content: desktop = rail + grid; mobile = grid only ── */}
       <View
         style={
@@ -854,6 +884,22 @@ export default function WebCategoryScreen() {
 }
 
 const styles = StyleSheet.create({
+  housesRow: {
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+    paddingTop: 10,
+    paddingBottom: 22,
+    gap: 12,
+  },
+  housesLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: '#a99b84',
+  },
+  housesTrack: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   // Grows with content (not `flex: 1`, which clamps to one viewport and breaks
   // the sticky controls bar past the first screen of scroll — the document, not
   // this View, is the scroller).
@@ -920,7 +966,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 20,
     color: COLORS.beige,
-    lineHeight: 24,
+    lineHeight: 25,
     flexShrink: 0,
   } as object,
   titleDesktop: {

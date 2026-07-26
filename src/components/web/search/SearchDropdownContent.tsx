@@ -17,12 +17,14 @@ import { TitleResultRow } from './TitleResultRow';
 import { TopResultRow } from './TopResultRow';
 import { ScopeBar, type SearchScope } from './ScopeBar';
 import { pickTopResult, topResultKey, type TopResult } from '../../../lib/search/topResult';
+import { HouseResultRow } from '../../family/HouseResultRow';
 
 // Flat, ordered list of the dropdown's selectable rows — top result first, then
 // universes, teams, heroes, titles. The palette owns the keyboard cursor and
 // drives Enter-to-open (defaulting to the top result).
 export type NavItem =
   | { kind: 'universe'; slug: string }
+  | { kind: 'house'; slug: string }
   | { kind: 'team'; id: string }
   | { kind: 'hero'; id: string }
   | { kind: 'title'; id: string };
@@ -40,6 +42,8 @@ function topResultNavItem(top: TopResult): NavItem {
   switch (top.kind) {
     case 'universe':
       return { kind: 'universe', slug: top.universe.slug };
+    case 'house':
+      return { kind: 'house', slug: top.house.slug };
     case 'team':
       return { kind: 'team', id: top.team.id };
     case 'hero':
@@ -78,7 +82,8 @@ export function SearchDropdownContent({
   const { query, setQuery, setSearchFocused } = useSearch();
   const { user } = useAuth();
   const { history, addSearch, clearHistory } = useSearchHistory();
-  const { universes, teams, heroes, titles, loading, resultCount } = useUnifiedSearch(query);
+  const { universes, teams, heroes, titles, houses, loading, resultCount } =
+    useUnifiedSearch(query);
 
   const isEmptyQuery = query.trim().length === 0;
   // 14 fame-ranked icons for the Popular portrait rail (was 4 for a vertical list).
@@ -104,17 +109,21 @@ export function SearchDropdownContent({
   // The featured "Top result" — the single best match across all types ('all'
   // scope only). De-duped from its own section so the same item never shows twice.
   const topResult =
-    isEmptyQuery || !showTop ? null : pickTopResult(query, { universes, teams, heroes, titles });
+    isEmptyQuery || !showTop
+      ? null
+      : pickTopResult(query, { universes, teams, heroes, titles, houses });
   const topKey = topResult ? topResultKey(topResult) : null;
 
   const shownTeams = teams.filter((t) => `team:${t.id}` !== topKey).slice(0, teamCap);
   const shownUniverses = universes.filter((u) => `universe:${u.slug}` !== topKey);
+  const shownHouses = houses.filter((h) => `house:${h.slug}` !== topKey);
   const shownHeroes = heroes.filter((h) => `hero:${h.id}` !== topKey).slice(0, heroCap);
   const shownTitles = titles.filter((t) => `title:${t.id}` !== topKey).slice(0, titleCap);
 
   const charsVisible = showChars && (loading || shownHeroes.length > 0);
   const teamsVisible = showTeamsScope && shownTeams.length > 0;
   const universesVisible = showUniversesScope && shownUniverses.length > 0;
+  const housesVisible = showUniversesScope && shownHouses.length > 0;
   const filmsVisible = showFilmsScope && shownTitles.length > 0;
 
   // Report the current flat item list up to the palette for keyboard nav, in
@@ -128,6 +137,9 @@ export function SearchDropdownContent({
         ...(universesVisible
           ? shownUniverses.map((u) => ({ kind: 'universe', slug: u.slug }) as NavItem)
           : []),
+        ...(housesVisible
+          ? shownHouses.map((h) => ({ kind: 'house', slug: h.slug }) as NavItem)
+          : []),
         ...(filmsVisible ? shownTitles.map((t) => ({ kind: 'title', id: t.id }) as NavItem) : []),
       ];
   const itemsKey = JSON.stringify(navItems);
@@ -138,6 +150,7 @@ export function SearchDropdownContent({
 
   const activeItem = highlightIndex >= 0 ? navItems[highlightIndex] : undefined;
   const activeUniverseSlug = activeItem?.kind === 'universe' ? activeItem.slug : undefined;
+  const activeHouseSlug = activeItem?.kind === 'house' ? activeItem.slug : undefined;
   const activeTeamId = activeItem?.kind === 'team' ? activeItem.id : undefined;
   const activeHeroId = activeItem?.kind === 'hero' ? activeItem.id : undefined;
   const activeTitleId = activeItem?.kind === 'title' ? activeItem.id : undefined;
@@ -154,6 +167,12 @@ export function SearchDropdownContent({
     addSearch(query);
     close();
     router.push(`/universe/${slug}` as Parameters<typeof router.push>[0]);
+  };
+
+  const handleHousePress = (slug: string) => {
+    addSearch(query);
+    close();
+    router.push(`/house/${slug}` as Parameters<typeof router.push>[0]);
   };
 
   const handleTeamPress = (tid: string) => {
@@ -173,6 +192,8 @@ export function SearchDropdownContent({
     switch (topResult.kind) {
       case 'universe':
         return handleUniversePress(topResult.universe.slug);
+      case 'house':
+        return handleHousePress(topResult.house.slug);
       case 'team':
         return handleTeamPress(topResult.team.id);
       case 'hero':
@@ -251,6 +272,20 @@ export function SearchDropdownContent({
                 universe={u}
                 active={u.slug === activeUniverseSlug}
                 onPress={() => handleUniversePress(u.slug)}
+              />
+            ))}
+          </View>
+        )}
+        {housesVisible && (
+          <View style={styles.section}>
+            <SectionLabel label="Houses" />
+            {shownHouses.map((h) => (
+              <HouseResultRow
+                key={h.slug}
+                house={h}
+                variant="dark"
+                active={h.slug === activeHouseSlug}
+                onPress={() => handleHousePress(h.slug)}
               />
             ))}
           </View>

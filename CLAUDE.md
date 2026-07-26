@@ -175,3 +175,4 @@ the hook. When adding a screen with a web variant, both `foo.tsx` and
 | Types                          | `src/types/index.ts` (app) · `database.generated.ts` (generated) |
 | Palette / constants            | `src/constants/`                                                 |
 | SQL migrations                 | `supabase/migrations/`                                           |
+| Family trees / houses          | `docs/architecture/family-trees-and-houses.md` (read it first)   |

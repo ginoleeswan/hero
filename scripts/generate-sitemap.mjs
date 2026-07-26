@@ -43,6 +43,9 @@ const STATIC_ROUTES = [
   { loc: '/explore', changefreq: 'daily', priority: '0.9' },
   { loc: '/play', changefreq: 'daily', priority: '0.9' },
   { loc: '/search', changefreq: 'weekly', priority: '0.7' },
+  // The index the per-house pages hang off, so a crawler reaching /house/<slug>
+  // from houses.xml can also see the set they belong to.
+  { loc: '/house', changefreq: 'weekly', priority: '0.6' },
   { loc: '/privacy', changefreq: 'yearly', priority: '0.3' },
   { loc: '/terms', changefreq: 'yearly', priority: '0.3' },
 ];
@@ -128,6 +131,9 @@ const CATEGORY_SLUGS = [
   'anime',
   'video-games',
   'horror',
+  'magic',
+  'aliens',
+  'mythology',
 ];
 
 function xmlEscape(s) {
@@ -290,6 +296,26 @@ async function main() {
   // Dynamic content — each source is independently fail-soft so one Supabase
   // blip can't wipe the others (or break the deploy).
   if (SUPABASE_URL && SUPABASE_KEY) {
+    // Houses. Small and curated, but these are the pages built to be found:
+    // "House Targaryen family tree" is a query people actually type, which is
+    // the reason the tree got a URL of its own.
+    try {
+      const rows = await fetchRows('houses', 'slug');
+      await writeFile(
+        join(SITEMAP_DIR, 'houses.xml'),
+        urlSet(
+          rows.map((h) => ({
+            loc: `/house/${encodeURIComponent(String(h.slug))}`,
+            changefreq: 'weekly',
+          })),
+        ),
+        'utf8',
+      );
+      indexFiles.push('houses.xml');
+    } catch (err) {
+      console.warn('[sitemap] houses skipped:', err?.message ?? err);
+    }
+
     // Characters, WITH portrait images for the Google Images vertical. Quality
     // gate: only heroes with real content (a summary) — ~16k of 34k.
     try {

@@ -258,7 +258,7 @@ export function RightNowBand({
       <TitlePosterRail
         label="In Cinemas & Streaming"
         title="On Screen Now"
-        titles={mergeTrendingTitles(onScreen, comingSoon, streaming)}
+        titles={mergeTrendingTitles(onScreen, comingSoon, streaming, 20)}
         onTitlePress={onTitlePress}
       />
 

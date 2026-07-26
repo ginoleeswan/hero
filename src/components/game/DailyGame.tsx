@@ -62,6 +62,20 @@ const STICKER_SLOTS_WIDE: Record<string, object> = {
   'First appeared': { left: '100%', marginLeft: -2, top: 18 },
   Origin: { left: '100%', marginLeft: 6, top: 210 },
 };
+/**
+ * Extra overlap onto the card for a narrow screen, applied to whichever edge the
+ * sticker is anchored to. Left-anchored slots use marginRight, right-anchored
+ * ones marginLeft, and more negative means further over the card.
+ */
+function tuckIn(label: string, amount: number): object {
+  const slot = STICKER_SLOTS[label] ?? STICKER_SLOTS.Publisher;
+  const anchoredLeft = 'right' in (slot as Record<string, unknown>);
+  const base = anchoredLeft
+    ? ((slot as { marginRight?: number }).marginRight ?? 0)
+    : ((slot as { marginLeft?: number }).marginLeft ?? 0);
+  return anchoredLeft ? { marginRight: base - amount } : { marginLeft: base - amount };
+}
+
 const STICKER_TILT: Record<string, number> = {
   Publisher: 0,
   'First appeared': 1,
@@ -158,6 +172,25 @@ export function DailyGame() {
   const isWide = isWeb && width >= WIDE_BREAKPOINT;
 
   const topPad = (isWeb ? WEB_NAV_CLEARANCE : insets.top) + 14;
+
+  // The glow and the clue stickers both bleed outward from a centred 156px
+  // card. That's the whole look — but decorative bleed must not widen the
+  // document, and on a 320px phone both ran past the viewport edge.
+  //
+  // The glow simply shrinks to whatever fits. The stickers can't shrink without
+  // losing a publisher logo, so instead they tuck further over the card: the
+  // extra overlap is exactly the amount by which they'd otherwise hang off.
+  const glowSize = Math.min(340, Math.max(180, width - 24));
+  const glowStyle = {
+    width: glowSize,
+    height: glowSize,
+    marginLeft: -glowSize / 2,
+    marginTop: -glowSize / 2,
+    borderRadius: glowSize / 2,
+  };
+  // Space beside the card at this width, vs. the widest sticker (~125px).
+  const sideRoom = Math.max(0, (width - CARD_W) / 2);
+  const extraTuck = Math.max(0, 125 - sideRoom);
 
   // Web: document scroll so the dark stage bleeds under the iOS Safari toolbar
   // (the body already matches #0b1820). No-op on native.
@@ -404,12 +437,18 @@ export function DailyGame() {
     <>
       <View style={styles.stage}>
         <View style={styles.cardWrap}>
-          <View style={[styles.glow, GLOW]} pointerEvents="none" />
+          <View style={[styles.glow, GLOW, glowStyle]} pointerEvents="none" />
           {renderCard()}
           {clues.map((c) => (
             <View
               key={c.label}
-              style={[styles.slot, STICKER_SLOTS[c.label] ?? STICKER_SLOTS.Publisher]}
+              style={
+                [
+                  styles.slot,
+                  STICKER_SLOTS[c.label] ?? STICKER_SLOTS.Publisher,
+                  extraTuck > 0 ? tuckIn(c.label, extraTuck) : null,
+                ] as object
+              }
               pointerEvents="none"
             >
               <ClueSticker clue={c} tilt={STICKER_TILT[c.label] ?? 0} />

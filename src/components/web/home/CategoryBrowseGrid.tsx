@@ -20,11 +20,6 @@ function pathFor(slug: string, kind: string): string {
   return kind === 'Publisher' ? `/universe/${slug}` : `/category/${slug}`;
 }
 
-// The web Library shows publisher doorways as the logo pod row directly above
-// this grid, so publisher tiles here would be duplicates — the grid keeps the
-// thematic axes (archetypes, teams, media, rankings).
-const GRID_PODS = BROWSE_PODS.filter((p) => p.kind !== 'Publisher');
-
 export function CategoryBrowseGrid({
   covers,
   onNavigate,
@@ -42,7 +37,7 @@ export function CategoryBrowseGrid({
 
   return (
     <View style={[s.grid, { paddingHorizontal: pad, gap }] as object}>
-      {GRID_PODS.map((p) => {
+      {BROWSE_PODS.map((p) => {
         const c = covers?.[p.slug];
         const coverUrl = c?.portrait_url ?? c?.image_url ?? c?.image_md_url;
         return (

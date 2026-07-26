@@ -18,6 +18,8 @@ import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import { hasRealArt } from '../../constants/heroImages';
 import { PlaceholderHead } from './PlaceholderHead';
+import { HouseInlineLink, HouseFooterLink } from './HouseLinks';
+import type { HeroHouse } from '../../hooks/useHeroHouses';
 import { headShapeForRole } from '../../lib/family/kinshipGender';
 import { buildFamilyGraph } from '../../lib/family/buildFamilyGraph';
 import { treeDisplayName } from '../../lib/family/displayName';
@@ -36,6 +38,10 @@ const CAMEO = 54;
 const HERO_CAMEO = 64;
 /** Below this, node names stop being readable — never auto-fit past it. */
 const MIN_LEGIBLE_SCALE = 0.85;
+/** Ceiling on the inline auto-fit — past this the portraits start to soften. */
+const INLINE_MAX_SCALE = 1.3;
+/** Never shrink the stage below this, however few generations a house records. */
+const MIN_STAGE_HEIGHT = 360;
 
 function alignColor(alignment: string | null): string {
   if (alignment === 'good') return COLORS.blue;
@@ -108,6 +114,7 @@ function CanvasNode({
   heroAvatar,
   heroId,
   onNavigate,
+  onSelectMember,
 }: {
   node: PositionedNode;
   heroName: string;
@@ -115,6 +122,12 @@ function CanvasNode({
   heroAvatar: string | null;
   heroId: string | null;
   onNavigate?: () => void;
+  /**
+   * Given, a node press hands the person back to the host instead of leaving for
+   * their character page — the house page answers in place (who they are, how
+   * they're related) rather than navigating away mid-exploration.
+   */
+  onSelectMember?: (heroId: string, name: string) => void;
 }): ReactElement {
   const router = useRouter();
 
@@ -152,7 +165,11 @@ function CanvasNode({
   // on every card in that row says nothing. It earns its line only where a row
   // holds several different relations — the hero's own generation mixes wives,
   // brothers and cousins — or where the relation isn't a step along the bloodline.
+  // …and where it is suppressed, a date can have the line instead. Nodes are
+  // 104px wide, so this is one slot: the relation if it says something the row
+  // doesn't, otherwise the reign or lifespan.
   const role = rowNamesTheRelation(member) ? null : roleLabel(member);
+  const secondary = role ?? member.dates ?? null;
 
   const dead = member.status === 'deceased';
   // A cameo above the name, the way printed genealogies set a portrait medallion.
@@ -218,9 +235,9 @@ function CanvasNode({
         {shownName}
         {dead ? <Text style={styles.dagger}> †</Text> : null}
       </Text>
-      {role ? (
+      {secondary ? (
         <Text style={styles.roleText} numberOfLines={1}>
-          {role}
+          {secondary}
         </Text>
       ) : null}
     </View>
@@ -230,7 +247,13 @@ function CanvasNode({
     return (
       <Pressable
         style={styles.cameoNode}
+        accessibilityRole="button"
+        accessibilityLabel={onSelectMember ? `Select ${member.name}` : `Open ${member.name}`}
         onPress={() => {
+          if (onSelectMember) {
+            onSelectMember(member.heroId!, member.name);
+            return;
+          }
           onNavigate?.();
           router.push(`/character/${member.heroId}?name=${encodeURIComponent(member.name)}`);
         }}
@@ -259,9 +282,11 @@ function FamilyStage({
   fullscreen,
   showAxis,
   compact = false,
+  inlineHeight,
   onToggleFullscreen,
   onClose,
   onNavigate,
+  onSelectMember,
 }: {
   layout: FamilyLayout;
   heroName: string;
@@ -271,9 +296,11 @@ function FamilyStage({
   fullscreen: boolean;
   showAxis: boolean;
   compact?: boolean;
+  inlineHeight?: number;
   onToggleFullscreen: () => void;
   onClose?: () => void;
   onNavigate?: () => void;
+  onSelectMember?: (heroId: string, name: string) => void;
 }): ReactElement {
   // Touch devices pinch/pan the canvas; the ± buttons are desktop chrome.
   const canHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches;
@@ -284,42 +311,74 @@ function FamilyStage({
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
 
+  // Where the nodes actually are, which is not `layout.bounds`. The bounds are
+  // the d3 tree's full extent, and a lineage that is four wide at the bottom and
+  // one wide at the top reserves the width of the widest row at every row. Fit
+  // and clamp off that and a phone opens on half a canvas of empty grid with the
+  // tree jammed against — and clipped by — the far edge.
+  const ink = useMemo(() => {
+    const xs = layout.nodes.map((n) => n.x);
+    const ys = layout.nodes.map((n) => n.y);
+    const padX = NODE_W / 2 + 10;
+    const padY = NODE_H / 2 + 10;
+    return {
+      x0: Math.min(...xs) - padX,
+      x1: Math.max(...xs) + padX,
+      y0: Math.min(...ys) - padY,
+      y1: Math.max(...ys) + padY,
+    };
+  }, [layout]);
+
   const computeCenter = useCallback(
     (vpW: number, vpH: number) => {
       if (vpW === 0) return null;
       const { width: bw, height: bh } = layout.bounds;
+      const cw = ink.x1 - ink.x0;
+      const ch = ink.y1 - ink.y0;
       const pad = fullscreen ? 40 : 24;
-      const fit = Math.min((vpW - pad) / bw, (vpH - pad) / bh);
+      const fit = Math.min((vpW - pad) / cw, (vpH - pad) / ch);
       // Fit the whole tree when it fits, but stop shrinking at a legible floor.
       // A recorded dynasty is thirteen generations tall: fitting all of it puts
       // every name below reading size and lands the viewport in the middle of
       // some remote descendant.
-      const s = Math.min(fullscreen ? 2.2 : 1.2, Math.max(MIN_LEGIBLE_SCALE, fit));
+      const s = Math.min(fullscreen ? 2.2 : INLINE_MAX_SCALE, Math.max(MIN_LEGIBLE_SCALE, fit));
 
-      // Anchor on the hero, not the midpoint of the bounds — you should open on
-      // the character whose page this is, with their immediate family around
-      // them, and pan out to the rest.
-      //
-      // RN scales around the element CENTRE, so a point p lands at
-      // centre + (p − centre) · s. Solving for the translate that puts the hero
-      // at the viewport centre gives the term below; for p = centre it reduces
-      // to the old viewportCentre − boundsCentre.
+      // Anchor on the hero — you should open on the character whose page this
+      // is — but only when the tree is too big to show at once. RN scales about
+      // the element CENTRE, so a canvas point p lands at C + (p − C)·s + t.
       const hero = layout.nodes.find((n) => n.isHero);
-      // Anchoring on the hero is only worth it when the tree is too big to show
-      // at once. A small tree that already fits was being shoved up against one
-      // edge with the rest of the canvas left empty, so centre the whole thing.
-      const fitsX = bw * s <= vpW - pad;
-      const fitsY = bh * s <= vpH - pad;
-      const hx = fitsX ? bw / 2 : (hero?.x ?? bw / 2);
-      const hy = fitsY ? bh / 2 : (hero?.y ?? bh / 2);
+      const hx = cw * s <= vpW - pad ? (ink.x0 + ink.x1) / 2 : (hero?.x ?? bw / 2);
+      const hy = ch * s <= vpH - pad ? (ink.y0 + ink.y1) / 2 : (hero?.y ?? bh / 2);
+
+      // Never open past an edge of the ink. The hero of a thirteen-generation
+      // dynasty sits near the bottom of it, so straight centring spent the lower
+      // third of the canvas on empty grid while the ancestors that would fill it
+      // sat just off the top.
+      const clampAxis = (want: number, p0: number, p1: number, C: number, viewport: number) => {
+        const span = (p1 - p0) * s;
+        if (span <= viewport - pad) return want;
+        const half = pad / 2;
+        const lo = viewport - half - C - (p1 - C) * s;
+        const hi = half - C - (p0 - C) * s;
+        return Math.min(hi, Math.max(lo, want));
+      };
       return {
-        tx: vpW / 2 - bw / 2 - (hx - bw / 2) * s,
-        ty: vpH / 2 - bh / 2 - (hy - bh / 2) * s,
+        tx: clampAxis(vpW / 2 - bw / 2 - (hx - bw / 2) * s, ink.x0, ink.x1, bw / 2, vpW),
+        ty: clampAxis(vpH / 2 - bh / 2 - (hy - bh / 2) * s, ink.y0, ink.y1, bh / 2, vpH),
         scale: s,
       };
     },
-    [layout, fullscreen],
+    [layout, ink, fullscreen],
   );
+  // Never taller than the tree it holds: the height the page offers is sized
+  // for thirteen generations, and a house with four got the same box.
+  const stageHeight = inlineHeight
+    ? Math.min(
+        inlineHeight,
+        Math.max(MIN_STAGE_HEIGHT, Math.round((ink.y1 - ink.y0) * INLINE_MAX_SCALE + 56)),
+      )
+    : undefined;
+
   const recenter = useCallback(() => {
     const c = computeCenter(vp.w, vp.h);
     if (!c) return;
@@ -370,6 +429,7 @@ function FamilyStage({
       style={[
         styles.stage,
         fullscreen ? styles.stageFlat : compact ? styles.stageInlineCompact : styles.stageInline,
+        !fullscreen && stageHeight ? { height: stageHeight } : null,
       ]}
     >
       {showAxis ? (
@@ -497,6 +557,7 @@ function FamilyStage({
                   heroAvatar={heroAvatar}
                   heroId={heroId}
                   onNavigate={onNavigate}
+                  onSelectMember={onSelectMember}
                 />
               </View>
             ))}
@@ -518,13 +579,17 @@ function FamilyStage({
           <Pressable style={styles.zoomBtn} onPress={recenter}>
             <Ionicons name="locate-outline" size={16} color={COLORS.black} />
           </Pressable>
-          <Pressable style={styles.zoomBtn} onPress={onToggleFullscreen}>
-            <Ionicons
-              name={fullscreen ? 'contract-outline' : 'expand-outline'}
-              size={16}
-              color={COLORS.black}
-            />
-          </Pressable>
+          {/* Compact already carries a named "Full chart" control above the
+              stage; a second one here only sat on top of the nodes. */}
+          {compact && !fullscreen ? null : (
+            <Pressable style={styles.zoomBtn} onPress={onToggleFullscreen}>
+              <Ionicons
+                name={fullscreen ? 'contract-outline' : 'expand-outline'}
+                size={16}
+                color={COLORS.black}
+              />
+            </Pressable>
+          )}
         </View>
 
         {fullscreen ? (
@@ -550,12 +615,34 @@ export function FamilyCanvas({
   heroAvatar = null,
   heroId = null,
   members,
+  houses = [],
+  label = 'Family',
+  stageHeight,
+  onSelectMember,
 }: {
   heroName: string;
   heroImage?: string | null;
   heroAvatar?: string | null;
   heroId?: string | null;
   members: FamilyMember[];
+  /**
+   * The houses this character belongs to. Given, the section names them and
+   * offers the way through to the full dynasty. The house page passes none —
+   * there it would point at the page you are already on.
+   */
+  houses?: HeroHouse[];
+  /**
+   * Card title. Defaults to "Family" for the character page; the house page
+   * names the line instead, so the section doesn't repeat its own page header.
+   */
+  label?: string;
+  /**
+   * Inline viewport height. The 460px default suits a band inside a character
+   * page; where the chart IS the page it should take the screen.
+   */
+  stageHeight?: number;
+  /** Given, nodes report the press back instead of leaving for a character page. */
+  onSelectMember?: (heroId: string, name: string) => void;
 }): ReactElement | null {
   const [fullscreen, setFullscreen] = useState(false);
   const { width } = useWindowDimensions();
@@ -575,7 +662,9 @@ export function FamilyCanvas({
   const relativesCount = (
     <>
       {members.length} {members.length === 1 ? 'relative' : 'relatives'}
-      {linkedCount > 0 ? ` · ${linkedCount} on Mythique` : ''}
+      {/* Only worth saying when it differs: on a house page every relative is
+          already on Mythique, so the line counted one fact twice. */}
+      {linkedCount > 0 && linkedCount < members.length ? ` · ${linkedCount} on Mythique` : ''}
     </>
   );
 
@@ -584,9 +673,15 @@ export function FamilyCanvas({
       <View style={isDesktop ? styles.card : undefined}>
         {isDesktop ? (
           <>
-            {/* Card chrome */}
+            {/* Card chrome. The house sits in the title line because it is what
+                this tree IS — "Family · House Targaryen" names the lineage the
+                section is drawing, and doubles as the way into the whole of it.
+                Below the card it was a chip attached to nothing. */}
             <View style={styles.header}>
-              <Text style={styles.eyebrow}>Family</Text>
+              <View style={styles.headerLeft}>
+                <Text style={styles.eyebrow}>{label}</Text>
+                <HouseInlineLink houses={houses} heroId={heroId ?? null} />
+              </View>
               <Text style={styles.count}>{relativesCount}</Text>
             </View>
             <View style={styles.divider} />
@@ -596,7 +691,9 @@ export function FamilyCanvas({
             {/* Mobile: the page's section-title grammar — right-aligned
               "Family · N" over the rule, matching "Gallery · N". */}
             <View style={styles.mHeader}>
-              <Text style={styles.mTitle}>Family · {members.length}</Text>
+              <Text style={styles.mTitle}>
+                {label} · {members.length}
+              </Text>
             </View>
             <View style={styles.mDivider} />
           </>
@@ -611,8 +708,28 @@ export function FamilyCanvas({
           fullscreen={false}
           showAxis={isDesktop}
           compact={!isDesktop}
+          inlineHeight={stageHeight}
+          onSelectMember={onSelectMember}
           onToggleFullscreen={() => setFullscreen(true)}
         />
+
+        {/* A pan-and-zoom canvas the size of a business card shows three of
+            twenty-one nodes; fullscreen is where a phone can read the tree. The
+            control sits under the stage — full width, and exactly where you
+            reach after the pinch that didn't help — rather than as one of four
+            identical icons on top of the nodes it was meant to get you to. */}
+        {!isDesktop ? (
+          <Pressable
+            onPress={() => setFullscreen(true)}
+            accessibilityRole="button"
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+              [styles.mExpand, hovered && (styles.mExpandHover as object)] as object
+            }
+          >
+            <Ionicons name="expand-outline" size={15} color={COLORS.navy} />
+            <Text style={styles.mExpandText}>Open the full chart</Text>
+          </Pressable>
+        ) : null}
 
         {/* Asides (variants) */}
         {graph.asides.length > 0 ? (
@@ -620,7 +737,7 @@ export function FamilyCanvas({
             <Text style={styles.tierLabel}>Variants</Text>
             <View style={styles.tierRow}>
               {graph.asides.map((mem) => (
-                <AsideMemberNode key={mem.id} member={mem} />
+                <AsideMemberNode key={mem.id} member={mem} onSelectMember={onSelectMember} />
               ))}
             </View>
           </View>
@@ -634,7 +751,7 @@ export function FamilyCanvas({
             <Text style={styles.tierLabel}>Earlier forebears · generation unrecorded</Text>
             <View style={styles.tierRow}>
               {graph.unplaced.map((mem) => (
-                <AsideMemberNode key={mem.id} member={mem} />
+                <AsideMemberNode key={mem.id} member={mem} onSelectMember={onSelectMember} />
               ))}
             </View>
           </View>
@@ -646,6 +763,10 @@ export function FamilyCanvas({
             Also: {graph.footnotes.map((mem) => `${mem.name} (${roleLabel(mem)})`).join(', ')}
           </Text>
         ) : null}
+
+        {/* Mobile has no room beside its title, so the house closes the section
+            instead — and mobile web had no route to the house pages at all. */}
+        {!isDesktop ? <HouseFooterLink houses={houses} heroId={heroId ?? null} /> : null}
       </View>
 
       <Modal
@@ -663,6 +784,14 @@ export function FamilyCanvas({
             heroId={heroId}
             fullscreen
             showAxis={isDesktop}
+            onSelectMember={
+              onSelectMember
+                ? (id, name) => {
+                    setFullscreen(false);
+                    onSelectMember(id, name);
+                  }
+                : undefined
+            }
             onToggleFullscreen={() => setFullscreen(false)}
             onClose={() => setFullscreen(false)}
             onNavigate={() => setFullscreen(false)}
@@ -698,7 +827,13 @@ function AxisLabel({
 }
 
 // Inline member node for asides section (outside the canvas)
-function AsideMemberNode({ member }: { member: FamilyMember }): ReactElement {
+function AsideMemberNode({
+  member,
+  onSelectMember,
+}: {
+  member: FamilyMember;
+  onSelectMember?: (heroId: string, name: string) => void;
+}): ReactElement {
   const router = useRouter();
   const dead = member.status === 'deceased';
 
@@ -708,7 +843,9 @@ function AsideMemberNode({ member }: { member: FamilyMember }): ReactElement {
       <Pressable
         style={[styles.linkNode, { borderColor: tint + '66' }]}
         onPress={() =>
-          router.push(`/character/${member.heroId}?name=${encodeURIComponent(member.name)}`)
+          onSelectMember
+            ? onSelectMember(member.heroId!, member.name)
+            : router.push(`/character/${member.heroId}?name=${encodeURIComponent(member.name)}`)
         }
       >
         {member.heroPower != null && member.heroPower > 0 ? (
@@ -770,6 +907,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
   },
+  // The eyebrow and the house read as one title line; `flexShrink` keeps the
+  // count on its own end when a house name is long.
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flexShrink: 1 },
   eyebrow: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
@@ -787,9 +927,25 @@ const styles = StyleSheet.create({
 
   // Mobile header — mirrors the native FamilyCanvas + the other mobile sections.
   mHeader: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'baseline' },
+  mExpand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    height: 42,
+    borderWidth: 1,
+    borderColor: '#e7dcc9',
+    backgroundColor: '#fffaf0',
+    borderRadius: 14,
+    cursor: 'pointer',
+  } as object,
+  mExpandHover: { borderColor: '#cdbfa6', backgroundColor: '#f7eeda' } as object,
+  mExpandText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
   mTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 20,
+    lineHeight: 26,
     color: COLORS.navy,
     textAlign: 'right',
     paddingVertical: 5,
@@ -818,7 +974,10 @@ const styles = StyleSheet.create({
   stageInline: { height: 460 },
   stageInlineCompact: { height: 360 },
   stageFlat: { flex: 1, borderWidth: 0, borderRadius: 0 },
-  fsRoot: { flex: 1, backgroundColor: '#fdf9f4' },
+  // `minHeight: 100lvh`, not `flex: 1`: the modal's host is fixed-positioned, so
+  // it pins to the layout viewport and stops at the iOS Safari toolbar. The
+  // large-viewport height runs the canvas under the glass like every other page.
+  fsRoot: { flex: 1, minHeight: '100lvh', backgroundColor: '#fdf9f4' } as object,
   axisGutter: {
     // Wide enough for "2× great-grandchildren" on one line. At 92px with
     // uppercase tracking every deep row broke mid-word — "GRANDCHILD / REN".

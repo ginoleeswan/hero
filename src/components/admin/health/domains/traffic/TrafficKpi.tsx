@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   body: { gap: 4 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   valueWrap: { flexShrink: 1, gap: 1 },
-  value: { fontFamily: 'Flame-Regular', fontSize: 25, lineHeight: 27 },
+  value: { fontFamily: 'Flame-Regular', fontSize: 25, lineHeight: 31 },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10.5,

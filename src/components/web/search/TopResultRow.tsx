@@ -7,6 +7,7 @@ import { HeroAvatar } from '../../HeroAvatar';
 import { BrandLogoView } from '../../PublisherBadge';
 import { brandForPublisher } from '../../../constants/publishers';
 import { teamLogo } from '../../../constants/teamBrands';
+import { HouseCrest } from '../../family/HouseCrest';
 import type { TopResult } from '../../../lib/search/topResult';
 
 // The featured "Top result" — one prominent, type-agnostic row for the single
@@ -157,6 +158,17 @@ function describe(
             )}
           </View>
         ),
+      };
+    }
+    case 'house': {
+      const h = top.house;
+      return {
+        name: h.name,
+        typeLabel: 'House',
+        // Size is the useful fact: it says whether there's a tree worth opening.
+        subtitle: `${h.memberCount} ${h.memberCount === 1 ? 'member' : 'members'} · ${h.universe}`,
+        glowColor: h.sigil_tint ?? COLORS.orange,
+        thumb: <HouseCrest name={h.name} tint={h.sigil_tint ?? COLORS.orange} size={42} />,
       };
     }
     case 'hero': {

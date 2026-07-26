@@ -645,6 +645,21 @@ export const CATEGORY_SEO: Record<string, { label: string; blurb: string }> = {
     blurb:
       'The slashers and monsters of horror cinema — the most iconic villains of horror, with powers, stats and matchups.',
   },
+  magic: {
+    label: 'Magic Users & Sorcerers',
+    blurb:
+      'Sorcerers, mystics and wielders of the arcane across comics, film and games — with powers, stats and who-would-win matchups.',
+  },
+  aliens: {
+    label: 'Alien Characters',
+    blurb:
+      'Heroes and villains born beyond Earth — Kryptonians, Saiyans, symbiotes and more, with powers, stats and matchups.',
+  },
+  mythology: {
+    label: 'Gods & Mythological Characters',
+    blurb:
+      'Gods, monsters and legends pulled from myth into comics and film — with powers, stats and who-would-win matchups.',
+  },
 };
 
 /** Cross-links to the other hub pages so crawlers walk between them and equity

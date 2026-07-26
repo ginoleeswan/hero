@@ -39,6 +39,8 @@ import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../../src/components/ui/SkeletonProvider';
 import type { PublisherFilter, AlignmentFilter } from '../../../src/lib/db/heroes';
 import { searchUniverses } from '../../../src/lib/db/universes';
+import { searchHouses, type HouseSearchResult } from '../../../src/lib/db/houses';
+import { HouseResultRow } from '../../../src/components/family/HouseResultRow';
 import { searchTeams, type TeamSearchResult } from '../../../src/lib/db/teams';
 import { searchTitles, type TitleSearchResult } from '../../../src/lib/db/titles';
 import { pickTopResult, topResultKey, type TopResult } from '../../../src/lib/search/topResult';
@@ -210,6 +212,29 @@ export default function SearchScreen() {
     };
   }, [debouncedQuery]);
 
+  // Matching houses. Same debounced-fetch shape as teams and titles; routes to
+  // /house/[slug]. A surname query ("targaryen") means the dynasty far more
+  // often than it means any one character who bears the name.
+  const [houses, setHouses] = useState<HouseSearchResult[]>([]);
+  useEffect(() => {
+    const q = debouncedQuery.trim();
+    if (!q) {
+      // Clear when the query empties. Effect-based fetch (pre-React-Query).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHouses([]);
+      return;
+    }
+    let cancelled = false;
+    searchHouses(q, 3)
+      .then((res) => {
+        if (!cancelled) setHouses(res);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery]);
+
   // The single confident "Top result" across every type (Raycast/Spotlight
   // pattern), via the shared pickTopResult. Null when nothing is a confident
   // winner — then the screen just shows the grouped sections. Mirrors web.
@@ -220,8 +245,9 @@ export default function SearchScreen() {
         teams,
         heroes: displayedHeroes,
         titles,
+        houses,
       }),
-    [debouncedQuery, universes, teams, displayedHeroes, titles],
+    [debouncedQuery, universes, teams, displayedHeroes, titles, houses],
   );
   const topKey = topResult ? topResultKey(topResult) : null;
 
@@ -229,6 +255,10 @@ export default function SearchScreen() {
   const sectionUniverses = useMemo(
     () => universes.filter((u) => `universe:${u.slug}` !== topKey),
     [universes, topKey],
+  );
+  const sectionHouses = useMemo(
+    () => houses.filter((h) => `house:${h.slug}` !== topKey),
+    [houses, topKey],
   );
   const sectionTeams = useMemo(
     () => teams.filter((t) => `team:${t.id}` !== topKey),
@@ -393,6 +423,24 @@ export default function SearchScreen() {
               onPress={() => {
                 Haptics.selectionAsync();
                 router.push(`/team/${t.id}` as Parameters<typeof router.push>[0]);
+              }}
+            />
+          ))}
+        </View>
+      )}
+
+      {!isIdle && sectionHouses.length > 0 && (
+        <View style={styles.universeSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>Houses</Text>
+          </View>
+          {sectionHouses.map((h) => (
+            <HouseResultRow
+              key={h.slug}
+              house={h}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push(`/house/${h.slug}` as Parameters<typeof router.push>[0]);
               }}
             />
           ))}

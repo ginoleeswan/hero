@@ -81,17 +81,15 @@ export function SearchBrowse({
   const isMobile = width < 640;
   const minCol = isMobile ? 150 : 220;
 
-  // Publishers (Marvel/DC/Image) are the "Universes" chip row, so Browse is one
-  // uniform grid of theme pods — no featured row, no header, no wasted space.
-  const pods = BROWSE_PODS.filter((p) => p.kind !== 'Publisher');
-
+  // Publishers are the "Universes" chip row, so Browse is one uniform grid of
+  // theme pods — no featured row, no header, no wasted space.
   return (
     <View
       style={
         [t.grid, { gridTemplateColumns: `repeat(auto-fill, minmax(${minCol}px, 1fr))` }] as object
       }
     >
-      {pods.map((p) => (
+      {BROWSE_PODS.map((p) => (
         <PodTile key={p.slug} pod={p} cover={covers?.[p.slug]} onPress={onPress} />
       ))}
     </View>

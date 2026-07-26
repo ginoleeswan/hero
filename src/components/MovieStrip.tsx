@@ -746,7 +746,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 14,
     color: '#fff',
-    lineHeight: 17,
+    lineHeight: 18,
   },
   backdropPillRow: {
     flexDirection: 'row',

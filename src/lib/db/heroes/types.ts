@@ -57,7 +57,10 @@ export type CategorySlug =
   | 'franchise-icons'
   | 'anime'
   | 'video-games'
-  | 'horror';
+  | 'horror'
+  | 'magic'
+  | 'aliens'
+  | 'mythology';
 
 export type SortOption = 'popular' | 'az' | 'power';
 export type CategoryPublisher = 'all' | 'marvel' | 'dc';

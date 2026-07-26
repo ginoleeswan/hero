@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   value: {
     fontFamily: 'Flame-Regular',
     fontSize: 24,
-    lineHeight: 26,
+    lineHeight: 30,
     color: COLORS.black,
     fontVariant: ['tabular-nums'],
   },

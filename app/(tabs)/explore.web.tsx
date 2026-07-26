@@ -876,7 +876,12 @@ const pss = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 20,
-  },
+    // The CTA (~110px) plus eight dots (~66px) needs more width than the panel
+    // has on a 320-360px phone, and with nowhere to go it pushed the whole
+    // document sideways. Let the dots drop under the button instead.
+    flexWrap: 'wrap',
+    gap: 8,
+  } as object,
   // The stage's single primary CTA — the most confident text on the panel.
   ctaBtn: {
     backgroundColor: COLORS.orange,
@@ -911,9 +916,15 @@ const pss = StyleSheet.create({
   dotActive: { width: 20, backgroundColor: COLORS.orange } as object,
 
   // Mobile Web overrides
-  wrapMobile: { flexDirection: 'row', gap: 10, height: 240, marginTop: 6, marginBottom: 20 },
+  // minHeight, not height: the footer can wrap to two rows on a narrow phone
+  // and a fixed height would clip it.
+  wrapMobile: { flexDirection: 'row', gap: 10, minHeight: 240, marginTop: 6, marginBottom: 20 },
   singlePortrait: {
+    // Was a hard 150. At 320px that left the panel 128px wide — too narrow for
+    // its own contents — so it yields space when there isn't enough.
     width: 150,
+    flexShrink: 1,
+    minWidth: 104,
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
@@ -1263,7 +1274,12 @@ const fi = StyleSheet.create({
     paddingHorizontal: 34,
     boxShadow: ELEVATION.rest,
   } as object,
-  copy: { flex: 1, minWidth: 300 },
+  // flexBasis, not minWidth: both make the copy want 300px so it wraps off the
+  // fanned hand when there isn't room beside it, but minWidth is also a floor —
+  // once wrapped it refused to shrink below 300 inside a 288px phone gutter and
+  // pushed the document sideways. Basis sets the preference, minWidth:0 lets it
+  // shrink the rest of the way.
+  copy: { flex: 1, flexBasis: 300, minWidth: 0 },
   label: { ...EYEBROW, marginBottom: 6 } as object,
   title: {
     fontFamily: 'Flame-Regular',
@@ -1520,7 +1536,8 @@ export default function WebHomeScreen() {
                   Browse the Universe
                 </Text>
                 <Text style={styles.browseSubtitle as object}>
-                  Pick your corner of the multiverse — publishers, teams, media and power rankings.
+                  Pick your corner of the multiverse — archetypes, teams, media, origins and power
+                  rankings.
                 </Text>
               </View>
 
