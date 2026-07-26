@@ -10,8 +10,17 @@
 --
 -- Reissues the whole function: everything below the two new columns is unchanged
 -- from 20260726220000_pulse_candidates.sql.
+--
+-- The drop is required, not defensive. `create or replace` cannot change a
+-- function's return type, and adding columns to a RETURNS TABLE list does exactly
+-- that — Postgres rejects it with 42P13 "cannot change return type of existing
+-- function / Row type defined by OUT parameters is different". Any future
+-- migration that adds a column to this signature needs the same drop. Dropping
+-- also drops the grants, which is why they're re-issued at the bottom.
 
-create or replace function public.get_pulse_candidates(p_per_kind integer default 20)
+drop function if exists public.get_pulse_candidates(integer);
+
+create function public.get_pulse_candidates(p_per_kind integer default 20)
 returns table (
   kind text,
   event_id text,

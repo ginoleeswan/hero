@@ -2672,6 +2672,8 @@ export type Database = {
           publisher: string
           release_date: string
           subtype: string
+          window_from: string
+          window_to: string
         }[]
       }
       get_recent_trailers: {
