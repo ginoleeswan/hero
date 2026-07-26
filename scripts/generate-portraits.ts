@@ -17,6 +17,11 @@
  *   bun scripts/generate-portraits.ts --hero-id 69  # single hero (test)
  *   bun scripts/generate-portraits.ts --dry-run     # log without API calls
  *   bun scripts/generate-portraits.ts --concurrency 5
+ *   bun scripts/generate-portraits.ts --from-text   # heroes with no source art
+ *
+ * --from-text covers heroes that have no usable image to transfer from (no
+ * image_url, or ComicVine's "Blank!" placeholder). It renders from a written
+ * description in TEXT_PORTRAIT_HINTS via Imagen, and skips any hero without one.
  */
 
 import { readFileSync, writeFileSync, unlinkSync } from 'fs';
@@ -162,6 +167,20 @@ const concurrencyArg = args.find((_, i) => args[i - 1] === '--concurrency');
 const CONCURRENCY = concurrencyArg ? parseInt(concurrencyArg, 10) : 3;
 const limitArg = args.find((_, i) => args[i - 1] === '--limit');
 const LIMIT = limitArg ? parseInt(limitArg, 10) : null;
+// --from-text: generate from a written description instead of a source image, for
+// heroes that have no usable art. See TEXT_PORTRAIT_HINTS.
+const fromText = args.includes('--from-text');
+
+// ─── Unusable sources ─────────────────────────────────────────────────────────
+// ComicVine serves a grey "Blank!" comic-burst placeholder for characters it has
+// no art for, and 6,167 rows in the catalogue carry it as their image_url. It is
+// a valid, fetchable PNG, so `image_url IS NOT NULL` treats it as a real source —
+// but style-transferring it produces a portrait of nobody. With no character to
+// read, the model just copies the Wolverine/Deadpool/Thor style refs and invents a
+// generic masked superhero: ElfQuest's Gifa came out as a man in a yellow cowl.
+// 79 portraits had already been generated this way before the guard existed.
+const BLANK_SOURCE_RE = /6373148-blank\.png/;
+const isUsableSource = (url: string | null): boolean => !!url && !BLANK_SOURCE_RE.test(url);
 
 // ─── Costume hint overrides ───────────────────────────────────────────────────
 // Used when the source image is misleading (e.g. Clark Kent instead of Superman)
@@ -207,6 +226,91 @@ const COSTUME_HINTS: Record<string, string> = {
   // Hawkeye white artifacts
   '313':
     'Hawkeye wearing his purple tactical mask with H logo — face fills entire canvas, NO white areas on sides, background colour fills edge to edge, NO bow, NO quiver',
+};
+
+// ─── Text-only portrait descriptions (--from-text) ────────────────────────────
+// For heroes with no usable source art at all. ComicVine's licensed-adaptation
+// coverage of Westeros stops after A Clash of Kings, so everything from A Storm
+// of Swords onward — and the whole Dance of the Dragons cast — has no image
+// anywhere in the pipeline. Wikidata has no free image for them either; its only
+// hit is a convention photograph of an actor, which is a real person and not
+// what we want a portrait model reading.
+//
+// So these are written descriptions of the CHARACTER as described on the page —
+// never a likeness of any actor. The Imagen prompt already fixes style, pose,
+// framing and background; this only supplies who is in the frame.
+const TEXT_PORTRAIT_HINTS: Record<string, string> = {
+  // ── A Song of Ice and Fire ──
+  'h_a4c019f3-5ced-4250-a15c-91f6c9be7c2e':
+    'Tormund Giantsbane, a wildling raider — a big weathered northerner with a wild mane of red hair and a thick unkempt red beard, ruddy wind-burned skin, laughing pale eyes, wearing heavy layered furs at the collar',
+  'h_596c8b53-a04d-4a39-9555-172eb2f2febc':
+    'Oberyn Martell, the Red Viper of Dorne — an olive-skinned Dornish nobleman with sleek black hair, a neatly pointed black beard, sharp amused dark eyes, wearing flowing orange and yellow silk robes at the collar. NO spear',
+  'h_cc15b9a0-0fc8-421d-816e-35757a14ba74':
+    'Olenna Tyrell, the Queen of Thorns — a very old noblewoman with a deeply lined shrewd face, silver-white hair bound under a soft wimple and net headdress, wry knowing expression, wearing rich green and gold brocade at the collar',
+  'h_76328e53-7cc8-4aae-acc5-c18a2486a89d':
+    'Missandei, a scribe and translator of Naath — a young woman with dark brown skin, close-cropped tight curls, calm intelligent amber eyes, wearing simple elegant pale blue and cream robes at the collar',
+  'h_b3d34095-951f-4ea5-a1c8-7f1524b3516f':
+    'Grey Worm, commander of the Unsullied — a disciplined young soldier with dark brown skin, shaved head, impassive steady expression, wearing a bronze-studded dark leather collar and a spiked bronze helm. NO spear',
+  'h_f10f7f10-d89a-4e82-96be-1a698c925526':
+    'Daario Naharis, a sellsword captain — a swaggering fighter with a blue-dyed forked beard, curled blue-tinted hair, bright confident eyes, gold-toothed grin, wearing an open ornate brigandine collar',
+  'h_cec47238-e6f0-481f-8b43-48b401d63809':
+    'Euron Greyjoy, the Crow’s Eye — a hard-faced ironborn reaver with long dark salt-matted hair, a black leather eyepatch over the left eye, cruel smiling mouth, wearing dark scaled armour at the collar',
+  'h_fede1214-54d6-4f15-a1c4-649a8aa91d40':
+    'Ellaria Sand, a Dornish paramour — an olive-skinned woman with long loose dark curls, fierce grieving dark eyes, gold hoop earrings, wearing draped crimson and saffron Dornish silks at the collar',
+  'h_59e92133-dd11-4d88-939f-cc20015c686e':
+    'Thoros of Myr, a red priest of R’hllor — a heavyset bald man with a shaggy grey-flecked beard, a drinker’s ruddy face, wearing faded cracked red priest’s robes at the collar. NO flaming sword',
+  'h_c550c644-627e-4bf7-96a5-bd40ea55cd45':
+    'Syrio Forel, the First Sword of Braavos — a lean bald Braavosi water dancer with a small pointed grey beard, sharp watchful dark eyes, wearing a plain brown leather jerkin collar. NO sword',
+  'h_3c05def9-3e1b-43b1-a9fb-f030311533d4':
+    'The High Sparrow, a barefoot zealot — a gaunt elderly man with a shaved head, sunken serene eyes, weathered ascetic face, wearing coarse undyed sackcloth robes at the collar',
+  'h_acdb4fed-c9b6-423b-a33b-5ccfbe8757af':
+    'Mance Rayder, the King-Beyond-the-Wall — a lean weathered wildling leader with shoulder-length brown hair greying at the temples, close-trimmed beard, shrewd eyes, wearing a heavy black cloak patched with faded red silk at the collar',
+  'h_1e39f243-84fd-4eb8-bc47-bf1f8d8a36a3':
+    'Lyanna Mormont, the child Lady of Bear Island — a young girl with a round solemn unsmiling face, straight dark brown hair, fierce grey eyes, wearing heavy dark northern furs and a bear-sigil surcoat at the collar',
+  'h_ab3a5143-20cd-4b6a-8800-4824ce0f0a6f':
+    'Talisa Maegyr, a Volantene battlefield healer — a young woman with warm olive skin, long dark wavy hair pulled back, gentle steady dark eyes, wearing simple undyed linen robes at the collar',
+  'h_5c363213-1a42-4d39-a744-40d6624a6443':
+    'Ygritte, a free folk spearwife — a young wildling woman with a wild mane of curly red hair, freckled wind-chapped pale skin, bright challenging blue eyes, wearing thick layered furs at the collar. NO bow',
+  'h_37eb6a33-a000-4676-9c34-d462907cbbaa':
+    'Margaery Tyrell, a queen of the Reach — a poised young noblewoman with long chestnut-brown curls, warm knowing hazel eyes, a faint clever smile, wearing an ornate green and gold rose-embroidered gown at the collar',
+  'h_048ff1bb-26b7-48d9-ab85-198bd20c06ba':
+    'Qyburn, a disgraced maester — a mild-faced elderly man with thinning grey hair, soft pleasant unsettling smile, pale watchful eyes, wearing plain dark robes with no maester’s chain at the collar',
+  'h_8856458d-d7d7-48bc-aa31-ab6b818500ea':
+    'Asha Greyjoy, an ironborn captain — a hard lean young woman with short cropped black hair, sharp grey eyes, a wry mocking mouth, wearing salt-stained dark leather and mail at the collar',
+  'h_dc9c7049-40cd-4e0a-beea-f229a013d695':
+    'Victarion Greyjoy, Lord Captain of the Iron Fleet — an enormous grim ironborn warrior with a heavy black beard, brutal impassive face, wearing dark kraken-embossed plate armour at the collar',
+  'h_b0ba51e8-39e4-4f4d-81ae-382707f2999c':
+    'Mirri Maz Duur, a godswife of Lhazar — an older Lhazareen woman with sun-darkened skin, flat broad features, dark braided hair, hard unflinching eyes, wearing rough draped desert robes at the collar',
+  'h_1659bc52-59df-486c-8985-e202c0e046f9':
+    'Mace Tyrell, Lord of Highgarden — a stout florid-faced nobleman with a curly brown beard going grey, self-satisfied expression, wearing sumptuous green velvet with gold rose embroidery at the collar',
+
+  // ── House of the Dragon / the Dance of the Dragons ──
+  'h_d7c9e03a-7c1c-474f-aa1a-bad5612aa4ef':
+    'Daemon Targaryen, the Rogue Prince — a Valyrian nobleman with long straight silver-white hair, pale violet eyes, a sharp arrogant handsome face, close-trimmed silver beard, wearing black scaled armour at the collar. NO sword',
+  'h_4f5e55e4-ff20-4837-8d4d-ee1f47c68d54':
+    'Alicent Hightower, a queen of Westeros — a composed noblewoman with long auburn-brown hair braided back, guarded green eyes, tense controlled expression, wearing a high-necked deep green gown at the collar',
+  'h_01dc5f21-d539-4c89-b5d1-45e7844fa442':
+    'Otto Hightower, Hand of the King — a severe silver-haired nobleman with a neat grey beard, cold calculating eyes, thin mouth, wearing dark green robes and the golden Hand-of-the-King chain of office at the collar',
+  'h_cd09dc23-a9f5-45f7-b701-1b8654fb8f7d':
+    'Aemond Targaryen, a one-eyed Targaryen prince — a young man with long straight silver-white hair, one pale violet eye, and a large sapphire set in the empty left eye socket above a vertical scar, cold arrogant expression, wearing black leather armour at the collar',
+  'h_2ca8347e-c782-401a-b945-74448a593260':
+    'Aegon II Targaryen, a reluctant king — a young Valyrian man with tousled silver-white hair, pale violet eyes, a soft dissipated handsome face, wearing a gold-and-black doublet and a spiked Valyrian steel crown',
+  'h_96cd3b9a-8d03-4c1f-8524-c31873a3013d':
+    'Rhaenys Targaryen, the Queen Who Never Was — a stately middle-aged Valyrian woman with silver-white hair coiled in braids, proud steady violet eyes, wearing deep red and black riding leathers at the collar',
+  'h_322e82f3-e777-4bb1-b505-2638f4e21a98':
+    'Corlys Velaryon, the Sea Snake — a distinguished older seafarer with dark brown skin, close-cropped white hair and a short white beard, weathered commanding face, wearing sea-green and silver naval finery at the collar',
+  'h_7005bdf5-fc4a-44ce-bafd-d000079b2649':
+    'Criston Cole, a Kingsguard knight — a dark-haired Dornish-marcher knight with short black curls, a trimmed black beard, hard resentful dark eyes, wearing white enamelled Kingsguard plate and a white cloak at the collar',
+  'h_f2598a4e-337e-47ac-ae75-15c255c2ca7e':
+    'Viserys I Targaryen, an ailing king — a gentle-faced Valyrian king with thinning silver-white hair, tired kind violet eyes, visible sores and decay on one side of the face, wearing rich red and gold robes at the collar',
+  'h_1b612fa9-7109-4a6d-ae87-56d120b2490b':
+    'Helaena Targaryen, a dreamer queen — a young Valyrian woman with long loose silver-white hair, distant unfocused violet eyes, a mild faraway expression, wearing a soft lilac and silver gown at the collar',
+
+  // ── Dragons: the "face" is the dragon's head ──
+  'h_75c95438-d11a-489e-9b9f-1ddb141e9220':
+    'Vhagar, the largest and oldest living dragon — a colossal ancient dragon’s head in side profile, weathered bronze-green scales, scarred and pitted hide, a great curved horn sweep, one huge amber eye, jaws slightly parted. A DRAGON head only, no rider, no human',
+  'h_33a15e25-3a5d-4611-b7f4-c0591cf5bb63':
+    'Caraxes, the Blood Wyrm — a lean vicious dragon’s head in side profile, deep blood-red scales, an unusually long snaking neck, spined crest, one narrow burning eye, teeth bared. A DRAGON head only, no rider, no human',
 };
 
 // ─── Supabase client (service role — write access to Storage) ─────────────────
@@ -844,10 +948,24 @@ async function phase2(filterHeroId?: string): Promise<void> {
     .from('heroes')
     .select('id, name, image_url')
     .is('portrait_url', null)
-    .not('image_url', 'is', null)
     // Generate in order of general popularity (fame_score, 0-100) — the recognizability
     // proxy that replaced raw issue_count — so the most recognisable heroes get done first.
     .order('fame_score', { ascending: false, nullsFirst: false });
+
+  // The "Blank!" placeholder is excluded in JS rather than with a second
+  // .not() — chaining two filters here exceeds tsc's instantiation depth on the
+  // supabase-js builder. Filtering after the fetch costs nothing: it happens
+  // before any image is generated, so no API spend is wasted on placeholders.
+  if (fromText) {
+    // The hint map IS the working set — a hero with no written description gets
+    // invented wholesale, so there is nothing to generate for one. Selecting by
+    // id also sidesteps an .or() here, which exceeds tsc's instantiation depth.
+    query = query.in('id', Object.keys(TEXT_PORTRAIT_HINTS)) as typeof query;
+  } else {
+    // .filter() rather than .not(): identical PostgREST output, but .not() as a
+    // reassignment exceeds tsc's instantiation depth on the supabase-js builder.
+    query = query.filter('image_url', 'not.is', null) as typeof query;
+  }
 
   if (filterHeroId) {
     query = query.eq('id', filterHeroId) as typeof query;
@@ -858,8 +976,11 @@ async function phase2(filterHeroId?: string): Promise<void> {
     query = query.limit(LIMIT) as typeof query;
   }
 
-  const { data: heroes, error } = await query;
+  const { data: rows, error } = await query;
   if (error) throw new Error(`Failed to fetch heroes: ${error.message}`);
+  // Drop placeholder sources from the image-to-image path. Note this happens
+  // after --limit, so a limited run can yield fewer than --limit heroes.
+  const heroes = fromText ? rows : rows?.filter((h) => isUsableSource(h.image_url));
   if (!heroes?.length) {
     console.log('No heroes to process.');
     return;
@@ -900,8 +1021,21 @@ async function phase2(filterHeroId?: string): Promise<void> {
 
     try {
       console.log(`  ⟳ ${label}`);
-      const { base64, mimeType } = await fetchImageAsBase64(hero.image_url!);
-      const generated = await generatePortrait(base64, mimeType, hero.name, hero.id);
+      let generated: Uint8Array;
+      if (fromText) {
+        // No source art exists. Render straight from the written description —
+        // Imagen never reads the (absent) image when a description is supplied.
+        // Skip rather than guess: an unhinted hero would be invented wholesale.
+        const hint = TEXT_PORTRAIT_HINTS[hero.id];
+        if (!hint) {
+          console.log(`  – ${label}: no TEXT_PORTRAIT_HINTS entry, skipping`);
+          return;
+        }
+        generated = await generatePortraitImagen(hero.name, '', '', hero.id, hint);
+      } else {
+        const { base64, mimeType } = await fetchImageAsBase64(hero.image_url!);
+        generated = await generatePortrait(base64, mimeType, hero.name, hero.id);
+      }
       const compressed = compressIfLarge(hero.id, generated);
       const bytes = await orientRight(hero.id, compressed);
       const url = await uploadToCloudinary(hero.id, bytes);

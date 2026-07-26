@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, PanResponder, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT, SURFACE } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
@@ -8,7 +8,7 @@ import { describeRelationship } from '../../lib/graph/relationshipReason';
 import { matchupVerdict } from '../../lib/graph/statEdge';
 import { UniverseVote } from './UniverseVote';
 import { SharedTitlesStrip } from './SharedTitlesStrip';
-import type { SharedTitles } from '../../lib/db/heroes/sharedTitles';
+import { sharedTitlesCaption, type SharedTitles } from '../../lib/db/heroes/sharedTitles';
 import type { NeighborKind, NeighborNode } from '../../lib/db/heroes/neighborhood';
 
 const KIND_LABEL: Record<string, string> = {
@@ -109,6 +109,27 @@ export function SocialWebFocusCard({
   const button = useMemo(() => accentButtonColors(tint), [tint]);
 
   const hasShared = (shared?.titles.length ?? 0) > 0;
+  const sharedCaption = shared ? sharedTitlesCaption(shared) : null;
+
+  // Peek by default on a phone; the vote and the verdict are one drag away.
+  const [expanded, setExpanded] = useState(false);
+  const expandedRef = useRef(expanded);
+  expandedRef.current = expanded;
+  const pan = useMemo(
+    () =>
+      PanResponder.create({
+        // Only claim the gesture once it is clearly a vertical drag, so a tap
+        // on the grabber still reaches the Pressable underneath.
+        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dy) > 6,
+        onPanResponderRelease: (_e, g) => {
+          if (g.dy < -40) return setExpanded(true);
+          // Down collapses first and only dismisses from the peek, so a drag
+          // can never skip a step and close the sheet unexpectedly.
+          if (g.dy > 40) return expandedRef.current ? setExpanded(false) : onClose();
+        },
+      }),
+    [onClose],
+  );
   const { sharedTeams, summary } = describeRelationship(
     kind,
     subjectName,
@@ -270,38 +291,60 @@ export function SocialWebFocusCard({
     );
   }
 
+  /**
+   * Mobile: a peek sheet.
+   *
+   * At full height this covered the lower half of the viewport — and the ring
+   * is centred there, so the subject and whole clusters ended up hidden behind
+   * the panel describing them. You could read "Served alongside Batman" with
+   * Batman nowhere on screen.
+   *
+   * Two fixes, together: the scene lifts (see UniverseScene's `lift`), and the
+   * sheet opens at a peek showing only who this is and what they are to the
+   * subject. The rest is one drag away rather than imposed.
+   */
   return (
-    <View style={[styles.card, narrow && styles.cardNarrow] as object}>
+    <View style={[styles.card, styles.cardNarrow] as object}>
       {/* On a phone the sheet rises out of the ink exactly as the desktop band
-          does; elsewhere it stays a washed panel. Either way the character's
-          own colour carries the identity, with no border doing the talking. */}
+          does. Either way the character's own colour carries the identity,
+          with no border doing the talking. */}
       <View
         style={
           [
             StyleSheet.absoluteFill,
             {
-              backgroundImage: narrow
-                ? `linear-gradient(to top, ${SURFACE.ink} 0%, ${SURFACE.ink}f2 52%, transparent 100%)`
-                : `linear-gradient(160deg, ${tint}2e, transparent 62%)`,
+              backgroundImage: `linear-gradient(to top, ${SURFACE.ink} 0%, ${SURFACE.ink}f2 52%, transparent 100%)`,
             },
           ] as object
         }
         pointerEvents="none"
       />
-      {narrow ? (
-        <View
-          style={
-            [
-              StyleSheet.absoluteFill,
-              { backgroundImage: `linear-gradient(to top, ${tint}2e, transparent 55%)` },
-            ] as object
-          }
-          pointerEvents="none"
-        />
-      ) : null}
+      <View
+        style={
+          [
+            StyleSheet.absoluteFill,
+            { backgroundImage: `linear-gradient(to top, ${tint}2e, transparent 55%)` },
+          ] as object
+        }
+        pointerEvents="none"
+      />
+
+      {/* The grabber is both the affordance and the target: tap to toggle, drag
+          up to expand, drag down to collapse and then dismiss — so the sheet
+          can be closed by the thumb already on it, rather than only by a 24px
+          glyph in the far corner. */}
+      <View {...pan.panHandlers} style={styles.grabWrap}>
+        <Pressable
+          onPress={() => setExpanded((e) => !e)}
+          hitSlop={12}
+          accessibilityLabel={expanded ? 'Collapse details' : 'Expand details'}
+        >
+          <View style={styles.grabber} />
+        </Pressable>
+      </View>
 
       <View style={styles.head}>
-        <View style={[styles.portrait, narrow && styles.portraitNarrow] as object}>
+        <View style={[styles.portrait, styles.portraitNarrow] as object}>
           <HeroImage
             id={node.id}
             name={node.name}
@@ -318,15 +361,13 @@ export function SocialWebFocusCard({
         </View>
 
         <View style={styles.identity}>
-          <Text style={[styles.name, narrow && styles.nameNarrow] as object} numberOfLines={2}>
+          <Text style={[styles.name, styles.nameNarrow] as object} numberOfLines={2}>
             {node.name}
           </Text>
           <View style={styles.meta}>
             {kind ? (
               <View style={[styles.kindPill, { backgroundColor: kindColor + '26' }] as object}>
                 <Text style={[styles.kindText, { color: kindColor }] as object}>
-                  {/* "Cousin" beats "Family" wherever the data actually says
-                      which relative this is. */}
                   {(kind === 'family' && relation) || KIND_LABEL[kind]}
                 </Text>
               </View>
@@ -346,23 +387,25 @@ export function SocialWebFocusCard({
           ) : null}
         </View>
 
-        <Pressable onPress={onClose} style={styles.close} hitSlop={8}>
+        <Pressable onPress={onClose} style={styles.close} hitSlop={10}>
           <Ionicons name="close" size={16} color={INK_TEXT.muted} />
         </Pressable>
       </View>
 
-      {/* A written note beats anything derived. The inferred line ("both
-          serving in the Justice League") only appears where nobody has said
-          something better. */}
       {relationLine ? (
-        <Text style={[styles.reason, narrow && styles.reasonNarrow] as object}>{relationLine}</Text>
+        <Text
+          style={[styles.reason, styles.reasonNarrow] as object}
+          numberOfLines={expanded ? 8 : 4}
+        >
+          {relationLine}
+        </Text>
       ) : null}
 
-      {shared ? <SharedTitlesStrip shared={shared} /> : null}
+      {/* The poster strip is a desktop luxury — there's a column to spare
+          there. Here its caption carries most of the value in one line rather
+          than ninety pixels. */}
+      {sharedCaption ? <Text style={styles.evidenceLine}>{sharedCaption}</Text> : null}
 
-      {/* Rosters are EVIDENCE, so they only appear when there is nothing
-          better. With a written note above and posters beside it, they were a
-          third proof of a point already made twice. */}
       {sharedTeams.length > 0 && !blurb && !hasShared ? (
         <View style={styles.chips}>
           {sharedTeams.slice(0, chipCap).map((t) => (
@@ -379,13 +422,11 @@ export function SocialWebFocusCard({
         </View>
       ) : null}
 
-      {/* The single interaction on the card, and the app's engine. The verdict
-          it carries is the four-word version of the stat bars this replaced. */}
-      {subject && subject.id !== node.id ? (
+      {expanded && subject && subject.id !== node.id ? (
         <UniverseVote subject={subject} node={node} subjectName={subjectName} />
       ) : null}
 
-      {verdict && onCompare ? (
+      {expanded && verdict && onCompare ? (
         <Pressable onPress={onCompare} style={styles.verdictRow}>
           <Ionicons name="flash" size={12} color={INK_TEXT.faint} />
           <Text style={styles.verdictText} numberOfLines={1}>
@@ -398,11 +439,19 @@ export function SocialWebFocusCard({
       <View style={styles.actions}>
         <Pressable
           onPress={onView}
-          style={[styles.primary, { backgroundColor: button.background }] as object}
+          style={
+            [styles.primary, styles.primaryWide, { backgroundColor: button.background }] as object
+          }
         >
           <Text style={[styles.primaryText, { color: button.ink }] as object}>View dossier</Text>
           <Ionicons name="chevron-forward" size={13} color={button.ink} />
         </Pressable>
+        {expanded ? null : (
+          <Pressable onPress={() => setExpanded(true)} style={styles.moreRow} hitSlop={8}>
+            <Text style={styles.moreText}>More</Text>
+            <Ionicons name="chevron-up" size={12} color={INK_TEXT.faint} />
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -460,7 +509,7 @@ const styles = StyleSheet.create({
   portraitNarrow: { width: 86, height: 112 } as object,
   nameNarrow: { fontSize: 24, lineHeight: 30 } as object,
   reasonNarrow: { fontSize: 15, lineHeight: 23, opacity: 1 } as object,
-  head: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  head: { flexDirection: 'row', gap: 13, alignItems: 'center' },
   portrait: {
     width: 76,
     height: 94,
@@ -600,8 +649,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(245,235,220,0.18)',
   } as object,
+  grabWrap: { alignItems: 'center', paddingBottom: 4, marginTop: -6 },
+  grabber: {
+    width: 38,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(245,235,220,0.28)',
+    marginVertical: 6,
+  },
+  evidenceLine: { fontFamily: 'FlameSans-Regular', fontSize: 12.5, color: INK_TEXT.muted },
+  moreRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 6 },
+  moreText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11.5,
+    color: INK_TEXT.faint,
+  },
   verdictRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 2 },
-  verdictText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: INK_TEXT.faint },
+  verdictText: {
+    flexShrink: 1,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11.5,
+    color: INK_TEXT.faint,
+  },
   faces: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
   face: { borderRadius: 14, overflow: 'hidden' },
 
@@ -614,6 +683,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
   },
+  // On a phone the main exit should be a thumb-sized target that owns its row,
+  // not a small pill with dead space beside it.
+  primaryWide: { flex: 1, justifyContent: 'center', paddingVertical: 10 },
   primaryText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 12 },
   secondary: {
     flexDirection: 'row',

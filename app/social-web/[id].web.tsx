@@ -5,6 +5,7 @@ import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-quer
 import { Ionicons } from '@expo/vector-icons';
 import { SURFACE, INK_TEXT } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
+import { useUniverseScrollLock } from '../../src/hooks/useUniverseScrollLock';
 import {
   getHeroNeighborhood,
   subjectBlurb,
@@ -27,6 +28,7 @@ export default function SocialWebExplorer() {
   const router = useRouter();
   const narrow = useWindowDimensions().width < 760;
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
+  useUniverseScrollLock();
 
   const [focusSubject, setFocusSubject] = useState<string>(id);
   const [trail, setTrail] = useState<TrailStop[]>([]);
@@ -166,6 +168,14 @@ export default function SocialWebExplorer() {
             nodes={universeNodes}
             edges={data.edges}
             focusId={focusId}
+            // Only on a phone: the desktop band sits below the ring already.
+            //
+            // The ring should end up centred in the gap between the header and
+            // the sheet, not merely somewhere above the sheet. Measured against
+            // the whole viewport this was ~0.42 and shoved the top cluster up
+            // under the header; the header already owns the first ~115px, so
+            // the correction needed is about half that.
+            lift={narrow && focusNode ? 0.22 : 0}
             onSelect={async (nodeId: string) => {
               // The empty id is how Escape asks for the dossier to close.
               setFocusId(nodeId || null);

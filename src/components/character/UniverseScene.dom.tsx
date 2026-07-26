@@ -326,6 +326,7 @@ export default function UniverseScene({
   edges,
   subjectId,
   focusId = null,
+  lift = 0,
   onSelect,
   onRecenter,
 }: {
@@ -334,6 +335,15 @@ export default function UniverseScene({
   subjectId: string;
   /** Highlighted node (e.g. picked from search) — read live, never rebuilds. */
   focusId?: string | null;
+  /**
+   * Raise the whole constellation by this fraction of the visible half-height.
+   *
+   * On a phone the dossier sheet covers the lower half of the viewport, and the
+   * ring is centred in it — so the subject, and whole clusters, end up hidden
+   * behind the panel describing them. Lifting the scene keeps the character you
+   * are reading about on screen above the text.
+   */
+  lift?: number;
   onSelect?: (id: string) => Promise<void>;
   onRecenter?: (id: string) => Promise<void>;
   dom?: import('expo/dom').DOMProps;
@@ -347,11 +357,13 @@ export default function UniverseScene({
   const selectRef = useRef(onSelect);
   const recenterRef = useRef(onRecenter);
   const focusRef = useRef(focusId);
+  const liftRef = useRef(lift);
   useEffect(() => {
     selectRef.current = onSelect;
     recenterRef.current = onRecenter;
     focusRef.current = focusId;
-  }, [onSelect, onRecenter, focusId]);
+    liftRef.current = lift;
+  }, [onSelect, onRecenter, focusId, lift]);
 
   /**
    * Feeds a new cast into the LIVE scene, rather than replacing the scene.
@@ -372,29 +384,12 @@ export default function UniverseScene({
 
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
-    // The DOM component gets its own document, which still carries the UA's
-    // default body margin — that alone shifts the whole canvas off-centre — and
-    // the page must not scroll under a full-bleed scene that owns the gestures.
-    //
-    // On web these land on the REAL page document, not a private one: `use dom`
-    // renders inline here rather than in an iframe. So every one of them has to
-    // be put back on the way out. Leaving `overflow: hidden` behind froze
-    // whatever screen you pressed back into — the app scrolls the document by
-    // design, so this silently disabled scrolling for the rest of the session.
-    const doc = document.documentElement.style;
-    const body = document.body.style;
-    const restore = {
-      docMargin: doc.margin,
-      docHeight: doc.height,
-      bodyMargin: body.margin,
-      bodyHeight: body.height,
-      bodyOverflow: body.overflow,
-    };
-    doc.margin = '0';
-    doc.height = '100%';
-    body.margin = '0';
-    body.height = '100%';
-    body.overflow = 'hidden';
+    // NOTE: document/body scroll locking lives in the SCREEN, not here — see
+    // useUniverseScrollLock. Doing it on this effect's mount/unmount only
+    // reverted when the component actually unmounted, which happens on back
+    // but NOT when navigating forward: expo-router keeps the previous screen
+    // mounted in the stack, so `overflow: hidden` outlived the page and every
+    // screen opened from here was frozen.
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -1178,7 +1173,10 @@ export default function UniverseScene({
           state.panTarget.set(-wp.x, -wp.y, -wp.z);
         }
       } else {
-        state.panTarget.set(0, 0, 0);
+        // Half the frame's world height at the current distance, so the lift is
+        // the same proportion of the screen whatever the viewport or zoom.
+        const halfH = camera.position.z * Math.tan((FOV * Math.PI) / 360);
+        state.panTarget.set(0, (liftRef.current ?? 0) * halfH, 0);
       }
       world.position.lerp(state.panTarget, k);
       state.dolly += (state.dollyTarget - state.dolly) * k;
@@ -1340,12 +1338,6 @@ export default function UniverseScene({
       el.removeEventListener('click', onClick);
       el.removeEventListener('dblclick', onDoubleClick);
       el.removeEventListener('keydown', onKeyDown);
-      // Hand the page back exactly as it was found.
-      doc.margin = restore.docMargin;
-      doc.height = restore.docHeight;
-      body.margin = restore.bodyMargin;
-      body.height = restore.bodyHeight;
-      body.overflow = restore.bodyOverflow;
       for (const { el: chip } of chips) chip.remove();
       for (const p of placed.values()) retire(p);
       placed.clear();
