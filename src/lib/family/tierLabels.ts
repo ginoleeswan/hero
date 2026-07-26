@@ -32,7 +32,8 @@ export const LAYOUT_TIER_LABELS: Record<number, string> = {
  */
 function deepLabel(depth: number, noun: 'grandparents' | 'grandchildren'): string {
   if (depth === 3) return `Great-${noun}`;
-  if (depth === 4) return `Great-great-${noun}`;
+  // Uniform from here down. "Great-great-" then "3× great-" made consecutive
+  // rows different shapes and widths in a gutter that has to stay one line.
   return `${depth - 2}× great-${noun}`;
 }
 

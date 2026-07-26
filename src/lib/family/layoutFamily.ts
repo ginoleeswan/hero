@@ -8,9 +8,14 @@ import { LAYOUT_TIER_LABELS, tierLabel } from './tierLabels';
 
 export const HERO_ID = '__hero__';
 
-const NODE_W = 158;
-const GAP_X = 26;
-const ROW_H = 120;
+// Nodes are portrait cameos rather than list rows: narrow and tall. Narrowness
+// is what keeps a wide generation together — at 158 a set of siblings was flung
+// to opposite ends of the canvas with a connector running the full width.
+const NODE_W = 104;
+const GAP_X = 20;
+// A roundel plus two lines of name is ~108 tall; the rest is the gap the
+// connectors run through.
+const ROW_H = 150;
 const PAD = NODE_W / 2 + 16;
 
 export interface PositionedNode {

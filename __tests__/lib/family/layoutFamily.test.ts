@@ -134,8 +134,10 @@ describe('layoutFamily', () => {
     it('labels deep rows rather than leaving them blank', () => {
       const out = layout(lineage);
       const label = (tier: number) => out.rows.find((r) => r.tier === tier)?.label;
+      // Uniform from depth 4 down, so consecutive rows keep the same shape and
+      // width in a gutter that has to stay on one line.
       expect(label(3)).toBe('Great-grandparents');
-      expect(label(4)).toBe('Great-great-grandparents');
+      expect(label(4)).toBe('2× great-grandparents');
       expect(label(6)).toBe('4× great-grandparents');
     });
 
@@ -193,7 +195,7 @@ describe('layoutFamily', () => {
       const out = layout(line);
       const label = (tier: number) => out.rows.find((r) => r.tier === tier)?.label;
       expect(label(-3)).toBe('Great-grandchildren');
-      expect(label(-4)).toBe('Great-great-grandchildren');
+      expect(label(-4)).toBe('2× great-grandchildren');
       expect(label(-5)).toBe('3× great-grandchildren');
     });
 

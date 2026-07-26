@@ -16,16 +16,24 @@ import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanima
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
+import { hasRealArt } from '../../constants/heroImages';
 import { PlaceholderHead } from './PlaceholderHead';
 import { headShapeForRole } from '../../lib/family/kinshipGender';
 import { buildFamilyGraph } from '../../lib/family/buildFamilyGraph';
+import { treeDisplayName } from '../../lib/family/displayName';
 import { layoutFamily } from '../../lib/family/layoutFamily';
 import type { FamilyMember, FamilyGraph } from '../../lib/family/types';
 import type { PositionedNode, FamilyLayout } from '../../lib/family/layoutFamily';
 
 // Node nominal dimensions (must match layoutFamily constants)
-const NODE_W = 158;
-const NODE_H = 50;
+// A cameo node is portrait-shaped rather than a list row, so it is much narrower
+// than the old 158 — which is what lets a wide generation stay on screen.
+const NODE_W = 104;
+const NODE_H = 108;
+/** Diameter of the portrait roundel — the head is the node, so it leads. */
+const CAMEO = 54;
+/** The subject's roundel, one size up. */
+const HERO_CAMEO = 64;
 /** Below this, node names stop being readable — never auto-fit past it. */
 const MIN_LEGIBLE_SCALE = 0.85;
 
@@ -33,6 +41,45 @@ function alignColor(alignment: string | null): string {
   if (alignment === 'good') return COLORS.blue;
   if (alignment === 'bad') return COLORS.red;
   return COLORS.orange;
+}
+
+/**
+ * True when the generation row this member sits in already states the relation,
+ * so printing it again on the card is pure repetition. Every step along the
+ * bloodline is one of these; a row that mixes relations is not.
+ */
+function rowNamesTheRelation(member: FamilyMember): boolean {
+  return (
+    member.relation === 'parent' ||
+    member.relation === 'child' ||
+    member.relation === 'grandparent' ||
+    member.relation === 'grandchild' ||
+    member.relation === 'ancestor' ||
+    member.relation === 'descendant'
+  );
+}
+
+/**
+ * Connector between two nodes, stopping at their edges rather than their
+ * centres. Run centre-to-centre it passes straight behind the art, and now that
+ * heads are cut out with no plate behind them the line shows through the face —
+ * most obviously on the deceased, who are drawn at reduced opacity.
+ */
+function edgePath(a: PositionedNode, b: PositionedNode): string {
+  const halfW = NODE_W / 2;
+  // Only the head needs clearing; the name sits below it and a line stopping at
+  // the full node height would leave a visible gap.
+  const halfH = CAMEO / 2 + 6;
+
+  if (Math.abs(a.y - b.y) < 1) {
+    const dir = Math.sign(b.x - a.x) || 1;
+    return `M${a.x + dir * halfW},${a.y} L${b.x - dir * halfW},${b.y}`;
+  }
+  const dir = Math.sign(b.y - a.y) || 1;
+  const ay = a.y + dir * halfH;
+  const by = b.y - dir * halfH;
+  const my = (ay + by) / 2;
+  return `M${a.x},${ay} L${a.x},${my} L${b.x},${my} L${b.x},${by}`;
 }
 
 function roleLabel(member: FamilyMember): string {
@@ -59,25 +106,24 @@ function CanvasNode({
   const router = useRouter();
 
   if (node.isHero) {
+    // The subject takes the same roundel as everyone else, one size up and ringed
+    // in ink. A differently-shaped card here broke the row it sits in and left
+    // the hero misaligned against their own siblings.
     return (
-      <View style={styles.heroAnchor}>
-        {/* The subject is the most-looked-at node in the tree and is always a
-            character we have art for, so it gets the flat avatar like every
-            other node. Chipped rather than bare: this anchor sits on black, and
-            a cut-out head with no plate loses its edges against it. */}
+      <View style={styles.cameoNode}>
         <HeroAvatar
           id={heroId ?? heroName}
           name={heroName}
           avatarUrl={heroAvatar}
           fallbackUrl={heroImage}
-          size={34}
-          radius={9}
+          size={HERO_CAMEO}
+          radius={HERO_CAMEO / 2}
+          bare
         />
-        <View>
-          <Text style={styles.heroName} numberOfLines={1}>
+        <View style={[styles.namePlate, styles.namePlateHero]}>
+          <Text style={styles.heroName} numberOfLines={2}>
             {heroName}
           </Text>
-          <Text style={styles.heroTag}>THIS CHARACTER</Text>
         </View>
       </View>
     );
@@ -86,63 +132,76 @@ function CanvasNode({
   const member = node.member;
   if (!member) return <View />;
 
+  const shownName = treeDisplayName(member.name, heroName);
+  // The row gutter already names the generation, so repeating "3× Great-Grandson"
+  // on every card in that row says nothing. It earns its line only where a row
+  // holds several different relations — the hero's own generation mixes wives,
+  // brothers and cousins — or where the relation isn't a step along the bloodline.
+  const role = rowNamesTheRelation(member) ? null : roleLabel(member);
+
+  const dead = member.status === 'deceased';
+  // A cameo above the name, the way printed genealogies set a portrait medallion.
+  // The face is the fastest thing to recognise in a tree of fifty, and it also
+  // makes each node narrow enough that siblings sit near each other instead of
+  // being flung to opposite sides of the canvas.
+  //
+  // Where a character has no art, the featureless head stands in rather than the
+  // initials monogram: in a dynasty the initials collide almost completely —
+  // Aegon I through V, Aerys I and II, Viserys I and II — so a monogram
+  // identifies nobody, while a silhouette at least reads as a person and is the
+  // convention these charts have always used for a face nobody recorded.
+  const face = hasRealArt(member.heroImage) || !!member.heroAvatar;
+  // Ring, not card. A traditional family tree is portrait roundels joined by
+  // fine rules — the head is the object and the name sits under it. Boxing each
+  // head in a padded white card made the container the loudest thing on the
+  // canvas and shrank the face to a thumbnail inside it.
+  const cameo = face ? (
+    <HeroAvatar
+      id={member.heroId ?? member.name}
+      name={member.name}
+      avatarUrl={member.heroAvatar}
+      fallbackUrl={member.heroImage}
+      size={CAMEO}
+      radius={CAMEO / 2}
+      bare
+    />
+  ) : (
+    <PlaceholderHead shape={headShapeForRole(member.role)} size={CAMEO} />
+  );
+
+  // The head sits flat on the canvas; the name gets the plate. A cartouche is
+  // how these charts have always carried a name, and it's what keeps small text
+  // legible over the dotted ground without boxing in the portrait.
+  const label = (
+    <View style={[styles.namePlate, dead && styles.namePlateDead]}>
+      <Text style={[styles.nodeName, dead && styles.deadText]} numberOfLines={2}>
+        {shownName}
+        {dead ? ' ✝' : ''}
+      </Text>
+      {role ? (
+        <Text style={styles.roleText} numberOfLines={1}>
+          {role}
+        </Text>
+      ) : null}
+    </View>
+  );
+
   if (member.heroId) {
-    const tint = alignColor(member.heroAlignment);
     return (
       <Pressable
-        style={[styles.linkNode, { borderColor: tint + '66' }]}
+        style={styles.cameoNode}
         onPress={() => {
           onNavigate?.();
           router.push(`/character/${member.heroId}?name=${encodeURIComponent(member.name)}`);
         }}
       >
-        {member.heroPower != null && member.heroPower > 0 ? (
-          <View style={styles.powerBadge}>
-            <Text style={styles.powerBadgeText}>{member.heroPower}</Text>
-          </View>
-        ) : null}
-        <HeroAvatar
-          id={member.heroId}
-          name={member.name}
-          avatarUrl={member.heroAvatar}
-          fallbackUrl={member.heroImage}
-          size={30}
-          radius={8}
-          bare
-        />
-        <View style={styles.linkMeta}>
-          <Text style={[styles.linkName, { maxWidth: 150 }]} numberOfLines={1}>
-            {member.name}
-          </Text>
-          <Text style={styles.roleText} numberOfLines={1}>
-            {roleLabel(member)}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={14} color="#cdbfa6" />
+        {cameo}
+        {label}
       </Pressable>
     );
   }
 
-  const dead = member.status === 'deceased';
-  return (
-    <View style={styles.plainNode}>
-      <View style={[styles.nodeInner, dead && styles.dead]}>
-        {/* Unmatched relatives have no character behind them, so they get a
-            featureless head instead of an empty slot — otherwise a tree reads as
-            a few pictures scattered through a list of plain text. */}
-        <PlaceholderHead shape={headShapeForRole(member.role)} size={26} />
-        <View style={styles.linkMeta}>
-          <Text style={[styles.plainName, { maxWidth: 150 }]} numberOfLines={1}>
-            {member.name}
-            {dead ? ' ✝' : ''}
-          </Text>
-          <Text style={styles.roleText} numberOfLines={1}>
-            {roleLabel(member)}
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
+  return <View style={styles.cameoNode}>{cameo}{label}</View>;
 }
 
 // ── Legend ───────────────────────────────────────────────────────────────────
@@ -347,8 +406,7 @@ function FamilyStage({
                 const a = nodeMap.get(edge.fromId);
                 const b = nodeMap.get(edge.toId);
                 if (!a || !b) return null;
-                const my = (a.y + b.y) / 2;
-                const d = `M${a.x},${a.y} L${a.x},${my} L${b.x},${my} L${b.x},${b.y}`;
+                const d = edgePath(a, b);
                 if (edge.kind === 'bloodline') {
                   return <Path key={i} d={d} stroke="#c3b59c" strokeWidth={2} fill="none" />;
                 }
@@ -573,7 +631,11 @@ function AxisLabel({
   const animStyle = useAnimatedStyle(() => ({
     top: tyVal.value + row.y * scale.value + (boundsH / 2) * (1 - scale.value) - 8,
   }));
-  return <Animated.Text style={[styles.axisLabel, animStyle]}>{row.label}</Animated.Text>;
+  return (
+    <Animated.Text style={[styles.axisLabel, animStyle]} numberOfLines={1}>
+      {row.label}
+    </Animated.Text>
+  );
 }
 
 // Inline member node for asides section (outside the canvas)
@@ -699,7 +761,9 @@ const styles = StyleSheet.create({
   stageFlat: { flex: 1, borderWidth: 0, borderRadius: 0 },
   fsRoot: { flex: 1, backgroundColor: '#fdf9f4' },
   axisGutter: {
-    width: 92,
+    // Wide enough for "2× great-grandchildren" on one line. At 92px with
+    // uppercase tracking every deep row broke mid-word — "GRANDCHILD / REN".
+    width: 132,
     backgroundColor: '#f6efe4',
     borderRightWidth: 1,
     borderRightColor: '#ece3d4',
@@ -715,12 +779,12 @@ const styles = StyleSheet.create({
   } as object,
   axisLabel: {
     position: 'absolute',
-    left: 10,
-    right: 6,
+    left: 12,
+    right: 8,
     fontFamily: 'Nunito_700Bold',
-    fontSize: 8.5,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    // Sentence case, no tracking: a generation name is a phrase, not a system
+    // label, and uppercase + letterspacing is what made it too wide to fit.
+    fontSize: 10.5,
     color: '#a99b84',
   },
 
@@ -771,12 +835,14 @@ const styles = StyleSheet.create({
   fsTitleAvatar: { width: 34, height: 34, borderRadius: 9 },
   fsTitleText: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.black },
   fsLegend: {
+    // Sits with the title bar rather than floating over the canvas, where it
+    // covered whichever generation happened to be at the bottom of the view.
     position: 'absolute',
+    top: 20,
     left: 0,
     right: 0,
-    bottom: 18,
     alignItems: 'center',
-    zIndex: 5,
+    zIndex: 4,
   },
 
   // Legend
@@ -835,7 +901,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroInitial: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.black },
-  heroName: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.beige },
+  heroName: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 13,
+    lineHeight: 16,
+    color: COLORS.beige,
+    textAlign: 'center',
+  },
   heroTag: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 7,
@@ -844,6 +916,45 @@ const styles = StyleSheet.create({
     color: '#8a7e68',
   },
 
+  // No card: the roundel and the name sit straight on the canvas.
+  cameoNode: {
+    width: NODE_W,
+    alignItems: 'center',
+    gap: 6,
+  } as object,
+  // Parchment cartouche under each head. Carries the name over the dotted
+  // ground, and gives the row a baseline the loose heads would otherwise lack.
+  namePlate: {
+    maxWidth: NODE_W,
+    alignItems: 'center',
+    backgroundColor: '#f7edd9',
+    borderWidth: 1,
+    borderColor: '#e3d4b6',
+    borderTopColor: '#fbf5e7',
+    borderRadius: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    boxShadow: '0 1px 2px rgba(41,60,67,0.10)',
+  } as object,
+  namePlateDead: {
+    backgroundColor: '#f1e9dc',
+    borderColor: '#ded3c2',
+  } as object,
+  namePlateHero: {
+    backgroundColor: COLORS.black,
+    borderColor: COLORS.black,
+    borderTopColor: '#4a626a',
+    boxShadow: '0 2px 8px rgba(41,60,67,0.22)',
+  } as object,
+  nodeName: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    lineHeight: 14,
+    color: COLORS.black,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  deadText: { color: '#8d8375' },
   linkNode: {
     flexDirection: 'row',
     alignItems: 'center',

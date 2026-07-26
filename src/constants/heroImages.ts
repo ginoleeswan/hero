@@ -24,6 +24,13 @@ const isNumericId = (id: string | number) => /^\d+$/.test(String(id));
 const isPlaceholder = (url?: string | null): boolean =>
   !!url && (url.includes('blank.png') || url.includes('no-portrait'));
 
+/**
+ * Whether a hero has art worth showing, as opposed to a source's stand-in for
+ * "no art" — ComicVine serves one grey "Blank!" burst for ~6,000 characters.
+ * Callers that render their own empty treatment need to know the difference.
+ */
+export const hasRealArt = (url?: string | null): boolean => !!realUrl(url);
+
 const realUrl = (url?: string | null): string | null =>
   url && url.startsWith('http') && !isPlaceholder(url) ? url : null;
 
