@@ -196,11 +196,19 @@ const s = StyleSheet.create({
   // reliably fed back into the flex row otherwise, causing the next section
   // to overlap.
   body: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, minHeight: LEAD_H },
-  bodyStack: { flexDirection: 'column', gap: 20, minHeight: 0 } as object,
+  // `alignItems: 'flex-start'` is inherited from `body`, and in a COLUMN
+  // container that stops children stretching to the width — they size to their
+  // content instead. The ranked list then measured to its widest row (382px)
+  // inside a 288px gutter and pushed the whole document sideways on a 320px
+  // phone. Stacked means full-width; say so.
+  bodyStack: { flexDirection: 'column', gap: 20, minHeight: 0, alignItems: 'stretch' } as object,
 
   // Featured #1 — portrait-oriented card, fixed width so list gets more room
   lead: {
     width: LEAD_W,
+    // LEAD_W is 300; a 320px phone leaves 288 between the gutters, so the card
+    // has to be allowed to shrink or it overflows on its own.
+    maxWidth: '100%',
     height: LEAD_H,
     borderRadius: 18,
     overflow: 'hidden',
