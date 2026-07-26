@@ -10,7 +10,6 @@ import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { loginHref } from '../../src/lib/loginRedirect';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
 import { useHeroHouses } from '../../src/hooks/useHeroHouses';
-import { HouseLinks } from '../../src/components/family/HouseLinks';
 import { groupPowers } from '../../src/constants/powerIcons';
 import { useHeroDetail } from '../../src/hooks/useHeroDetail';
 import { useHeroTeams } from '../../src/hooks/useHeroTeams';
@@ -1947,8 +1946,8 @@ export default function WebCharacterScreen() {
                     heroAvatar={heroRow?.avatar_url ?? null}
                     heroId={heroRow?.id ?? null}
                     members={family}
+                    houses={heroHouses}
                   />
-                  <HouseLinks houses={heroHouses} heroId={heroRow?.id ?? null} />
                 </View>
               ) : null}
             </>
@@ -2415,6 +2414,7 @@ export default function WebCharacterScreen() {
                       heroAvatar={heroRow?.avatar_url ?? null}
                       heroId={heroRow?.id ?? null}
                       members={family}
+                      houses={heroHouses}
                     />
                   </View>
                 ) : null}

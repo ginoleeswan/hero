@@ -18,6 +18,8 @@ import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import { hasRealArt } from '../../constants/heroImages';
 import { PlaceholderHead } from './PlaceholderHead';
+import { HouseInlineLink, HouseFooterLink } from './HouseLinks';
+import type { HeroHouse } from '../../hooks/useHeroHouses';
 import { headShapeForRole } from '../../lib/family/kinshipGender';
 import { buildFamilyGraph } from '../../lib/family/buildFamilyGraph';
 import { treeDisplayName } from '../../lib/family/displayName';
@@ -573,6 +575,7 @@ export function FamilyCanvas({
   heroAvatar = null,
   heroId = null,
   members,
+  houses = [],
   label = 'Family',
   stageHeight,
   onSelectMember,
@@ -582,6 +585,12 @@ export function FamilyCanvas({
   heroAvatar?: string | null;
   heroId?: string | null;
   members: FamilyMember[];
+  /**
+   * The houses this character belongs to. Given, the section names them and
+   * offers the way through to the full dynasty. The house page passes none —
+   * there it would point at the page you are already on.
+   */
+  houses?: HeroHouse[];
   /**
    * Card title. Defaults to "Family" for the character page; the house page
    * names the line instead, so the section doesn't repeat its own page header.
@@ -622,9 +631,15 @@ export function FamilyCanvas({
       <View style={isDesktop ? styles.card : undefined}>
         {isDesktop ? (
           <>
-            {/* Card chrome */}
+            {/* Card chrome. The house sits in the title line because it is what
+                this tree IS — "Family · House Targaryen" names the lineage the
+                section is drawing, and doubles as the way into the whole of it.
+                Below the card it was a chip attached to nothing. */}
             <View style={styles.header}>
-              <Text style={styles.eyebrow}>{label}</Text>
+              <View style={styles.headerLeft}>
+                <Text style={styles.eyebrow}>{label}</Text>
+                <HouseInlineLink houses={houses} heroId={heroId ?? null} />
+              </View>
               <Text style={styles.count}>{relativesCount}</Text>
             </View>
             <View style={styles.divider} />
@@ -688,6 +703,10 @@ export function FamilyCanvas({
             Also: {graph.footnotes.map((mem) => `${mem.name} (${roleLabel(mem)})`).join(', ')}
           </Text>
         ) : null}
+
+        {/* Mobile has no room beside its title, so the house closes the section
+            instead — and mobile web had no route to the house pages at all. */}
+        {!isDesktop ? <HouseFooterLink houses={houses} heroId={heroId ?? null} /> : null}
       </View>
 
       <Modal
@@ -828,6 +847,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
   },
+  // The eyebrow and the house read as one title line; `flexShrink` keeps the
+  // count on its own end when a house name is long.
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flexShrink: 1 },
   eyebrow: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
