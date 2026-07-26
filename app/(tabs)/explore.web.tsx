@@ -592,6 +592,16 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
         </View>
       ) : null}
 
+      {/* The deck. Widths are assigned by distance from the active card and
+          animate between turns — that width morph IS the carousel's motion, so
+          the cards keep their own DOM slots and the transition does the work.
+
+          The trade this makes: because a card holds its slot, activating one
+          further down the deck wraps the slivers behind it around to the left,
+          so the front card doesn't always sit at the gutter. Anchoring it would
+          mean fixing the slots and rotating the artwork through them — which
+          holds the composition still but replaces the morph with a dissolve,
+          and the morph is the better feel. */}
       <View style={pss.strip}>
         {heroes.map((h, index) => {
           const offset = (index - activeIndex + heroes.length) % heroes.length;
@@ -605,8 +615,8 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
             <Pressable
               key={h.id}
               // A sliver is a card you bring forward; the front card is the
-              // character. Same rule the phone masthead follows, so pressing
-              // the art always means the same thing.
+              // character. Same rule the phone plate follows, so pressing art
+              // always means the same thing.
               onPress={() => (isActive ? onViewProfile(String(h.id)) : setActiveIndex(index))}
               accessibilityRole={isActive ? 'link' : 'button'}
               accessibilityLabel={isActive ? `View ${h.name}` : `Show ${h.name}`}
@@ -851,7 +861,7 @@ const pss = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 32,
     paddingHorizontal: 30,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     zIndex: 3,
   } as object,
   glassPanelEyebrow: {
@@ -970,7 +980,11 @@ const pss = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 20,
+    // Auto, not a fixed gap: the eyebrow and name hold the top of the panel and
+    // the CTA holds the foot, so a hero with a shorter summary or one fewer
+    // stat pill doesn't shift either of them.
+    marginTop: 'auto',
+    paddingTop: 20,
     // The CTA (~110px) plus eight dots (~66px) needs more width than the panel
     // has on a 320-360px phone, and with nowhere to go it pushed the whole
     // document sideways. Let the dots drop under the button instead.
