@@ -21,13 +21,16 @@ export interface CategoryPod {
   kind: string;
 }
 
-// A deliberate, finite set — the publisher/archetype/media/ranking browse axes.
-// Kept to an even count so a two-column grid (mobile native + web) never strands
-// a lone tile on the last row; 12 also divides cleanly into 3- and 4-up desktop.
+// A deliberate, finite set — the archetype/team/media/origin/ranking browse
+// axes. Publishers are NOT here: every surface that renders this grid shows the
+// publisher logo pods (PublisherGrid / PublisherPods) directly above it, so a
+// Marvel tile here is a duplicate doorway.
+//
+// Kept at 12 so the grid never strands a lone tile: 12 divides cleanly by the
+// 2-, 3-, and 4-column layouts these tiles render in (native 2-up, web
+// 4/3/2-up responsive). Adding or removing one breaks the last row somewhere —
+// change this list in threes.
 export const BROWSE_PODS: CategoryPod[] = [
-  { slug: 'marvel', label: 'Marvel', kind: 'Publisher' },
-  { slug: 'dc', label: 'DC', kind: 'Publisher' },
-  { slug: 'image', label: 'Image', kind: 'Publisher' },
   { slug: 'villain', label: 'Villains', kind: 'Archetype' },
   { slug: 'xmen', label: 'X-Men', kind: 'Team' },
   { slug: 'anti-heroes', label: 'Anti-Heroes', kind: 'Archetype' },
@@ -35,6 +38,9 @@ export const BROWSE_PODS: CategoryPod[] = [
   { slug: 'anime', label: 'Anime', kind: 'Media' },
   { slug: 'video-games', label: 'Video Games', kind: 'Media' },
   { slug: 'horror', label: 'Horror', kind: 'Media' },
+  { slug: 'magic', label: 'Magic', kind: 'Origin' },
+  { slug: 'aliens', label: 'Aliens', kind: 'Origin' },
+  { slug: 'mythology', label: 'Gods & Myths', kind: 'Origin' },
   { slug: 'strongest', label: 'Strongest', kind: 'Ranking' },
   { slug: 'most-intelligent', label: 'Smartest', kind: 'Ranking' },
 ];

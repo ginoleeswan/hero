@@ -229,6 +229,21 @@ const CATEGORY_QUERY: Record<string, CatQuery> = {
     params: [['hero_tags.tag', 'eq.horror-icon']],
     order: 'issue_count.desc.nullslast',
   },
+  magic: {
+    select: TAG_SELECT,
+    params: [['hero_tags.tag', 'eq.magic-user']],
+    order: 'fame_score.desc.nullslast',
+  },
+  aliens: {
+    select: TAG_SELECT,
+    params: [['hero_tags.tag', 'eq.alien']],
+    order: 'fame_score.desc.nullslast',
+  },
+  mythology: {
+    select: TAG_SELECT,
+    params: [['hero_tags.tag', 'eq.mythological']],
+    order: 'fame_score.desc.nullslast',
+  },
 };
 
 /** Fetch the top HUB_LIMIT heroes for a hub query, id+name only. Fail-soft to

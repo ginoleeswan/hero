@@ -67,12 +67,25 @@ export async function getEraTimeline(perEra = 7): Promise<EraBucket[]> {
   }));
 }
 
-// Category slugs that resolve to a hero_tags media tag rather than a base
-// publisher/alignment predicate. Keyed by slug → tag vocabulary slug.
+// Category slugs that resolve to a hero_tags tag rather than a base
+// publisher/alignment predicate — the media axis (anime/games/horror) and the
+// origin axis (magic/aliens/myth). Keyed by slug → tag vocabulary slug.
 export const CATEGORY_MEDIA_TAG: Partial<Record<CategorySlug, string>> = {
   anime: 'anime',
   'video-games': 'video-game',
   horror: 'horror-icon',
+  magic: 'magic-user',
+  aliens: 'alien',
+  mythology: 'mythological',
+};
+
+// Sort column for the tag-backed slugs above when listing them whole. Defaults
+// to issue_count (the comics-first media trio); the origin trio is full of
+// screen/game characters with no issues, so fame is the honest ranking there.
+const CATEGORY_MEDIA_TAG_ORDER: Partial<Record<CategorySlug, string>> = {
+  magic: 'fame_score',
+  aliens: 'fame_score',
+  mythology: 'fame_score',
 };
 
 export const CATEGORY_LABELS: Record<CategorySlug, string> = {
@@ -91,6 +104,9 @@ export const CATEGORY_LABELS: Record<CategorySlug, string> = {
   anime: 'Anime Legends',
   'video-games': 'Video Game Icons',
   horror: 'Horror Icons',
+  magic: 'Masters of Magic',
+  aliens: 'Aliens & Off-Worlders',
+  mythology: 'Gods & Myths',
 };
 
 export const CATEGORY_DESCRIPTIONS: Record<CategorySlug, string> = {
@@ -109,6 +125,9 @@ export const CATEGORY_DESCRIPTIONS: Record<CategorySlug, string> = {
   anime: 'Heroes and villains from the biggest anime and manga',
   'video-games': 'Legends straight out of video-game history',
   horror: 'The slashers and monsters of horror cinema',
+  magic: 'Sorcerers, mystics, and wielders of the arcane',
+  aliens: 'Characters born somewhere other than Earth',
+  mythology: 'Gods, monsters, and legends pulled from myth',
 };
 
 /** Fetches all rows from a query that may exceed Supabase's 1000-row default cap. */
@@ -215,15 +234,22 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
       );
     case 'anime':
     case 'video-games':
-    case 'horror': {
+    case 'horror':
+    case 'magic':
+    case 'aliens':
+    case 'mythology': {
       const tag = CATEGORY_MEDIA_TAG[slug]!;
+      // Origin tags (magic/aliens/myth) run heavily to screen-and-game
+      // characters with no issue count at all, so rank those by fame; the media
+      // trio keeps its comics-first issue_count order.
+      const orderCol = CATEGORY_MEDIA_TAG_ORDER[slug] ?? 'issue_count';
       return fetchAllPages(
         () =>
           supabase
             .from('heroes')
             .select('*, hero_tags!inner(tag)')
             .eq('hero_tags.tag', tag)
-            .order('issue_count', { ascending: false, nullsFirst: false }) as unknown as ReturnType<
+            .order(orderCol, { ascending: false, nullsFirst: false }) as unknown as ReturnType<
             Parameters<typeof fetchAllPages>[0]
           >,
       );
@@ -275,8 +301,9 @@ export async function getCategoryPage(
     tags,
     search,
   } = options;
-  // Media-themed category slugs (anime / video-games / horror) resolve to a
-  // hero_tags tag; fold it into the tag list so the same inner-join path applies.
+  // Tag-backed category slugs (anime / video-games / horror / magic / aliens /
+  // mythology) resolve to a hero_tags tag; fold it into the tag list so the same
+  // inner-join path applies.
   const implicitTag = CATEGORY_MEDIA_TAG[slug];
   const tagList = [...(implicitTag ? [implicitTag] : []), ...(tags ?? [])];
   const from = page * pageSize;
@@ -328,8 +355,9 @@ export async function getCategoryPage(
     case 'franchise-icons':
       q = q.not('franchise', 'is', null);
       break;
-    // anime / video-games / horror: the implicit media tag (folded into tagList
-    // above) is the filter — no base publisher/alignment predicate.
+    // anime / video-games / horror / magic / aliens / mythology: the implicit
+    // tag (folded into tagList above) is the filter — no base
+    // publisher/alignment predicate.
   }
 
   // Publisher facet (category pages only — meaningless inside a single universe)

@@ -1536,7 +1536,8 @@ export default function WebHomeScreen() {
                   Browse the Universe
                 </Text>
                 <Text style={styles.browseSubtitle as object}>
-                  Pick your corner of the multiverse — publishers, teams, media and power rankings.
+                  Pick your corner of the multiverse — archetypes, teams, media, origins and power
+                  rankings.
                 </Text>
               </View>
 

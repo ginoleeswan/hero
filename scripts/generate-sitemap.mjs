@@ -131,6 +131,9 @@ const CATEGORY_SLUGS = [
   'anime',
   'video-games',
   'horror',
+  'magic',
+  'aliens',
+  'mythology',
 ];
 
 function xmlEscape(s) {

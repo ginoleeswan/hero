@@ -72,6 +72,9 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'anime',
   'video-games',
   'horror',
+  'magic',
+  'aliens',
+  'mythology',
 ]);
 
 // ── Skeleton card (mirrors HeroCard: same shape + a faint name-bar hint) ───────

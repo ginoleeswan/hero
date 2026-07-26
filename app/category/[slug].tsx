@@ -62,6 +62,9 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'anime',
   'video-games',
   'horror',
+  'magic',
+  'aliens',
+  'mythology',
 ]);
 
 // A one-line editorial tagline per category — gives the navy header warmth and
@@ -82,6 +85,9 @@ const CATEGORY_TAGLINES: Record<CategorySlug, string> = {
   anime: 'Heroes and villains from the biggest anime and manga.',
   'video-games': 'Legends straight out of video-game history.',
   horror: 'The slashers and monsters of horror cinema.',
+  magic: 'Sorcerers, mystics, and wielders of the arcane.',
+  aliens: 'Born somewhere other than Earth.',
+  mythology: 'Gods, monsters, and legends out of myth.',
 };
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;
