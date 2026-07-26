@@ -11,7 +11,7 @@ import {
   subjectKind,
   subjectRelation,
 } from '../../src/lib/db/heroes/neighborhood';
-import { nodeDegree, sharedWithSubject } from '../../src/components/character/socialWebFocus';
+import { nodeDegree } from '../../src/components/character/socialWebFocus';
 import UniverseScene, { type UniverseNode } from '../../src/components/character/UniverseScene.dom';
 import { SocialWebFocusCard } from '../../src/components/character/SocialWebFocusCard';
 import { SocialWebSearch } from '../../src/components/character/SocialWebSearch';
@@ -110,14 +110,6 @@ export default function SocialWebExplorer() {
     enabled: !!focusId,
     staleTime: 30 * 60 * 1000,
   });
-  // Characters connected to BOTH ends — the card renders them as faces, which
-  // is the most legible answer to "how do these two actually overlap".
-  const mutuals = useMemo(() => {
-    if (!focusId || !data) return [];
-    const ids = sharedWithSubject(data.edges, focusSubject, focusId);
-    return data.nodes.filter((n) => ids.has(n.id) && !n.is_subject && n.id !== focusId);
-  }, [focusId, data, focusSubject]);
-
   // The scene needs each node's tie to the subject up front — it can't run
   // subjectKind per frame, and DOM component props must be plain JSON.
   const universeNodes: UniverseNode[] = useMemo(
@@ -275,13 +267,11 @@ export default function SocialWebExplorer() {
           subject={subjectNode ?? null}
           subjectName={subjectNode?.name ?? ''}
           subjectTeams={subjectNode?.teams ?? null}
-          mutuals={mutuals}
           onCompare={() =>
             router.push(
               `/compare/${focusSubject}/${focusNode.id}` as Parameters<typeof router.push>[0],
             )
           }
-          onPickMutual={(mid) => setFocusId(mid)}
           kind={focusKind}
           relation={focusRelation}
           blurb={focusBlurb}

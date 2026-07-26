@@ -3,10 +3,9 @@ import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
-import { HeroAvatar } from '../HeroAvatar';
 import { deriveCharacterTheme, accentButtonColors } from '../../lib/accent';
 import { describeRelationship } from '../../lib/graph/relationshipReason';
-import { topStatEdges, matchupVerdict } from '../../lib/graph/statEdge';
+import { matchupVerdict } from '../../lib/graph/statEdge';
 import { UniverseVote } from './UniverseVote';
 import { SharedTitlesStrip } from './SharedTitlesStrip';
 import type { SharedTitles } from '../../lib/db/heroes/sharedTitles';
@@ -61,10 +60,8 @@ export function SocialWebFocusCard({
   shared,
   degree,
   accent,
-  mutuals = [],
   onView,
   onCompare,
-  onPickMutual,
   onClose,
 }: {
   node: NeighborNode;
@@ -82,15 +79,11 @@ export function SocialWebFocusCard({
   degree: number;
   /** Page accent — the fallback when this character has no usable colour. */
   accent: string;
-  /** Characters connected to BOTH ends, rendered as faces. */
-  mutuals?: NeighborNode[];
   onView: () => void;
   onCompare?: () => void;
-  onPickMutual?: (id: string) => void;
   onClose: () => void;
 }) {
   const narrow = useWindowDimensions().width < 760;
-  const faceCap = narrow ? 5 : 6;
   const chipCap = narrow ? 2 : 3;
   const align = alignmentLabel(node.alignment);
   const kindColor = kind ? KIND_COLOR[kind] : accent;
@@ -112,6 +105,7 @@ export function SocialWebFocusCard({
   // and beige, so swapping the text colour alone would not be enough.
   const button = useMemo(() => accentButtonColors(tint), [tint]);
 
+  const hasShared = (shared?.titles.length ?? 0) > 0;
   const { sharedTeams, summary } = describeRelationship(
     kind,
     subjectName,
@@ -121,10 +115,6 @@ export function SocialWebFocusCard({
     relation ?? null,
   );
 
-  const edges = useMemo(
-    () => topStatEdges(subject ?? null, node, narrow ? 2 : 3),
-    [subject, node, narrow],
-  );
   const verdict = matchupVerdict(
     subject?.powerstats_total ?? null,
     node.powerstats_total ?? null,
@@ -208,7 +198,10 @@ export function SocialWebFocusCard({
 
       {shared ? <SharedTitlesStrip shared={shared} /> : null}
 
-      {sharedTeams.length > 0 ? (
+      {/* Rosters are EVIDENCE, so they only appear when there is nothing
+          better. With a written note above and posters beside it, they were a
+          third proof of a point already made twice. */}
+      {sharedTeams.length > 0 && !blurb && !hasShared ? (
         <View style={styles.chips}>
           {sharedTeams.slice(0, chipCap).map((t) => (
             <View key={t} style={styles.chip}>
@@ -224,68 +217,20 @@ export function SocialWebFocusCard({
         </View>
       ) : null}
 
-      {edges.length > 0 ? (
-        <View style={styles.stats}>
-          <Text style={styles.sectionLabel}>Where they differ</Text>
-          {edges.map((e) => {
-            const total = Math.max(e.subject + e.node, 1);
-            const nodeShare = (e.node / total) * 100;
-            const winning = e.delta > 0;
-            return (
-              <View key={e.label} style={styles.statRow}>
-                <Text style={styles.statLabel} numberOfLines={1}>
-                  {e.label}
-                </Text>
-                {/* One split bar rather than two: the meeting point IS the
-                    comparison, so the gap is legible at a glance. */}
-                <View style={styles.bar}>
-                  <View
-                    style={
-                      [
-                        styles.barFill,
-                        { width: `${nodeShare}%`, backgroundColor: winning ? tint : tint + '55' },
-                      ] as object
-                    }
-                  />
-                </View>
-                <Text
-                  style={[styles.statDelta, { color: winning ? tint : INK_TEXT.muted }] as object}
-                >
-                  {e.delta > 0 ? `+${e.delta}` : e.delta}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-      ) : null}
-
-      {/* Straight after the stat comparison, which is the moment the viewer has
-          just formed an opinion and is most likely to want to register it. */}
+      {/* The single interaction on the card, and the app's engine. The verdict
+          it carries is the four-word version of the stat bars this replaced. */}
       {subject && subject.id !== node.id ? (
         <UniverseVote subject={subject} node={node} subjectName={subjectName} />
       ) : null}
 
-      {mutuals.length > 0 ? (
-        <View style={styles.mutuals}>
-          <Text style={styles.sectionLabel}>Both know</Text>
-          <View style={styles.faces}>
-            {mutuals.slice(0, faceCap).map((m) => (
-              <Pressable key={m.id} onPress={() => onPickMutual?.(m.id)} style={styles.face}>
-                <HeroAvatar
-                  id={m.id}
-                  name={m.name}
-                  avatarUrl={m.avatar_url}
-                  fallbackUrl={m.portrait_url ?? m.image_md_url ?? m.image_url}
-                  size={28}
-                  radius={14}
-                />
-              </Pressable>
-            ))}
-            {mutuals.length > faceCap ? (
-              <Text style={styles.chipMore}>+{mutuals.length - faceCap}</Text>
-            ) : null}
-          </View>
-        </View>
+      {verdict && onCompare ? (
+        <Pressable onPress={onCompare} style={styles.verdictRow}>
+          <Ionicons name="flash" size={12} color={INK_TEXT.faint} />
+          <Text style={styles.verdictText} numberOfLines={1}>
+            {verdict}
+          </Text>
+          <Ionicons name="chevron-forward" size={11} color={INK_TEXT.faint} />
+        </Pressable>
       ) : null}
 
       <View style={styles.actions}>
@@ -296,12 +241,6 @@ export function SocialWebFocusCard({
           <Text style={[styles.primaryText, { color: button.ink }] as object}>View dossier</Text>
           <Ionicons name="chevron-forward" size={13} color={button.ink} />
         </Pressable>
-        {onCompare ? (
-          <Pressable onPress={onCompare} style={styles.secondary}>
-            <Ionicons name="flash" size={12} color={INK_TEXT.primary} />
-            <Text style={styles.secondaryText}>{verdict ?? 'Settle it'}</Text>
-          </Pressable>
-        ) : null}
       </View>
     </View>
   );
@@ -322,6 +261,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(245,235,220,0.14)',
     backdropFilter: 'blur(14px)',
+    // A ceiling, not a scroll plan. The card reached 68% of a large desktop
+    // viewport by accretion — nine blocks answering six questions with equal
+    // weight — and would have been taller than a laptop window. Sections were
+    // cut until it fits; this is the tripwire that catches the next one added
+    // without asking what it displaces.
+    maxHeight: '62vh',
+    overflowY: 'auto',
   } as object,
   // Full-bleed on a phone, and lifted clear of the floating browser toolbar
   // that would otherwise cut the action row in half.
@@ -421,7 +367,8 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   } as object,
 
-  mutuals: { gap: 6 },
+  verdictRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 2 },
+  verdictText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: INK_TEXT.faint },
   faces: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
   face: { borderRadius: 14, overflow: 'hidden' },
 
