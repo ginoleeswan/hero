@@ -39,7 +39,6 @@ interface Spec {
   children: Spec[];
 }
 
-
 export function layoutFamily(graph: FamilyGraph): FamilyLayout {
   const all: FamilyMember[] = graph.tiers.flatMap((t) => t.nodes.map((n) => n.member));
   const parentIn = (id: string | null, set: FamilyMember[]) =>
