@@ -17,13 +17,7 @@ const JUMP_OFFSET = TOPBAR_HEIGHT + 24;
 // outline while resting and filled in the character's accent when active. No
 // chrome behind the icons — the rail floats directly on the page. The active
 // mark tracks scroll, click jumps. Labels appear on hover only.
-export function SectionDotRail({
-  sections,
-  accent,
-}: {
-  sections: RailSection[];
-  accent: string;
-}) {
+export function SectionDotRail({ sections, accent }: { sections: RailSection[]; accent: string }) {
   const [active, setActive] = useState(sections[0]?.id ?? '');
   const [hovered, setHovered] = useState<string | null>(null);
 

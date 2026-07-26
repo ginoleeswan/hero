@@ -43,7 +43,10 @@ import { PullQuoteBio } from '../../src/components/character/PullQuoteBio';
 import { LegendBand } from '../../src/components/web/character/LegendBand';
 import { PowerStatCell, statDisplayValue } from '../../src/components/web/character/PowerStatCell';
 import { Reveal } from '../../src/components/web/Reveal';
-import { SectionDotRail, type RailSection } from '../../src/components/web/character/SectionDotRail';
+import {
+  SectionDotRail,
+  type RailSection,
+} from '../../src/components/web/character/SectionDotRail';
 import {
   SignaturePowerTiles,
   pickSignaturePowers,
@@ -1145,10 +1148,7 @@ export default function WebCharacterScreen() {
             <>
               {/* Quiet section dot-rail — wide desktop only */}
               {width >= 1180 ? (
-                <SectionDotRail
-                  accent={theme.accent}
-                  sections={RAIL_SECTIONS}
-                />
+                <SectionDotRail accent={theme.accent} sections={RAIL_SECTIONS} />
               ) : null}
               <View style={styles.bodyDesktopNew}>
                 {/* Main column — continuous editorial sections */}
