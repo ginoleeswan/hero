@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
+import { HeroAvatar } from '../../HeroAvatar';
 import { BrandLogoView } from '../../PublisherBadge';
 import { brandForPublisher } from '../../../constants/publishers';
 import { teamLogo } from '../../../constants/teamBrands';
@@ -26,7 +27,7 @@ export function TopResultRow({
   surface?: 'palette' | 'page';
 }) {
   const page = surface === 'page';
-  const { name, typeLabel, subtitle, thumb, glowColor } = describe(top);
+  const { name, typeLabel, subtitle, thumb, glowColor } = describe(top, page ? 56 : 48);
   // The signature: on the results page the featured thumbnail casts a soft glow in
   // its own universe's brand colour (Spider-Man → a Marvel-red halo) — which reads
   // even stronger on the dark ground. Box-shadow isn't clipped by the thumb's
@@ -50,6 +51,8 @@ export function TopResultRow({
             styles.thumb,
             page && (styles.thumbPage as object),
             top.kind === 'hero' && ((page ? styles.thumbRoundPage : styles.thumbRound) as object),
+            // A cut-out head needs no container behind it.
+            top.kind === 'hero' && top.hero.avatar_url ? (styles.thumbBare as object) : null,
             glowStyle,
           ] as object
         }
@@ -90,7 +93,11 @@ export function TopResultRow({
   );
 }
 
-function describe(top: TopResult): {
+function describe(
+  top: TopResult,
+  /** Rendered edge of the thumb, so a head can be sized to fill it. */
+  faceSize: number,
+): {
   name: string;
   typeLabel: string | null;
   subtitle: string | null;
@@ -159,7 +166,11 @@ function describe(top: TopResult): {
         typeLabel: null, // a character with a face needs no chip (and it'd clash with the Hero/Villain badge)
         subtitle: h.full_name && h.full_name !== h.name ? h.full_name : h.publisher,
         glowColor: brandForPublisher(h.publisher)?.color ?? COLORS.orange,
-        thumb: (
+        // The hero thumb is already circular here; the avatar is an actual
+        // head, so it lands where a portrait crop could only approximate.
+        thumb: h.avatar_url ? (
+          <HeroAvatar id={h.id} name={h.name} avatarUrl={h.avatar_url} size={faceSize} bare />
+        ) : (
           <HeroImage
             id={h.id}
             name={h.name}
@@ -233,6 +244,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     flexShrink: 0,
   } as object,
+  thumbBare: { backgroundColor: 'transparent', overflow: 'visible' } as object,
   thumbPage: { width: 56, height: 56, borderRadius: 13 } as object,
   thumbRound: { borderRadius: 24 } as object, // characters read as circular avatars
   thumbRoundPage: { borderRadius: 28 } as object,

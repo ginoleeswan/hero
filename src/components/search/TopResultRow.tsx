@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PressScale } from '../ui/PressScale';
 import { COLORS } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
+import { HeroAvatar } from '../HeroAvatar';
 import { BrandLogoView } from '../PublisherBadge';
 import { teamLogo } from '../../constants/teamBrands';
 import type { TopResult } from '../../lib/search/topResult';
@@ -107,7 +108,11 @@ function describe(top: TopResult): {
         typeLabel: null,
         subtitle: h.full_name && h.full_name !== h.name ? h.full_name : h.publisher,
         round: true,
-        thumb: (
+        // The slot is already round — a portrait had to be crop-guessed into a
+        // circle here. The avatar is a head, so it needs no guessing.
+        thumb: h.avatar_url ? (
+          <HeroAvatar id={h.id} name={h.name} avatarUrl={h.avatar_url} size={54} bare />
+        ) : (
           <HeroImage
             id={h.id}
             name={h.name}

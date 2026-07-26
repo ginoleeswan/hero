@@ -14,6 +14,9 @@ export type HeroSearchResult = Pick<
   | 'image_md_url'
   | 'image_url'
   | 'portrait_url'
+  // Returned by search_heroes so result rows — all of which are circular — can
+  // show the flat head instead of cropping a portrait into a circle.
+  | 'avatar_url'
   | 'full_name'
   | 'aliases'
   | 'fame_score'

@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { COLORS } from '../../../constants/colors';
-import { HeroImage } from '../../HeroImage';
+import { HeroFace } from '../../HeroFace';
 import type { HeroSearchResult } from '../../../lib/db/heroes';
 import { RoleBadge } from './RoleBadge';
 
@@ -60,16 +60,14 @@ export function SuggestionItem({ hero, query = '', onPress, active = false }: Su
         ] as object
       }
     >
-      <HeroImage
+      <HeroFace
         id={hero.id}
         name={hero.name}
+        avatarUrl={hero.avatar_url}
         imageUrl={hero.image_url}
         portraitUrl={hero.portrait_url}
         imageMdUrl={hero.image_md_url}
-        grid
-        style={styles.suggestionImage}
-        contentFit="cover"
-        contentPosition={{ top: '22%', left: '50%' }}
+        size={40}
       />
       <View style={styles.metaRow}>
         <Text style={styles.suggestionName} numberOfLines={1}>
