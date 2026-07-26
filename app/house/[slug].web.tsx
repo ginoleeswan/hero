@@ -173,6 +173,8 @@ export default function HousePage() {
             withId={withId ?? null}
             pathIds={pathIds}
             tint={tint}
+            // The rail has its own scroll; stacked under the chart it does not.
+            initialVisible={twoColumn ? undefined : 14}
             onCompare={(id) => {
               setParams({ with: id });
               revealStage();

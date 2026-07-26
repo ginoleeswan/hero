@@ -38,6 +38,10 @@ const CAMEO = 54;
 const HERO_CAMEO = 64;
 /** Below this, node names stop being readable — never auto-fit past it. */
 const MIN_LEGIBLE_SCALE = 0.85;
+/** Ceiling on the inline auto-fit — past this the portraits start to soften. */
+const INLINE_MAX_SCALE = 1.3;
+/** Never shrink the stage below this, however few generations a house records. */
+const MIN_STAGE_HEIGHT = 360;
 
 function alignColor(alignment: string | null): string {
   if (alignment === 'good') return COLORS.blue;
@@ -317,7 +321,7 @@ function FamilyStage({
       // A recorded dynasty is thirteen generations tall: fitting all of it puts
       // every name below reading size and lands the viewport in the middle of
       // some remote descendant.
-      const s = Math.min(fullscreen ? 2.2 : 1.2, Math.max(MIN_LEGIBLE_SCALE, fit));
+      const s = Math.min(fullscreen ? 2.2 : INLINE_MAX_SCALE, Math.max(MIN_LEGIBLE_SCALE, fit));
 
       // Anchor on the hero, not the midpoint of the bounds — you should open on
       // the character whose page this is, with their immediate family around
@@ -335,14 +339,41 @@ function FamilyStage({
       const fitsY = bh * s <= vpH - pad;
       const hx = fitsX ? bw / 2 : (hero?.x ?? bw / 2);
       const hy = fitsY ? bh / 2 : (hero?.y ?? bh / 2);
+
+      // Never open past an edge of the tree. Centring on the hero is right, but
+      // the hero of a thirteen-generation dynasty usually sits near the bottom
+      // of it — one row of children below, twelve of forebears above — so a
+      // straight centring spent the lower third of the canvas on empty grid
+      // while the ancestors that fill it sat just off the top.
+      //
+      // The canvas scales about its CENTRE, so canvas-y 0 lands on screen at
+      // ty + (bh/2)(1−s); everything below is offset by the same term.
+      const clampAxis = (want: number, extent: number, viewport: number) => {
+        const off = (extent / 2) * (1 - s);
+        const span = extent * s;
+        if (span <= viewport - pad) return want; // fits: leave it centred
+        const half = pad / 2;
+        return Math.min(half - off, Math.max(viewport - half - span - off, want));
+      };
       return {
-        tx: vpW / 2 - bw / 2 - (hx - bw / 2) * s,
-        ty: vpH / 2 - bh / 2 - (hy - bh / 2) * s,
+        tx: clampAxis(vpW / 2 - bw / 2 - (hx - bw / 2) * s, bw, vpW),
+        ty: clampAxis(vpH / 2 - bh / 2 - (hy - bh / 2) * s, bh, vpH),
         scale: s,
       };
     },
     [layout, fullscreen],
   );
+  // The stage should never be taller than the tree it holds. The height the page
+  // offers is sized for a thirteen-generation dynasty; a house that records four
+  // was getting the same box, and the surplus showed up as a third of a screen
+  // of empty dotted grid under the last row.
+  const stageHeight = inlineHeight
+    ? Math.min(
+        inlineHeight,
+        Math.max(MIN_STAGE_HEIGHT, Math.round(layout.bounds.height * INLINE_MAX_SCALE + 56)),
+      )
+    : undefined;
+
   const recenter = useCallback(() => {
     const c = computeCenter(vp.w, vp.h);
     if (!c) return;
@@ -393,7 +424,7 @@ function FamilyStage({
       style={[
         styles.stage,
         fullscreen ? styles.stageFlat : compact ? styles.stageInlineCompact : styles.stageInline,
-        !fullscreen && inlineHeight ? { height: inlineHeight } : null,
+        !fullscreen && stageHeight ? { height: stageHeight } : null,
       ]}
     >
       {showAxis ? (

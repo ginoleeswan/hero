@@ -8,10 +8,11 @@
 // the house payload arrives (most famous first) — with a filter for long houses.
 import { useMemo, useState } from 'react';
 import { View, Text, Pressable, TextInput, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import { mixHex } from './HouseCrest';
+import { nodeDates } from '../../lib/family/lifespan';
 
 export interface RosterMember {
   id: string;
@@ -20,6 +21,8 @@ export interface RosterMember {
   portrait_url: string | null;
   image_md_url: string | null;
   image_url: string | null;
+  reign_start?: string | null;
+  reign_end?: string | null;
 }
 
 /** Below this a search field costs more attention than it saves. */
@@ -31,6 +34,7 @@ export function HouseRoster({
   withId,
   pathIds,
   tint,
+  initialVisible,
   onCompare,
   onRoot,
 }: {
@@ -40,16 +44,30 @@ export function HouseRoster({
   /** Ids on the traced line, so the answer is legible in the list too. */
   pathIds: Set<string>;
   tint: string;
+  /**
+   * Rows to show before "show all". Omit where the list has its own scroll
+   * container — in the desktop rail a long list costs nothing, but stacked
+   * under the chart fifty-five rows are three thousand pixels of wall between
+   * the reader and the end of the page.
+   */
+  initialVisible?: number;
   onCompare: (id: string) => void;
   onRoot: (id: string) => void;
 }) {
   const [query, setQuery] = useState('');
+  const [showAll, setShowAll] = useState(false);
 
-  const shown = useMemo(() => {
+  const matched = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return members;
     return members.filter((m) => m.name.toLowerCase().includes(q));
   }, [members, query]);
+
+  // A search already narrows the list, so the cap only applies to the unfiltered
+  // view — typing a name and still being told to "show all" would be absurd.
+  const capped =
+    !!initialVisible && !showAll && !query.trim() && matched.length > initialVisible + 2;
+  const shown = capped ? matched.slice(0, initialVisible) : matched;
 
   const pathWash = mixHex(tint, '#ffffff', 0.87);
 
@@ -57,7 +75,7 @@ export function HouseRoster({
     <View style={styles.panel}>
       <View style={styles.head}>
         <Text style={styles.title}>The house</Text>
-        <Text style={styles.count}>{shown.length}</Text>
+        <Text style={styles.count}>{matched.length}</Text>
       </View>
       {/* One line, because a list with two verbs on every row teaches nothing on
           its own — and "Root" here is the same word the console's caption uses. */}
@@ -87,6 +105,12 @@ export function HouseRoster({
           const isRoot = m.id === focusId;
           const isWith = m.id === withId;
           const onPath = !isRoot && !isWith && pathIds.has(m.id);
+          // Only reigns, not lifespans. It is the fact that separates the
+          // rulers from the rest of the name-bearers, and at fifty-five rows a
+          // date on every line would be a second wall rather than a signal.
+          const reign = m.reign_start
+            ? nodeDates({ reign_start: m.reign_start, reign_end: m.reign_end })
+            : null;
           return (
             <View
               key={m.id}
@@ -120,6 +144,12 @@ export function HouseRoster({
                 <Text style={styles.name} numberOfLines={1}>
                   {m.name}
                 </Text>
+                {reign ? (
+                  <View style={styles.reign}>
+                    <MaterialCommunityIcons name="crown-outline" size={11} color="#b3a48b" />
+                    <Text style={styles.reignText}>{reign}</Text>
+                  </View>
+                ) : null}
               </Pressable>
 
               {isRoot ? (
@@ -128,18 +158,35 @@ export function HouseRoster({
                 <Pressable
                   onPress={() => onRoot(m.id)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Root the tree on ${m.name}`}
+                  accessibilityLabel={`Centre the chart on ${m.name}`}
                   hitSlop={6}
                   style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                     [styles.rootBtn, hovered && (styles.rootBtnHover as object)] as object
                   }
                 >
-                  <Text style={styles.rootBtnText}>Root</Text>
+                  {/* The same crosshair the console's filled button carries, so
+                      the glyph is taught once and then repeated fifty-four times
+                      without fifty-four copies of the word shouting over the
+                      names they sit beside. */}
+                  <Ionicons name="locate-outline" size={15} color="#b3a894" />
                 </Pressable>
               )}
             </View>
           );
         })}
+
+        {capped ? (
+          <Pressable
+            onPress={() => setShowAll(true)}
+            accessibilityRole="button"
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+              [styles.more, hovered && (styles.moreHover as object)] as object
+            }
+          >
+            <Text style={styles.moreText}>Show all {matched.length}</Text>
+            <Ionicons name="chevron-down" size={13} color={COLORS.navy} />
+          </Pressable>
+        ) : null}
 
         {shown.length === 0 ? <Text style={styles.empty}>No one by that name.</Text> : null}
       </View>
@@ -198,6 +245,35 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   name: { fontFamily: 'FlameSans-Regular', fontSize: 13.5, color: COLORS.black, flexShrink: 1 },
+  // Right-aligned so the reigns line up as a column the eye can run down —
+  // which is what turns a phone book into a list of rulers.
+  reign: { flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 'auto' } as object,
+  reignText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9.5,
+    letterSpacing: 0.5,
+    color: '#a99b84',
+  },
+  more: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginTop: 6,
+    height: 34,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e7dcc9',
+    backgroundColor: '#fffaf0',
+    cursor: 'pointer',
+  } as object,
+  moreHover: { borderColor: '#cdbfa6', backgroundColor: '#f7eeda' } as object,
+  moreText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11.5,
+    letterSpacing: 0.4,
+    color: COLORS.navy,
+  },
   tag: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
@@ -207,22 +283,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   rootBtn: {
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 9,
-    borderWidth: 1,
-    borderColor: '#eadfcb',
     cursor: 'pointer',
   } as object,
-  rootBtnHover: { backgroundColor: '#f0e6d4', borderColor: '#cdbfa6' } as object,
-  rootBtnText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9.5,
-    letterSpacing: 0.9,
-    textTransform: 'uppercase',
-    color: COLORS.navy,
-  },
+  rootBtnHover: { backgroundColor: '#f0e6d4' } as object,
   empty: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: '#8d8375', paddingVertical: 8 },
 });

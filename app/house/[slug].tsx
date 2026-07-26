@@ -134,6 +134,7 @@ export default function HousePage() {
             withId={withId ?? null}
             pathIds={pathIds}
             tint={tint}
+            initialVisible={14}
             onCompare={(id) => {
               setParams({ with: id });
               revealStage();
