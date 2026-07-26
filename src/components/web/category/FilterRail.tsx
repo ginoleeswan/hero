@@ -110,7 +110,7 @@ const s = StyleSheet.create({
   scroll: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    maxHeight: 'calc(100vh - 300px)',
+    maxHeight: 'calc(100dvh - 300px)',
     overflowY: 'auto',
     scrollbarWidth: 'none', // no desktop scrollbar chrome on mobile web
   } as object,

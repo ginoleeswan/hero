@@ -544,6 +544,12 @@ export default function WebCharacterScreen() {
   const pathname = usePathname();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 700;
+  // The stage's identity band puts the title and the meta pills side by side and
+  // reserves 324px for the overlapping portrait. That needs real width: on an
+  // iPad in portrait (820) the title column was squeezed to ~100px, which broke
+  // the name mid-word ("Batma / n" — RNW sets word-wrap:break-word on Text) and
+  // forced every trait pill onto its own line. Below this the band stacks.
+  const stageWide = width >= 1100;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
   // Before the skeleton early-return so it applies in both states. Canvas is ink
@@ -990,7 +996,9 @@ export default function WebCharacterScreen() {
               <View
                 style={[styles.identityCol, isDesktop && (styles.identityColDesktop as object)]}
               >
-                <View style={styles.identityRow}>
+                <View
+                  style={[styles.identityRow, !stageWide && (styles.identityRowStack as object)]}
+                >
                   <View style={styles.titleBlock}>
                     <UniverseEyebrow
                       publisher={stats.biography.publisher}
@@ -1048,7 +1056,7 @@ export default function WebCharacterScreen() {
                   </View>
 
                   {/* Meta block — credit on top, pills anchored to the name baseline */}
-                  <View style={styles.metaBlock}>
+                  <View style={[styles.metaBlock, !stageWide && (styles.metaBlockStack as object)]}>
                     {comicVineLoading ? (
                       <SkeletonBlock
                         opacity={skeletonOpacity}
@@ -1063,7 +1071,7 @@ export default function WebCharacterScreen() {
                       </Text>
                     ) : null}
 
-                    <View style={styles.metaRow}>
+                    <View style={[styles.metaRow, !stageWide && (styles.metaRowStack as object)]}>
                       {/* Hydrating: reserve the pill row (alignment chip + stat
                           strip footprint) so the meta band doesn't reflow when
                           the data lands. */}
@@ -1156,8 +1164,12 @@ export default function WebCharacterScreen() {
         <View style={styles.bodyWrap}>
           {isDesktop ? (
             <>
-              {/* Quiet section dot-rail — wide desktop only */}
-              {width >= 1180 ? (
+              {/* Quiet section dot-rail — only where there's gutter to hold it.
+                  The rail is fixed at the far left while the body is centred at
+                  1180 max, so at exactly 1180 (iPad landscape) it had no gutter
+                  to sit in and crowded the content against the edge. Needs the
+                  content max plus room for the rail on both sides. */}
+              {width >= 1320 ? (
                 <SectionDotRail accent={theme.accent} sections={RAIL_SECTIONS} />
               ) : null}
               <View style={styles.bodyDesktopNew}>
@@ -3382,9 +3394,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 32,
   } as object,
+  // Tablet and narrow-desktop: the title takes the band's full width and the
+  // meta drops beneath it, so neither has to shrink into the other.
+  identityRowStack: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 14,
+  } as object,
   titleBlock: { flexShrink: 1, minWidth: 0 } as object,
   // Drops into the empty band beside the portrait; right-aligned toward it.
   metaBlock: { alignItems: 'flex-end', gap: 12, marginBottom: -3 } as object,
+  metaBlockStack: { alignItems: 'flex-start', marginBottom: 0 } as object,
+  metaRowStack: { justifyContent: 'flex-start' } as object,
 
   // Glass power panel (desktop right side) — mirrors the Explore featured panel.
   statPanel: {

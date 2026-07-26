@@ -235,11 +235,13 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   const adaptDark = isMobile && isLight;
   const inactiveTint = adaptDark ? 'rgba(11,24,32,0.62)' : 'rgba(245,235,220,0.7)';
   const foreground = adaptDark ? COLORS.deepNavy : COLORS.beige;
-  const glyphShadow = !isMobile
-    ? null
-    : adaptDark
-      ? ({ filter: 'drop-shadow(0 1px 2px rgba(245,235,220,0.55))' } as object)
-      : ({ filter: 'drop-shadow(0 1px 3px rgba(11,24,32,0.5))' } as object);
+  // Desktop keeps its light glyphs and leans on the frost for ground, but the
+  // frost is a gradient — where a page's paper column runs under the bar the
+  // glyphs were beige-on-beige. The same dark halo the mobile bar uses costs
+  // nothing over dark chrome and rescues them over light.
+  const glyphShadow = adaptDark
+    ? ({ filter: 'drop-shadow(0 1px 2px rgba(245,235,220,0.55))' } as object)
+    : ({ filter: 'drop-shadow(0 1px 3px rgba(11,24,32,0.5))' } as object);
   const hoverStyle = c.itemHover as object;
 
   const renderItem = (it: (typeof NAV)[number]) => {

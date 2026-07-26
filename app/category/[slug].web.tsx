@@ -522,10 +522,15 @@ export default function WebCategoryScreen() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // auto-fill sizes from the track, not the window — but the 160px floor was
+  // picked against a desktop-width track. Beside the 250px filter rail an iPad
+  // portrait (820) leaves ~475px, which fits exactly two 160px columns, so the
+  // cards ballooned to 230px each. Drop the floor in the tablet band so that
+  // same strip carries three.
   const gridStyle = {
     display: 'grid',
     gridTemplateColumns: isDesktop
-      ? 'repeat(auto-fill, minmax(160px, 1fr))'
+      ? `repeat(auto-fill, minmax(${isWide ? 160 : 132}px, 1fr))`
       : 'repeat(auto-fill, minmax(108px, 1fr))',
     gap: 15,
   };
@@ -540,7 +545,9 @@ export default function WebCategoryScreen() {
           hero={hero}
           // First rows fetch ahead of the below-fold cards.
           priority={i < 9 ? 'high' : undefined}
-          gridWidth={isDesktop ? undefined : 360}
+          // Tablet cards render ~150px wide, so they want the same modest
+          // source the phone grid uses rather than the full desktop image.
+          gridWidth={isWide ? undefined : 360}
           onPress={handlePress}
           onPeek={setPeek}
         />

@@ -203,10 +203,10 @@ const styles = StyleSheet.create({
   } as object,
   panel: {
     position: 'absolute',
-    top: '13vh',
+    top: '13dvh',
     width: 600,
     maxWidth: '92vw',
-    maxHeight: '64vh',
+    maxHeight: '64dvh',
     backgroundColor: 'rgba(11,24,32,0.94)',
     backdropFilter: 'blur(28px) saturate(160%)',
     WebkitBackdropFilter: 'blur(28px) saturate(160%)',

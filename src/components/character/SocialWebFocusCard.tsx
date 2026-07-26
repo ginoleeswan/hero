@@ -477,7 +477,10 @@ const styles = StyleSheet.create({
     // weight — and would have been taller than a laptop window. Sections were
     // cut until it fits; this is the tripwire that catches the next one added
     // without asking what it displaces.
-    maxHeight: '62vh',
+    // dvh, not vh: on iOS Safari `vh` is the LARGE viewport (browser chrome
+    // collapsed), so a vh ceiling let the card run down behind the toolbar and
+    // its action row was unreachable. dvh tracks the viewport you can see.
+    maxHeight: '62dvh',
     overflowY: 'auto',
   } as object,
   // Full-bleed on a phone, and lifted clear of the floating browser toolbar
@@ -502,7 +505,7 @@ const styles = StyleSheet.create({
     gap: 10,
     // It was eating ~half the viewport and burying the scene it describes.
     // Capped and scrollable, so a dense dossier costs the graph nothing.
-    maxHeight: '58vh',
+    maxHeight: '58dvh',
     overflowY: 'auto',
   } as object,
   // Was 60x74 — a thumbnail of the best art in the app. Given room to be seen.
@@ -618,7 +621,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
   } as object,
-  bandMain: { flex: 1, maxWidth: 620, gap: 7 },
+  // minWidth:0 or the flex item refuses to shrink past its actions row's
+  // intrinsic width, and at tablet widths the band overflowed — the verdict
+  // line ran underneath the vote column.
+  bandMain: { flex: 1, minWidth: 0, maxWidth: 620, gap: 7 } as object,
   bandName: {
     fontFamily: 'Flame-Regular',
     fontSize: 32,
@@ -633,9 +639,15 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: INK_TEXT.primary,
   },
-  bandActions: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingTop: 4 },
+  bandActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 14,
+    paddingTop: 4,
+  },
   evidenceCol: { width: 210 },
-  voteCol: { width: 236 },
+  voteCol: { width: 236, flexShrink: 0 },
   // Given a chip of its own: as a bare glyph on open canvas it read as a
   // stray mark rather than as this band's control.
   bandClose: {
@@ -664,7 +676,14 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: INK_TEXT.faint,
   },
-  verdictRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 2 },
+  verdictRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
+    flexShrink: 1,
+    gap: 6,
+    paddingTop: 2,
+  },
   verdictText: {
     flexShrink: 1,
     fontFamily: 'Nunito_700Bold',
