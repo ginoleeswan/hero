@@ -411,6 +411,13 @@ function ComicCoverRail({
   );
 }
 
+/**
+ * Ceiling on the poster rail. The bundle now returns ~19 distinct titles (12 per
+ * bucket), so the old default of 12 would have thrown a third of them away.
+ * It's a horizontal scroller, so extra titles cost scroll distance, not layout.
+ */
+const RAIL_CAP = 20;
+
 function PosterRail({
   titles,
   onTitlePress,
@@ -519,6 +526,7 @@ export function RightNowBand({
     onScreen.filter(notInSidebar),
     comingSoon.filter(notInSidebar),
     streaming.filter(notInSidebar),
+    RAIL_CAP,
   );
 
   return (
