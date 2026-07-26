@@ -249,11 +249,34 @@ function composeRelation(steps: KinshipStep[], targetGender: Gender): string | n
   return null;
 }
 
+/** One person on the route, and how they relate to the person before them. */
+export interface KinshipStop {
+  id: string;
+  name: string;
+  /** "10× great-grandfather" — null on the first stop, which starts the walk. */
+  role: string | null;
+  /**
+   * The raw relation kind behind `role` — 'parent', 'descendant', 'spouse', …
+   * The word alone can't tell a reader which way the walk moved; this lets the
+   * console mark each hop as up, down, or sideways through the generations.
+   */
+  relation: string | null;
+}
+
 export interface KinshipDescription {
   /** "Daenerys Targaryen is Jon Snow's aunt" — null when no word fits. */
   headline: string | null;
+  /**
+   * The relation on its own — "aunt", "10× great-grandson" — or null when the
+   * chain is too long for a word to exist. Held apart from the headline because
+   * the console leads with the relation and gets the two names from the seats
+   * already on screen; parsing it back out of the sentence would be worse.
+   */
+  relation: string | null;
   /** Always present: the chain, step by step. */
   chain: string;
+  /** The same walk as structure rather than prose. Empty for same-person. */
+  route: KinshipStop[];
   steps: number;
 }
 
@@ -268,7 +291,13 @@ export function describeKinship(
   genderOf: (id: string) => Gender,
 ): KinshipDescription {
   if (steps.length === 0) {
-    return { headline: null, chain: `${nameOf(fromId)} is the same person.`, steps: 0 };
+    return {
+      headline: null,
+      relation: null,
+      chain: `${nameOf(fromId)} is the same person.`,
+      route: [],
+      steps: 0,
+    };
   }
 
   const targetId = steps[steps.length - 1].toId;
@@ -280,13 +309,19 @@ export function describeKinship(
         steps.length === 1 ? 'step' : 'steps'
       }`;
 
-  const chain = [
-    nameOf(fromId),
-    ...steps.map((s) => {
-      const word = composeRelation([s], genderOf(s.toId)) ?? s.relation.replace(/_/g, ' ');
-      return `${word} ${nameOf(s.toId)}`;
-    }),
-  ].join(' → ');
+  const route: KinshipStop[] = [
+    { id: fromId, name: nameOf(fromId), role: null, relation: null },
+    ...steps.map((s) => ({
+      id: s.toId,
+      name: nameOf(s.toId),
+      role: composeRelation([s], genderOf(s.toId)) ?? s.relation.replace(/_/g, ' '),
+      relation: s.relation,
+    })),
+  ];
 
-  return { headline, chain, steps: steps.length };
+  // One source for both renderings, so the sentence a screen reader hears can
+  // never drift from the chips a sighted reader sees.
+  const chain = route.map((r) => (r.role ? `${r.role} ${r.name}` : r.name)).join(' → ');
+
+  return { headline, relation, chain, route, steps: steps.length };
 }
