@@ -39,6 +39,8 @@ import { groupTitlesByMedia } from '../../src/lib/db/titles';
 import { PortrayedBySection } from '../../src/components/PortrayedBySection';
 import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLinksRow';
 import { useHeroDetail } from '../../src/hooks/useHeroDetail';
+import { useHeroHouses } from '../../src/hooks/useHeroHouses';
+import { HouseLinks } from '../../src/components/family/HouseLinks';
 import { useHeroTeams } from '../../src/hooks/useHeroTeams';
 import { ContributeSheet } from '../../src/components/contribute/ContributeSheet';
 import { ReportSheet } from '../../src/components/report/ReportSheet';
@@ -630,6 +632,9 @@ export default function CharacterScreen() {
     retryLoad,
     toggleFavourite,
   } = useHeroDetail({ id, paramName, paramImageUri });
+  // Houses this character belongs to — the link out of the family section and
+  // into the whole dynasty.
+  const heroHouses = useHeroHouses(heroRow?.id ?? null);
 
   // Ambient per-character palette — blurhash average color → publisher → teal.
   const theme = useMemo(
@@ -1576,6 +1581,10 @@ export default function CharacterScreen() {
                     heroId={heroRow?.id ?? null}
                     members={family}
                   />
+                  {/* The way out into the whole dynasty. Web has had this since
+                      the house pages shipped; native didn't, which left them
+                      unreachable on a phone. */}
+                  <HouseLinks houses={heroHouses} heroId={heroRow?.id ?? null} />
                 </View>
               ) : null}
 
