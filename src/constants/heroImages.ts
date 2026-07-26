@@ -13,7 +13,12 @@ const COMICVINE_MARKER = 'comicvine.gamespot.com/a/uploads/';
 // Delivered widths per context. q_auto handles compression; f_auto handles format.
 const DETAIL_WIDTH = 900; // detail screens, banners, carousels
 const GRID_WIDTH = 600; // grid / thumbnail cards (sharp on retina)
-type ComicVineVariant = 'scale_small' | 'scale_medium' | 'scale_large';
+// The square_* variants are pre-cropped to 1:1 — which is what a circular cameo
+// was going to crop to anyway — and are the only ones small enough for a 30–64pt
+// slot. Measured on a real character: scale_large 120KB, square_tiny 160px/12KB,
+// square_avatar 80px/4KB.
+type ComicVineVariant =
+  'square_avatar' | 'square_tiny' | 'scale_small' | 'scale_medium' | 'scale_large';
 
 // CDN only has images for numeric SuperheroAPI IDs — ComicVine (cv-*) IDs will 404.
 const isNumericId = (id: string | number) => /^\d+$/.test(String(id));
@@ -106,6 +111,26 @@ export function heroGridImageSource(
 // 128px covers a 34pt node at 3x with headroom; the stored PNG is 1024px/~500KB,
 // which must never reach a 30px slot.
 const AVATAR_WIDTH = 128;
+
+/**
+ * Portrait source for a node-sized circular slot — family-tree cameos, roster
+ * rows, picker rows.
+ *
+ * The Cloudinary transform alone leaves a ComicVine URL untouched, and every
+ * ingested ComicVine URL is `scale_large` (~1000px, 30–120KB), so a hero with no
+ * Cloudinary portrait was pulling a full-size JPEG into a 30px circle. Those are
+ * also served straight off ComicVine's origin rather than a CDN we control,
+ * which is why they were the slots visibly still loading.
+ *
+ * Two square variants because one doesn't fit both ends: 80px covers a 34pt row
+ * at 2x, 160px covers a 54pt cameo at 3x. Going wider is not free in the other
+ * direction — ComicVine *upscales* a small source to fill the variant, and a
+ * 142px PNG comes back three times heavier at square_tiny than at scale_large.
+ */
+export function heroCameoSource(url: string, size: number): { uri: string } {
+  const width = Math.max(96, Math.round(size * 3));
+  return { uri: withResize(url, width, size <= 40 ? 'square_avatar' : 'square_tiny') };
+}
 
 /**
  * Source for the flat icon avatar (heroes.avatar_url — transparent PNG on

@@ -3,9 +3,9 @@ import { Image } from 'expo-image';
 import { COLORS } from '../constants/colors';
 import {
   heroAvatarSource,
+  heroCameoSource,
   heroInitials,
   monogramColor,
-  withCloudinaryTransform,
 } from '../constants/heroImages';
 
 interface HeroAvatarProps {
@@ -72,7 +72,7 @@ export function HeroAvatar({
   if (fallbackUrl) {
     return (
       <Image
-        source={{ uri: withCloudinaryTransform(fallbackUrl, Math.max(96, Math.round(size * 3))) }}
+        source={heroCameoSource(fallbackUrl, size)}
         style={box}
         contentFit="cover"
         transition={150}

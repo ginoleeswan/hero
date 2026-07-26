@@ -1,5 +1,6 @@
 // __tests__/lib/heroImages.test.ts
 import {
+  heroCameoSource,
   heroImageSource,
   heroGridImageSource,
   withCloudinaryTransform,
@@ -74,6 +75,39 @@ describe('withCloudinaryTransform', () => {
 
   it('leaves an empty string unchanged', () => {
     expect(withCloudinaryTransform('', 900)).toBe('');
+  });
+});
+
+describe('heroCameoSource', () => {
+  const CV = 'https://comicvine.gamespot.com/a/uploads/scale_large/1/15776/9446859-sid.jpg';
+  const CLOUD =
+    'https://res.cloudinary.com/dgrsb5o4p/image/upload/v1784216960/hero-portraits/cv-80161.jpg';
+
+  it('downshifts a ComicVine portrait to a square variant', () => {
+    // A roster row: 80px is exactly a 30pt slot at 2x.
+    expect(heroCameoSource(CV, 30).uri).toBe(
+      'https://comicvine.gamespot.com/a/uploads/square_avatar/1/15776/9446859-sid.jpg',
+    );
+    // A chart cameo needs more; 160px covers 54pt at 3x.
+    expect(heroCameoSource(CV, 54).uri).toBe(
+      'https://comicvine.gamespot.com/a/uploads/square_tiny/1/15776/9446859-sid.jpg',
+    );
+  });
+
+  it('never serves a ComicVine URL at its ingested scale_large', () => {
+    for (const size of [30, 32, 34, 40, 54, 64]) {
+      expect(heroCameoSource(CV, size).uri).not.toContain('scale_large');
+    }
+  });
+
+  it('still resizes a Cloudinary portrait, with a floor for tiny slots', () => {
+    expect(heroCameoSource(CLOUD, 54).uri).toContain('f_auto,q_auto,w_162/');
+    expect(heroCameoSource(CLOUD, 20).uri).toContain('f_auto,q_auto,w_96/');
+  });
+
+  it('leaves a host it has no transform for alone', () => {
+    const cdn = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/images/md/70.jpg';
+    expect(heroCameoSource(cdn, 54).uri).toBe(cdn);
   });
 });
 
