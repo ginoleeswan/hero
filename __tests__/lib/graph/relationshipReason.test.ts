@@ -57,6 +57,34 @@ describe('describeRelationship', () => {
     expect(describeRelationship('family', 'Superman', null, null, 0).summary).toBeNull();
   });
 
+  // A named kin role is the one tie the data states outright rather than infers
+  // from a shared roster, so it leads — and it's worth saying even bare.
+  it('names the kin role above everything else it could say', () => {
+    expect(describeRelationship('family', 'Superman', null, null, 0, 'Cousin').summary).toBe(
+      "Superman's cousin.",
+    );
+    expect(describeRelationship('family', 'Superman', null, null, 3, 'Spouse').summary).toBe(
+      "Superman's spouse, with 3 mutual connections in common.",
+    );
+    expect(
+      describeRelationship(
+        'family',
+        'Superman',
+        ['Justice League'],
+        ['Justice League'],
+        0,
+        'Parent',
+      ).summary,
+    ).toBe("Superman's parent, and served alongside them in Justice League.");
+  });
+
+  // Only kin carry a role; a stray value must not rewrite an enemy's sentence.
+  it('ignores a relation on a non-family tie', () => {
+    expect(describeRelationship('enemy', 'Batman', null, null, 2, 'Cousin').summary).toBe(
+      'An enemy of Batman, with 2 mutual connections in common.',
+    );
+  });
+
   it('tolerates missing and empty team arrays', () => {
     expect(describeRelationship('teammate', 'X', null, ['A'], 0).sharedTeams).toEqual([]);
     expect(describeRelationship('teammate', 'X', ['A'], null, 0).sharedTeams).toEqual([]);

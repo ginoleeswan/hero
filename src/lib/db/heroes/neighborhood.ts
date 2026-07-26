@@ -37,6 +37,37 @@ export interface NeighborEdge {
   from: string;
   to: string;
   kind: NeighborKind;
+  /**
+   * For `family` edges only: what `to` is to `from` — parent, cousin, spouse.
+   * Subject-incident family edges are always stored subject-first, so on those
+   * this reads as the neighbour's role in the subject's life.
+   */
+  relation?: string | null;
+}
+
+/** Kin roles as they're written in hero_relatives, in reader's English. */
+const RELATION_LABEL: Record<string, string> = {
+  parent: 'Parent',
+  child: 'Child',
+  sibling: 'Sibling',
+  spouse: 'Spouse',
+  cousin: 'Cousin',
+  grandparent: 'Grandparent',
+  grandchild: 'Grandchild',
+  aunt_uncle: 'Aunt or uncle',
+  niece_nephew: 'Niece or nephew',
+  in_law: 'In-law',
+  ancestor: 'Ancestor',
+  descendant: 'Descendant',
+  clone: 'Clone',
+  // 'other' has no useful English of its own; the generic word is the honest
+  // answer rather than inventing a closeness the row doesn't claim.
+  other: 'Family',
+};
+
+export function relationLabel(relation: string | null | undefined): string | null {
+  if (!relation) return null;
+  return RELATION_LABEL[relation] ?? null;
 }
 export interface Neighborhood {
   nodes: NeighborNode[];
@@ -58,15 +89,41 @@ export async function getHeroNeighborhood(heroId: string, limit = 24): Promise<N
   return { nodes: parsed.nodes ?? [], edges: parsed.edges ?? [] };
 }
 
+/** The subject-incident edge for a node, if there is one. */
+function subjectEdge(
+  edges: NeighborEdge[],
+  subjectId: string,
+  nodeId: string,
+): NeighborEdge | undefined {
+  if (nodeId === subjectId) return undefined;
+  return edges.find(
+    (x) => (x.from === subjectId && x.to === nodeId) || (x.to === subjectId && x.from === nodeId),
+  );
+}
+
 /** The relationship of `nodeId` to `subjectId`, from the subject-incident edge. */
 export function subjectKind(
   edges: NeighborEdge[],
   subjectId: string,
   nodeId: string,
 ): NeighborEdge['kind'] | null {
-  if (nodeId === subjectId) return null;
-  const e = edges.find(
-    (x) => (x.from === subjectId && x.to === nodeId) || (x.to === subjectId && x.from === nodeId),
-  );
-  return e ? e.kind : null;
+  return subjectEdge(edges, subjectId, nodeId)?.kind ?? null;
+}
+
+/**
+ * What `nodeId` IS to `subjectId` in words — "Cousin", "Spouse" — or null when
+ * the tie isn't kin, or is kin the data won't name.
+ *
+ * Only trusted when the edge is stored subject-first, which is how the RPC
+ * orients subject-incident family edges. Read from the far end the same row
+ * would name the subject's role instead, which would be backwards.
+ */
+export function subjectRelation(
+  edges: NeighborEdge[],
+  subjectId: string,
+  nodeId: string,
+): string | null {
+  const e = subjectEdge(edges, subjectId, nodeId);
+  if (!e || e.kind !== 'family' || e.from !== subjectId) return null;
+  return relationLabel(e.relation);
 }

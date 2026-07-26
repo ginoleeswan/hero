@@ -1,11 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { SURFACE, INK_TEXT } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
-import { getHeroNeighborhood, subjectKind } from '../../src/lib/db/heroes/neighborhood';
+import {
+  getHeroNeighborhood,
+  subjectKind,
+  subjectRelation,
+} from '../../src/lib/db/heroes/neighborhood';
 import { nodeDegree, sharedWithSubject } from '../../src/components/character/socialWebFocus';
 import UniverseScene, { type UniverseNode } from '../../src/components/character/UniverseScene.dom';
 import { SocialWebFocusCard } from '../../src/components/character/SocialWebFocusCard';
@@ -13,6 +17,8 @@ import { SocialWebSearch } from '../../src/components/character/SocialWebSearch'
 import { NebulaLoader } from '../../src/components/character/NebulaLoader';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
+import { UniverseTrail, type TrailStop } from '../../src/components/character/UniverseTrail';
+import { ShareUniverseButton } from '../../src/components/character/ShareUniverseButton';
 
 export default function SocialWebExplorer() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,6 +27,7 @@ export default function SocialWebExplorer() {
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   const [focusSubject, setFocusSubject] = useState<string>(id);
+  const [trail, setTrail] = useState<TrailStop[]>([]);
   // A phone shows the same heads at a fraction of the width, so the same count
   // that reads as a constellation on desktop reads as a crowd here.
   const nodeLimit = narrow ? 14 : 24;
@@ -45,8 +52,52 @@ export default function SocialWebExplorer() {
   );
 
   const [focusId, setFocusId] = useState<string | null>(null);
+
+  /**
+   * Move the universe to another character.
+   *
+   * `setParams` rather than `push`: the address bar has to follow you — a
+   * travelled-to universe was previously unlinkable, unrefreshable and
+   * unshareable, since the URL kept naming whoever you started on. But pushing
+   * a genuine history entry re-creates the screen, and re-creating the screen
+   * destroys the WebGL context along with the transition that's the reason to
+   * travel at all. So the URL is kept truthful without touching the history
+   * stack, and retracing is offered explicitly through the trail instead of
+   * through the browser's back button.
+   */
+  const travelTo = useCallback(
+    (nextId: string) => {
+      if (nextId === focusSubject) return;
+      const leaving = subjectNode?.name;
+      if (leaving) {
+        setTrail((t) =>
+          // Hopping back to somewhere already on the path truncates to it
+          // rather than growing a loop of the same two names.
+          t.some((s) => s.id === nextId)
+            ? t.slice(
+                0,
+                t.findIndex((s) => s.id === nextId),
+              )
+            : [...t, { id: focusSubject, name: leaving }].slice(-8),
+        );
+      }
+      setFocusSubject(nextId);
+      setFocusId(null);
+      router.setParams({ id: nextId });
+    },
+    [focusSubject, subjectNode, router],
+  );
+
+  // A deep link or an in-app navigation can change the route param without
+  // going through travelTo; the scene should follow it either way.
+  useEffect(() => {
+    if (id && id !== focusSubject) setFocusSubject(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   const focusNode = (focusId && data?.nodes.find((n) => n.id === focusId)) || null;
   const focusKind = focusNode ? subjectKind(data!.edges, focusSubject, focusNode.id) : null;
+  const focusRelation = focusNode ? subjectRelation(data!.edges, focusSubject, focusNode.id) : null;
   const focusDegree = focusNode ? nodeDegree(data!.edges, focusNode.id) : 0;
   // Characters connected to BOTH ends — the card renders them as faces, which
   // is the most legible answer to "how do these two actually overlap".
@@ -121,10 +172,7 @@ export default function SocialWebExplorer() {
               // the transition plays out rather than waiting on the network.
               void queryClient.prefetchQuery(neighbourhoodQuery(nodeId));
             }}
-            onRecenter={async (nodeId: string) => {
-              setFocusSubject(nodeId);
-              setFocusId(null);
-            }}
+            onRecenter={async (nodeId: string) => travelTo(nodeId)}
           />
         </View>
       ) : null}
@@ -171,9 +219,18 @@ export default function SocialWebExplorer() {
         {/* No legend: the scene now labels each faction ON its own cluster, which
             is both nearer the thing it names and honest — these toggles were
             never wired to the WebGL scene, so filtering by kind did nothing. */}
-        <Text style={[styles.title, narrow && styles.titleNarrow] as object} numberOfLines={1}>
-          {subjectNode ? `${subjectNode.name}'s universe` : 'Universe'}
-        </Text>
+        <View style={styles.titleWrap}>
+          <Text style={[styles.title, narrow && styles.titleNarrow] as object} numberOfLines={1}>
+            {subjectNode ? `${subjectNode.name}'s universe` : 'Universe'}
+          </Text>
+          <UniverseTrail
+            trail={trail}
+            current={subjectNode?.name ?? ''}
+            max={narrow ? 1 : 3}
+            onJump={(i) => travelTo(trail[i].id)}
+          />
+        </View>
+        <ShareUniverseButton heroId={focusSubject} name={subjectNode?.name ?? ''} />
       </View>
 
       {sparse ? (
@@ -206,6 +263,7 @@ export default function SocialWebExplorer() {
           }
           onPickMutual={(mid) => setFocusId(mid)}
           kind={focusKind}
+          relation={focusRelation}
           degree={focusDegree}
           accent={theme.accent}
           onView={() =>
@@ -238,6 +296,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   back: { padding: 6 },
+  titleWrap: { flex: 1, gap: 3 },
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 22,

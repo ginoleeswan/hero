@@ -3,7 +3,14 @@
 // /character and /compare links unfurl with page-specific OG tags. Humans never
 // hit this route; if they do, the meta-refresh sends them to the real page.
 // Any lookup failure falls back to the site-wide card — never a broken unfurl.
-import { buildMetaHtml, characterMeta, siteMeta, vsMeta, type HeroLite } from './_lib/shareMeta';
+import {
+  buildMetaHtml,
+  characterMeta,
+  siteMeta,
+  universeMeta,
+  vsMeta,
+  type HeroLite,
+} from './_lib/shareMeta';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';
@@ -40,6 +47,23 @@ async function fetchTally(a: string, b: string): Promise<{ votes_a: number; vote
   }
 }
 
+// Just the headline number for the description. A failure here costs a phrase,
+// never the unfurl, so it degrades to 0 and the sentence drops the count.
+async function fetchConnectionCount(id: string): Promise<number> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_hero_neighborhood`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'content-type': 'application/json' },
+      body: JSON.stringify({ p_hero_id: id, p_limit: 24 }),
+    });
+    if (!r.ok) return 0;
+    const j = (await r.json()) as { nodes?: unknown[] };
+    return Math.max(0, (j.nodes?.length ?? 0) - 1);
+  } catch {
+    return 0;
+  }
+}
+
 function str(v: string | string[] | undefined): string {
   return typeof v === 'string' ? v : '';
 }
@@ -51,6 +75,9 @@ export default async function handler(req: Req, res: Res) {
     if (kind === 'character') {
       const hero = await fetchHero(str(req.query.id));
       if (hero) meta = characterMeta(hero);
+    } else if (kind === 'universe') {
+      const hero = await fetchHero(str(req.query.id));
+      if (hero) meta = universeMeta(hero, await fetchConnectionCount(hero.id));
     } else if (kind === 'vs') {
       const [a, b] = await Promise.all([fetchHero(str(req.query.a)), fetchHero(str(req.query.b))]);
       if (a && b) {

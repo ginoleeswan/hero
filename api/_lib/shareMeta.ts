@@ -68,6 +68,17 @@ export function characterMeta(hero: HeroLite): ShareMeta {
   };
 }
 
+export function universeMeta(hero: HeroLite, connections: number): ShareMeta {
+  const uni = hero.publisher ? `${hero.publisher} · ` : '';
+  const count = connections > 0 ? `${connections} connections — ` : '';
+  return {
+    title: `${hero.name}'s universe — Mythique`,
+    description: `${uni}${count}the nemeses, allies, teammates and bloodline that make up ${hero.name}'s world.`,
+    path: `/social-web/${hero.id}`,
+    image: `${SITE_URL}/api/og?type=universe&hero=${encodeURIComponent(hero.id)}`,
+  };
+}
+
 export function vsMeta(a: HeroLite, b: HeroLite, votesA: number, votesB: number): ShareMeta {
   return {
     title: `${a.name} vs ${b.name} — Mythique`,

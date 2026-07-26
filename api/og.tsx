@@ -1,6 +1,8 @@
 // Dynamic 1200×630 Open Graph card renderer (@vercel/og / satori).
 //   /api/og?hero=<id>   — character card (portrait + name + universe)
 //   /api/og?a=<id>&b=<id> — VS card (both portraits, head to head)
+//   /api/og?type=universe&hero=<id> — universe poster (the character's world:
+//                         nemeses, allies, teammates and bloodline as faces)
 //   /api/og?type=debate&a=<id>&b=<id> — daily-debate card (portraits, live
 //                         split bar, top take, wordmark) — the asset scripts/
 //                         social/daily-debate.mjs fetches for the growth loop
@@ -691,6 +693,195 @@ function debateCard(
   );
 }
 
+type OgMember = { id: string; name: string; avatar_url: string | null };
+type OgFaction = { label: string; colour: string; members: OgMember[] };
+
+// The four factions in the same fixed order the scene draws them, so the poster
+// and the live page agree about what a character's world is made of.
+const FACTIONS: { key: string; label: string; colour: string }[] = [
+  { key: 'enemy', label: 'Nemeses', colour: COLORS.red },
+  { key: 'ally', label: 'Allies', colour: COLORS.green },
+  { key: 'teammate', label: 'Teammates', colour: COLORS.blue },
+  { key: 'family', label: 'Bloodline', colour: COLORS.purple },
+];
+
+type OgUniverse = { factions: OgFaction[]; total: number };
+
+async function fetchUniverse(heroId: string): Promise<OgUniverse | null> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_hero_neighborhood`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_hero_id: heroId, p_limit: 24 }),
+    });
+    if (!r.ok) return null;
+    const data = (await r.json()) as {
+      nodes: (OgMember & { is_subject: boolean })[];
+      edges: { from: string; to: string; kind: string }[];
+    };
+    const nodes = data?.nodes ?? [];
+    const edges = data?.edges ?? [];
+    if (nodes.length < 2) return null;
+
+    const kindOf = (id: string) =>
+      edges.find((e) => (e.from === heroId && e.to === id) || (e.to === heroId && e.from === id))
+        ?.kind ?? null;
+
+    const factions = FACTIONS.map(({ key, label, colour }) => ({
+      label,
+      colour,
+      members: nodes
+        .filter((n) => !n.is_subject && kindOf(n.id) === key)
+        // Faces first: a poster of cut-out heads is the point, and an initials
+        // disc is a stand-in, so any character who has real art earns the slot.
+        .sort((a, b) => Number(Boolean(b.avatar_url)) - Number(Boolean(a.avatar_url))),
+    })).filter((f) => f.members.length > 0);
+
+    return { factions, total: nodes.length - 1 };
+  } catch {
+    return null;
+  }
+}
+
+// Avatars are transparent cut-outs made to sit on any background, so they need
+// no plate — the head IS the mark, exactly as in the app.
+const avatarSrc = (url: string) =>
+  url.includes('/upload/') ? url.replace('/upload/', '/upload/w_128/') : url;
+
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase() || '?';
+
+const memberHead = (m: OgMember, size: number) =>
+  m.avatar_url ? (
+    <img
+      key={m.id}
+      src={avatarSrc(m.avatar_url)}
+      width={size}
+      height={size}
+      alt=""
+      style={{ display: 'flex' }}
+    />
+  ) : (
+    <div
+      key={m.id}
+      style={{
+        display: 'flex',
+        width: size,
+        height: size,
+        borderRadius: size,
+        background: 'rgba(245,235,220,0.10)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'FlameSans',
+        fontSize: Math.round(size * 0.3),
+        color: MUTED,
+      }}
+    >
+      {initials(m.name)}
+    </div>
+  );
+
+/**
+ * The character's world as a poster.
+ *
+ * The live scene is the best-looking thing in the app and, until this existed,
+ * could only leave it as a screenshot. Rather than trying to reproduce the 3D
+ * constellation in a static renderer — satori has no canvas and no transforms
+ * worth the name — this states the same fact in print: who the character's
+ * world is made of, grouped and named, as faces.
+ */
+function universeCard(hero: OgHero, img: string | null, uni: OgUniverse) {
+  const rows = uni.factions.slice(0, 4);
+  // Heads shrink as the poster fills, so four busy factions never overflow.
+  const size = rows.length >= 4 ? 62 : 72;
+  const perRow = 7;
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        background: BG,
+      }}
+    >
+      {textureLayer}
+      {img ? portraitImg(img, 360, 'right') : null}
+      <div
+        style={{
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '0 64px 0 48px',
+        }}
+      >
+        {wordmark(26, false)}
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'Flame',
+            fontSize: 58,
+            color: BEIGE,
+            lineHeight: 1.22,
+            marginTop: 14,
+          }}
+        >
+          {hero.name}&#8217;s universe
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 22,
+            color: GOLD,
+            marginTop: 6,
+          }}
+        >
+          {hero.publisher ? `${hero.publisher} · ` : ''}
+          {uni.total} connections
+        </div>
+
+        {rows.map((f) => (
+          <div key={f.label} style={{ display: 'flex', flexDirection: 'column', marginTop: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  width: 8,
+                  height: 8,
+                  borderRadius: 8,
+                  background: f.colour,
+                }}
+              />
+              <div
+                style={{
+                  display: 'flex',
+                  fontFamily: 'FlameSans',
+                  fontSize: 16,
+                  letterSpacing: 2,
+                  color: f.colour,
+                }}
+              >
+                {f.label.toUpperCase()} · {f.members.length}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
+              {f.members.slice(0, perRow).map((m) => memberHead(m, size))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const art = (h: OgHero) => h.portrait_url || h.image_url;
 
 export default async function handler(req: Request) {
@@ -700,9 +891,16 @@ export default async function handler(req: Request) {
     const heroId = searchParams.get('hero');
     const aId = searchParams.get('a');
     const bId = searchParams.get('b');
-    const isDebate = searchParams.get('type') === 'debate';
+    const type = searchParams.get('type');
+    const isDebate = type === 'debate';
     let card;
-    if (heroId) {
+    if (type === 'universe' && heroId) {
+      const [hero, uni] = await Promise.all([fetchHero(heroId), fetchUniverse(heroId)]);
+      // A character with no mapped world falls through to their normal card
+      // rather than shipping an empty poster.
+      if (hero && uni) card = universeCard(hero, art(hero), uni);
+      else if (hero) card = characterCard(hero, art(hero));
+    } else if (heroId) {
       const hero = await fetchHero(heroId);
       if (hero) card = characterCard(hero, art(hero));
     } else if (isDebate && aId && bId) {

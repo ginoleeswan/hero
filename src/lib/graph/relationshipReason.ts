@@ -28,9 +28,29 @@ export function describeRelationship(
   subjectTeams: string[] | null,
   nodeTeams: string[] | null,
   mutualCount: number,
+  /** For kin: what this character IS to the subject ("Cousin", "Spouse"). */
+  relation?: string | null,
 ): RelationshipReason {
   const a = new Set((subjectTeams ?? []).filter(Boolean));
   const sharedTeams = (nodeTeams ?? []).filter((t) => t && a.has(t));
+
+  // A named kin role outranks everything else this function can say. It is the
+  // one relationship the data states outright rather than infers from a shared
+  // roster, so it leads, and it's also the one case where there is something
+  // worth saying even with no teams and no mutuals in common.
+  if (kind === 'family' && relation) {
+    const role = `${subjectName}'s ${relation.toLowerCase()}`;
+    if (sharedTeams.length > 0) {
+      const list = formatList(sharedTeams.slice(0, 2));
+      const extra = sharedTeams.length > 2 ? ` and ${sharedTeams.length - 2} more` : '';
+      return { sharedTeams, summary: `${role}, and served alongside them in ${list}${extra}.` };
+    }
+    if (mutualCount > 0) {
+      const people = `${mutualCount} mutual connection${mutualCount === 1 ? '' : 's'}`;
+      return { sharedTeams, summary: `${role}, with ${people} in common.` };
+    }
+    return { sharedTeams, summary: `${role}.` };
+  }
 
   if (sharedTeams.length > 0) {
     const list = formatList(sharedTeams.slice(0, 2));

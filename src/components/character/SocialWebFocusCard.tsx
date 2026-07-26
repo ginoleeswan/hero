@@ -53,6 +53,7 @@ export function SocialWebFocusCard({
   subjectName,
   subjectTeams,
   kind,
+  relation,
   degree,
   accent,
   mutuals = [],
@@ -67,6 +68,8 @@ export function SocialWebFocusCard({
   subjectName: string;
   subjectTeams?: string[] | null;
   kind: NeighborKind | null;
+  /** For kin: the named role ("Cousin"), when hero_relatives states one. */
+  relation?: string | null;
   degree: number;
   /** Page accent — the fallback when this character has no usable colour. */
   accent: string;
@@ -106,6 +109,7 @@ export function SocialWebFocusCard({
     subjectTeams ?? null,
     node.teams ?? null,
     degree,
+    relation ?? null,
   );
 
   const edges = useMemo(
@@ -158,7 +162,9 @@ export function SocialWebFocusCard({
             {kind ? (
               <View style={[styles.kindPill, { backgroundColor: kindColor + '26' }] as object}>
                 <Text style={[styles.kindText, { color: kindColor }] as object}>
-                  {KIND_LABEL[kind]}
+                  {/* "Cousin" beats "Family" wherever the data actually says
+                      which relative this is. */}
+                  {(kind === 'family' && relation) || KIND_LABEL[kind]}
                 </Text>
               </View>
             ) : null}
