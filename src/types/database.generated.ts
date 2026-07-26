@@ -2620,13 +2620,12 @@ export type Database = {
       }
       get_trending_titles: {
         Args: {
-          p_bucket?: string
+          p_bucket: string
           p_chars_per_title?: number
           p_title_limit?: number
         }
         Returns: {
           backdrop_url: string
-          hero_avatar_url: string
           hero_id: string
           hero_image_url: string
           hero_name: string
@@ -2635,6 +2634,7 @@ export type Database = {
           overview: string
           poster_url: string
           provider: string
+          provider_logo: string
           release_date: string
           title: string
           title_id: string
@@ -2649,7 +2649,6 @@ export type Database = {
         Returns: {
           backdrop_url: string
           bucket: string
-          hero_avatar_url: string
           hero_id: string
           hero_image_url: string
           hero_name: string
@@ -2658,6 +2657,7 @@ export type Database = {
           overview: string
           poster_url: string
           provider: string
+          provider_logo: string
           release_date: string
           title: string
           title_id: string
