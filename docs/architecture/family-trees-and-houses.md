@@ -65,9 +65,16 @@ twice before this settled. The rule now:
 | ------------------------------- | ----------------------------------------- |
 | Chart node                      | fills the console's second seat (compare) |
 | Roster row body                 | fills the console's second seat (compare) |
-| Roster "Root" button            | re-roots the chart                        |
+| Roster crosshair button         | re-roots the chart                        |
+| Console seat (either)           | opens `HousePicker` for that seat         |
+| Route chip (middle stops only)  | re-traces to that person                  |
+| Generations chip                | re-roots the chart, back to the line view |
 | Console "Centre the chart on X" | re-roots the chart                        |
 | Console "Open profile"          | leaves for `/character/[id]`              |
+
+The crosshair glyph means "centre the chart here" everywhere it appears. It is
+taught once by the console's filled button, which carries it beside the words,
+and then repeated silently on all fifty-four roster rows.
 
 **The console is the only answer surface.** Everything that isn't navigation
 feeds it, so there is exactly one place on the page where things happen.
@@ -82,7 +89,11 @@ Consequences worth knowing:
   viewport put the console off-screen, so clicking a face near the bottom of the
   chart produced an answer you couldn't see. That was the original "clicking
   does nothing" bug in a new costume.
-- The roster sits _beside_ the chart above 1000px for the same reason.
+- The roster sits _beside_ the chart above 1000px for the same reason, and
+  **below that width it does not render at all**. Stacked, it put the control a
+  screen and a half under the console it drives, which made every change a
+  scroll down and a scroll back. `HousePicker` — a sheet over the page, opened
+  by whichever seat asked, one verb per opening — replaced that round trip.
 
 ## Layout constants must agree
 
@@ -176,10 +187,29 @@ roster, console, and result rows all render on both platforms.
 | Kinship BFS + wording             | `src/lib/family/kinshipPath.ts`, `kinshipGender.ts`                   |
 | Date formatting                   | `src/lib/family/lifespan.ts`                                          |
 | Name shortening in-chart          | `src/lib/family/displayName.ts`                                       |
+| Generational ladder (whole house) | `src/lib/family/generations.ts`                                       |
 | House payload + re-projection     | `src/hooks/useHouse.ts`                                               |
 | House lists (index, universe row) | `src/hooks/useHouseList.ts`, `src/lib/db/houses.ts`                   |
-| Crest, banner, console, roster    | `src/components/family/`                                              |
+| Crest, banner, console, picker    | `src/components/family/`                                              |
 | RPC                               | `get_house(p_slug)` — see `20260726172000_*.sql` for the current body |
+
+## Two views of one house
+
+`?view=line` (default) draws one person's relatives. `?view=house` draws every
+member on a generational ladder, oldest rung first.
+
+Nothing in the data records a generation — edges only ever say what two people
+are to _each other_ — so `assignGenerations` derives it: seed the most famous
+member at zero, walk outward adding the offset each relation carries, rebase so
+the oldest rung is 0. `ancestor` and `descendant` carry their distance in the
+**role text** ("10× great-grandfather" → twelve rungs), which is the only place
+it exists; `roleDepth` parses it. Relations that say nothing about generation
+(`in_law`) are not walked, and anyone no chain reaches lands in `unplaced`
+rather than being given an invented rung.
+
+Breadth-first, so a house that married its cousins resolves by shortest path.
+All 55 Targaryens place, in 14 rungs. Tested in
+`__tests__/lib/family/generations.test.ts`.
 
 ## Not done
 
