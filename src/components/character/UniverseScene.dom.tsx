@@ -373,12 +373,28 @@ export default function UniverseScene({
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
     // The DOM component gets its own document, which still carries the UA's
-    // default body margin — that alone shifts the whole canvas off-centre.
-    document.documentElement.style.margin = '0';
-    document.documentElement.style.height = '100%';
-    document.body.style.margin = '0';
-    document.body.style.height = '100%';
-    document.body.style.overflow = 'hidden';
+    // default body margin — that alone shifts the whole canvas off-centre — and
+    // the page must not scroll under a full-bleed scene that owns the gestures.
+    //
+    // On web these land on the REAL page document, not a private one: `use dom`
+    // renders inline here rather than in an iframe. So every one of them has to
+    // be put back on the way out. Leaving `overflow: hidden` behind froze
+    // whatever screen you pressed back into — the app scrolls the document by
+    // design, so this silently disabled scrolling for the rest of the session.
+    const doc = document.documentElement.style;
+    const body = document.body.style;
+    const restore = {
+      docMargin: doc.margin,
+      docHeight: doc.height,
+      bodyMargin: body.margin,
+      bodyHeight: body.height,
+      bodyOverflow: body.overflow,
+    };
+    doc.margin = '0';
+    doc.height = '100%';
+    body.margin = '0';
+    body.height = '100%';
+    body.overflow = 'hidden';
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -1324,6 +1340,12 @@ export default function UniverseScene({
       el.removeEventListener('click', onClick);
       el.removeEventListener('dblclick', onDoubleClick);
       el.removeEventListener('keydown', onKeyDown);
+      // Hand the page back exactly as it was found.
+      doc.margin = restore.docMargin;
+      doc.height = restore.docHeight;
+      body.margin = restore.bodyMargin;
+      body.height = restore.bodyHeight;
+      body.overflow = restore.bodyOverflow;
       for (const { el: chip } of chips) chip.remove();
       for (const p of placed.values()) retire(p);
       placed.clear();
