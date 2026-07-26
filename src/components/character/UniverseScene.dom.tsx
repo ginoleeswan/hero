@@ -1354,8 +1354,12 @@ export default function UniverseScene({
   }, [nodes, edges, subjectId]);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh' }}>
-      <div ref={mountRef} style={{ width: '100vw', height: '100vh' }} />
+    /* `top/left` + `100lvh`, never `inset: 0`: a fixed element pins to the
+       layout viewport, which stops at the iOS Safari toolbar, so the scene
+       ended at the toolbar instead of running under its glass like every other
+       page. Same fix as the boot loader and the landing splash. */
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100lvh' }}>
+      <div ref={mountRef} style={{ width: '100vw', height: '100lvh' }} />
       {/* The cast as real markup for assistive tech — visually hidden, but the
           only reason this feature exists for a screen reader at all. */}
       <div
