@@ -12,6 +12,7 @@ import {
 } from '../lib/family/kinshipPath';
 import type { FamilyMember, FamilyRelation, RelativeStatus } from '../lib/family/types';
 import type { BranchSide } from '../lib/family/resolveKinship';
+import { nodeDates } from '../lib/family/lifespan';
 
 export interface House {
   slug: string;
@@ -34,6 +35,10 @@ export interface HouseMember {
   gender: string | null;
   fame_score: number | null;
   summary: string | null;
+  born: string | null;
+  died: string | null;
+  reign_start: string | null;
+  reign_end: string | null;
   via: string;
 }
 
@@ -100,6 +105,7 @@ export function relativesOf(payload: HousePayload, focusId: string): FamilyMembe
             ? `${e.hero_id}:${e.tree_parent_hero_id}`
             : null,
         branchSide: (e.branch_side ?? null) as BranchSide,
+        dates: nodeDates(other),
       };
     });
 }

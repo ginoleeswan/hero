@@ -53,6 +53,12 @@ export interface FamilyMember {
   heroAlignment: string | null;
   treeParentId: string | null; // the member this node hangs from (null = hero spine)
   branchSide: BranchSide; // paternal | maternal | spouse | null
+  /**
+   * Compact date line for the node — a reign where the catalogue has one, a
+   * lifespan otherwise. Optional because only the house projection fills it;
+   * the character page's own family band has no dates to hand.
+   */
+  dates?: string | null;
 }
 
 /** Where a node's connector attaches: the hero spine, or a specific parent node. */

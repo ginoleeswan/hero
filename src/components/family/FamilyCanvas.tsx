@@ -154,7 +154,11 @@ function CanvasNode({
   const shownName = treeDisplayName(member.name, heroName);
   // The row gutter already names the generation, so repeating it per node says
   // nothing. It earns its line only where a row mixes relations.
+  // …and where it is suppressed, a date can have the line instead. Nodes are
+  // 104px wide, so this is one slot: the relation if it says something the row
+  // doesn't, otherwise the reign or lifespan.
   const role = rowNamesTheRelation(member) ? null : roleLabel(member);
+  const secondary = role ?? member.dates ?? null;
   const dead = member.status === 'deceased';
 
   // Ring, not card: a traditional family tree is portrait roundels joined by
@@ -209,9 +213,9 @@ function CanvasNode({
         {shownName}
         {dead ? <Text style={styles.dagger}> †</Text> : null}
       </Text>
-      {role ? (
+      {secondary ? (
         <Text style={styles.roleText} numberOfLines={1}>
-          {role}
+          {secondary}
         </Text>
       ) : null}
     </View>

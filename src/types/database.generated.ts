@@ -1011,6 +1011,7 @@ export type Database = {
           alter_egos: string | null
           avatar_url: string | null
           base: string | null
+          born: string | null
           category: string | null
           combat: number | null
           comicvine_enriched_at: string | null
@@ -1018,6 +1019,7 @@ export type Database = {
           comicvine_status: string | null
           creators: string[] | null
           description: string | null
+          died: string | null
           durability: number | null
           enemies: string[] | null
           enriched_at: string | null
@@ -1068,6 +1070,8 @@ export type Database = {
           powerstats_total: number | null
           publisher: string | null
           race: string | null
+          reign_end: string | null
+          reign_start: string | null
           relatives: string | null
           search_text: string | null
           speed: number | null
@@ -1092,6 +1096,7 @@ export type Database = {
           alter_egos?: string | null
           avatar_url?: string | null
           base?: string | null
+          born?: string | null
           category?: string | null
           combat?: number | null
           comicvine_enriched_at?: string | null
@@ -1099,6 +1104,7 @@ export type Database = {
           comicvine_status?: string | null
           creators?: string[] | null
           description?: string | null
+          died?: string | null
           durability?: number | null
           enemies?: string[] | null
           enriched_at?: string | null
@@ -1149,6 +1155,8 @@ export type Database = {
           powerstats_total?: number | null
           publisher?: string | null
           race?: string | null
+          reign_end?: string | null
+          reign_start?: string | null
           relatives?: string | null
           search_text?: string | null
           speed?: number | null
@@ -1173,6 +1181,7 @@ export type Database = {
           alter_egos?: string | null
           avatar_url?: string | null
           base?: string | null
+          born?: string | null
           category?: string | null
           combat?: number | null
           comicvine_enriched_at?: string | null
@@ -1180,6 +1189,7 @@ export type Database = {
           comicvine_status?: string | null
           creators?: string[] | null
           description?: string | null
+          died?: string | null
           durability?: number | null
           enemies?: string[] | null
           enriched_at?: string | null
@@ -1230,6 +1240,8 @@ export type Database = {
           powerstats_total?: number | null
           publisher?: string | null
           race?: string | null
+          reign_end?: string | null
+          reign_start?: string | null
           relatives?: string | null
           search_text?: string | null
           speed?: number | null

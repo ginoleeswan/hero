@@ -159,7 +159,11 @@ function CanvasNode({
   // on every card in that row says nothing. It earns its line only where a row
   // holds several different relations — the hero's own generation mixes wives,
   // brothers and cousins — or where the relation isn't a step along the bloodline.
+  // …and where it is suppressed, a date can have the line instead. Nodes are
+  // 104px wide, so this is one slot: the relation if it says something the row
+  // doesn't, otherwise the reign or lifespan.
   const role = rowNamesTheRelation(member) ? null : roleLabel(member);
+  const secondary = role ?? member.dates ?? null;
 
   const dead = member.status === 'deceased';
   // A cameo above the name, the way printed genealogies set a portrait medallion.
@@ -225,9 +229,9 @@ function CanvasNode({
         {shownName}
         {dead ? <Text style={styles.dagger}> †</Text> : null}
       </Text>
-      {role ? (
+      {secondary ? (
         <Text style={styles.roleText} numberOfLines={1}>
-          {role}
+          {secondary}
         </Text>
       ) : null}
     </View>

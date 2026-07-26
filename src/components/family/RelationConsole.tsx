@@ -12,11 +12,16 @@ import { useRouter } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import type { KinshipDescription } from '../../lib/family/kinshipPath';
+import { reignLine, lifeLine } from '../../lib/family/lifespan';
 
 export interface ConsoleSeat {
   id: string;
   name: string;
   summary: string | null;
+  born: string | null;
+  died: string | null;
+  reign_start: string | null;
+  reign_end: string | null;
   avatar_url: string | null;
   portrait_url: string | null;
   image_md_url: string | null;
@@ -94,6 +99,13 @@ export function RelationConsole({
 
           {/* Who they actually are. Clicking a face in the chart should tell you
               something about the person, not just re-arrange the chart. */}
+          {(() => {
+            // A reign and a lifespan are different facts, so both can show — but
+            // most of the catalogue has neither, and a blank meta line is worse
+            // than no line.
+            const dates = [reignLine(partner), lifeLine(partner)].filter(Boolean).join(' · ');
+            return dates ? <Text style={styles.dates}>{dates}</Text> : null;
+          })()}
           {partner.summary ? <Text style={styles.summary}>{partner.summary}</Text> : null}
 
           {/* Named buttons, not icons: the chart's own click is ambiguous
@@ -245,6 +257,13 @@ const styles = StyleSheet.create({
   answer: { gap: 6 },
   headline: { fontFamily: 'Flame-Regular', fontSize: 26, lineHeight: 33, color: COLORS.black },
   chain: { fontFamily: 'FlameSans-Regular', fontSize: 13.5, lineHeight: 21, color: '#5a6a72' },
+  dates: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: '#a99b84',
+  },
   summary: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13.5,
