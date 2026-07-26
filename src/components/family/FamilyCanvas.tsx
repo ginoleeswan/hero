@@ -171,6 +171,7 @@ function CanvasNode({
     <View style={[styles.namePlate, dead && styles.namePlateDead] as object}>
       <Text style={[styles.nodeName, dead && styles.deadText] as object} numberOfLines={2}>
         {shownName}
+        {dead ? <Text style={styles.dagger}> †</Text> : null}
       </Text>
       {role ? (
         <Text style={styles.roleText} numberOfLines={1}>
@@ -256,8 +257,12 @@ function FamilyStage({
       // at the viewport centre gives the term below; for p = centre it reduces
       // to the old viewportCentre − boundsCentre.
       const hero = layout.nodes.find((n) => n.isHero);
-      const hx = hero?.x ?? bw / 2;
-      const hy = hero?.y ?? bh / 2;
+      // Anchoring on the hero is only worth it when the tree is too big to show
+      // at once; a small tree that already fits was shoved against one edge.
+      const fitsX = bw * s <= vpW - pad;
+      const fitsY = bh * s <= vpH - pad;
+      const hx = fitsX ? bw / 2 : (hero?.x ?? bw / 2);
+      const hy = fitsY ? bh / 2 : (hero?.y ?? bh / 2);
       return {
         tx: vpW / 2 - bw / 2 - (hx - bw / 2) * s,
         ty: vpH / 2 - bh / 2 - (hy - bh / 2) * s,
@@ -371,7 +376,7 @@ function FamilyStage({
               {/* Generation bands — a ruled ledger banding so thirteen rows of
                   a dynasty each read as a place. Bands rather than hairlines,
                   which would run behind the cut-out heads and show through. */}
-              {layout.rows.map((row, i) =>
+              {(layout.rows.length > 5 ? layout.rows : []).map((row, i) =>
                 i % 2 === 1 ? (
                   <Rect
                     key={`band-${row.tier}`}
@@ -393,10 +398,10 @@ function FamilyStage({
                 if (!a || !b) return null;
                 const d = edgePath(a, b);
                 if (edge.kind === 'bloodline') {
-                  return <Path key={i} d={d} stroke="#c3b59c" strokeWidth={2} fill="none" />;
+                  return <Path key={i} d={d} stroke="#a9987c" strokeWidth={1.25} fill="none" />;
                 }
                 if (edge.kind === 'marriage') {
-                  return <Path key={i} d={d} stroke="#E0A335" strokeWidth={2} fill="none" />;
+                  return <Path key={i} d={d} stroke="#D2952A" strokeWidth={1.5} fill="none" />;
                 }
                 return (
                   <Path
@@ -812,10 +817,10 @@ const styles = StyleSheet.create({
     // a picket fence of different-width tags.
     width: NODE_W - 6,
     alignItems: 'center',
-    backgroundColor: '#f7edd9',
+    backgroundColor: '#fffaf0',
     borderWidth: 1,
-    borderColor: '#e3d4b6',
-    borderTopColor: '#fbf5e7',
+    borderColor: '#ddcdb0',
+    borderTopColor: '#fffdf8',
     borderRadius: 5,
     paddingHorizontal: 7,
     paddingVertical: 3,
@@ -837,11 +842,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  deadText: {
-    color: '#8d8375',
-    textDecorationLine: 'line-through',
-    textDecorationColor: '#bcae97',
-  } as object,
+  deadText: { color: '#8d8375' } as object,
+  dagger: { color: '#b0a189' },
   linkNode: {
     flexDirection: 'row',
     alignItems: 'center',

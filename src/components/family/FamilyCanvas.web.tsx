@@ -182,11 +182,13 @@ function CanvasNode({
   // legible over the dotted ground without boxing in the portrait.
   const label = (
     <View style={[styles.namePlate, dead && styles.namePlateDead]}>
-      {/* A rule struck through the name, not a dagger appended to it: the mark
-          belongs to the typography rather than being a symbol the reader has to
-          learn, and it never competes with the name for width. */}
+      {/* A dagger, not a rule struck through the name. Striking it through was
+          the wrong call: most of a Kryptonian or Targaryen line is dead, so at
+          real density half the tree came out crossed off like a to-do list. A
+          dagger is the convention these charts use and it stays quiet at scale. */}
       <Text style={[styles.nodeName, dead && styles.deadText]} numberOfLines={2}>
         {shownName}
+        {dead ? <Text style={styles.dagger}> †</Text> : null}
       </Text>
       {role ? (
         <Text style={styles.roleText} numberOfLines={1}>
@@ -270,8 +272,13 @@ function FamilyStage({
       // at the viewport centre gives the term below; for p = centre it reduces
       // to the old viewportCentre − boundsCentre.
       const hero = layout.nodes.find((n) => n.isHero);
-      const hx = hero?.x ?? bw / 2;
-      const hy = hero?.y ?? bh / 2;
+      // Anchoring on the hero is only worth it when the tree is too big to show
+      // at once. A small tree that already fits was being shoved up against one
+      // edge with the rest of the canvas left empty, so centre the whole thing.
+      const fitsX = bw * s <= vpW - pad;
+      const fitsY = bh * s <= vpH - pad;
+      const hx = fitsX ? bw / 2 : (hero?.x ?? bw / 2);
+      const hy = fitsY ? bh / 2 : (hero?.y ?? bh / 2);
       return {
         tx: vpW / 2 - bw / 2 - (hx - bw / 2) * s,
         ty: vpH / 2 - bh / 2 - (hy - bh / 2) * s,
@@ -388,7 +395,7 @@ function FamilyStage({
                   in the eye; a ruled ledger banding makes each one a place.
                   Bands rather than rules because a hairline would run behind
                   the cut-out heads and show through their faces. */}
-              {layout.rows.map((row, i) =>
+              {(layout.rows.length > 5 ? layout.rows : []).map((row, i) =>
                 i % 2 === 1 ? (
                   <Rect
                     key={`band-${row.tier}`}
@@ -410,10 +417,10 @@ function FamilyStage({
                 if (!a || !b) return null;
                 const d = edgePath(a, b);
                 if (edge.kind === 'bloodline') {
-                  return <Path key={i} d={d} stroke="#c3b59c" strokeWidth={2} fill="none" />;
+                  return <Path key={i} d={d} stroke="#a9987c" strokeWidth={1.25} fill="none" />;
                 }
                 if (edge.kind === 'marriage') {
-                  return <Path key={i} d={d} stroke="#E0A335" strokeWidth={2} fill="none" />;
+                  return <Path key={i} d={d} stroke="#D2952A" strokeWidth={1.5} fill="none" />;
                 }
                 return (
                   <Path
@@ -895,10 +902,10 @@ const styles = StyleSheet.create({
     // a picket fence of different-width tags.
     width: NODE_W - 6,
     alignItems: 'center',
-    backgroundColor: '#f7edd9',
+    backgroundColor: '#fffaf0',
     borderWidth: 1,
-    borderColor: '#e3d4b6',
-    borderTopColor: '#fbf5e7',
+    borderColor: '#ddcdb0',
+    borderTopColor: '#fffdf8',
     borderRadius: 5,
     paddingHorizontal: 7,
     paddingVertical: 3,
@@ -922,11 +929,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  deadText: {
-    color: '#8d8375',
-    textDecorationLine: 'line-through',
-    textDecorationColor: '#bcae97',
-  } as object,
+  deadText: { color: '#8d8375' } as object,
+  dagger: { color: '#b0a189' },
   linkNode: {
     flexDirection: 'row',
     alignItems: 'center',
