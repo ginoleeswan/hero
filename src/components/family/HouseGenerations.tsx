@@ -234,12 +234,20 @@ const styles = StyleSheet.create({
   band: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingVertical: 12 },
   bandStacked: { flexDirection: 'column', gap: 8 },
   rail: { width: 62, flexGrow: 0, flexShrink: 0, gap: 2, paddingTop: 6 },
+  // Sticky: the ladder runs five screens on a phone and the numeral was the
+  // only thing saying where you were.
   railStacked: {
     width: 'auto',
+    alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 8,
-    paddingTop: 0,
+    position: 'sticky',
+    top: 58,
+    zIndex: 2,
+    backgroundColor: 'white',
+    paddingTop: 8,
+    paddingBottom: 6,
   } as object,
   numeral: { fontFamily: 'Flame-Regular', fontSize: 17, lineHeight: 22, color: '#b3a48b' },
   numeralMuted: { fontFamily: 'Flame-Regular', fontSize: 17, lineHeight: 22, color: '#d6c9b2' },

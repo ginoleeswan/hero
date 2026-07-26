@@ -46,45 +46,88 @@ export function HouseBanner({
   return (
     <View style={[styles.band, paddingTop !== undefined && { paddingTop }] as object}>
       <View style={[styles.inner, { maxWidth }] as object}>
-        <View style={wide ? styles.rowWide : styles.rowNarrow}>
-          <HouseCrest name={name} tint={tint} size={wide ? 116 : 68} />
+        {/* A phone reads the identity once and then scrolls past it on every
+            visit, so the narrow band is a masthead rather than a poster: the
+            crest sits beside the name instead of above it, and the four stacked
+            stats collapse to one muted line. Roughly 190px back, which is the
+            difference between the chart being below the fold and on it. */}
+        {wide ? (
+          <View style={styles.rowWide}>
+            <HouseCrest name={name} tint={tint} size={116} />
+            <View style={[styles.identity, styles.identityWide] as object}>
+              <Text style={styles.eyebrow}>{universe}</Text>
+              <Text style={styles.title}>{name}</Text>
+              {words ? <Text style={styles.words}>“{words}”</Text> : null}
+              {blurb ? <Text style={styles.blurb}>{blurb}</Text> : null}
 
-          <View style={[styles.identity, wide && styles.identityWide] as object}>
-            <Text style={styles.eyebrow}>{universe}</Text>
-            <Text style={[styles.title, !wide && styles.titleNarrow] as object}>{name}</Text>
+              {/* Each drops out silently where the catalogue has nothing. */}
+              <View style={styles.facts}>
+                <Fact
+                  label={memberCount === 1 ? 'Member' : 'Members'}
+                  value={String(memberCount)}
+                />
+                {crowned > 0 ? (
+                  <>
+                    <View style={styles.factRule} />
+                    <Fact label="Crowned" value={String(crowned)} icon="crown-outline" />
+                  </>
+                ) : null}
+                {span ? (
+                  <>
+                    <View style={styles.factRule} />
+                    <Fact label="Recorded" value={span} />
+                  </>
+                ) : null}
+                {seat ? (
+                  <>
+                    <View style={styles.factRule} />
+                    <Fact label="Seat" value={seat} />
+                  </>
+                ) : null}
+              </View>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.narrow}>
+            <View style={styles.narrowHead}>
+              <HouseCrest name={name} tint={tint} size={54} />
+              <View style={styles.narrowTitle}>
+                <Text style={styles.eyebrow}>{universe}</Text>
+                <Text style={styles.titleNarrow}>{name}</Text>
+              </View>
+            </View>
             {words ? <Text style={styles.words}>“{words}”</Text> : null}
-            {blurb ? (
-              <Text style={styles.blurb} numberOfLines={wide ? undefined : 3}>
-                {blurb}
+            {blurb ? <Text style={styles.blurb}>{blurb}</Text> : null}
+            <View style={styles.factLine}>
+              <Text style={styles.factLineText}>
+                {memberCount} {memberCount === 1 ? 'member' : 'members'}
               </Text>
-            ) : null}
-
-            {/* What can only be said about the set. Each one drops out silently
-                where the catalogue has nothing, so a house with no recorded
-                dates shows two facts rather than two facts and two blanks. */}
-            <View style={styles.facts}>
-              <Fact label={memberCount === 1 ? 'Member' : 'Members'} value={String(memberCount)} />
               {crowned > 0 ? (
                 <>
-                  <View style={styles.factRule} />
-                  <Fact label="Crowned" value={String(crowned)} icon="crown-outline" />
+                  <Text style={styles.factDot}>·</Text>
+                  <MaterialCommunityIcons
+                    name="crown-outline"
+                    size={13}
+                    color={COLORS.goldAccent}
+                  />
+                  <Text style={styles.factLineText}>{crowned} crowned</Text>
                 </>
               ) : null}
               {span ? (
                 <>
-                  <View style={styles.factRule} />
-                  <Fact label="Recorded" value={span} />
+                  <Text style={styles.factDot}>·</Text>
+                  <Text style={styles.factLineText}>{span}</Text>
                 </>
               ) : null}
               {seat ? (
                 <>
-                  <View style={styles.factRule} />
-                  <Fact label="Seat" value={seat} />
+                  <Text style={styles.factDot}>·</Text>
+                  <Text style={styles.factLineText}>{seat}</Text>
                 </>
               ) : null}
             </View>
           </View>
-        </View>
+        )}
       </View>
     </View>
   );
@@ -115,7 +158,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
     borderBottomWidth: 1,
     borderBottomColor: SEAM_COLOR,
-    paddingBottom: 30,
+    paddingBottom: 22,
     ...Platform.select({
       web: {
         backgroundImage: SURFACE_GRADIENT.stage,
@@ -127,7 +170,9 @@ const styles = StyleSheet.create({
   } as object,
   inner: { width: '100%', alignSelf: 'center', paddingHorizontal: 20 },
   rowWide: { flexDirection: 'row', alignItems: 'flex-start', gap: 26 },
-  rowNarrow: { gap: 16 },
+  narrow: { gap: 8 },
+  narrowHead: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  narrowTitle: { flexShrink: 1, minWidth: 0, gap: 2 },
   // `flex: 1` only in the row layout — inside the stacked column its zero basis
   // would collapse the whole identity block.
   identity: { gap: 6, minWidth: 0 },
@@ -135,7 +180,7 @@ const styles = StyleSheet.create({
   eyebrow: { ...EYEBROW, color: COLORS.goldAccent } as object,
   // Flame ink runs ~119% of its em box; unclamped display text needs the room.
   title: { fontFamily: 'Flame-Regular', fontSize: 46, lineHeight: 56, color: COLORS.beige },
-  titleNarrow: { fontSize: 34, lineHeight: 42 },
+  titleNarrow: { fontFamily: 'Flame-Regular', fontSize: 29, lineHeight: 36, color: COLORS.beige },
   words: {
     fontFamily: 'Flame-Regular',
     fontSize: 18,
@@ -151,6 +196,17 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   facts: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 14, flexWrap: 'wrap' },
+  // One muted line instead of four value-over-label stacks: same facts, a
+  // third of the height, and it wraps to two lines at worst.
+  factLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  factLineText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: INK_TEXT.muted },
+  factDot: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: INK_TEXT.faint },
   fact: { gap: 1 },
   factValueRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   factValue: { fontFamily: 'Flame-Regular', fontSize: 20, lineHeight: 26, color: COLORS.beige },

@@ -568,13 +568,17 @@ function FamilyStage({
           <Pressable style={styles.zoomBtn} onPress={recenter}>
             <Ionicons name="locate-outline" size={16} color={COLORS.black} />
           </Pressable>
-          <Pressable style={styles.zoomBtn} onPress={onToggleFullscreen}>
-            <Ionicons
-              name={fullscreen ? 'contract-outline' : 'expand-outline'}
-              size={16}
-              color={COLORS.black}
-            />
-          </Pressable>
+          {/* Compact already carries a named "Full chart" control above the
+              stage; a second one here only sat on top of the nodes. */}
+          {compact && !fullscreen ? null : (
+            <Pressable style={styles.zoomBtn} onPress={onToggleFullscreen}>
+              <Ionicons
+                name={fullscreen ? 'contract-outline' : 'expand-outline'}
+                size={16}
+                color={COLORS.black}
+              />
+            </Pressable>
+          )}
         </View>
 
         {fullscreen ? (
@@ -676,6 +680,20 @@ export function FamilyCanvas({
             {/* Mobile: the page's section-title grammar — right-aligned
               "Family · N" over the rule, matching "Gallery · N". */}
             <View style={styles.mHeader}>
+              {/* A pan-and-zoom canvas the size of a business card shows three
+                  of twenty-one nodes. Fullscreen is where a phone can actually
+                  read the tree, so it gets a named control rather than one of
+                  four identical icons sitting on top of the chart. */}
+              <Pressable
+                onPress={() => setFullscreen(true)}
+                accessibilityRole="button"
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [styles.mExpand, hovered && (styles.mExpandHover as object)] as object
+                }
+              >
+                <Ionicons name="expand-outline" size={14} color={COLORS.navy} />
+                <Text style={styles.mExpandText}>Full chart</Text>
+              </Pressable>
               <Text style={styles.mTitle}>
                 {label} · {members.length}
               </Text>
@@ -893,10 +911,28 @@ const styles = StyleSheet.create({
   },
 
   // Mobile header — mirrors the native FamilyCanvas + the other mobile sections.
-  mHeader: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'baseline' },
+  mHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  mExpand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#e7dcc9',
+    backgroundColor: '#fffaf0',
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    cursor: 'pointer',
+  } as object,
+  mExpandHover: { borderColor: '#cdbfa6', backgroundColor: '#f7eeda' } as object,
+  mExpandText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   mTitle: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
     fontFamily: 'Flame-Regular',
     fontSize: 20,
+    lineHeight: 26,
     color: COLORS.navy,
     textAlign: 'right',
     paddingVertical: 5,

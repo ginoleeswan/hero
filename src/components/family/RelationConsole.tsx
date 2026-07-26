@@ -68,7 +68,7 @@ export function RelationConsole({
       <Text style={styles.eyebrow}>Trace the line</Text>
 
       <View style={styles.seats}>
-        <Seat member={root} caption="Root of the tree" onPress={onPickRoot} />
+        <Seat member={root} caption="Centred on" onPress={onPickRoot} />
 
         {partner ? (
           <Pressable
@@ -81,11 +81,7 @@ export function RelationConsole({
           >
             <Ionicons name="swap-horizontal" size={16} color={COLORS.navy} />
           </Pressable>
-        ) : (
-          <View style={styles.swapIdle}>
-            <Ionicons name="ellipsis-horizontal" size={16} color="#c4b8a3" />
-          </View>
-        )}
+        ) : null}
 
         {partner ? (
           <Seat
@@ -521,7 +517,6 @@ const styles = StyleSheet.create({
     cursor: 'pointer',
   } as object,
   swapHover: { borderColor: '#cdbfa6', backgroundColor: '#f7eeda' } as object,
-  swapIdle: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   rule: { height: 1, backgroundColor: '#f0e6d4' },
   body: { gap: 12 },
   // Never `flex: 1` here — flex-basis 0 in an auto-height column collapses it.
