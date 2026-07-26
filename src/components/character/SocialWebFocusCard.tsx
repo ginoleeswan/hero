@@ -257,28 +257,48 @@ export function SocialWebFocusCard({
               <UniverseVote subject={subject} node={node} subjectName={subjectName} />
             </View>
           ) : null}
-        </View>
 
-        <Pressable onPress={onClose} style={styles.bandClose} hitSlop={10}>
-          <Ionicons name="close" size={18} color={INK_TEXT.muted} />
-        </Pressable>
+          {/* Last item in the row rather than absolutely positioned: floating
+              it over the open canvas above the band left it reading as a stray
+              mark belonging to nothing. Top-aligned, so it sits on the same
+              line as the name it dismisses. */}
+          <Pressable onPress={onClose} style={styles.bandClose} hitSlop={10}>
+            <Ionicons name="close" size={17} color={INK_TEXT.muted} />
+          </Pressable>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={[styles.card, narrow && styles.cardNarrow] as object}>
-      {/* The character's colour as a soft wash from the top, so the card takes on
-          their identity without a border or a stripe doing the talking. */}
+      {/* On a phone the sheet rises out of the ink exactly as the desktop band
+          does; elsewhere it stays a washed panel. Either way the character's
+          own colour carries the identity, with no border doing the talking. */}
       <View
         style={
           [
             StyleSheet.absoluteFill,
-            { backgroundImage: `linear-gradient(160deg, ${tint}2e, transparent 62%)` },
+            {
+              backgroundImage: narrow
+                ? `linear-gradient(to top, ${SURFACE.ink} 0%, ${SURFACE.ink}f2 52%, transparent 100%)`
+                : `linear-gradient(160deg, ${tint}2e, transparent 62%)`,
+            },
           ] as object
         }
         pointerEvents="none"
       />
+      {narrow ? (
+        <View
+          style={
+            [
+              StyleSheet.absoluteFill,
+              { backgroundImage: `linear-gradient(to top, ${tint}2e, transparent 55%)` },
+            ] as object
+          }
+          pointerEvents="none"
+        />
+      ) : null}
 
       <View style={styles.head}>
         <View style={[styles.portrait, narrow && styles.portraitNarrow] as object}>
@@ -298,7 +318,7 @@ export function SocialWebFocusCard({
         </View>
 
         <View style={styles.identity}>
-          <Text style={styles.name} numberOfLines={2}>
+          <Text style={[styles.name, narrow && styles.nameNarrow] as object} numberOfLines={2}>
             {node.name}
           </Text>
           <View style={styles.meta}>
@@ -334,10 +354,8 @@ export function SocialWebFocusCard({
       {/* A written note beats anything derived. The inferred line ("both
           serving in the Justice League") only appears where nobody has said
           something better. */}
-      {blurb ? (
-        <Text style={styles.reason}>{blurb}</Text>
-      ) : summary ? (
-        <Text style={styles.reason}>{summary}</Text>
+      {relationLine ? (
+        <Text style={[styles.reason, narrow && styles.reasonNarrow] as object}>{relationLine}</Text>
       ) : null}
 
       {shared ? <SharedTitlesStrip shared={shared} /> : null}
@@ -415,20 +433,33 @@ const styles = StyleSheet.create({
   } as object,
   // Full-bleed on a phone, and lifted clear of the floating browser toolbar
   // that would otherwise cut the action row in half.
+  // A phone can't hold the desktop band's four columns, but it takes the same
+  // language: no border, no radius, full-bleed, rising out of the ink rather
+  // than floating on top of it as a panel. The ring is width-bound on a narrow
+  // screen and leaves the lower half of the viewport empty, so this covers
+  // nothing either.
   cardNarrow: {
-    left: 12,
-    right: 12,
+    left: 0,
+    right: 0,
     width: 'auto',
     maxWidth: 'none',
-    bottom: 'calc(16px + env(safe-area-inset-bottom))',
-    padding: 12,
-    gap: 8,
+    bottom: 0,
+    borderRadius: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingTop: 20,
+    paddingHorizontal: 18,
+    paddingBottom: 'calc(18px + env(safe-area-inset-bottom))',
+    gap: 10,
     // It was eating ~half the viewport and burying the scene it describes.
     // Capped and scrollable, so a dense dossier costs the graph nothing.
     maxHeight: '58vh',
     overflowY: 'auto',
   } as object,
-  portraitNarrow: { width: 60, height: 74 } as object,
+  // Was 60x74 — a thumbnail of the best art in the app. Given room to be seen.
+  portraitNarrow: { width: 86, height: 112 } as object,
+  nameNarrow: { fontSize: 24, lineHeight: 30 } as object,
+  reasonNarrow: { fontSize: 15, lineHeight: 23, opacity: 1 } as object,
   head: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   portrait: {
     width: 76,
@@ -559,9 +590,7 @@ const styles = StyleSheet.create({
   // Given a chip of its own: as a bare glyph on open canvas it read as a
   // stray mark rather than as this band's control.
   bandClose: {
-    position: 'absolute',
-    top: 26,
-    right: 40,
+    alignSelf: 'flex-start',
     width: 32,
     height: 32,
     borderRadius: 999,
