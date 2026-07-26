@@ -109,8 +109,23 @@ export function relativesOf(payload: HousePayload, focusId: string): FamilyMembe
   });
 }
 
+/** The banner's worth of a house — everything but the graph. */
+export interface HouseChrome extends House {
+  memberCount: number;
+}
+
 export interface UseHouseResult {
   house: House | null;
+  /**
+   * The house's identity, which arrives well before its lineage does.
+   *
+   * `get_house` walks a graph and takes ~200ms plus the round trip; the eight
+   * rows of `houses` come back almost immediately. Splitting them lets the page
+   * open on a finished banner — crest, name, words, seat — with only the tree
+   * and the roster still filling in, instead of holding the entire screen blank
+   * behind the slowest thing on it.
+   */
+  chrome: HouseChrome | null;
   members: HouseMember[];
   /** Relatives of the focused member, ready for FamilyCanvas. */
   relatives: FamilyMember[];
@@ -133,6 +148,27 @@ export function useHouse(
   focus?: string | null,
   withId?: string | null,
 ): UseHouseResult {
+  // Runs beside the graph query, not after it — the point is to beat it.
+  const { data: chrome } = useQuery({
+    queryKey: ['houseChrome', slug],
+    enabled: !!slug,
+    staleTime: 60 * 60 * 1000,
+    queryFn: async (): Promise<HouseChrome | null> => {
+      const { data: row, error: chromeError } = await supabase
+        .from('houses')
+        .select('slug, name, universe, words, seat, sigil_tint, blurb, house_members(count)')
+        .eq('slug', slug!)
+        .maybeSingle();
+      if (chromeError) throw new Error(chromeError.message);
+      if (!row) return null;
+      // PostgREST returns an embedded aggregate as a one-row array.
+      const { house_members: counted, ...house } = row as House & {
+        house_members: { count: number }[] | null;
+      };
+      return { ...house, memberCount: counted?.[0]?.count ?? 0 };
+    },
+  });
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['house', slug],
     enabled: !!slug,
@@ -151,6 +187,7 @@ export function useHouse(
   return useMemo(() => {
     const empty: UseHouseResult = {
       house: null,
+      chrome: chrome ?? null,
       members: [],
       relatives: [],
       focusId: null,
@@ -191,6 +228,7 @@ export function useHouse(
 
     return {
       house: data.house,
+      chrome: chrome ?? null,
       members: data.members,
       relatives: relativesOf(data, focusId),
       focusId,
@@ -199,5 +237,5 @@ export function useHouse(
       isLoading,
       error: (error as Error) ?? null,
     };
-  }, [data, focus, withId, isLoading, error]);
+  }, [data, chrome, focus, withId, isLoading, error]);
 }

@@ -15,6 +15,7 @@ import { HouseBanner } from '../../src/components/family/HouseBanner';
 import { RelationConsole } from '../../src/components/family/RelationConsole';
 import { HouseRoster } from '../../src/components/family/HouseRoster';
 import { useHouse } from '../../src/hooks/useHouse';
+import { HouseSkeleton } from '../../src/components/skeletons/HouseSkeleton';
 
 export default function HousePage() {
   const router = useRouter();
@@ -28,11 +29,8 @@ export default function HousePage() {
     focus?: string;
     with?: string;
   }>();
-  const { house, members, relatives, focusId, kinship, pathIds, isLoading, error } = useHouse(
-    slug,
-    focus ?? null,
-    withId ?? null,
-  );
+  const { house, chrome, members, relatives, focusId, kinship, pathIds, isLoading, error } =
+    useHouse(slug, focus ?? null, withId ?? null);
 
   const { height: winHeight } = useWindowDimensions();
   // The chart is the page here, not a band inside one — give it most of the
@@ -56,9 +54,10 @@ export default function HousePage() {
 
   if (isLoading) {
     return (
-      <View style={styles.centre}>
-        <Text style={styles.muted}>Loading the house…</Text>
-      </View>
+      <>
+        <Stack.Screen options={{ title: chrome?.name ?? 'House' }} />
+        <HouseSkeleton chrome={chrome} stageHeight={stageHeight} />
+      </>
     );
   }
   if (error || !house) {

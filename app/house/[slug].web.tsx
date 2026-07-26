@@ -20,6 +20,7 @@ import { HouseBanner } from '../../src/components/family/HouseBanner';
 import { RelationConsole } from '../../src/components/family/RelationConsole';
 import { HouseRoster } from '../../src/components/family/HouseRoster';
 import { useHouse } from '../../src/hooks/useHouse';
+import { HouseSkeleton } from '../../src/components/skeletons/HouseSkeleton';
 
 /** Below this the rail can't hold a name and a tree at once — stack instead. */
 const TWO_COLUMN = 1000;
@@ -52,11 +53,8 @@ export default function HousePage() {
   // painted by this screen and closed onto the ink floor by PageEndCap.
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
-  const { house, members, relatives, focusId, kinship, pathIds, isLoading, error } = useHouse(
-    slug,
-    focus ?? null,
-    withId ?? null,
-  );
+  const { house, chrome, members, relatives, focusId, kinship, pathIds, isLoading, error } =
+    useHouse(slug, focus ?? null, withId ?? null);
 
   // Stacked, the console is above the roster you just clicked — so bring it
   // back into view, or the answer arrives off-screen and reads as nothing.
@@ -86,9 +84,15 @@ export default function HousePage() {
 
   if (isLoading) {
     return (
-      <View style={styles.centre}>
-        <Text style={styles.muted}>Loading the house…</Text>
-      </View>
+      <>
+        <Stack.Screen options={{ title: chrome ? `${chrome.name} — family tree` : 'House' }} />
+        <HouseSkeleton
+          chrome={chrome}
+          twoColumn={twoColumn}
+          stageHeight={stageHeight}
+          maxWidth={MAX_WIDTH}
+        />
+      </>
     );
   }
   if (error || !house) {
