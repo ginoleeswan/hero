@@ -23,6 +23,7 @@ import { useAuth } from '../../../src/hooks/useAuth';
 import { useSearchHistory } from '../../../src/hooks/useSearchHistory';
 import { useUnifiedSearch } from '../../../src/hooks/useUnifiedSearch';
 import { UniverseChip } from '../../../src/components/web/search/UniverseChip';
+import { HouseResultRow } from '../../../src/components/family/HouseResultRow';
 import { TeamResultRow } from '../../../src/components/web/search/TeamResultRow';
 import { TitleRail } from '../../../src/components/web/search/TitleRail';
 import { TopResultRow } from '../../../src/components/web/search/TopResultRow';
@@ -246,13 +247,16 @@ export default function WebSearchScreen() {
   const trimmed = inputQuery.trim();
   const hasCriteria = trimmed.length > 0;
 
-  const { universes, teams, heroes, titles, loading } = useUnifiedSearch(inputQuery, RESULT_LIMIT);
+  const { universes, teams, heroes, titles, houses, loading } = useUnifiedSearch(
+    inputQuery,
+    RESULT_LIMIT,
+  );
 
   // The single confident "Top result" across every type — same picker the desktop
   // palette and native search use, so all three surfaces agree on the answer.
   const topResult: TopResult | null = useMemo(
-    () => pickTopResult(inputQuery, { universes, teams, heroes, titles }),
-    [inputQuery, universes, teams, heroes, titles],
+    () => pickTopResult(inputQuery, { universes, teams, heroes, titles, houses }),
+    [inputQuery, universes, teams, heroes, titles, houses],
   );
   const topKey = topResult ? topResultKey(topResult) : null;
 
@@ -260,6 +264,10 @@ export default function WebSearchScreen() {
   const sectionUniverses = useMemo(
     () => universes.filter((u) => `universe:${u.slug}` !== topKey),
     [universes, topKey],
+  );
+  const sectionHouses = useMemo(
+    () => houses.filter((h) => `house:${h.slug}` !== topKey),
+    [houses, topKey],
   );
   const sectionTeams = useMemo(
     () => teams.filter((t) => `team:${t.id}` !== topKey),
@@ -631,6 +639,22 @@ export default function WebSearchScreen() {
                   </View>
                 ))}
               </View>
+            </View>
+          )}
+          {sectionHouses.length > 0 && (
+            <View style={styles.titlesSection}>
+              <Text style={styles.idleLabel as object}>Houses</Text>
+              {sectionHouses.map((h) => (
+                <View key={h.slug} style={styles.universeChipWrap as object}>
+                  <HouseResultRow
+                    house={h}
+                    variant="dark"
+                    onPress={() =>
+                      router.push(`/house/${h.slug}` as Parameters<typeof router.push>[0])
+                    }
+                  />
+                </View>
+              ))}
             </View>
           )}
           {/* Films & Shows sit ABOVE the character grid as a horizontal poster

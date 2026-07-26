@@ -12,6 +12,7 @@ import { HeroImage } from '../HeroImage';
 import { HeroAvatar } from '../HeroAvatar';
 import { BrandLogoView } from '../PublisherBadge';
 import { teamLogo } from '../../constants/teamBrands';
+import { HouseCrest } from '../family/HouseCrest';
 import type { TopResult } from '../../lib/search/topResult';
 
 const MEDIA_LABEL: Record<string, string> = { film: 'Film', tv: 'TV', game: 'Game' };
@@ -109,6 +110,17 @@ function describe(top: TopResult): {
             )}
           </View>
         ),
+      };
+    }
+    case 'house': {
+      const h = top.house;
+      return {
+        name: h.name,
+        typeLabel: 'House',
+        // Size is the useful fact: it says whether there's a tree worth opening.
+        subtitle: `${h.memberCount} ${h.memberCount === 1 ? 'member' : 'members'} · ${h.universe}`,
+        round: false,
+        thumb: <HouseCrest name={h.name} tint={h.sigil_tint ?? COLORS.orange} size={46} />,
       };
     }
     case 'hero': {

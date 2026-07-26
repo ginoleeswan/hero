@@ -81,6 +81,8 @@ export function SearchPalette() {
         // ⌘↵ / Ctrl↵ on a character jumps straight into Compare (battle picker).
         if ((e.metaKey || e.ctrlKey) && item.kind === 'hero') {
           router.push(`/compare/${item.id}/pick` as Parameters<typeof router.push>[0]);
+        } else if (item.kind === 'house') {
+          router.push(`/house/${item.slug}` as Parameters<typeof router.push>[0]);
         } else if (item.kind === 'universe') {
           router.push(`/universe/${item.slug}` as Parameters<typeof router.push>[0]);
         } else if (item.kind === 'team') {

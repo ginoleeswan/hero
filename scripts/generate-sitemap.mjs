@@ -43,6 +43,9 @@ const STATIC_ROUTES = [
   { loc: '/explore', changefreq: 'daily', priority: '0.9' },
   { loc: '/play', changefreq: 'daily', priority: '0.9' },
   { loc: '/search', changefreq: 'weekly', priority: '0.7' },
+  // The index the per-house pages hang off, so a crawler reaching /house/<slug>
+  // from houses.xml can also see the set they belong to.
+  { loc: '/house', changefreq: 'weekly', priority: '0.6' },
   { loc: '/privacy', changefreq: 'yearly', priority: '0.3' },
   { loc: '/terms', changefreq: 'yearly', priority: '0.3' },
 ];
