@@ -274,7 +274,29 @@ the announcements coming *out of* the event is the part people actually want.
 
 ---
 
-## 9. Tuning caveats
+## 9. Driving this from a session
+
+This is **not** a one-prompt feature. §7 is deterministic plumbing; §8 step 4 is a
+real UI build across the native/web view pair, and steps 4–5 involve calls you'll
+want to see and react to rather than have decided for you.
+
+Note also that §8's ordering is by impact, not by visibility: **nothing renders
+until step 4.** If you want something on screen early, do step 2 second — it's
+small and immediately visible.
+
+Suggested split, one message each:
+
+| Session | Scope | Why it ends there |
+| --- | --- | --- |
+| 1 | §7 (all four) + §8 step 2 | Plumbing plus the first visible change. Small, safe, no design calls. |
+| 2 | §8 step 1, then step 3 | Trailer events must exist before the rail has anything interesting to show. Verify TMDB's field names against a real response first — a key is needed and wasn't available when this was written. |
+| 3 | §8 step 4 | The Pulse rail: `get_pulse_events`, fold into the bundle, then the component for **both** `RightNowBand.tsx` and `RightNowBand.web.tsx`. Stop here and look at it. |
+| 4 | §8 steps 5–6 | Takeover skin + approve UI, then push with hard volume caps. |
+
+Dependency that matters: **step 1 before step 4.** Without trailer events the rail
+is only comics, spikes and live events, which undersells it.
+
+## 10. Tuning caveats
 
 - Thresholds are seeded from **one live event and one dormant one**. Before
   trusting `live` unattended, let it run through NYCC in October and compare.
