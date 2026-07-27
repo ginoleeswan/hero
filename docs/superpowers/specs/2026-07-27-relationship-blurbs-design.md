@@ -230,8 +230,9 @@ all 24 slots) while Dracula's fills from his 70 incoming edges.
 - `describeRelationship()` is pure and already unit-testable: assert a pair with
   a skip row still yields the templated summary, so a decline degrades to the
   fallback rather than to an empty card.
-- SQL assertion: no row with `status = 'written'` has a null or
-  under-80-character blurb.
+- SQL assertion: no row with `status = 'written'` has a null blurb (enforced by
+  a CHECK constraint) or one under **125** characters — the contract floor,
+  asserted per batch rather than constrained, since the database check permits 20.
 - No duplicate-pair test is needed: `PRIMARY KEY (hero_a, hero_b)` and
   `CHECK (hero_a < hero_b)` make it structurally impossible.
 - Re-run the two `explain analyze` timings above after the RPC change and
