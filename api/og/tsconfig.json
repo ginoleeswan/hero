@@ -1,0 +1,22 @@
+{
+  // The ES-module corner of api/. index.tsx loads its font bytes with
+  // `new URL(..., import.meta.url)` so the bundler traces and inlines the .ttf
+  // files — Edge has no node:fs — and `import.meta` is a syntax error to the
+  // compiler under any CommonJS module target (TS1343).
+  //
+  // This used to live one level up and govern the whole directory, which made
+  // the four Node functions beside it emit ESM into a CommonJS package. They all
+  // failed to load in production. Scoping it to the one file that needs it is
+  // the fix; see api/tsconfig.json for the other half.
+  "compilerOptions": {
+    "strict": true,
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  }
+}

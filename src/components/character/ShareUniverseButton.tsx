@@ -11,7 +11,7 @@ import { INK_TEXT } from '../../constants/colors';
  * didn't even follow you as you travelled. Pairing this with the address bar
  * fix is what turns a universe into something that can be posted.
  *
- * The link resolves to an OG card rendered server-side (see api/og.tsx,
+ * The link resolves to an OG card rendered server-side (see api/og/index.tsx,
  * type=universe), so what unfurls in a message or a timeline is the poster of
  * the character's world rather than a generic site preview.
  */
