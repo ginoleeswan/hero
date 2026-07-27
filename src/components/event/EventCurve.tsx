@@ -75,7 +75,7 @@ export function EventCurve({ series, from, to, accent, width, height = 180 }: Ev
       {hasWindow && (
         <>
           {/* The inferred window. The whole point of the figure. */}
-          <Rect x={winX} y={0} width={winW} height={height} fill={accent} opacity={0.1} />
+          <Rect x={winX} y={0} width={winW} height={height} fill={accent} opacity={0.16} />
           <Line
             x1={winX}
             y1={0}
@@ -83,7 +83,7 @@ export function EventCurve({ series, from, to, accent, width, height = 180 }: Ev
             y2={height}
             stroke={accent}
             strokeWidth={1}
-            opacity={0.45}
+            opacity={0.6}
           />
           <Line
             x1={winX + winW}
@@ -92,7 +92,7 @@ export function EventCurve({ series, from, to, accent, width, height = 180 }: Ev
             y2={height}
             stroke={accent}
             strokeWidth={1}
-            opacity={0.45}
+            opacity={0.6}
           />
         </>
       )}

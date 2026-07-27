@@ -164,6 +164,9 @@ export interface EventIndexEntry {
 
 export interface EventIndex {
   events: EventIndexEntry[];
+  /** Polled but not yet confirmed. Shown so the page is a complete idea rather
+   *  than one row in a void. */
+  watching: { slug: string; headline: string }[];
   /** How many events are polled at all. Most have never fired, and the page says
    *  so — one row without that context reads like a broken feature. */
   watched: number;
@@ -172,8 +175,12 @@ export interface EventIndex {
 export function mapEventIndex(raw: unknown): EventIndex {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const list = Array.isArray(r.events) ? (r.events as Record<string, unknown>[]) : [];
+  const watchList = Array.isArray(r.watching) ? (r.watching as Record<string, unknown>[]) : [];
   return {
     watched: num(r.watched) ?? 0,
+    watching: watchList
+      .filter((w) => typeof w.slug === 'string' && typeof w.headline === 'string')
+      .map((w) => ({ slug: w.slug as string, headline: w.headline as string })),
     events: list
       .filter((e) => typeof e.slug === 'string' && typeof e.headline === 'string')
       .map((e) => ({
@@ -202,7 +209,7 @@ export async function getEventIndex(): Promise<EventIndex> {
   const { data, error } = await supabase.rpc('get_event_index');
   if (error) {
     console.warn('[getEventIndex] error:', error.message);
-    return { events: [], watched: 0 };
+    return { events: [], watching: [], watched: 0 };
   }
   return mapEventIndex(data);
 }

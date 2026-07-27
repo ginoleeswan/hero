@@ -26,7 +26,7 @@ as $$
   with live_now as (
     select slug from public.get_live_events()
   ),
-  rows as (
+  caught as (
     select jsonb_build_object(
       'slug', w.slug,
       'headline', w.headline,
@@ -43,10 +43,23 @@ as $$
     where w.enabled
       and w.approval = 'approved'
       and w.live_from is not null
+  ),
+  -- Everything polled that has NOT earned a page. An index with one row and no
+  -- context reads as broken; "we are also watching these nineteen" is both true
+  -- and the most interesting thing a returning visitor can be told. It also
+  -- scales the right way — as events fire, this list shrinks and the one above
+  -- grows.
+  watching as (
+    select jsonb_build_object('slug', w.slug, 'headline', w.headline) as x,
+           w.headline as sort_name
+    from public.watched_events w
+    where w.enabled
+      and not (w.approval = 'approved' and w.live_from is not null)
   )
   select jsonb_build_object(
     -- Newest first: an index of events is a reverse chronology, not a list.
-    'events', coalesce((select jsonb_agg(x order by sort_from desc) from rows), '[]'::jsonb),
+    'events', coalesce((select jsonb_agg(x order by sort_from desc) from caught), '[]'::jsonb),
+    'watching', coalesce((select jsonb_agg(x order by sort_name) from watching), '[]'::jsonb),
     'watched', (select count(*) from public.watched_events where enabled)
   );
 $$;

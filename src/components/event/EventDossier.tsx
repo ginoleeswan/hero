@@ -30,6 +30,8 @@ export interface EventDossierProps {
   contentWidth: number;
   /** Reading measure for content inside the bands. */
   maxContentWidth?: number;
+  /** Viewport height, so a thin dossier still closes on paper. */
+  viewportHeight?: number;
   onTitlePress: (titleId: string) => void;
   onHeroPress: (heroId: string) => void;
   onIssuePress: (issueId: string) => void;
@@ -44,6 +46,7 @@ export function EventDossier({
   wide = false,
   contentWidth,
   maxContentWidth,
+  viewportHeight,
   onTitlePress,
   onHeroPress,
   onIssuePress,
@@ -56,6 +59,19 @@ export function EventDossier({
   const measure = Math.min(maxContentWidth ?? contentWidth, contentWidth);
   const inner = { width: '100%' as const, maxWidth: measure, alignSelf: 'center' as const };
   const curveH = wide ? 190 : 150;
+
+  // Fluid grids. Fixed-width cells left a ragged gutter — at 390 the faces
+  // filled 284 of 354px and the row stopped dead two-thirds across. Columns are
+  // derived from the space actually available, then the cells divide it exactly,
+  // so every row reaches both edges at every width.
+  const avail = Math.max(0, measure - pad * 2);
+  const grid = (gap: number, ideal: number, min = 2) => {
+    const cols = Math.max(min, Math.floor((avail + gap) / (ideal + gap)));
+    return { cols, cell: Math.floor((avail - gap * (cols - 1)) / cols), gap };
+  };
+  const posterGrid = grid(14, 150);
+  const faceGrid = grid(14, 132, 3);
+  const coverGrid = grid(10, 104, 3);
 
   const [lead, ...rest] = trailers;
 
@@ -77,7 +93,7 @@ export function EventDossier({
         {/* Ink falls over the top of the curve so type never fights the plot. */}
         <LinearGradient
           colors={[SURFACE.ink, `${SURFACE.ink}cc`, 'transparent']}
-          locations={[0, 0.55, 1]}
+          locations={[0, 0.38, 1]}
           style={[s.curveScrim, { height: curveH + 40 }]}
           pointerEvents="none"
         />
@@ -121,7 +137,12 @@ export function EventDossier({
 
           {/* The measurements, given the weight they deserve. The multiplier is
               the claim; the other two are its supporting evidence. */}
-          <View style={[s.stats, { marginTop: wide ? 26 : 20, marginBottom: curveH * 0.44 }]}>
+          <View
+            style={[
+              s.stats,
+              { marginTop: wide ? 26 : 20, marginBottom: curveH * (wide ? 0.44 : 0.6) },
+            ]}
+          >
             {event.spikeRatio !== null && (
               <Stat value={`${event.spikeRatio}×`} label="usual readership" accent={accent} big />
             )}
@@ -136,7 +157,7 @@ export function EventDossier({
       <View style={s.seam} />
 
       {/* ── paper: the record ─────────────────────────────────────────────── */}
-      <View style={s.paper}>
+      <View style={[s.paper, viewportHeight ? { minHeight: viewportHeight * 0.6 } : null]}>
         <View style={[inner, { paddingHorizontal: pad }]}>
           {trailers.length > 0 && (
             <Section title="What dropped" note="Trailers published inside the window">
@@ -144,11 +165,11 @@ export function EventDossier({
                   on the page and a 52px thumbnail wasted them. */}
               <LeadTrailer trailer={lead} onPress={onTitlePress} accent={accent} />
               {rest.length > 0 && (
-                <View style={s.posterRow}>
+                <View style={[s.posterRow, { gap: posterGrid.gap }]}>
                   {rest.map((t) => (
                     <Pressable
                       key={t.titleId}
-                      style={s.posterCell}
+                      style={[s.posterCell, { width: posterGrid.cell }]}
                       onPress={() => onTitlePress(t.titleId)}
                       accessibilityRole="button"
                       accessibilityLabel={`${t.title}, ${t.videoType ?? 'trailer'}`}
@@ -156,7 +177,10 @@ export function EventDossier({
                       {!!(t.posterUrl ?? t.backdropUrl) && (
                         <Image
                           source={{ uri: (t.posterUrl ?? t.backdropUrl) as string }}
-                          style={s.poster}
+                          style={[
+                            s.poster,
+                            { width: posterGrid.cell, height: posterGrid.cell * 1.5 },
+                          ]}
                           contentFit="cover"
                           transition={160}
                         />
@@ -174,20 +198,27 @@ export function EventDossier({
 
           {surges.length > 0 && (
             <Section title="Who it moved" note="Readership that broke out during the window">
-              <View style={s.faceGrid}>
+              <View style={[s.faceGrid, { gap: faceGrid.gap }]}>
                 {surges.map((sg) => (
                   <Pressable
                     key={sg.heroId}
-                    style={s.faceCell}
+                    style={[s.faceCell, { width: faceGrid.cell }]}
                     onPress={() => onHeroPress(sg.heroId)}
                     accessibilityRole="button"
                     accessibilityLabel={`${sg.name}, ${sg.spike}× reads`}
                   >
-                    <View style={s.faceWrap}>
+                    <View style={[s.faceWrap, { width: faceGrid.cell, height: faceGrid.cell }]}>
                       {!!sg.portraitUrl && (
                         <Image
                           source={{ uri: sg.portraitUrl }}
-                          style={s.face}
+                          style={[
+                            s.face,
+                            {
+                              width: faceGrid.cell,
+                              height: faceGrid.cell,
+                              borderRadius: faceGrid.cell / 2,
+                            },
+                          ]}
                           contentFit="cover"
                           transition={160}
                         />
@@ -198,7 +229,9 @@ export function EventDossier({
                         </View>
                       )}
                     </View>
-                    <Text style={s.faceName} numberOfLines={1}>
+                    {/* Two lines: at three columns on a phone a longer name
+                        ("William Leather") was being cut mid-word. */}
+                    <Text style={s.faceName} numberOfLines={2}>
                       {sg.name}
                     </Text>
                     {/* Temporal, never causal — the join proves sequence, not cause. */}
@@ -213,7 +246,7 @@ export function EventDossier({
 
           {issues.length > 0 && (
             <Section title="On shelves that week" note="Comics that shipped alongside it">
-              <View style={s.covers}>
+              <View style={[s.covers, { gap: coverGrid.gap }]}>
                 {issues.map((i) => (
                   <Pressable
                     key={i.id}
@@ -224,7 +257,10 @@ export function EventDossier({
                     {!!i.coverUrl && (
                       <Image
                         source={{ uri: i.coverUrl }}
-                        style={s.cover}
+                        style={[
+                          s.cover,
+                          { width: coverGrid.cell, height: Math.round(coverGrid.cell * 1.52) },
+                        ]}
                         contentFit="cover"
                         transition={160}
                       />
@@ -408,13 +444,16 @@ const s = StyleSheet.create({
     color: 'rgba(245,235,220,0.68)',
   },
 
-  posterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
-  posterCell: { width: 116, gap: 6 },
-  poster: { width: 116, height: 174, borderRadius: 9, backgroundColor: 'rgba(11,24,32,0.08)' },
+  posterRow: { flexDirection: 'row', flexWrap: 'wrap' },
+  posterCell: { gap: 6 },
+  poster: { borderRadius: 9, backgroundColor: 'rgba(11,24,32,0.08)' },
+  // Two lines' worth, always: a one-line title next to a two-line one used to
+  // push the following row out of alignment.
   posterTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 14.5,
     lineHeight: 19,
+    minHeight: 38,
     color: COLORS.deepNavy,
   },
   posterMeta: {
@@ -423,10 +462,10 @@ const s = StyleSheet.create({
     color: 'rgba(11,24,32,0.5)',
   },
 
-  faceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20 },
-  faceCell: { width: 132, gap: 7 },
-  faceWrap: { width: 92, height: 92 },
-  face: { width: 92, height: 92, borderRadius: 46, backgroundColor: 'rgba(11,24,32,0.08)' },
+  faceGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  faceCell: { gap: 7 },
+  faceWrap: {},
+  face: { backgroundColor: 'rgba(11,24,32,0.08)' },
   spikePip: {
     position: 'absolute',
     right: -2,
@@ -444,6 +483,6 @@ const s = StyleSheet.create({
     color: 'rgba(11,24,32,0.55)',
   },
 
-  covers: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  cover: { width: 88, height: 134, borderRadius: 7, backgroundColor: 'rgba(11,24,32,0.08)' },
+  covers: { flexDirection: 'row', flexWrap: 'wrap' },
+  cover: { borderRadius: 7, backgroundColor: 'rgba(11,24,32,0.08)' },
 });

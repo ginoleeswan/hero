@@ -94,8 +94,8 @@ describe('mapEventIndex', () => {
   it('survives a null or malformed payload', () => {
     // The index page renders its own empty state; it must never throw on the way
     // there.
-    expect(mapEventIndex(null)).toEqual({ events: [], watched: 0 });
-    expect(mapEventIndex({ events: 'nope' })).toEqual({ events: [], watched: 0 });
+    expect(mapEventIndex(null)).toEqual({ events: [], watching: [], watched: 0 });
+    expect(mapEventIndex({ events: 'nope' })).toEqual({ events: [], watching: [], watched: 0 });
   });
 
   it('keeps the watched count, which is what makes one row honest', () => {
@@ -111,6 +111,21 @@ describe('mapEventIndex', () => {
     expect(i.events).toHaveLength(1);
     expect(i.events[0].isLive).toBe(true);
     expect(i.events[0].spikeRatio).toBe(7.42);
+  });
+
+  it('keeps the watching roster, which is what makes a one-row index a page', () => {
+    // With one confirmed event a bare list is a row in a void. The nineteen that
+    // have not fired are real, already stored, and the most useful thing a
+    // returning visitor can be shown.
+    const i = mapEventIndex({
+      watched: 20,
+      events: [{ slug: 'sdcc', headline: 'San Diego Comic-Con' }],
+      watching: [
+        { slug: 'nycc', headline: 'New York Comic Con' },
+        { headline: 'no slug — dropped' },
+      ],
+    });
+    expect(i.watching).toEqual([{ slug: 'nycc', headline: 'New York Comic Con' }]);
   });
 
   it('drops rows that cannot be routed to', () => {

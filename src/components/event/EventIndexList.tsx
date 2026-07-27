@@ -8,7 +8,6 @@
 // difference between one event and another.
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { COLORS, SEAM_COLOR, SURFACE } from '../../constants/colors';
-import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import { EventCurve } from './EventCurve';
 import { formatWindow } from '../../hooks/useEventDossier';
 import type { EventIndex } from '../../lib/db/events.dossier';
@@ -18,6 +17,9 @@ export interface EventIndexListProps {
   wide?: boolean;
   contentWidth: number;
   maxContentWidth?: number;
+  /** Viewport height, so a short record still closes on paper rather than
+   *  stopping mid-screen and reverting to ink. */
+  viewportHeight?: number;
   onEventPress: (slug: string) => void;
 }
 
@@ -26,12 +28,13 @@ export function EventIndexList({
   wide = false,
   contentWidth,
   maxContentWidth,
+  viewportHeight,
   onEventPress,
 }: EventIndexListProps) {
   const pad = wide ? 40 : 18;
   const measure = Math.min(maxContentWidth ?? contentWidth, contentWidth);
   const inner = { width: '100%' as const, maxWidth: measure, alignSelf: 'center' as const };
-  const { events, watched } = index;
+  const { events, watching } = index;
 
   return (
     <View>
@@ -40,17 +43,15 @@ export function EventIndexList({
           <Text style={s.eyebrow}>The record</Text>
           <Text style={s.title}>Events we caught</Text>
           <Text style={s.method}>
-            {watched > 0
-              ? `${watched} conventions and showcases are checked twice an hour. ` +
-                'They only appear here once their own readership says they started.'
-              : 'Events appear here once their own readership says they started.'}
+            No calendar tells us a convention has started. Each one is watched through its own
+            Wikipedia article, and appears here when the readership says so.
           </Text>
         </View>
       </View>
 
       <View style={s.seam} />
 
-      <View style={s.paper}>
+      <View style={[s.paper, viewportHeight ? { minHeight: viewportHeight * 0.72 } : null]}>
         <View style={[inner, { paddingHorizontal: pad }]}>
           {events.length === 0 ? (
             // An empty screen is an invitation, not an apology — and here it is
@@ -62,7 +63,6 @@ export function EventIndexList({
           ) : (
             events.map((e) => {
               const accent = e.accent ?? COLORS.goldAccent;
-              const brand = brandForEvent(e.slug);
               const win = formatWindow(e.liveFrom, e.liveTo);
               return (
                 <Pressable
@@ -73,15 +73,11 @@ export function EventIndexList({
                   accessibilityLabel={`${e.headline}${win ? `, ${win}` : ''}`}
                 >
                   <View style={s.rowHead}>
-                    {brand ? (
-                      <brand.mark
-                        {...fitMark(brand, 150, 46)}
-                        color={COLORS.deepNavy}
-                        fill={COLORS.deepNavy}
-                      />
-                    ) : (
-                      <Text style={s.rowTitle}>{e.headline}</Text>
-                    )}
+                    {/* The name, not the mark. A boxed logo like SDCC's renders
+                        as a muddy dark stamp at row height — the fine "SAN DIEGO
+                        / INTERNATIONAL" rules mush — and a list wants to be
+                        scannable. The mark belongs to the destination. */}
+                    <Text style={s.rowTitle}>{e.headline}</Text>
                     {e.isLive && (
                       <View style={[s.livePip, { backgroundColor: accent }]}>
                         <Text style={s.livePipText}>On now</Text>
@@ -116,6 +112,23 @@ export function EventIndexList({
                 </Pressable>
               );
             })
+          )}
+
+          {watching.length > 0 && (
+            <View style={s.watching}>
+              <Text style={s.watchingTitle}>Also watching</Text>
+              <Text style={s.watchingNote}>
+                {watching.length} more, polled twice an hour. They move up when their own readership
+                breaks out.
+              </Text>
+              <View style={s.chips}>
+                {watching.map((w) => (
+                  <View key={w.slug} style={s.chip}>
+                    <Text style={s.chipText}>{w.headline}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
           )}
         </View>
       </View>
@@ -182,4 +195,36 @@ const s = StyleSheet.create({
     color: 'rgba(11,24,32,0.6)',
   },
   rowStatNum: { fontFamily: 'Nunito_700Bold' },
+
+  // The roster of everything not yet caught. Quiet by construction: it is
+  // context, not a menu, and nothing here is tappable because there is nothing
+  // to show yet.
+  watching: { marginTop: 34 },
+  watchingTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 21,
+    lineHeight: 26,
+    color: 'rgba(11,24,32,0.72)',
+  },
+  watchingNote: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13,
+    lineHeight: 19,
+    color: 'rgba(11,24,32,0.48)',
+    marginTop: 2,
+    maxWidth: 460,
+  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 },
+  chip: {
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(11,24,32,0.14)',
+  },
+  chipText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12.5,
+    color: 'rgba(11,24,32,0.6)',
+  },
 });

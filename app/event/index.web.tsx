@@ -10,7 +10,7 @@ import { useEventIndex } from '../../src/hooks/useEventDossier';
 
 export default function EventIndexPageWeb() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const { index, loading } = useEventIndex();
   const wide = width >= 900;
 
@@ -25,6 +25,7 @@ export default function EventIndexPageWeb() {
             wide={wide}
             contentWidth={width}
             maxContentWidth={900}
+            viewportHeight={height}
             onEventPress={(slug) => router.push(`/event/${encodeURIComponent(slug)}`)}
           />
         )}

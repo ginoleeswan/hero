@@ -21,7 +21,7 @@ import { useEventDossier } from '../../src/hooks/useEventDossier';
 export default function EventPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { dossier, loading, notFound, windowLabel, windowDays } = useEventDossier(slug);
 
@@ -49,6 +49,7 @@ export default function EventPage() {
             windowLabel={windowLabel}
             windowDays={windowDays}
             contentWidth={width}
+            viewportHeight={height}
             onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}
             onHeroPress={(id) => router.push(`/character/${encodeURIComponent(id)}`)}
             onIssuePress={(id) => router.push(`/issue/${encodeURIComponent(id)}`)}

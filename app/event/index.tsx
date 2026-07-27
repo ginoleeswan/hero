@@ -15,7 +15,7 @@ import { useEventIndex } from '../../src/hooks/useEventDossier';
 export default function EventIndexPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const { index, loading } = useEventIndex();
 
   return (
@@ -33,6 +33,7 @@ export default function EventIndexPage() {
           <EventIndexList
             index={index}
             contentWidth={width}
+            viewportHeight={height}
             onEventPress={(slug) => router.push(`/event/${encodeURIComponent(slug)}`)}
           />
         )}

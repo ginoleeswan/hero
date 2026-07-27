@@ -10,7 +10,7 @@ import { useEventDossier } from '../../src/hooks/useEventDossier';
 
 export default function EventPageWeb() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { dossier, loading, notFound, windowLabel, windowDays } = useEventDossier(slug);
   const wide = width >= 900;
@@ -28,6 +28,7 @@ export default function EventPageWeb() {
             wide={wide}
             contentWidth={width}
             maxContentWidth={900}
+            viewportHeight={height}
             onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}
             onHeroPress={(id) => router.push(`/character/${encodeURIComponent(id)}`)}
             onIssuePress={(id) => router.push(`/issue/${encodeURIComponent(id)}`)}
