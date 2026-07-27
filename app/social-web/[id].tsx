@@ -5,7 +5,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SURFACE, INK_TEXT } from '../../src/constants/colors';
-import { getHeroNeighborhood, subjectKind } from '../../src/lib/db/heroes/neighborhood';
+import {
+  getHeroNeighborhood,
+  subjectBlurb,
+  subjectKind,
+  subjectRelation,
+} from '../../src/lib/db/heroes/neighborhood';
 import { nodeDegree, sharedWithSubject } from '../../src/components/character/socialWebFocus';
 import { SocialWebCanvas } from '../../src/components/character/SocialWebCanvas';
 import { SocialWebFocusCard } from '../../src/components/character/SocialWebFocusCard';
@@ -35,6 +40,13 @@ export default function SocialWebExplorerNative() {
   const [centerOnId, setCenterOnId] = useState<string | null>(null);
   const focusNode = (focusId && data?.nodes.find((n) => n.id === focusId)) || null;
   const focusKind = focusNode ? subjectKind(data!.edges, focusSubject, focusNode.id) : null;
+  // Both derived exactly as the web screen does. Without them the card fell back
+  // to the templated line even where a written note existed, and named every kin
+  // tie "Family" rather than "Cousin" — the two screens disagreeing about the
+  // same edge. `subjectBlurb` yields null for a pair whose blurb was declined,
+  // which is what makes the fallback correct rather than blank.
+  const focusRelation = focusNode ? subjectRelation(data!.edges, focusSubject, focusNode.id) : null;
+  const focusBlurb = focusNode ? subjectBlurb(data!.edges, focusSubject, focusNode.id) : null;
   const focusDegree = focusNode ? nodeDegree(data!.edges, focusNode.id) : 0;
   const sharedIds = useMemo(
     () =>
@@ -127,6 +139,8 @@ export default function SocialWebExplorerNative() {
           subjectName={subjectNode?.name ?? ''}
           subjectTeams={subjectNode?.teams ?? null}
           kind={focusKind}
+          relation={focusRelation}
+          blurb={focusBlurb}
           degree={focusDegree}
           accent={theme.accent}
           onView={() =>
