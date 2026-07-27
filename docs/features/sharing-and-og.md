@@ -53,26 +53,34 @@ character/title/team/compare/category/universe/franchise routes go to
 | --- | --- | --- |
 | `api/share-meta.ts` | Node | Page-specific OG tags (character / universe / vs, with live tally via `get_matchup_tally`); humans get a meta-refresh to the real page |
 | `api/bot-page.ts` | Node | Server-rendered HTML for AI/search bots (`api/_lib/botPage.ts`) |
-| `api/og.tsx` | **Edge** | 1200×630 `@vercel/og` card renderer: character card, VS card, universe poster, daily-debate card, brand card; any failure redirects to static `public/og.png` |
+| `api/og/index.tsx` | **Edge** | 1200×630 `@vercel/og` card renderer: character card, VS card, universe poster, daily-debate card, brand card; any failure redirects to static `public/og.png` |
 | `api/battle.ts` | Node | `/battle/:a/:b` — instant-paint ad-landing vote page (`api/_lib/battlePage.ts`): portraits, live tally via anon `get_matchup_tally_v2`, vote buttons, CTA into `/compare` with UTM tags passed through; any failure 302s to the compare page |
 | `api/health.ts` | Node | Zero-import liveness probe (asserted by `yarn smoke`) — see its header comment for why it exists |
 
-`api/og.tsx` must stay on the Edge runtime: standalone `@vercel/og` functions
-need Edge for the satori/resvg WASM to bundle, and fonts load via URL imports
-because Edge has no `node:fs`. The site-wide brand card is snapshotted to
-`public/og.png` by `scripts/fetch-og-site.mjs`.
+The OG renderer must stay on the Edge runtime: standalone `@vercel/og`
+functions need Edge for the satori/resvg WASM to bundle, and fonts load via URL
+imports because Edge has no `node:fs`. That is also why it lives in its own
+directory: `api/og/tsconfig.json` sets the ES-module options `import.meta`
+needs, while `api/tsconfig.json` stays CommonJS so the emitted Node functions
+load under Node's default module system. Don't merge the two configs — one
+directory's requirement crashing the other's functions is exactly the incident
+below. The site-wide brand card is snapshotted to `public/og.png` by
+`scripts/fetch-og-site.mjs`.
 
-## The trap: `api/` is its own ESM package, and nothing watches it
+## The trap: `api/` has two runtimes, and nothing watches it
 
 In July 2026 **every Node function in `api/` was crashing at load in
 production** — `FUNCTION_INVOCATION_FAILED` on all routes — while the app, the
-build, and every test stayed green. Root cause: `api/tsconfig.json` emits ESM
-(`module: ESNext`, needed by `api/og.tsx` for `import.meta`), but without a
-`"type": "module"` beside it the output landed in a CommonJS package and died
-at import time. Fixed across commits `0a4f337` (declare `api/package.json` with
-`"type": "module"`), `c75e615` (pin the Node runtime), and `e340a38`
-(`vercel.json` → `functions.api/*.ts.includeFiles` ships `api/package.json`
-into the bundle).
+build, and every test stayed green for thirteen days. Root cause:
+`api/tsconfig.json` emitted ESM (`module: ESNext`, needed only by the OG
+renderer for `import.meta`), but without a `"type": "module"` beside it the
+output landed in a CommonJS package and died at import time — before any
+handler ran. Two attempted fixes (a `"type": "module"` package.json inside
+`api/`, then `vercel.json` `includeFiles` to ship it) never took effect because
+those builds errored outright. The landed fix (`1d4571f`) splits the runtimes by
+directory: the OG renderer moved to `api/og/index.tsx` with its own ESM
+tsconfig, and `api/tsconfig.json` reverted to CommonJS for its Node
+neighbours.
 
 The standing lesson: **the crawler surface is outside the app build and has no
 user-facing failure signal.** After touching anything in `api/` or

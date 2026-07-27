@@ -50,7 +50,7 @@ marquee matchups never unfurled with zero votes. The v2 tally
 — in-app counts are organic. So the two RPCs report different totals for the
 same pair, and both are correct for their era. v1 still serves
 `api/share-meta.ts`, `api/bot-page.ts`, and `scripts/social/lib.mjs`;
-`api/og.tsx` and `api/battle.ts` are already on v2. If you migrate the v1
+`api/og/index.tsx` and `api/battle.ts` are already on v2. If you migrate the v1
 stragglers, decide explicitly whether the seed baseline moves with them or
 dies — don't let it vanish (or double-apply) as a side effect. The client
 never touches the seeds table; RLS keeps it RPC-only.

@@ -77,7 +77,7 @@ app/
   settings / support / privacy / terms
 
 api/                   Vercel serverless crawler surface (OG cards, share-meta,
-                       bot pages) — its own ESM package, NOT part of the app
+                       bot pages) — its own package, NOT part of the app
                        build → docs/features/sharing-and-og.md
 
 src/
@@ -205,7 +205,7 @@ the hook. When adding a screen with a web variant, both `foo.tsx` and
 | Palette / constants            | `src/constants/`                                                 |
 | SQL migrations                 | `supabase/migrations/`                                           |
 | Edge functions                 | `supabase/functions/`                                            |
-| Crawler / OG surface           | `api/` (own ESM package — see `docs/features/sharing-and-og.md`) |
+| Crawler / OG surface           | `api/` (own package — see `docs/features/sharing-and-og.md`)     |
 | Feature-domain docs            | `docs/features/` — index at `docs/README.md` (read first)        |
 | Data pipelines / enrichment    | `docs/architecture/data-pipelines.md` (read it first)            |
 | Family trees / houses          | `docs/architecture/family-trees-and-houses.md` (read it first)   |
