@@ -27,6 +27,24 @@ async function seeText(page, needle, timeout = 15_000) {
   );
 }
 
+/**
+ * GET a URL as a named bot. No browser: the crawler surface is server-rendered
+ * HTML by definition, and every flow here needs a DIFFERENT user-agent, which
+ * the shared browser context cannot give it.
+ */
+async function fetchAs(path, userAgent) {
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { 'user-agent': userAgent },
+    redirect: 'follow',
+  });
+  const body = await res.text();
+  return { status: res.status, body };
+}
+
+const titleOf = (html) => (html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] ?? '').trim();
+const ogTitleOf = (html) =>
+  html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']/i)?.[1] ?? '';
+
 const flows = [
   {
     name: 'landing renders',
@@ -105,6 +123,52 @@ const flows = [
       for (const path of ['/manifest.json', '/sw.js']) {
         const res = await page.goto(`${BASE}${path}`, { waitUntil: 'domcontentloaded' });
         if (!res.ok()) throw new Error(`${path}: HTTP ${res.status()}`);
+      }
+    },
+  },
+  // --- the crawler surface -------------------------------------------------
+  // Added 2026-07-27, after every Node serverless function was found dead in
+  // production — bot-page, share-meta and battle all returning
+  // FUNCTION_INVOCATION_FAILED at cold start, for an unknown length of time.
+  //
+  // Nothing above catches it, and a status check alone would not have either:
+  // the user-agent rewrites in vercel.json simply do not fire when the function
+  // is down, so a crawler falls through to the SPA shell and gets a cheerful
+  // 200 with the generic site title. The assertion has to be that the page is
+  // the RIGHT page, not that the request succeeded.
+  {
+    name: 'api functions are alive (cold start)',
+    run: async () => {
+      // No query on purpose: these paths return a 404 page without touching the
+      // database, so a 5xx here can only be a module-load crash at cold start.
+      for (const path of ['/api/bot-page', '/api/share-meta']) {
+        const { status } = await fetchAs(path, 'MythiqueSmoke/1.0');
+        if (status >= 500) throw new Error(`${path}: HTTP ${status} — function failed to start`);
+      }
+    },
+  },
+  {
+    name: 'search crawlers get the rendered character page',
+    run: async () => {
+      const { status, body } = await fetchAs('/character/620', 'Googlebot/2.1');
+      if (status !== 200) throw new Error(`HTTP ${status}`);
+      const title = titleOf(body);
+      // The bot page titles itself "<name> — Powers, Stats, Allies & Enemies";
+      // the SPA shell says "Mythique — Every universe. Every icon." Getting the
+      // shell means the catalogue is invisible to search.
+      if (!/powers, stats/i.test(title)) {
+        throw new Error(`served the SPA shell, not the bot page (title: "${title}")`);
+      }
+    },
+  },
+  {
+    name: 'social previews unfurl with the character, not the site',
+    run: async () => {
+      const { status, body } = await fetchAs('/character/620', 'Twitterbot/1.0');
+      if (status !== 200) throw new Error(`HTTP ${status}`);
+      const og = ogTitleOf(body);
+      if (!/spider-man/i.test(og)) {
+        throw new Error(`generic unfurl — og:title was "${og}"`);
       }
     },
   },
