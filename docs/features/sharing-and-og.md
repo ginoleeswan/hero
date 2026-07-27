@@ -108,8 +108,8 @@ Supabase key. Start at `scripts/social/README.md`; visual rules are in
 ## History
 
 - `docs/superpowers/specs/2026-06-18-matchup-og-unfurl-design.md` — the unfurl
-  design. Its status line still says "Plan — not yet scheduled"; the feature
-  **is shipped** (share-meta, og.tsx, the vercel.json rewrites). Trust the code.
+  design. The feature **is shipped** (share-meta, og.tsx, the vercel.json
+  rewrites); the spec's status header now carries that correction.
 - `docs/superpowers/specs/2026-07-06-social-ad-safety-split-design.md` and
   `docs/superpowers/specs/2026-07-08-ad-safe-content-factory-design.md` — the
   safety gate around the content factory.
