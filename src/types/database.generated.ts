@@ -2320,7 +2320,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      hero_relationship_blurb_queue: {
+        Row: {
+          fame_a: number | null
+          fame_b: number | null
+          fame_total: number | null
+          hero_a: string | null
+          hero_b: string | null
+          kind: string | null
+          name_a: string | null
+          name_b: string | null
+          publisher: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _apply_hero_field: {
@@ -2629,6 +2642,7 @@ export type Database = {
           year: number
         }[]
       }
+      get_event_dossier: { Args: { p_slug: string }; Returns: Json }
       get_explore_bundle: {
         Args: { p_browse_per_slug?: number; p_browse_slugs: string[] }
         Returns: Json

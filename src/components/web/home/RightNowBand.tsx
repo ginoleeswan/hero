@@ -57,6 +57,8 @@ interface RightNowBandProps {
   onHeroPress: (id: string) => void;
   onTitlePress: (id: string) => void;
   onIssuePress: (issueId: string) => void;
+  /** A live event → its permanent page at /event/[slug]. */
+  onEventPress: (slug: string) => void;
 }
 
 // One avatar chip in the campaign hero. Tracks its own hover so it can lift,
@@ -531,6 +533,7 @@ export function RightNowBand({
   onHeroPress,
   onTitlePress,
   onIssuePress,
+  onEventPress,
 }: RightNowBandProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
@@ -617,6 +620,7 @@ export function RightNowBand({
         topMover={topMover}
         onTitlePress={onTitlePress}
         onIssuePress={onIssuePress}
+        onEventPress={onEventPress}
         onHeroPress={(h) => onHeroPress(h.id)}
         gutter={pagePad}
       />

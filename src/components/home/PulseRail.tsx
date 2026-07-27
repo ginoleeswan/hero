@@ -47,6 +47,8 @@ export interface PulseRailProps {
   onTitlePress: (titleId: string) => void;
   /** A comic → the issue page. */
   onIssuePress: (issueId: string) => void;
+  /** A live event → its permanent page. */
+  onEventPress?: (slug: string) => void;
   /** A surge → the character whose face fronts it. */
   onHeroPress?: (hero: { id: string; portrait_url?: string | null }) => void;
   disabled?: boolean;
@@ -58,12 +60,13 @@ export function PulseRail({
   onTitlePress,
   onIssuePress,
   onHeroPress,
+  onEventPress,
   disabled = false,
 }: PulseRailProps) {
   if (events.length === 0) return null;
 
-  // Live events render their own card and are never routed here — they have no
-  // destination of their own until the takeover hero exists.
+  // Live events render their own card, and now have somewhere to go: the event
+  // dossier page at /event/[slug], which outlives the rail by design.
   const open = (e: PulseEvent) => {
     if (e.kind === 'issue') onIssuePress(e.entityId);
     // A surge's entityId is the hero fronting the group, not a title.
@@ -95,7 +98,8 @@ export function PulseRail({
             const accent = item.accent ?? COLORS.goldAccent;
             const brand = brandForEvent(item.entityId);
             return (
-              <View
+              <Pressable
+                onPress={() => onEventPress?.(item.entityId)}
                 style={[live.card, { borderColor: `${accent}55` }]}
                 accessibilityLabel={`${item.headline}, live now`}
               >
@@ -150,7 +154,7 @@ export function PulseRail({
                     <Text style={live.moverLabel}>Happening now</Text>
                   )}
                 </View>
-              </View>
+              </Pressable>
             );
           }
 

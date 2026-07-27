@@ -416,6 +416,7 @@ export default function HomeScreen() {
                 onHeroPress={handlePress}
                 onTitlePress={handleTitlePress}
                 onIssuePress={handleIssuePress}
+                onEventPress={(slug) => router.push(`/event/${slug}`)}
                 disabled={navigating}
               />
             );

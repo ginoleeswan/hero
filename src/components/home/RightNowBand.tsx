@@ -57,6 +57,8 @@ export interface RightNowBandProps {
   onHeroPress: HeroPress;
   onTitlePress: (titleId: string) => void;
   onIssuePress: (issueId: string) => void;
+  /** A live event → its permanent page at /event/[slug]. */
+  onEventPress: (slug: string) => void;
   disabled?: boolean;
 }
 
@@ -238,6 +240,7 @@ export function RightNowBand({
   onHeroPress,
   onTitlePress,
   onIssuePress,
+  onEventPress,
   disabled = false,
 }: RightNowBandProps) {
   const hasAny =
@@ -284,6 +287,7 @@ export function RightNowBand({
         topMover={topMover}
         onTitlePress={onTitlePress}
         onIssuePress={onIssuePress}
+        onEventPress={onEventPress}
         onHeroPress={onHeroPress}
         disabled={disabled}
       />
