@@ -35,6 +35,14 @@ function parseValues(sql) {
       }
       field += c; i++; continue;
     }
+    // Skip `--` line comments. Section headers between tuples legitimately
+    // contain apostrophes ("-- Spider-Man's people"), and without this the
+    // tokenizer reads one as opening a string literal and derails.
+    if (c === '-' && sql[i + 1] === '-') {
+      const nl = sql.indexOf('\n', i);
+      i = nl === -1 ? sql.length : nl + 1;
+      continue;
+    }
     if (c === "'") { inStr = true; field = ''; i++; continue; }
     if (c === '(') {
       depth++;
