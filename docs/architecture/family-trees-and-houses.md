@@ -166,16 +166,22 @@ purpose rather than inventing a line of descent.
 
 ## Coverage
 
-201 heroes of ~50,500 are in a house — **0.40%**. Twenty-three houses across
-four universes: fourteen in Westeros, plus El, Wayne, Atlan, Allen, Wakanda,
-Richards, Maximoff, Xavier and the Parrs.
+218 heroes of ~50,500 are in a house — **0.43%**. Twenty-six houses across five
+universes: fourteen in Westeros, plus El, Wayne, Atlan, Allen, Wakanda,
+Richards, Maximoff, Xavier, Summers, Odinson, Skywalker and the Parrs.
 
 That number stays small for a reason, and it isn't neglect: a family chart needs
 a connected graph, and edge density is wildly uneven. GoT characters average ~15
 relationship edges each; DC and Marvel about 2. Adding houses elsewhere means
-curating relationships first, not writing more house rows — Star Wars has twelve
-kinship edges in the entire catalogue, none chained, which is why the most famous
-family tree in popular culture isn't here.
+curating relationships first, not writing more house rows.
+
+**But check whether it's already written down.** Skywalker, Odinson, Summers and
+Themyscira all turned out to be fully recorded in `hero_relatives` as free text
+with `related_hero_id` left null, so the graph couldn't see any of it. Luke's
+sibling row read "Princes Leia" — one letter short — which is the only reason
+the most famous brother and sister in cinema were not connected. Resolving an
+existing record beats authoring a new one every time: look for unlinked rows
+whose `name` matches a hero before deciding a family is missing.
 
 ## Discovery
 
