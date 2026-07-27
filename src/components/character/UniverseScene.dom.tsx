@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { heroNodeTextureSource } from '../../constants/heroImages';
 
 export type Faction = 'family' | 'enemy' | 'ally' | 'teammate';
 
@@ -10,8 +11,8 @@ export interface UniverseNode {
   name: string;
   avatar_url: string | null;
   portrait_url: string | null;
-  image_md_url: string | null;
-  image_url: string | null;
+  // No ComicVine image_url: that host sends no CORS header, so WebGL can't take
+  // it as a texture. See heroNodeTextureSource.
   fame_score: number | null;
   is_subject: boolean;
   /** Tie to the subject; null for the subject itself. */
@@ -115,7 +116,7 @@ function makeGlowTexture(): THREE.Texture {
   return new THREE.CanvasTexture(canvas);
 }
 
-/** Initials on a disc — the stand-in for heroes with no avatar yet. */
+/** Initials on a disc — the last resort, for heroes with no avatar and no portrait. */
 function makeMonogramTexture(name: string, seed: string): THREE.Texture {
   const palette = ['#293C43', '#502314', '#7c3aed', '#b07d00', '#15A1AB', '#63A936', '#B5302B'];
   const canvas = document.createElement('canvas');
@@ -144,19 +145,19 @@ function makeMonogramTexture(name: string, seed: string): THREE.Texture {
   return new THREE.CanvasTexture(canvas);
 }
 
-/**
- * Cloudinary derivative — 256px is plenty for a head this size.
- *
- * Explicitly WebP, never `f_auto`: f_auto picks PNG8 for these cut-outs, and a
- * 256-colour palette can't hold a smooth alpha ramp (29 distinct alpha levels
- * instead of 73 on Batman), which stair-steps every silhouette. WebP keeps the
- * full ramp at roughly half the bytes.
- */
-function textureUrl(n: UniverseNode): string | null {
-  const url = n.avatar_url;
-  if (!url || !url.includes('/upload/')) return url;
-  return url.replace('/upload/', '/upload/f_webp,q_auto,w_256/');
+// 256px is plenty for a head this size; the stored art is 1024px.
+const NODE_TEXTURE_WIDTH = 256;
+
+function nodeArt(n: UniverseNode) {
+  return heroNodeTextureSource(n.avatar_url, n.portrait_url, NODE_TEXTURE_WIDTH);
 }
+
+/**
+ * Extra halo strength behind an OPAQUE head. A cut-out shows the glow's bright
+ * core through its silhouette; a disc covers the core and leaves only the dim
+ * outer tail, so at gain 1 a portrait's faction colour barely reads.
+ */
+const OPAQUE_GLOW_GAIN = 1.9;
 
 /** Reorder so the first (most famous) entries land in the MIDDLE of the row. */
 function centreOut<T>(arr: T[]): T[] {
@@ -526,6 +527,8 @@ export default function UniverseScene({
       tex: THREE.Texture | null;
       target: THREE.Vector3;
       colour: THREE.Color;
+      /** 1 for a cut-out head, OPAQUE_GLOW_GAIN for a disc. */
+      glowGain: number;
       base: number;
       targetBase: number;
       ready: boolean;
@@ -584,6 +587,7 @@ export default function UniverseScene({
       sprite.userData.id = n.id;
       world.add(sprite);
 
+      const art = nodeArt(n);
       const entry: Placed = {
         node: n,
         sprite,
@@ -593,6 +597,8 @@ export default function UniverseScene({
         tex: null,
         target: pos.clone(),
         colour: colourFor(n),
+        // A monogram is a disc too, so it takes the same lift as a portrait.
+        glowGain: art?.tier === 'avatar' ? 1 : OPAQUE_GLOW_GAIN,
         // Arrivals grow in from nothing where they belong, rather than flying in
         // from off-stage, which would fight the clusters for attention.
         base: 0,
@@ -603,10 +609,9 @@ export default function UniverseScene({
         targetAlpha: 1,
       };
 
-      const url = textureUrl(n);
-      if (url) {
+      if (art) {
         loader.load(
-          url,
+          art.uri,
           (tex) => {
             tex.colorSpace = THREE.SRGBColorSpace;
             // Trilinear mips + anisotropy: without them a head shrinks to a
@@ -627,10 +632,12 @@ export default function UniverseScene({
             mat.needsUpdate = true;
             entry.tex = tex;
             entry.ready = true;
+            // Fell back to a disc, whatever tier was asked for.
+            entry.glowGain = OPAQUE_GLOW_GAIN;
           },
         );
       } else {
-        // No avatar: the monogram is generated locally, so it's ready at once.
+        // No art at all: the monogram is generated locally, so it's ready at once.
         const tex = makeMonogramTexture(n.name, n.id);
         mat.map = tex;
         entry.tex = tex;
@@ -1297,6 +1304,7 @@ export default function UniverseScene({
         const crowd = isDestination ? 1 : state.crowd;
         p.glowMat.opacity =
           (p.node.is_subject || isDestination ? 0.5 : 0.26) *
+          p.glowGain *
           ease *
           p.alpha *
           crowd *

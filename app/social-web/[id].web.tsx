@@ -121,8 +121,6 @@ export default function SocialWebExplorer() {
         name: n.name,
         avatar_url: n.avatar_url,
         portrait_url: n.portrait_url,
-        image_md_url: n.image_md_url,
-        image_url: n.image_url,
         fame_score: n.fame_score,
         is_subject: n.is_subject,
         kind: n.is_subject ? null : subjectKind(data!.edges, focusSubject, n.id),

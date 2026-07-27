@@ -166,6 +166,57 @@ export function withAlphaSafeTransform(url: string, width: number): string {
   return `${url.slice(0, insertAt)}f_webp,q_auto,w_${width}/${url.slice(insertAt)}`;
 }
 
+// The margin is load-bearing: the universe scene's faction halo fades to nothing
+// by ~90% of a sprite's half-extent, so a full-bleed disc hides it completely.
+const DISC_INSET = 0.78;
+
+/**
+ * Portrait → circular head disc, padded inside a transparent square.
+ *
+ * `g_north` because portraits are 2:3 head-and-shoulders, so the top square
+ * lands the face; `g_face` is unreliable on illustrated art. Desaturated so a
+ * portrait's own coloured ground can't impersonate a faction tint.
+ */
+export function withHeadDiscTransform(url: string, width: number): string {
+  if (!url.includes(CLOUDINARY_MARKER)) return url;
+  const marker = '/upload/';
+  const i = url.indexOf(marker);
+  if (i === -1) return url;
+  const insertAt = i + marker.length;
+  const disc = Math.round(width * DISC_INSET);
+  return (
+    `${url.slice(0, insertAt)}` +
+    `ar_1:1,c_fill,g_north,r_max,w_${disc}/` +
+    `c_lpad,w_${width},h_${width},b_transparent/` +
+    `e_saturation:-30,f_webp,q_auto/` +
+    `${url.slice(insertAt)}`
+  );
+}
+
+/**
+ * Texture source for a WebGL universe node: cut-out avatar, else the portrait as
+ * a head disc, else null for the caller's monogram.
+ *
+ * ComicVine `image_url` can't be a third tier — that host sends no CORS header
+ * and WebGL refuses a cross-origin texture without one, so it could only fail
+ * back to the monogram. It would need mirroring through Cloudinary first.
+ */
+export function heroNodeTextureSource(
+  avatarUrl?: string | null,
+  portraitUrl?: string | null,
+  width: number = AVATAR_WIDTH,
+): { uri: string; tier: 'avatar' | 'portrait' } | null {
+  const avatar = realUrl(avatarUrl);
+  if (avatar) return { uri: withAlphaSafeTransform(avatar, width), tier: 'avatar' };
+  // Off-Cloudinary portraits can't be cropped, and an uncropped rectangle would
+  // read as a floating card among the heads. All 3,896 are Cloudinary today.
+  const portrait = realUrl(portraitUrl);
+  if (portrait && portrait.includes(CLOUDINARY_MARKER)) {
+    return { uri: withHeadDiscTransform(portrait, width), tier: 'portrait' };
+  }
+  return null;
+}
+
 /**
  * True when there's a usable portrait for this hero. When false, surfaces should
  * render the monogram fallback (see HeroImage) instead of a blank Image.
