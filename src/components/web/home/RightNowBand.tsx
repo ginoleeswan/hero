@@ -617,6 +617,7 @@ export function RightNowBand({
         topMover={topMover}
         onTitlePress={onTitlePress}
         onIssuePress={onIssuePress}
+        onHeroPress={(h) => onHeroPress(h.id)}
         gutter={pagePad}
       />
 

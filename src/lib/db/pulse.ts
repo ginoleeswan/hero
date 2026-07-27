@@ -24,7 +24,7 @@ interface PulseCandidateRow {
   window_to?: string | null;
 }
 
-const KINDS: readonly PulseKind[] = ['live_event', 'trailer', 'issue'];
+const KINDS: readonly PulseKind[] = ['live_event', 'trailer', 'surge', 'issue'];
 
 /** Flat RPC rows → PulseCandidate. Rows of an unrecognised kind are dropped
  *  rather than passed through: the ranker keys weights and half-lives off `kind`,

@@ -284,6 +284,7 @@ export function RightNowBand({
         topMover={topMover}
         onTitlePress={onTitlePress}
         onIssuePress={onIssuePress}
+        onHeroPress={onHeroPress}
         disabled={disabled}
       />
 

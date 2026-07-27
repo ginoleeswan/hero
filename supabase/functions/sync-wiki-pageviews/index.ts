@@ -54,6 +54,11 @@ serve(async (req: Request) => {
   for (const r of rows) {
     let week = 0;
     let prev = 0;
+    // The full curve, not just the two sums. `pageviews_at` is when we looked;
+    // only the series can say when the surge actually started, which is what
+    // lets a spike become a timestamped Pulse event rather than an undated one.
+    // Same data, same request — it was being parsed and dropped.
+    let daily: Array<{ date: string; views: number }> = [];
     try {
       const article = encodeURIComponent(r.enwiki_title.replace(/ /g, '_'));
       const url = `${WM}/${article}/daily/${ymd(start)}/${ymd(end)}`;
@@ -64,11 +69,17 @@ serve(async (req: Request) => {
           const day = it.timestamp.slice(0, 8); // YYYYMMDD
           if (weekDates.has(day)) week += it.views ?? 0;
           else if (prevDates.has(day)) prev += it.views ?? 0;
+          daily.push({
+            date: `${day.slice(0, 4)}-${day.slice(4, 6)}-${day.slice(6, 8)}`,
+            views: it.views ?? 0,
+          });
         }
+        daily.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
       }
       // 404 / no data → leave week=prev=0 (stored, so it's marked done for the cycle).
     } catch (_e) {
       /* transient; store zeros, retried next cycle */
+      daily = [];
     }
     const spike = (week + 1) / (prev + 1);
     await sb
@@ -77,6 +88,9 @@ serve(async (req: Request) => {
         pageviews_week: week,
         pageviews_prev: prev,
         pageviews_spike: spike,
+        // Null rather than [] on a failed fetch, so "never captured" stays
+        // distinguishable from "captured, genuinely flat".
+        views_daily: daily.length > 0 ? daily : null,
         pageviews_at: new Date().toISOString(),
       })
       .eq('id', r.id);

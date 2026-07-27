@@ -39,6 +39,24 @@ const trailer = (over: Partial<PulseCandidate> = {}): PulseCandidate => ({
   ...over,
 });
 
+const surge = (over: Partial<PulseCandidate> = {}): PulseCandidate => ({
+  kind: 'surge',
+  eventId: 'surge:Marvel',
+  entityId: 'h_doom',
+  headline: 'Doctor Doom',
+  subtype: '10.4',
+  imageUrl: 'https://img/doom.jpg',
+  accent: null,
+  occurredAt: hoursAgo(24 * 7),
+  mediaKey: null,
+  releaseDate: null,
+  provider: null,
+  publisher: 'Marvel',
+  characterCount: 10,
+  maxFame: 95,
+  ...over,
+});
+
 const issue = (over: Partial<PulseCandidate> = {}): PulseCandidate => ({
   kind: 'issue',
   eventId: 'issue:cvi:1',
@@ -467,5 +485,47 @@ describe('eventDayLabel — the live card counts days', () => {
   it('leaves the label null when the event has no window yet', () => {
     const out = rankPulse([liveEvent()], NOW);
     expect(out[0].dayLabel).toBeNull();
+  });
+});
+
+describe('surge — the audience is an event source too', () => {
+  // Doctor Doom ran 20,019 -> 197,899 pageviews on the Avengers: Doomsday footage
+  // and the app had nowhere to say so. Surges were excluded for having no event
+  // time; heroes.views_daily fixed that upstream, so they rank like anything else.
+  it('carries the group size in the subtitle, not just the character', () => {
+    // The whole point of grouping by publisher: ten Marvel characters moving at
+    // once is one story, and the card has to say so or it reads as one character
+    // having a good day.
+    expect(subtitleFor(surge({ characterCount: 10, subtype: '10.4' }), NOW)).toBe(
+      '10.4\u00d7 reads · +9 more',
+    );
+  });
+
+  it('drops the tail when the surge is a single character', () => {
+    expect(subtitleFor(surge({ characterCount: 1, subtype: '3.2' }), NOW)).toBe('3.2\u00d7 reads');
+  });
+
+  it('is badged as its own kind rather than borrowing another', () => {
+    expect(badgeFor(surge())).toBe('Surging');
+  });
+
+  it('is capped so the rail reports attention without becoming a leaderboard', () => {
+    const out = rankPulse(
+      [
+        surge({ eventId: 'surge:Marvel', entityId: 'h_a', publisher: 'Marvel' }),
+        surge({ eventId: 'surge:Mattel', entityId: 'h_b', publisher: 'Mattel' }),
+        surge({ eventId: 'surge:DC', entityId: 'h_c', publisher: 'DC Comics' }),
+        surge({ eventId: 'surge:NRS', entityId: 'h_d', publisher: 'NetherRealm' }),
+      ],
+      NOW,
+    );
+    expect(out.filter((e) => e.kind === 'surge')).toHaveLength(KIND_CAP.surge);
+  });
+
+  it('ranks under a same-age trailer, because a trailer is the cause', () => {
+    const t = scoreCandidate(trailer({ occurredAt: hoursAgo(48) }), NOW);
+    const sg = scoreCandidate(surge({ occurredAt: hoursAgo(48) }), NOW);
+    expect(sg).toBeLessThan(t);
+    expect(sg).toBeGreaterThan(0);
   });
 });

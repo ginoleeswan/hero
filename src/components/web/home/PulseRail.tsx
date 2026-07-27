@@ -14,12 +14,16 @@ import type { PulseEvent, PulseKind } from '../../../lib/home/pulse';
 const KIND_TINT: Record<PulseKind, string> = {
   live_event: COLORS.goldAccent,
   trailer: COLORS.orange,
+  // Blue for attention — the audience moving, rather than something being
+  // published. Distinct from the three "someone shipped a thing" tints.
+  surge: COLORS.blue,
   issue: COLORS.green,
 };
 
 const KIND_GROUND: Record<PulseKind, string> = {
   live_event: '#3a2c08',
   trailer: '#2a1016',
+  surge: '#0b2f34',
   issue: '#1e3410',
 };
 
@@ -30,6 +34,8 @@ export interface PulseRailProps {
   topMover?: { name: string; spikePct: number } | null;
   onTitlePress: (titleId: string) => void;
   onIssuePress: (issueId: string) => void;
+  /** A surge → the character whose face fronts it. */
+  onHeroPress?: (hero: { id: string; portrait_url?: string | null }) => void;
   /** Page gutter so the rail's first card lines up with the band's other content. */
   gutter?: number;
 }
@@ -39,6 +45,7 @@ export function PulseRail({
   topMover,
   onTitlePress,
   onIssuePress,
+  onHeroPress,
   gutter = 16,
 }: PulseRailProps) {
   if (events.length === 0) return null;
@@ -47,6 +54,8 @@ export function PulseRail({
   // destination of their own until the takeover hero exists.
   const open = (e: PulseEvent) => {
     if (e.kind === 'issue') onIssuePress(e.entityId);
+    // A surge's entityId is the hero fronting the group, not a title.
+    else if (e.kind === 'surge') onHeroPress?.({ id: e.entityId, portrait_url: e.imageUrl });
     else onTitlePress(e.entityId);
   };
 

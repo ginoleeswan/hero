@@ -24,6 +24,9 @@ const CARD_H = Math.round(CARD_W * 1.42);
 const KIND_TINT: Record<PulseKind, string> = {
   live_event: COLORS.goldAccent,
   trailer: COLORS.orange,
+  // Blue for attention — the audience moving, rather than something being
+  // published. Distinct from the three "someone shipped a thing" tints.
+  surge: COLORS.blue,
   issue: COLORS.green,
 };
 
@@ -31,6 +34,7 @@ const KIND_TINT: Record<PulseKind, string> = {
 const KIND_GROUND: Record<PulseKind, string> = {
   live_event: '#3a2c08',
   trailer: '#2a1016',
+  surge: '#0b2f34',
   issue: '#1e3410',
 };
 
@@ -43,6 +47,8 @@ export interface PulseRailProps {
   onTitlePress: (titleId: string) => void;
   /** A comic → the issue page. */
   onIssuePress: (issueId: string) => void;
+  /** A surge → the character whose face fronts it. */
+  onHeroPress?: (hero: { id: string; portrait_url?: string | null }) => void;
   disabled?: boolean;
 }
 
@@ -51,6 +57,7 @@ export function PulseRail({
   topMover,
   onTitlePress,
   onIssuePress,
+  onHeroPress,
   disabled = false,
 }: PulseRailProps) {
   if (events.length === 0) return null;
@@ -59,6 +66,8 @@ export function PulseRail({
   // destination of their own until the takeover hero exists.
   const open = (e: PulseEvent) => {
     if (e.kind === 'issue') onIssuePress(e.entityId);
+    // A surge's entityId is the hero fronting the group, not a title.
+    else if (e.kind === 'surge') onHeroPress?.({ id: e.entityId, portrait_url: e.imageUrl });
     else onTitlePress(e.entityId);
   };
 

@@ -26,7 +26,7 @@
 
 import { relativeAgeLabel } from './freshness';
 
-export type PulseKind = 'live_event' | 'trailer' | 'issue';
+export type PulseKind = 'live_event' | 'trailer' | 'surge' | 'issue';
 
 /** One row from get_pulse_candidates — facts only, no prebuilt copy. */
 export interface PulseCandidate {
@@ -76,6 +76,10 @@ export const KIND_WEIGHT: Record<PulseKind, number> = {
   // Pinned rather than weighted — see PIN_SCORE.
   live_event: 1,
   trailer: 1,
+  // A surge is the audience telling us something happened, rather than a studio
+  // announcing it. Slightly under a trailer: it's a second-order signal, and the
+  // thing that caused it is usually a trailer we're also showing.
+  surge: 0.85,
   // Real news, but a weekly cadence everyone expects; it shouldn't crowd out a
   // trailer that landed this morning.
   issue: 0.55,
@@ -97,6 +101,10 @@ export const KIND_WEIGHT: Record<PulseKind, number> = {
 export const KIND_HALF_LIFE: Record<PulseKind, number> = {
   live_event: Infinity, // pinned; never decays inside its window
   trailer: 120,
+  // Attention decays on its own — surge_started_at already stops returning a date
+  // once the curve falls back to baseline, so this only shapes ordering while the
+  // surge is genuinely still running.
+  surge: 96,
   issue: 96,
 };
 
@@ -131,6 +139,10 @@ export const MIN_CHARACTERS = 1;
 export const KIND_CAP: Record<PulseKind, number> = {
   live_event: Infinity,
   trailer: Infinity,
+  // Grouped by publisher upstream, so each card is already a whole franchise
+  // moment rather than one character. Two is a rail that reports what the
+  // audience is doing; more is a leaderboard.
+  surge: 2,
   issue: 3,
 };
 
@@ -266,6 +278,8 @@ export function badgeFor(c: PulseCandidate): string {
       return 'Live now';
     case 'trailer':
       return c.subtype === 'Teaser' ? 'New teaser' : 'New trailer';
+    case 'surge':
+      return 'Surging';
     case 'issue':
       return 'On shelves';
   }
@@ -277,6 +291,16 @@ export function subtitleFor(c: PulseCandidate, now: number): string | null {
   if (c.kind === 'live_event') return c.headline === null ? null : 'Happening now';
   if (c.kind === 'issue') {
     return c.subtype ? `#${c.subtype}` : (c.publisher ?? null);
+  }
+  if (c.kind === 'surge') {
+    // subtype carries the group's loudest multiple, characterCount its size.
+    // "and 9 others" is the part that makes it a franchise moment rather than
+    // one character having a day.
+    // Kept tight: the meta row is "5D AGO · <this>" on a 208px card, and
+    // "and 10 more" truncated to "and 10 m…" in production.
+    const others = Math.max(0, c.characterCount - 1);
+    const lift = c.subtype ? `${c.subtype}\u00d7 reads` : 'Surging';
+    return others > 0 ? `${lift} · +${others} more` : lift;
   }
   // Trailer: pair the drop with the release it's advertising.
   if (c.releaseDate) {
@@ -328,7 +352,7 @@ export function rankPulse(
   scored.sort((a, b) => b.score - a.score || Date.parse(b.occurredAt!) - Date.parse(a.occurredAt!));
 
   const seen = new Set<string>();
-  const taken: Record<PulseKind, number> = { live_event: 0, trailer: 0, issue: 0 };
+  const taken: Record<PulseKind, number> = { live_event: 0, trailer: 0, surge: 0, issue: 0 };
   const out: PulseEvent[] = [];
   for (const e of scored) {
     if (seen.has(e.entityId)) continue;
