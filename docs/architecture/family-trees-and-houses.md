@@ -128,19 +128,46 @@ with no data yet; the rendering already handles them, so that pass is data-only.
 Rhaenyra (129–130 AC) and Aegon II (129–131 AC) overlap. They ruled against each
 other. Not a bug.
 
-## Coverage, and why it's Game of Thrones only
+## Adding a house
 
-96 heroes of ~50,500 are in a house — **0.19%**. Eight houses, all Westeros.
+A house is two inserts: one `houses` row (slug, name, universe, words, seat,
+`sigil_tint`, blurb, position) and its `house_members` rows (`via` is
+`'surname'` or `'kin'`). The tree draws itself from `hero_relatives` — there is
+no per-house graph to build.
 
-That isn't neglect, it's edge density: GoT characters average ~15 relationship
-edges each, DC and Marvel about 2. A family chart needs a connected graph, and
-most of the catalogue doesn't have one. Adding houses elsewhere means curating
-relationships first, not writing more house rows.
+Four rules learned the hard way seating twenty-two of them:
 
-Connected components can't define houses either — all 83 original GoT heroes
-form **one** component, because the houses intermarry. Hence a curated `houses`
-table plus surname-seeded membership with one-hop closure
-(`20260726152000_derive_house_members.sql`).
+1. **Pin members by hero id, never by name.** There are nine heroes called
+   "Hunter" across six publishers and six called "Crystal". A name join seats
+   the wrong person silently.
+2. **Curate from the relation type, not from graph reach.** Two hops out from
+   Magneto pulls in the whole Inhuman royal family and Onslaught (a psychic
+   fusion recorded as `other`). Franklin Richards' godparents are recorded with
+   relation `parent`, which draws the Thing onto the parents row.
+3. **Prefer the row that carries the kinship over the row with the fame.**
+   Duplicates are common: Elastigirl and Dash both have a higher-fame row with
+   zero relations, and seating those draws five people who know nobody.
+4. **Don't ship a house whose members have no recorded kin between them.** It
+   renders the empty state. Cassel, Umber, Manderly, Reed, Royce, Seaworth,
+   Tallhart and Payne are all waiting on relations, not on a house row.
+
+Deep `ancestor` rows with no `tree_parent_id` land in the chart's "generation
+unrecorded" list. That is the honest treatment where the succession order isn't
+recorded — see House of Atlan, which leaves fourteen forebears unplaced on
+purpose rather than inventing a line of descent.
+
+## Coverage
+
+186 heroes of ~50,500 are in a house — **0.37%**. Twenty-two houses across four
+universes: fourteen in Westeros, plus El, Wakanda, Richards, Maximoff, Xavier,
+Allen, Atlan and the Parrs.
+
+That number stays small for a reason, and it isn't neglect: a family chart needs
+a connected graph, and edge density is wildly uneven. GoT characters average ~15
+relationship edges each; DC and Marvel about 2. Adding houses elsewhere means
+curating relationships first, not writing more house rows — Star Wars has twelve
+kinship edges in the entire catalogue, none chained, which is why the most famous
+family tree in popular culture isn't here.
 
 ## Discovery
 

@@ -111,6 +111,23 @@ export function relativesOf(payload: HousePayload, focusId: string): FamilyMembe
 }
 
 /**
+ * Who the house opens on: the most famous member who actually has kin inside it.
+ *
+ * Not simply the most famous. House Richards opens on Reed, whose one recorded
+ * relative is Immortus — outside the house — so the page greeted everyone with
+ * "has no recorded kin" while fifteen edges sat underneath it. Payload order is
+ * already fame order, so this keeps it and skips past the kinless.
+ */
+export function openingFocus(
+  members: { id: string }[],
+  edges: { hero_id: string; related_hero_id: string }[],
+): string | null {
+  const known = new Set(members.map((m) => m.id));
+  const hasKin = new Set(edges.filter((e) => known.has(e.related_hero_id)).map((e) => e.hero_id));
+  return (members.find((m) => hasKin.has(m.id)) ?? members[0])?.id ?? null;
+}
+
+/**
  * What can only be said about the set. Derived from rows already loaded; null
  * where the catalogue records nothing, and the banner then omits it.
  */
@@ -219,7 +236,8 @@ export function useHouse(
     // An unknown ?focus is ignored rather than shown empty — a stale or hand-
     // edited link should still land on the house.
     const known = new Set(data.members.map((m) => m.id));
-    const focusId = (focus && known.has(focus) ? focus : null) ?? data.members[0]?.id ?? null;
+    const focusId =
+      (focus && known.has(focus) ? focus : null) ?? openingFocus(data.members, data.edges);
     const generations = assignGenerations(data.members, data.edges);
     const dynasty: DynastyFacts = {
       crowned: data.members.filter((m) => m.reign_start).length,

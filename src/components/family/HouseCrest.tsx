@@ -19,7 +19,8 @@ const VIEW_H = 116;
 
 /** "House Targaryen" → "T". */
 export function crestMonogram(name: string): string {
-  const stripped = name.replace(/^\s*(house|clan|family|the)\s+/i, '').trim();
+  // `of` too, or "House of El" charges a crest with an O.
+  const stripped = name.replace(/^\s*(house|clan|family|the)\s+(of\s+)?/i, '').trim();
   return ((stripped || name).trim()[0] ?? '?').toUpperCase();
 }
 

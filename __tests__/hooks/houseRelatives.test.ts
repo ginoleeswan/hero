@@ -4,7 +4,7 @@
 // projected members carry edge-scoped ids instead — so the chain has to be
 // remapped or every deep forebear falls out of the chart into the "generation
 // unrecorded" list. That failed silently for a whole house.
-import { relativesOf } from '../../src/hooks/useHouse';
+import { openingFocus, relativesOf } from '../../src/hooks/useHouse';
 
 // Hoisted above the import by babel-plugin-jest-hoist — useHouse pulls the
 // client in at module scope and this module only needs the pure projection.
@@ -83,5 +83,33 @@ describe('relativesOf', () => {
       'jon',
     );
     expect(out.map((m) => m.name)).toEqual(['Rhaegar']);
+  });
+});
+
+describe('openingFocus', () => {
+  const M = (id: string) => ({ id });
+  const E = (hero_id: string, related_hero_id: string) => ({ hero_id, related_hero_id });
+
+  it('skips the most famous member when their only kin is outside the house', () => {
+    // House Richards: Reed leads on fame, and his one recorded relative is
+    // Immortus, who is not a member. Franklin is the first with kin inside.
+    expect(
+      openingFocus(
+        [M('reed'), M('franklin'), M('sue')],
+        [E('reed', 'immortus'), E('franklin', 'sue')],
+      ),
+    ).toBe('franklin');
+  });
+
+  it('keeps fame order when the leader does have kin', () => {
+    expect(openingFocus([M('a'), M('b')], [E('a', 'b'), E('b', 'a')])).toBe('a');
+  });
+
+  it('falls back to the first member when nobody has kin at all', () => {
+    expect(openingFocus([M('a'), M('b')], [])).toBe('a');
+  });
+
+  it('is null for an empty house', () => {
+    expect(openingFocus([], [])).toBeNull();
   });
 });

@@ -5,6 +5,9 @@ describe('crestMonogram', () => {
     expect(crestMonogram('House Targaryen')).toBe('T');
     expect(crestMonogram('Clan Umber')).toBe('U');
     expect(crestMonogram('The Night’s Watch')).toBe('N');
+    expect(crestMonogram('House of El')).toBe('E');
+    expect(crestMonogram('House of Wakanda')).toBe('W');
+    expect(crestMonogram('House of Atlan')).toBe('A');
   });
 
   it('falls back to the first letter when there is no title', () => {
