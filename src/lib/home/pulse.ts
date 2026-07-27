@@ -28,6 +28,10 @@ import { relativeAgeLabel } from './freshness';
 
 export type PulseKind = 'live_event' | 'trailer' | 'surge' | 'issue';
 
+/** What the app believes started a surge. See attribute_surge() and
+ *  docs/superpowers/specs/2026-07-27-event-attribution-design.md. */
+export type CauseKind = 'trailer' | 'issue' | 'live_event';
+
 /** One row from get_pulse_candidates — facts only, no prebuilt copy. */
 export interface PulseCandidate {
   kind: PulseKind;
@@ -48,6 +52,13 @@ export interface PulseCandidate {
   /** The event's own window — live events only. Drives the day counter. */
   windowFrom?: string | null;
   windowTo?: string | null;
+  /** Why this surge started, if the app can point at something. Surges only. */
+  causeKind?: CauseKind | null;
+  causeLabel?: string | null;
+  causeDate?: string | null;
+  /** `high` only when a character-linked cause sits within two days. `low` is a
+   *  live-event fallback or a longer lag, and is phrased more loosely. */
+  causeConfidence?: 'high' | 'low' | null;
 }
 
 /** A ranked, display-ready card. */
@@ -270,6 +281,42 @@ export function eventDayLabel(
   return `DAY ${day} OF ${total}`;
 }
 
+/**
+ * The one-line reason a surge started, or null when the app can't point at
+ * anything.
+ *
+ * TEMPORAL, NEVER CAUSAL. What was measured is that two things happened in
+ * sequence — a trailer published, then a character's readership broke out. That
+ * is not proof one caused the other, and the copy must not imply it does. "After
+ * the Doomsday trailer" is defensible; "because of" is a claim the join cannot
+ * support. The same discipline as the freshness label and the live-event day
+ * counter: fail toward the honest statement.
+ *
+ * A `low` confidence cause is a live-event fallback or a 3-4 day lag, so it gets
+ * the vaguest phrasing available — "During San Diego Comic-Con" asserts only
+ * co-occurrence, which is all a convention ever tells you.
+ */
+export function surgeCauseLabel(c: PulseCandidate): string | null {
+  if (!c.causeLabel || !c.causeKind) return null;
+  if (c.causeKind === 'live_event') return `During ${c.causeLabel}`;
+  if (c.causeConfidence === 'low') return `Around the ${c.causeLabel} ${c.causeKind}`;
+
+  const lag = lagDays(c);
+  const what = c.causeKind === 'trailer' ? `${c.causeLabel} trailer` : c.causeLabel;
+  if (lag === null || lag <= 0) return `Since the ${what}`;
+  if (lag === 1) return `A day after the ${what}`;
+  return `${lag} days after the ${what}`;
+}
+
+/** Whole days between the cause and the surge breaking out. */
+function lagDays(c: PulseCandidate): number | null {
+  if (!c.causeDate || !c.occurredAt) return null;
+  const cause = Date.parse(`${c.causeDate}T00:00:00Z`);
+  const started = Date.parse(c.occurredAt);
+  if (Number.isNaN(cause) || Number.isNaN(started)) return null;
+  return Math.max(0, Math.round((started - cause) / (24 * MS_PER_HOUR)));
+}
+
 /** The card's badge. Short, and it carries the *kind* so the rail reads at a
  *  glance without a legend. */
 export function badgeFor(c: PulseCandidate): string {
@@ -293,9 +340,12 @@ export function subtitleFor(c: PulseCandidate, now: number): string | null {
     return c.subtype ? `#${c.subtype}` : (c.publisher ?? null);
   }
   if (c.kind === 'surge') {
-    // subtype carries the group's loudest multiple, characterCount its size.
-    // "and 9 others" is the part that makes it a franchise moment rather than
-    // one character having a day.
+    // A reason beats a number. "11.0x reads" is accurate and inert; "2 days
+    // after the Masters of the Universe trailer" is why anyone should care.
+    const cause = surgeCauseLabel(c);
+    if (cause) return cause;
+    // Nothing to point at — fall back to the scale of the thing. subtype carries
+    // the group's loudest multiple, characterCount its size.
     // Kept tight: the meta row is "5D AGO · <this>" on a 208px card, and
     // "and 10 more" truncated to "and 10 m…" in production.
     const others = Math.max(0, c.characterCount - 1);
@@ -341,7 +391,10 @@ export function rankPulse(
       ...c,
       score,
       ageHours,
-      ageLabel: c.kind === 'live_event' ? null : relativeAgeLabel(ageHours),
+      ageLabel:
+        c.kind === 'live_event' || (c.kind === 'surge' && surgeCauseLabel(c))
+          ? null
+          : relativeAgeLabel(ageHours),
       badge: badgeFor(c),
       subtitle: subtitleFor(c, now),
       dayLabel: c.kind === 'live_event' ? eventDayLabel(c.windowFrom, c.windowTo, now) : null,

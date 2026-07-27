@@ -1,7 +1,9 @@
 # Event attribution — why a character is surging
 
 **Date:** 2026-07-27
-**Status:** Design. Nothing built.
+**Status:** **BUILT 2026-07-27.** `attribute_surge()` +
+`get_pulse_candidates` v4 + `surgeCauseLabel()`. Live on the rail: the He-Man card
+reads "2 days after the Masters of the Universe trailer".
 **Depends on:** the surge lane (`get_pulse_candidates` v3, `surge_started_at`) —
 shipped 2026-07-27, see `2026-07-26-pulse-tuning-guide.md`.
 **Blocks:** `2026-07-27-pulse-reach-design.md` (a post needs a sentence, not a
@@ -169,3 +171,34 @@ Against the measured week, inlined as fixtures (no helper files under
   regression that produced `DC surge -> Resident Evil`.
 - `live_event` only wins when nothing character-linked qualifies.
 - No candidate → null, and `subtitleFor` falls back to the bare multiple.
+
+---
+
+## 9. Build notes (2026-07-27)
+
+Shipped as specced. Two things worth recording:
+
+**The measured attributions on the first run**, which match §2 exactly:
+
+| Face                      | Cause                          | Lag | Confidence |
+| ------------------------- | ------------------------------ | --- | ---------- |
+| Doctor Doom (Marvel, 11)  | Avengers: Doomsday trailer     | 0   | high       |
+| He-Man (Mattel, 12)       | Masters of the Universe teaser | 2   | high       |
+| Sinestro (DC, 2)          | San Diego Comic-Con            | 1   | low        |
+| Quan Chi (NetherRealm, 3) | San Diego Comic-Con            | 1   | low        |
+
+No Resident Evil, no Look Back, no LEGO ONE PIECE. The character-level join
+removed every false attribution the publisher-level one produced.
+
+**A bug worth remembering.** `surgeCauseLabel` was written, exported, and covered
+by five passing unit tests — and `subtitleFor` never called it. Typecheck was
+clean, the suite was green, and the card still read "11.0x reads". Only the
+browser caught it. The fix included a test that asserts the _seam_
+(`subtitleFor` returns the cause) rather than only the part, which is the test
+that would have failed. Same shape as the `KINDS` allow-list in
+`src/lib/db/pulse.ts` silently dropping surge rows a day earlier: both times the
+types were satisfied and the data never arrived.
+
+Also: the surge subtitle now owns the whole meta row (the age chip is suppressed
+when a cause exists, since the cause carries the timing), so it wraps to two lines
+instead of truncating a sentence mid-word.

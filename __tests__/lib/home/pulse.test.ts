@@ -9,6 +9,7 @@ import {
   relevance,
   badgeFor,
   subtitleFor,
+  surgeCauseLabel,
   livePulseEvent,
   trailerPicks,
   KIND_CAP,
@@ -527,5 +528,83 @@ describe('surge — the audience is an event source too', () => {
     const sg = scoreCandidate(surge({ occurredAt: hoursAgo(48) }), NOW);
     expect(sg).toBeLessThan(t);
     expect(sg).toBeGreaterThan(0);
+  });
+});
+
+describe('surge attribution — a reason beats a number', () => {
+  // The app holds both halves of a causal pair and never joined them: what
+  // studios published, and what audiences then read. Doctor Doom's pageview
+  // curve breaks on exactly the day the Doomsday trailer published — the
+  // detector inferred that date from attention, TMDB supplied the other.
+  const attributed = (over: Partial<PulseCandidate> = {}) =>
+    surge({
+      occurredAt: '2026-07-20T00:00:00.000Z',
+      causeKind: 'trailer',
+      causeLabel: 'Avengers: Doomsday',
+      causeDate: '2026-07-20',
+      causeConfidence: 'high',
+      ...over,
+    });
+
+  it('says "since" when the surge starts the same day as the drop', () => {
+    expect(surgeCauseLabel(attributed())).toBe('Since the Avengers: Doomsday trailer');
+  });
+
+  it('counts the gap when the surge lags the drop', () => {
+    // He-Man's real numbers: MOTU teaser 07-20, breakout 07-22.
+    expect(
+      surgeCauseLabel(
+        attributed({
+          causeLabel: 'Masters of the Universe',
+          causeDate: '2026-07-20',
+          occurredAt: '2026-07-22T00:00:00.000Z',
+        }),
+      ),
+    ).toBe('2 days after the Masters of the Universe trailer');
+  });
+
+  it('never claims causation — the phrasing stays temporal', () => {
+    // What was measured is sequence, not cause. Every branch must be defensible
+    // as "these happened in this order", because that is all the join proves.
+    const phrasings = [
+      surgeCauseLabel(attributed()),
+      surgeCauseLabel(attributed({ occurredAt: '2026-07-21T00:00:00.000Z' })),
+      surgeCauseLabel(attributed({ causeKind: 'live_event', causeLabel: 'San Diego Comic-Con' })),
+      surgeCauseLabel(attributed({ causeConfidence: 'low' })),
+    ];
+    for (const p of phrasings) {
+      expect(p).not.toMatch(/because|caused|thanks to|driven by/i);
+    }
+  });
+
+  it('reaches the card — subtitleFor returns the cause, not the multiple', () => {
+    // The regression this exists for: surgeCauseLabel was written, exported and
+    // unit-tested, and subtitleFor never called it. Every helper test passed and
+    // the card still read "11.0x reads". Assert the seam, not just the part.
+    expect(subtitleFor(attributed(), NOW)).toBe('Since the Avengers: Doomsday trailer');
+    expect(rankPulse([attributed()], NOW)[0].subtitle).toBe('Since the Avengers: Doomsday trailer');
+  });
+
+  it('hedges a low-confidence cause rather than stating it plainly', () => {
+    // A convention explains everything at once, which is what makes it weak.
+    expect(
+      surgeCauseLabel(attributed({ causeKind: 'live_event', causeLabel: 'San Diego Comic-Con' })),
+    ).toBe('During San Diego Comic-Con');
+  });
+
+  it('falls back to the multiple when nothing can be pointed at', () => {
+    const bare = surge({ causeKind: null, causeLabel: null, characterCount: 11, subtype: '11.0' });
+    expect(surgeCauseLabel(bare)).toBeNull();
+    expect(subtitleFor(bare, NOW)).toBe('11.0\u00d7 reads · +10 more');
+  });
+
+  it('drops the age label once a cause carries the timing', () => {
+    // The meta row is "AGE · SUBTITLE" on a 208px card. "5D AGO · 2 days after
+    // the Masters of the Universe trailer" says the same thing twice and fits
+    // neither.
+    const [withCause] = rankPulse([attributed()], NOW);
+    expect(withCause.ageLabel).toBeNull();
+    const [without] = rankPulse([surge({ causeKind: null, causeLabel: null })], NOW);
+    expect(without.ageLabel).not.toBeNull();
   });
 });

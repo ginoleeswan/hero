@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import type { PulseCandidate, PulseKind } from '../home/pulse';
+import type { CauseKind, PulseCandidate, PulseKind } from '../home/pulse';
 
 // Candidates for the Pulse rail — every timestamped thing the catalogue knows
 // happened. The RPC selects by recency only; ranking, decay and all user-facing
@@ -22,9 +22,14 @@ interface PulseCandidateRow {
   max_fame: number | null;
   window_from?: string | null;
   window_to?: string | null;
+  cause_kind?: string | null;
+  cause_label?: string | null;
+  cause_date?: string | null;
+  cause_confidence?: string | null;
 }
 
 const KINDS: readonly PulseKind[] = ['live_event', 'trailer', 'surge', 'issue'];
+const CAUSE_KINDS: readonly CauseKind[] = ['trailer', 'issue', 'live_event'];
 
 /** Flat RPC rows → PulseCandidate. Rows of an unrecognised kind are dropped
  *  rather than passed through: the ranker keys weights and half-lives off `kind`,
@@ -53,6 +58,15 @@ export function mapPulseRows(rows: PulseCandidateRow[]): PulseCandidate[] {
       // against the older signature until that's applied.
       windowFrom: r.window_from ?? null,
       windowTo: r.window_to ?? null,
+      // Optional at the row level: the columns land with
+      // 20260727181000_pulse_candidates_with_cause.sql, and the reader keeps
+      // working against the older signature until that's applied.
+      causeKind: CAUSE_KINDS.includes(r.cause_kind as CauseKind)
+        ? (r.cause_kind as CauseKind)
+        : null,
+      causeLabel: r.cause_label ?? null,
+      causeDate: r.cause_date ?? null,
+      causeConfidence: r.cause_confidence === 'high' ? 'high' : r.cause_confidence ? 'low' : null,
     });
   }
   return out;

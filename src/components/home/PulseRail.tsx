@@ -202,7 +202,7 @@ export function PulseRail({
                   {!!item.ageLabel && <Text style={s.age}>{item.ageLabel}</Text>}
                   {!!item.ageLabel && !!item.subtitle && <Text style={s.sep}>·</Text>}
                   {!!item.subtitle && (
-                    <Text style={s.meta} numberOfLines={1}>
+                    <Text style={s.meta} numberOfLines={item.ageLabel ? 1 : 2}>
                       {item.subtitle}
                     </Text>
                   )}
