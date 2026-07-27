@@ -34,6 +34,11 @@ export function EventIndexList({
   const pad = wide ? 40 : 18;
   const measure = Math.min(maxContentWidth ?? contentWidth, contentWidth);
   const inner = { width: '100%' as const, maxWidth: measure, alignSelf: 'center' as const };
+  // The curve bleeds to the band's edges rather than sitting inset. Boxed inside
+  // the gutter it read as a floating rectangle; edge to edge it reads as a
+  // measurement the row is made of — and on a phone the band edge IS the screen
+  // edge, which is where the drama is.
+  const bleed = Math.max(0, measure);
   const { events, watching } = index;
 
   return (
@@ -89,14 +94,14 @@ export function EventIndexList({
 
                   {/* The measurement, at a glance. Two events differ by the shape
                       of their spike more than by their name. */}
-                  <View style={s.rowCurve}>
+                  <View style={[s.rowCurve, { marginHorizontal: -pad }]}>
                     <EventCurve
                       series={e.viewsDaily}
                       from={e.liveFrom}
                       to={e.liveTo}
                       accent={accent}
-                      width={Math.min(measure - pad * 2, 420)}
-                      height={54}
+                      width={bleed}
+                      height={wide ? 64 : 76}
                     />
                   </View>
 
@@ -188,7 +193,7 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
     color: 'rgba(11,24,32,0.55)',
   },
-  rowCurve: { marginTop: 4 },
+  rowCurve: { marginTop: 10, marginBottom: 10 },
   rowStat: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
