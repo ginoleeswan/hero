@@ -187,7 +187,19 @@ Feature test coverage: `pulse` 53 · `detect` 23 · `mapVideos` 21 · `freshness
 
 ---
 
-## 7. Known issues, best next levers
+## 7. Where this goes next — four specs
+
+Written 2026-07-27, after the surge lane shipped. Read them in this order; the
+first is a dependency of the next two.
+
+| Spec                                     | What it is                                          | Why now                                                                                     |
+| ---------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `2026-07-27-event-attribution-design.md` | Join a surge to the trailer/event that caused it    | The app can measure but not explain. Everything below needs a sentence, not a metric        |
+| `2026-07-27-pulse-reach-design.md`       | Social auto-posts + permanent `/event/[slug]` pages | **Do this first of the three.** One user, one vote — the constraint is reach, not detection |
+| `2026-07-27-pulse-return-design.md`      | Countdowns, notify-me, personal Pulse, event push   | Brings people back; needs an audience to bring back, so it follows reach                    |
+| `2026-07-27-anime-signal-design.md`      | A second sensor via AniList                         | JJK on Netflix moved Gojo's enwiki traffic 2%. A whole vertical is invisible                |
+
+## 8. Known issues, best next levers
 
 1. ~~**The catalogue is historical.**~~ **FIXED 2026-07-27** by
    `sync-tmdb-slate`: future titles went 1 → 59, `title_videos` 471 → 612, and
