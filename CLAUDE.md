@@ -5,6 +5,21 @@
 **Mythique** — a superhero/villain encyclopedia app built with Expo SDK 56 / React Native.  
 Targets iOS, Android, and Web. (Repo slug + internal package dir stay `hero`; the product is branded **Mythique**.)
 
+## Documentation system
+
+**`docs/README.md` is the docs index — start there for any feature you don't
+already know.** Three layers, trust flows downward:
+
+1. This file — conventions, commands, hard rules.
+2. `docs/features/` + `docs/architecture/` — **evergreen as-shipped references**
+   per domain (Explore/Pulse, Arena, dailies, search, character page, profile,
+   sharing/OG, auth/identity, push, platform/motion, admin, pipelines, houses).
+   Kept current: **if a PR changes a domain's behaviour, update its doc in the
+   same PR.**
+3. `docs/superpowers/specs|plans/` — ~170 dated historical design docs. The
+   decision record, not the current truth; status lines in them go stale.
+   Hidden from Grep via `.ignore` — read by explicit path only.
+
 ## Package manager
 
 Always use **yarn**. Never use npm or bun.
@@ -34,45 +49,59 @@ yarn test:ci                       # run all tests once (CI mode)
 
 ## Directory structure
 
+Most screens are a native/web pair (`foo.tsx` + `foo.web.tsx`) over one shared
+hook — see "Platform-specific files" below.
+
 ```
 app/
-  _layout.tsx          Root layout — fonts, splash screen, AuthGate
-  (auth)/
-    login.tsx
-    signup.tsx
-  (tabs)/
-    _layout.tsx        Native Tabs (Explore / Search / Arena / Profile)
-    explore.tsx        Explore feed — curated rows from Supabase
-    search.tsx
-    versus.tsx         Arena — matchup/battle hub
-    profile.tsx
+  _layout.tsx(.web)    Root layout — fonts, splash, AuthGate, providers
   index.tsx            Landing page (web) / redirect to /explore (native)
-  character/
-    [id].tsx           Character detail screen
-  (plus: compare/ team/ universe/ category/ title/ issue/ biography/ versus/ admin/)
+  (auth)/              login, signup, forgot-password
+  (tabs)/
+    _layout.tsx(.web)  Native Tabs (Explore / Search / Arena / Profile)
+    explore(.web).tsx  Home magazine feed  → docs/features/explore-feed-and-pulse.md
+    search/            Federated search    → docs/features/search.md
+    versus(.web).tsx   Arena hub           → docs/features/arena-and-matchups.md
+    profile(.web).tsx  Profile             → docs/features/profile-and-gamification.md
+  character/[id]       Flagship detail     → docs/features/character-page.md
+  biography/[id]       Long-form ComicVine biography
+  social-web/[id]      Relationship-graph explorer
+  compare/             Battle builder + arena result pages
+  versus/team/         Team battles (daily [battleId] + drafted)
+  play.tsx(.web)       Daily "Guess the Hero" → docs/features/dailies-and-streaks.md
+  house/               Family dynasties (index + [slug]) → docs/architecture/family-trees-and-houses.md
+  event/               Live-event dossiers (index + [slug])
+  category/[slug]      One source-aware browse screen — universe/ and franchise/ re-export it
+  team/[id] · title/[id] · issue/[id] · film/[tmdbId] (legacy redirect)
+  admin/health         Web-only command center → docs/features/admin-command-center.md
+  settings / support / privacy / terms
+
+api/                   Vercel serverless crawler surface (OG cards, share-meta,
+                       bot pages) — its own package, NOT part of the app
+                       build → docs/features/sharing-and-og.md
 
 src/
-  components/
-    HeroCard.tsx       Squircle card used in carousels
-  constants/
-    colors.ts          COLORS palette
-    heroImages.ts      HERO_IMAGES map (id → require())
-  hooks/
-    useAuth.ts         Session state + signIn/signUp/signOut
+  components/          UI by domain: home/ versus/ compare/ character/ profile/
+                       search/ takes/ game/ family/ event/ film/ contribute/
+                       report/ landing/ admin/ web/ skeletons/ ui/ …
+  constants/           colors.ts (COLORS) · publishers.ts (PUBLISHER_BRANDS
+                       universe registry) · heroImages.ts
+  hooks/               ~45 platform-neutral screen hooks — find the hook first
   lib/
     supabase.ts        createClient<Database>() — import this, never re-create
-    api.ts             fetchHeroStats / fetchHeroDetails / fetchFirstIssue
-    db/
-      heroes.ts        barrel → heroes/ (core, feed, categories, relationships, transforms)
-      favourites.ts    isFavourited / addFavourite / removeFavourite / getFavouriteCount
+    api.ts             External REST (SuperheroAPI, ComicVine)
+    db/                Per-table DB access (heroes barrel, favourites, takes, …)
+    query/             React Query hooks + cache keys
   types/
     database.generated.ts   Auto-generated from Supabase — NEVER edit manually
-    index.ts                App types (derives Hero/UserFavourite from generated types)
+    index.ts                App types (derives Hero/UserFavourite from generated)
 
 supabase/
   migrations/          Version-controlled SQL migrations
+  functions/           Edge functions (enrichment drains, verdicts, push, …)
   seed.sql             initial seed (DB has grown to ~34,000 heroes)
 
+scripts/social/        Social content factory → docs/brand/design-language.md
 __tests__/             Jest tests mirroring src/ structure
 ```
 
@@ -175,4 +204,8 @@ the hook. When adding a screen with a web variant, both `foo.tsx` and
 | Types                          | `src/types/index.ts` (app) · `database.generated.ts` (generated) |
 | Palette / constants            | `src/constants/`                                                 |
 | SQL migrations                 | `supabase/migrations/`                                           |
+| Edge functions                 | `supabase/functions/`                                            |
+| Crawler / OG surface           | `api/` (own package — see `docs/features/sharing-and-og.md`)     |
+| Feature-domain docs            | `docs/features/` — index at `docs/README.md` (read first)        |
+| Data pipelines / enrichment    | `docs/architecture/data-pipelines.md` (read it first)            |
 | Family trees / houses          | `docs/architecture/family-trees-and-houses.md` (read it first)   |

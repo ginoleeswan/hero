@@ -1,7 +1,11 @@
 # House pages and the kinship pathfinder
 
 **Date:** 2026-07-26
-**Status:** approved, implementing
+**Status:** SHIPPED and superseded (2026-07-27 correction — this line
+originally said "approved, implementing"). The design drifted during build
+(predates the crest, relation console, reigns, discovery layer); the live
+reference is `docs/architecture/family-trees-and-houses.md`. The
+guess-the-relation game (C) remains unbuilt and unspecced.
 **Scope:** house pages (A) + kinship pathfinder (B) + re-rooting (D), Game of Thrones only.
 The daily guess-the-relation game (C) is deliberately a separate spec, built on this one.
 

@@ -14,6 +14,7 @@
     "test:ci": "jest --ci",
     "test:social": "node --test \"scripts/social/**/*.test.mjs\"",
     "smoke": "node scripts/smoke/e2e-smoke.mjs",
+    "docs:links": "node scripts/docs/check-doc-links.mjs",
     "social": "node scripts/social/studio.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

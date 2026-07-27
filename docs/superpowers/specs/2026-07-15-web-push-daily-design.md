@@ -1,6 +1,8 @@
 # Web push — daily-debate re-engagement channel
 
-**Status:** spec, ready to execute
+**Status:** SHIPPED (2026-07-27 correction — this line originally said "ready
+to execute" and went stale). Delivery stays inert until the owner sets the
+VAPID secrets. As-shipped reference: `docs/features/notifications-and-push.md`.
 **Priority:** 2 of 4 in the 2026-07-15 hardening batch (see `2026-07-15-hardening-execution-plan.md`)
 **Size:** large (1 PR + owner setup). Execute AFTER the Sentry PR (push failures should be observable).
 

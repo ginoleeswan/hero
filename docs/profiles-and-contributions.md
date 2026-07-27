@@ -1,7 +1,14 @@
 # Profiles & Contributions — Product + Technical Design
 
-> Status: **proposal / for review**. No code yet. This doc defines the vision,
-> data model, flows, and rollout for turning a Mythique account from a
+> Status: **historical proposal — largely shipped since.** Layers 1 (identity:
+> taste profile, battle record, streaks, badges) and 2 (admin-vetted
+> contributions) are live; Layer 3 (social) deliberately is not. The as-shipped
+> reference is `docs/features/profile-and-gamification.md` — read that first;
+> this doc remains the vision + decision record (notably the "review-queued,
+> not live" and "no auto-approve" decisions).
+
+> Original status: proposal / for review, no code yet. This doc defined the
+> vision, data model, flows, and rollout for turning a Mythique account from a
 > "favourites sync" into something people genuinely want — and for letting
 > signed-in users improve the shared catalogue, wiki-style, the mature way.
 

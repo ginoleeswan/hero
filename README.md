@@ -83,6 +83,14 @@ A thin view layer over a hooks-and-query data core. Screens never touch Supabase
 
 > Screens with a web variant (`foo.web.tsx`) stay thin — shared data lives in a platform-neutral hook in `src/hooks/`.
 
+## 📚 Documentation
+
+Evergreen references live in [`docs/`](./docs/README.md) — one doc per feature
+domain (Explore & the Pulse, the Arena, search, the character page, sharing/OG,
+auth, push, platform conventions…) plus architecture deep-dives. Start at the
+[docs index](./docs/README.md); `CLAUDE.md` holds the working conventions.
+Historical design specs are archived under `docs/superpowers/`.
+
 ## 🚀 Get Started
 
 Requires [Node.js](https://nodejs.org/en/download/) and [Yarn](https://yarnpkg.com/) (the only supported package manager).

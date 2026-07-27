@@ -2,11 +2,31 @@
 
 A living snapshot of what's shipped, what's tracked, and where things are headed.
 Issues are the source of truth for anything actionable — this file is the map.
-Last meaningful update: 2026-07-15.
+For how any shipped feature actually works, see the docs index:
+[`docs/README.md`](README.md).
+Last meaningful update: 2026-07-27.
 
 ---
 
 ## Recently shipped
+
+**Late-July batch** (2026-07-26/27):
+
+- **House pages + kinship pathfinder** — `/house` index + dynasty pages
+  (crests, words, reigns), the relation console ("how are these two
+  related?"), URL-addressable tree state. Westeros seeded densest, plus comic
+  dynasties. Live reference:
+  [`docs/architecture/family-trees-and-houses.md`](architecture/family-trees-and-houses.md).
+- **Live events + The Pulse** — Wikipedia-attention event detection with
+  admin approval, the ranked "just happened" rail (time-decay, live-event
+  pinning), event dossier pages at `/event/[slug]`, and surge attribution
+  ("2 days after the trailer"). Reference:
+  [`docs/features/explore-feed-and-pulse.md`](features/explore-feed-and-pulse.md).
+- **Relationship blurbs, batches 1–5** — ~500 famous pairs triaged
+  (hand-written blurb or deliberate decline) for the social-web graph.
+- **Evergreen docs system** — `docs/README.md` index, eleven
+  `docs/features/` domain references, stale-spec corrections, and CI
+  enforcement (`yarn docs:links` + a docs-freshness PR nudge).
 
 **Reliability + growth hardening batch** (mid-July 2026, PRs #89/#91/#92/#94/#95):
 
@@ -31,7 +51,7 @@ Earlier July items in `main`:
 - **Mobile-web chrome system** — the "constant-ink" rule: canvas always ink, every
   page opens and closes on ink (`PageEndCap`), transient auto-hiding top bar,
   unified search field, seamless iOS-toolbar behaviour. See
-  [`project_constant_ink_chrome`](../CLAUDE.md) principles.
+  [`docs/features/platform-and-motion.md`](features/platform-and-motion.md).
 - **Character page — the "award pass"** — editorial pull-quote, the Legend
   timeline, choreographed Power Profile cascade (count-up + bar sweeps), vitals
   count-up, "In Print" compression, per-character accent theming, and the
@@ -43,7 +63,8 @@ Earlier July items in `main`:
   history: catalog tables had RLS with `USING (true)` that crippled query plans
   for real users. Browse/slug pages went **7.2 s → ~130 ms**. Plus trigram
   indexes, prefetch-on-touch, and warm caching. (See
-  [`rls-planner-shackle`](../CLAUDE.md) — always benchmark as the `anon` role.)
+  [`docs/features/auth-and-identity.md`](features/auth-and-identity.md) —
+  always benchmark as the `anon` role.)
 - **Admin command center** — metric caching (5-min cron + live fallback:
   `catalog_health` 270 ms → 2 ms), Instagram sync fixed (missing CORS),
   emoji-free, tab/section persisted to the URL, per-post skip persistence.
