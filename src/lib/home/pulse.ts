@@ -60,8 +60,12 @@ export interface PulseEvent extends PulseCandidate {
   badge: string;
   /** The "so what" second line. */
   subtitle: string | null;
-  /** "DAY 4 OF 4" / "FINAL DAY" / "DAY 2". Live events with a known window only. */
+  /** "DAY 4 OF 4" / "FINAL DAY" / "DAY 2". Live events with a known window only,
+   *  and null once the window has closed. */
   dayLabel: string | null;
+  /** "Live" while it's running, "Just wrapped" in the detection grace tail.
+   *  Live events only. */
+  statusLabel: string | null;
   score: number;
 }
 
@@ -77,10 +81,22 @@ export const KIND_WEIGHT: Record<PulseKind, number> = {
   issue: 0.55,
 };
 
-/** Hours after which an event of this kind is worth half as much. */
+/**
+ * Hours after which an event of this kind is worth half as much.
+ *
+ * The trailer figure was 48h, set when the catalogue held no upcoming titles and
+ * a trailer arrived every few weeks. Once the slate was ingested (2026-07-27)
+ * that number was measurably wrong: trailers halved twice as fast as issues, so
+ * a seven-day-old Avengers: Doomsday trailer scored 0.088 against a four-day-old
+ * comic's 0.5, and the 0.55 issue weight nowhere near closed a 5.7x gap. The
+ * single biggest story in the catalogue sat in the database and off the rail.
+ *
+ * 120h puts a week-old trailer at ~0.33 — still decaying visibly, still beaten
+ * by anything from today, but no longer buried under the weekly shipment.
+ */
 export const KIND_HALF_LIFE: Record<PulseKind, number> = {
   live_event: Infinity, // pinned; never decays inside its window
-  trailer: 48,
+  trailer: 120,
   issue: 96,
 };
 
@@ -168,12 +184,55 @@ export function scoreCandidate(c: PulseCandidate, now: number): number {
 // ── copy ─────────────────────────────────────────────────────────────────────
 
 /**
+ * How far past the end of the window we still treat an event as running.
+ *
+ * get_live_events keeps an `ongoing` row for three days after `live_to` so the
+ * 1-2 day Wikipedia pageview lag can't retire a convention that's still on. That
+ * grace is right for DETECTION and wrong for COPY: on 2026-07-27 it had the card
+ * reading "LIVE · DAY 5" for a three-day convention that ended on the 25th —
+ * a claim anyone could disprove with one search.
+ *
+ * One day of tolerance keeps the lag protection (the window really can trail
+ * reality by a day); beyond that the event has ended and the card should say so.
+ */
+const WINDOW_LAG_GRACE_DAYS = 1;
+
+export type EventPhase = 'live' | 'wrapped';
+
+/** Whether the event is still running, given the inferred window. Unknown or
+ *  not-yet-started windows read as `live`, matching the previous behaviour. */
+export function eventPhase(
+  windowFrom: string | null | undefined,
+  windowTo: string | null | undefined,
+  now: number,
+): EventPhase {
+  if (!windowTo) return 'live';
+  const end = Date.parse(`${windowTo}T00:00:00Z`);
+  if (Number.isNaN(end)) return 'live';
+  const today = Math.floor(now / 86_400_000);
+  const endDay = Math.floor(end / 86_400_000);
+  return today > endDay + WINDOW_LAG_GRACE_DAYS ? 'wrapped' : 'live';
+}
+
+/** The card's status word. "Live" only while it actually is. */
+export function eventStatusLabel(
+  windowFrom: string | null | undefined,
+  windowTo: string | null | undefined,
+  now: number,
+): string {
+  return eventPhase(windowFrom, windowTo, now) === 'wrapped' ? 'Just wrapped' : 'Live';
+}
+
+/**
  * Where we are inside a running event — "DAY 4 OF 4", "FINAL DAY", "DAY 2".
  *
  * "Happening now" is true but static. A counter that advances is what makes a
  * live card read as live rather than merely labelled, and it's the one piece of
  * urgency a convention card can honestly carry. Null when the window is unknown
  * or nonsensical, so the caller shows nothing rather than "DAY NAN".
+ *
+ * Also null once the event has wrapped: a day number is a claim about something
+ * in progress, and there's nothing honest to count once it isn't.
  */
 export function eventDayLabel(
   windowFrom: string | null | undefined,
@@ -181,6 +240,7 @@ export function eventDayLabel(
   now: number,
 ): string | null {
   if (!windowFrom) return null;
+  if (eventPhase(windowFrom, windowTo, now) === 'wrapped') return null;
   const start = Date.parse(`${windowFrom}T00:00:00Z`);
   if (Number.isNaN(start)) return null;
   const today = Math.floor(now / 86_400_000);
@@ -191,10 +251,10 @@ export function eventDayLabel(
   const end = windowTo ? Date.parse(`${windowTo}T00:00:00Z`) : NaN;
   if (Number.isNaN(end)) return `DAY ${day}`;
   const total = Math.floor(end / 86_400_000) - startDay + 1;
-  // Pageviews lag by a day or two, so `windowTo` can sit behind reality and make
-  // day exceed total. Report the honest day rather than a nonsense fraction.
-  if (total < 1 || day > total) return `DAY ${day}`;
-  if (day === total) return 'FINAL DAY';
+  if (total < 1) return `DAY ${day}`;
+  // Inside the lag grace: the window may trail reality by a day, so don't invent
+  // a bigger total — call it the final day rather than "DAY 4 OF 3".
+  if (day >= total) return 'FINAL DAY';
   return `DAY ${day} OF ${total}`;
 }
 
@@ -261,6 +321,7 @@ export function rankPulse(
       badge: badgeFor(c),
       subtitle: subtitleFor(c, now),
       dayLabel: c.kind === 'live_event' ? eventDayLabel(c.windowFrom, c.windowTo, now) : null,
+      statusLabel: c.kind === 'live_event' ? eventStatusLabel(c.windowFrom, c.windowTo, now) : null,
     });
   }
 

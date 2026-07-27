@@ -4,6 +4,8 @@ import {
   scoreCandidate,
   decay,
   eventDayLabel,
+  eventPhase,
+  eventStatusLabel,
   relevance,
   badgeFor,
   subtitleFor,
@@ -134,6 +136,23 @@ describe('scoreCandidate', () => {
     const fresh = scoreCandidate(trailer({ occurredAt: hoursAgo(0) }), NOW);
     const aged = scoreCandidate(trailer({ occurredAt: hoursAgo(KIND_HALF_LIFE.trailer) }), NOW);
     expect(aged / fresh).toBeCloseTo(0.5, 2);
+  });
+
+  it('keeps a week-old trailer ahead of the weekly comic shipment', () => {
+    // Measured regression, 2026-07-27: at a 48h trailer half-life against 96h for
+    // issues, the Avengers: Doomsday trailer (7 days old, 5 characters, fame 100)
+    // scored below four-day-old comics and never reached the rail — the biggest
+    // story in the catalogue, in the database and off the page. Trailers decay
+    // slower than the shipment they compete with, or the lane is decorative.
+    const doomsday = scoreCandidate(
+      trailer({ occurredAt: hoursAgo(24 * 7), characterCount: 5, maxFame: 100 }),
+      NOW,
+    );
+    const wednesday = scoreCandidate(
+      issue({ occurredAt: hoursAgo(24 * 4), characterCount: 8, maxFame: 100 }),
+      NOW,
+    );
+    expect(doomsday).toBeGreaterThan(wednesday);
   });
 });
 
@@ -402,12 +421,32 @@ describe('eventDayLabel — the live card counts days', () => {
     expect(eventDayLabel('2026-07-24', null, NOW)).toBe('DAY 3');
   });
 
-  it('reports the honest day when pageview lag puts today past the window', () => {
-    // live_to trails reality by a day or two, so day > total is expected — better
-    // a plain "DAY 5" than the nonsense "DAY 5 OF 3". This is SDCC's actual
-    // production window (2026-07-23 → 07-25) read on 07-26.
-    expect(eventDayLabel('2026-07-23', '2026-07-25', NOW)).toBe('DAY 4');
-    expect(eventDayLabel('2026-07-22', '2026-07-24', NOW)).toBe('DAY 5');
+  it('says FINAL DAY inside the one-day lag grace rather than inventing a day', () => {
+    // live_to can trail reality by a day, so today == end + 1 is still plausibly
+    // live. SDCC's real production window (2026-07-23 → 07-25) read on 07-26.
+    // "DAY 4" would assert a fourth day of a three-day convention.
+    expect(eventDayLabel('2026-07-23', '2026-07-25', NOW)).toBe('FINAL DAY');
+  });
+
+  it('stops counting once the event has actually wrapped', () => {
+    // The regression this exists for: on 2026-07-27 the card read "LIVE · DAY 5"
+    // for a three-day convention that ended on the 25th. get_live_events keeps an
+    // `ongoing` row for three days past live_to so the pageview lag can't retire a
+    // convention early — that grace belongs to detection, not to the copy.
+    expect(eventDayLabel('2026-07-22', '2026-07-24', NOW)).toBeNull();
+    const twoDaysAfter = Date.parse('2026-07-27T12:00:00Z');
+    expect(eventDayLabel('2026-07-23', '2026-07-25', twoDaysAfter)).toBeNull();
+  });
+
+  it('swaps the status word to "Just wrapped" instead of claiming Live', () => {
+    // The day counter going quiet isn't enough on its own — the card's other word
+    // is "Live", and that was just as false as "DAY 5".
+    expect(eventStatusLabel('2026-07-23', '2026-07-25', NOW)).toBe('Live');
+    const twoDaysAfter = Date.parse('2026-07-27T12:00:00Z');
+    expect(eventStatusLabel('2026-07-23', '2026-07-25', twoDaysAfter)).toBe('Just wrapped');
+    expect(eventPhase('2026-07-23', '2026-07-25', twoDaysAfter)).toBe('wrapped');
+    // An unknown end can't be shown to have passed, so it stays live.
+    expect(eventPhase('2026-07-23', null, twoDaysAfter)).toBe('live');
   });
 
   it('returns null before the window opens, or when it cannot be parsed', () => {

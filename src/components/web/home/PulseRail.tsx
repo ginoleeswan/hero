@@ -85,7 +85,9 @@ export function PulseRail({
                 <View style={live.body as object}>
                   <View style={live.statusRow as object}>
                     <View style={[live.dot, { backgroundColor: accent }] as object} />
-                    <Text style={[live.status, { color: accent }] as object}>Live</Text>
+                    <Text style={[live.status, { color: accent }] as object}>
+                      {item.statusLabel ?? 'Live'}
+                    </Text>
                     {!!item.dayLabel && (
                       <>
                         <Text style={live.statusSep as object}>·</Text>
