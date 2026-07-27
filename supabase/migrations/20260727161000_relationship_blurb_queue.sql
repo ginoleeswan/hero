@@ -4,6 +4,13 @@
 -- excludes every pair already recorded in hero_relationship_blurbs (ANY status,
 -- including declines), so a later session just reads it and continues.
 --
+-- 2026-07-27 review: the query below is kept as applied (a historical record),
+-- but its plan was pathological -- 869,728 buffers, 12,981-17,443 ms, disk
+-- spill -- and evicted the cache get_hero_neighborhood depends on. Superseded
+-- for behavior by 20260727210000_relationship_blurb_queue_perf.sql, which
+-- pushes the fame >= 60 gate before the aggregate instead of after the join.
+-- Only comment corrections (M2, M4 below) are edited in place here.
+--
 -- Three filters, each measured 2026-07-27:
 --
 --   Non-teammate only. Teammate edges exist BECAUSE the two share a named
@@ -11,11 +18,16 @@
 --   ("Served alongside Storm in the X-Men"). A blurb there mostly restates it.
 --   Excluding them drops 2,388 pairs at this fame gate.
 --
---   Both fame >= 60. Yields 3,833 non-teammate pairs; >= 50 would add 254 and
---   >= 40 would add 4,813, at falling quality.
+--   Both fame >= 60. Yields 3,833 non-teammate pairs before the publisher
+--   filter below.
 --
 --   Same publisher. Removes 775 pairs that are overwhelmingly name-collision
---   artifacts — the Peacemaker/Optimus Prime class. Leaves 3,058.
+--   artifacts — the Peacemaker/Optimus Prime class. Leaves 3,058. (M2,
+--   2026-07-27 review: the "254 / 4,813" deltas previously stated in the fame
+--   bullet above were mislabeled -- they are SAME-PUBLISHER non-teammate
+--   queue sizes at looser thresholds, not deltas off the 3,833 pre-publisher
+--   figure. Corrected: this population is 3,058 at >= 60, 3,312 at >= 50,
+--   7,871 at >= 40.)
 --
 -- The view SELECTS candidates; it does not CERTIFY them. Same-publisher junk
 -- survives it (Rocket Raccoon/Venom, both Marvel, not allies in any sense).
@@ -80,5 +92,7 @@ where u.a <> u.b
 
 -- Deliberately NOT granted to anon or authenticated. This is an authoring tool
 -- read through the service role, not app data. Granting it would expose a
--- 3,000-row scan on a hot table to the public API for no product reason.
+-- ~400k-row aggregate producing 108k candidate pairs to the public API for no
+-- product reason. (M4, 2026-07-27 review: this previously said "a 3,000-row
+-- scan" -- 3,000 is the post-filter result size, not the scan cost.)
 revoke all on public.hero_relationship_blurb_queue from anon, authenticated;

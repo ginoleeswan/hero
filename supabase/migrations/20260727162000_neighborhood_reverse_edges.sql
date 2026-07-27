@@ -149,7 +149,14 @@ as $function$
         -- 24-slot cutoff non-deterministic: the same character's page could
         -- return a different neighbour set after an unrelated replan. Measured
         -- 2026-07-27: adding the bounded reverse source changed the plan and
-        -- swapped 5 of Batman's 24 nodes, all of them ties, none reverse-sourced.
+        -- swapped 5 of Batman's 24 nodes, none reverse-sourced. (I2, 2026-07-27
+        -- review: "all of them ties" was retracted twice during implementation --
+        -- most of that swap was bucket re-assignment plus a concurrent session's
+        -- edit to Batman's kin rows, not ties. What WAS verified: ties straddling
+        -- this 24-slot cutoff were measured on 4 of 60 sampled subjects with fame
+        -- >= 80 -- ~7% of popular pages, one slot each. The tie itself is real and
+        -- `id` is still the right tiebreaker; only the Batman-specific claim above
+        -- was false.)
         order by is_out desc, same_universe desc, fame_score desc nulls last,
                  best_rank asc nulls last, id
       ) as k_rn

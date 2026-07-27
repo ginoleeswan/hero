@@ -22,6 +22,15 @@
 
 -- The table predates this file (applied via MCP, never committed). Stated here
 -- so the repo describes its own schema; a no-op on the live database.
+--
+-- I3 (2026-07-27 review): this DDL is NOT a complete description of the live
+-- schema -- it omitted the RLS lockdown, the public-read policy, and the
+-- author default that are actually live. anon holds default write grants on
+-- new tables, so RLS + that policy is the only thing stopping public writes;
+-- a fresh apply from this file alone (a Supabase branch, `db reset`,
+-- disaster recovery) would produce a table anon can write to. Fixed forward,
+-- not here, in 20260727211000_relationship_blurbs_rls_and_index_cleanup.sql
+-- (idempotent, verified no-op against live).
 create table if not exists public.hero_relationship_blurbs (
   hero_a text not null references public.heroes(id) on delete cascade,
   hero_b text not null references public.heroes(id) on delete cascade,
@@ -59,6 +68,16 @@ alter table public.hero_relationship_blurbs
   add constraint hero_relationship_blurbs_written_has_text
     check (status <> 'written' or blurb is not null);
 
--- The authoring queue reads this on every batch to skip recorded pairs.
+-- M1 (2026-07-27 review): this index was unused and justified by a false
+-- comment ("the authoring queue reads this on every batch to skip recorded
+-- pairs") -- the queue's skip clause is `not exists (... where bl.hero_a =
+-- u.a and bl.hero_b = u.b)`, which never references status, and the
+-- get_hero_neighborhood RPC's status filter arrives after a (hero_a, hero_b)
+-- primary-key probe, not a status lookup. A 3-value column on a ~3,000-row
+-- table gives the planner nothing a seq scan doesn't already beat. The
+-- statement below is left as applied (a historical record) per this repo's
+-- rule against editing already-applied DDL; the index itself is dropped
+-- forward, not here, in
+-- 20260727211000_relationship_blurbs_rls_and_index_cleanup.sql.
 create index if not exists hero_relationship_blurbs_status_idx
   on public.hero_relationship_blurbs (status);
