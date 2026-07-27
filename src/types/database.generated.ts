@@ -155,8 +155,28 @@ export type Database = {
           },
         ]
       }
+      comic_issue_appearances_pre_verify_20260727: {
+        Row: {
+          hero_id: string | null
+          issue_id: string | null
+          snapshot_at: string | null
+        }
+        Insert: {
+          hero_id?: string | null
+          issue_id?: string | null
+          snapshot_at?: string | null
+        }
+        Update: {
+          hero_id?: string | null
+          issue_id?: string | null
+          snapshot_at?: string | null
+        }
+        Relationships: []
+      }
       comic_issues: {
         Row: {
+          cast_source: string | null
+          cast_verified_at: string | null
           comicvine_id: string
           cover_date: string | null
           cover_url: string | null
@@ -174,6 +194,8 @@ export type Database = {
           volume_name: string | null
         }
         Insert: {
+          cast_source?: string | null
+          cast_verified_at?: string | null
           comicvine_id: string
           cover_date?: string | null
           cover_url?: string | null
@@ -191,6 +213,8 @@ export type Database = {
           volume_name?: string | null
         }
         Update: {
+          cast_source?: string | null
+          cast_verified_at?: string | null
           comicvine_id?: string
           cover_date?: string | null
           cover_url?: string | null
@@ -216,6 +240,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      comic_issues_maxfame_pre_verify_20260727: {
+        Row: {
+          id: string | null
+          max_fame: number | null
+          snapshot_at: string | null
+        }
+        Insert: {
+          id?: string | null
+          max_fame?: number | null
+          snapshot_at?: string | null
+        }
+        Update: {
+          id?: string | null
+          max_fame?: number | null
+          snapshot_at?: string | null
+        }
+        Relationships: []
       }
       comic_volumes: {
         Row: {
@@ -812,25 +854,31 @@ export type Database = {
       hero_relationship_blurbs: {
         Row: {
           author: string
-          blurb: string
+          blurb: string | null
           hero_a: string
           hero_b: string
+          note: string | null
+          status: string
           updated_at: string
           verified: boolean
         }
         Insert: {
           author?: string
-          blurb: string
+          blurb?: string | null
           hero_a: string
           hero_b: string
+          note?: string | null
+          status?: string
           updated_at?: string
           verified?: boolean
         }
         Update: {
           author?: string
-          blurb?: string
+          blurb?: string | null
           hero_a?: string
           hero_b?: string
+          note?: string | null
+          status?: string
           updated_at?: string
           verified?: boolean
         }
@@ -1080,6 +1128,7 @@ export type Database = {
           summary: string | null
           superhero_api_id: string | null
           teams: string[] | null
+          views_daily: Json | null
           weight_imperial: string | null
           weight_metric: string | null
           wikidata_candidates: Json | null
@@ -1165,6 +1214,7 @@ export type Database = {
           summary?: string | null
           superhero_api_id?: string | null
           teams?: string[] | null
+          views_daily?: Json | null
           weight_imperial?: string | null
           weight_metric?: string | null
           wikidata_candidates?: Json | null
@@ -1250,6 +1300,7 @@ export type Database = {
           summary?: string | null
           superhero_api_id?: string | null
           teams?: string[] | null
+          views_daily?: Json | null
           weight_imperial?: string | null
           weight_metric?: string | null
           wikidata_candidates?: Json | null
@@ -2427,6 +2478,17 @@ export type Database = {
         }
         Returns: string
       }
+      attribute_surge: {
+        Args: { p_breakout: string; p_hero_id: string }
+        Returns: {
+          cause_date: string
+          cause_id: string
+          cause_kind: string
+          cause_label: string
+          confidence: string
+          lag_days: number
+        }[]
+      }
       auto_tier_unrated_pool: { Args: never; Returns: number }
       browse_cover_pool: {
         Args: { p_limit: number; p_slug: string }
@@ -2659,6 +2721,10 @@ export type Database = {
         Args: { p_per_kind?: number }
         Returns: {
           accent: string
+          cause_confidence: string
+          cause_date: string
+          cause_kind: string
+          cause_label: string
           character_count: number
           entity_id: string
           event_id: string
@@ -2881,9 +2947,17 @@ export type Database = {
         Args: { p_a: string; p_b: string; p_body: string; p_picked: string }
         Returns: Json
       }
+      pulse_face_weight: {
+        Args: { p_fame: number; p_spike: number }
+        Returns: number
+      }
       rebuild_hero_relationships: { Args: never; Returns: undefined }
       rebuild_teams: { Args: never; Returns: undefined }
       recompute_fame_scores: { Args: never; Returns: number }
+      recompute_issue_max_fame: {
+        Args: { p_issue_id: string }
+        Returns: number
+      }
       record_daily_completion: {
         Args: { p_surface: string }
         Returns: undefined
@@ -2974,6 +3048,7 @@ export type Database = {
         }
         Returns: Json
       }
+      surge_started_at: { Args: { p_series: Json }; Returns: string }
       toggle_take_agreement: {
         Args: { p_take_id: string; p_voter_key: string }
         Returns: Json
