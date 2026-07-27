@@ -70,6 +70,44 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
           EXPO_PUBLIC_SUPABASE_KEY: dummy-anon-key-for-ci-build
 
+  docs-links:
+    name: Docs Links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      # Pure-node, no install needed. Fails when an evergreen doc points at a
+      # file that no longer exists — the doc names itself for updating.
+      - run: node scripts/docs/check-doc-links.mjs
+
+  docs-freshness:
+    name: Docs Freshness (informational)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    # Non-blocking nudge: behaviour-bearing code changed but no doc did.
+    # The evergreen-docs rule (docs/README.md) is "update the doc in the PR
+    # that changes the behaviour" — this job just makes forgetting visible.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Warn if code changed without docs
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          git fetch origin "${{ github.base_ref }}" --depth=1 || true
+          CHANGED=$(git diff --name-only "$BASE"...HEAD)
+          CODE=$(echo "$CHANGED" | grep -E '^(src/hooks/|src/lib/|app/|api/|supabase/(migrations|functions)/)' || true)
+          DOCS=$(echo "$CHANGED" | grep -E '^(docs/|CLAUDE\.md)' | grep -v '^docs/superpowers/' || true)
+          if [ -n "$CODE" ] && [ -z "$DOCS" ]; then
+            echo "::warning title=Docs may be stale::This PR changes behaviour-bearing code but no evergreen doc. If a documented domain changed, update its doc in docs/features/ or docs/architecture/ (index: docs/README.md). Fine to ignore for pure refactors/fixes."
+            echo "Changed code files:"; echo "$CODE"
+            exit 1
+          fi
+          echo "OK — docs touched alongside code, or no behaviour-bearing code changed."
+
   doctor:
     name: Expo Doctor (informational)
     runs-on: ubuntu-latest

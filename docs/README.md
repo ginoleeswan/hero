@@ -71,7 +71,10 @@ history) the linked spec.**
   lines — long enough to orient, short enough to actually read.
 - **Update the doc in the PR that changes the behaviour.** A doc that can
   drift silently is worse than no doc; this rule is what keeps layer 2
-  trustworthy.
+  trustworthy. CI backs it up two ways: `yarn docs:links`
+  (`scripts/docs/check-doc-links.mjs`, blocking) fails when a doc points at a
+  file that no longer exists, and the non-blocking "Docs Freshness" job warns
+  on PRs that change behaviour-bearing code without touching any doc.
 - **Specs and plans are immutable history.** New feature work gets a new dated
   file under `docs/superpowers/specs|plans/`. When an evergreen doc supersedes
   a spec, add a one-line banner to the spec pointing forward (see the top of

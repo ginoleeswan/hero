@@ -1,7 +1,10 @@
 # Command Center IA Consolidation — Design
 
 **Date:** 2026-07-08
-**Status:** Approved (user), pre-implementation
+**Status:** SHIPPED (2026-07-27 correction — this line originally said
+"pre-implementation" and went stale). The six-lane shell in the code is this
+spec realised; only the deferred UX-polish follow-up remains open. As-shipped
+reference: `docs/features/admin-command-center.md`.
 **Scope note:** This spec covers the IA consolidation, orchestrator refactor, and
 inline bug/jank fixes. A separate deep design/UX polish pass follows afterwards
 (user-requested follow-up; out of scope here).

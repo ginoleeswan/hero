@@ -4,11 +4,29 @@ A living snapshot of what's shipped, what's tracked, and where things are headed
 Issues are the source of truth for anything actionable — this file is the map.
 For how any shipped feature actually works, see the docs index:
 [`docs/README.md`](README.md).
-Last meaningful update: 2026-07-15.
+Last meaningful update: 2026-07-27.
 
 ---
 
 ## Recently shipped
+
+**Late-July batch** (2026-07-26/27):
+
+- **House pages + kinship pathfinder** — `/house` index + dynasty pages
+  (crests, words, reigns), the relation console ("how are these two
+  related?"), URL-addressable tree state. Westeros seeded densest, plus comic
+  dynasties. Live reference:
+  [`docs/architecture/family-trees-and-houses.md`](architecture/family-trees-and-houses.md).
+- **Live events + The Pulse** — Wikipedia-attention event detection with
+  admin approval, the ranked "just happened" rail (time-decay, live-event
+  pinning), event dossier pages at `/event/[slug]`, and surge attribution
+  ("2 days after the trailer"). Reference:
+  [`docs/features/explore-feed-and-pulse.md`](features/explore-feed-and-pulse.md).
+- **Relationship blurbs, batches 1–5** — ~500 famous pairs triaged
+  (hand-written blurb or deliberate decline) for the social-web graph.
+- **Evergreen docs system** — `docs/README.md` index, eleven
+  `docs/features/` domain references, stale-spec corrections, and CI
+  enforcement (`yarn docs:links` + a docs-freshness PR nudge).
 
 **Reliability + growth hardening batch** (mid-July 2026, PRs #89/#91/#92/#94/#95):
 
