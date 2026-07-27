@@ -134,6 +134,30 @@ if (process.argv[2] === '--dump') {
 
 const file = process.argv[2];
 const sql = await readFile(file, 'utf8');
+
+// Refuse a file containing statements this script cannot execute.
+//
+// It POSTs the INSERT's VALUES block to PostgREST and nothing else. A batch 06
+// migration carried an `update` to soften one blurb; the script parsed the
+// insert, reported success, and silently dropped the update — the row was
+// unchanged and nothing said so. A no-op that reports 201 is the worst failure
+// mode available, so unhandled statements are now a hard stop.
+{
+  const stripped = sql.replace(/--[^\n]*\n/g, '\n');
+  const insertAt = stripped.search(/\binsert\s+into\b/i);
+  const others = [...stripped.matchAll(/\b(update|delete|alter|create|drop|truncate)\b/gi)]
+    .filter((m) => insertAt === -1 || m.index < insertAt || m.index > stripped.indexOf(';', insertAt));
+  if (others.length) {
+    console.error(
+      `REFUSING ${file}: contains ${others.length} statement(s) this script cannot run ` +
+        `(${[...new Set(others.map((m) => m[1].toLowerCase()))].join(', ')}).\n` +
+        `It only POSTs the INSERT's VALUES rows. Apply those statements via the ` +
+        `Supabase MCP tool, or split them into their own migration.`,
+    );
+    process.exit(1);
+  }
+}
+
 const rows = parseValues(sql).map(toRow);
 
 // Local assertions before anything touches the database.

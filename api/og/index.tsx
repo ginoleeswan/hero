@@ -16,12 +16,27 @@
 //
 // Any failure falls back to a redirect to the static brand card (public/og.png)
 // so a share link never yields a broken image.
+//
+// WHY THIS LIVES IN A SUBDIRECTORY (api/og/index.tsx, still served at /api/og).
+// `import.meta` below is only legal under an ES-module compiler target, and this
+// file is the ONLY one in api/ that needs it. Applying that target to the whole
+// directory made the four Node functions beside it emit `import`/`export` into a
+// CommonJS package, and Node refused to load them — every one of them, on every
+// route, for about two weeks:
+//
+//     Failed to load the ES module: /var/task/api/health.js.
+//     Make sure to set "type": "module" in the nearest package.json
+//
+// Its own directory means its own tsconfig (api/og/tsconfig.json), so this file
+// gets the ES-module setting it needs and its neighbours get the CommonJS one
+// they need. Edge functions are bundled as ESM regardless, so nothing about how
+// this renders changed with the move — only the depth of the relative paths.
 import { ImageResponse } from '@vercel/og';
 // Pure-data palette (no RN imports) so the edge route shares the exact brand
 // tokens instead of re-hardcoding a set that drifts from the in-app posters.
-import { COLORS, SHARE_CARD, shareCardBgCss } from '../src/constants/colors';
-import { MARK_ASPECT, mythiqueMarkDataUri } from '../src/constants/brandMark';
-import { cardTextureDataUri } from '../src/constants/cardTexture';
+import { COLORS, SHARE_CARD, shareCardBgCss } from '../../src/constants/colors';
+import { MARK_ASPECT, mythiqueMarkDataUri } from '../../src/constants/brandMark';
+import { cardTextureDataUri } from '../../src/constants/cardTexture';
 
 export const config = { runtime: 'edge' };
 
@@ -158,13 +173,13 @@ async function heroCountLabel(): Promise<string> {
 let fontsPromise: Promise<{ name: string; data: ArrayBuffer; style: 'normal' }[]> | null = null;
 function getFonts() {
   fontsPromise ??= Promise.all([
-    fetch(new URL('../assets/fonts/Flame-Regular.ttf', import.meta.url)).then((r) =>
+    fetch(new URL('../../assets/fonts/Flame-Regular.ttf', import.meta.url)).then((r) =>
       r.arrayBuffer(),
     ),
-    fetch(new URL('../assets/fonts/FlameSans-Regular.ttf', import.meta.url)).then((r) =>
+    fetch(new URL('../../assets/fonts/FlameSans-Regular.ttf', import.meta.url)).then((r) =>
       r.arrayBuffer(),
     ),
-    fetch(new URL('../assets/fonts/Righteous-Regular.ttf', import.meta.url)).then((r) =>
+    fetch(new URL('../../assets/fonts/Righteous-Regular.ttf', import.meta.url)).then((r) =>
       r.arrayBuffer(),
     ),
   ]).then(([flame, flameSans, righteous]) => [

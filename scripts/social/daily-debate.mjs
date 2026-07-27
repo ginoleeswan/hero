@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Daily-debate growth-loop asset — one post a day, fully self-contained:
 // fetches today's server-curated pair (Task 1's `daily_debate` table),
-// downloads the `type=debate` OG card from the deployed site (api/og.tsx),
+// downloads the `type=debate` OG card from the deployed site (api/og/index.tsx),
 // uploads it to Cloudinary, and upserts an unposted row into `social_posts`
 // so it shows up in the command-center Publish tab queue — same upload +
 // registration mechanics as publish-posts.mjs, run standalone because this

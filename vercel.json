@@ -1,11 +1,6 @@
 {
   "buildCommand": "yarn expo export -p web --source-maps && node scripts/generate-sitemap.mjs && node scripts/upload-sourcemaps.mjs",
   "outputDirectory": "dist",
-  "functions": {
-    "api/*.ts": {
-      "includeFiles": "api/package.json"
-    }
-  },
   "rewrites": [
     {
       "source": "/character/:id",

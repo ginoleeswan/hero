@@ -1,18 +1,40 @@
 {
-  // Nearest-tsconfig for the Vercel serverless/edge functions in this folder.
-  // Vercel's function builder type-checks api/ entrypoints with the closest
-  // tsconfig.json; without this one it falls back to CommonJS assumptions and
-  // TypeScript 6 hard-errors on `import.meta` (TS1470) in api/og.tsx — which
-  // MUST use `new URL(..., import.meta.url)` for Edge font asset tracing.
-  // The app's root tsconfig (module: "preserve") still governs editor/CI
-  // type-checking of these files as part of the main project.
+  // Nearest-tsconfig for the NODE serverless functions in this folder
+  // (bot-page, share-meta, battle, health). Vercel's function builder compiles
+  // each entrypoint with the closest tsconfig.json, so this decides the module
+  // format their emitted .js is written in.
+  //
+  // It MUST emit CommonJS. The repo root declares no `"type"`, so Node reads
+  // every .js under /var/task as CommonJS; an ESM emit dies on its first
+  // `export`, before any handler code runs. That is not hypothetical — this file
+  // said `"module": "ESNext"` from 2026-07-14 to 2026-07-27, and every Node
+  // function in api/ returned FUNCTION_INVOCATION_FAILED on every route for the
+  // whole of it:
+  //
+  //     Failed to load the ES module: /var/task/api/health.js.
+  //     Make sure to set "type": "module" in the nearest package.json
+  //
+  // Nothing went red, because when the function is down the user-agent rewrites
+  // in vercel.json do not fire and a crawler falls through to the SPA shell with
+  // a healthy 200. `yarn smoke` now asserts it got the RIGHT page.
+  //
+  // The ESNext setting existed for one file: api/og.tsx needed `import.meta`.
+  // That file now lives at api/og/index.tsx (same route) with its own tsconfig,
+  // so each half gets the module format it actually needs.
+  //
+  // Two things not to do here:
+  //   * Do not add `"type": "module"` in an api/package.json instead. Tried
+  //     twice; both builds failed outright, and the bundler ships only files
+  //     something imports, so a package.json never reaches /var/task/api/.
+  //   * Do not raise `module` back to an ES target for a new file that wants
+  //     `import.meta`. Give that file its own directory, the way api/og has.
   "compilerOptions": {
     "strict": true,
     "target": "ESNext",
     "lib": ["ESNext", "DOM"],
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "jsx": "react-jsx",
+    "module": "CommonJS",
+    "moduleResolution": "Node10",
+    "ignoreDeprecations": "6.0",
     "types": ["node"],
     "esModuleInterop": true,
     "skipLibCheck": true

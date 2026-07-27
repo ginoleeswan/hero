@@ -129,7 +129,8 @@ const flows = [
   // --- the crawler surface -------------------------------------------------
   // Added 2026-07-27, after every Node serverless function was found dead in
   // production — bot-page, share-meta and battle all returning
-  // FUNCTION_INVOCATION_FAILED at cold start, for an unknown length of time.
+  // FUNCTION_INVOCATION_FAILED at cold start, from 2026-07-14 until it was
+  // noticed by accident thirteen days later.
   //
   // Nothing above catches it, and a status check alone would not have either:
   // the user-agent rewrites in vercel.json simply do not fire when the function

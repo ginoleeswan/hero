@@ -1,5 +1,5 @@
 // Publish › OG Cards — a QA gallery for the live Open Graph share cards that
-// /api/og renders (see api/og.tsx). Nothing is stored: each card is generated
+// /api/og renders (see api/og/index.tsx). Nothing is stored: each card is generated
 // on demand from a hero id / matchup, so this panel is a live preview of every
 // variant a shared Mythique link can produce —
 //   • brand   → /api/og                         (site-wide card, also public/og.png)
