@@ -3,12 +3,12 @@
 Generate on-brand social content from **real catalogue data**, styled like the
 app. Four generators share one data layer (`lib.mjs`):
 
-| Script | Output | Content |
-| --- | --- | --- |
-| `generate-reels.mjs` | 9:16 `.mp4` | fast-cut "who would win" video (TikTok / Reels / Shorts) |
-| `generate-carousels.mjs` | 4:5 `.png` set | matchup breakdown carousel (Instagram) |
-| `generate-bios.mjs` | 4:5 `.png` set | rich character-file carousel |
-| `generate-rankings.mjs` | 4:5 `.png` set | Top-N leaderboard carousel |
+| Script                   | Output         | Content                                                  |
+| ------------------------ | -------------- | -------------------------------------------------------- |
+| `generate-reels.mjs`     | 9:16 `.mp4`    | fast-cut "who would win" video (TikTok / Reels / Shorts) |
+| `generate-carousels.mjs` | 4:5 `.png` set | matchup breakdown carousel (Instagram)                   |
+| `generate-bios.mjs`      | 4:5 `.png` set | rich character-file carousel                             |
+| `generate-rankings.mjs`  | 4:5 `.png` set | Top-N leaderboard carousel                               |
 
 Everything reads off the **public (publishable) Supabase key** — the same read
 path the app uses, no secret key. Per matchup it pulls portraits, the six stats,
@@ -86,17 +86,49 @@ There are **two tracks**, and they follow different rules:
 
 Design + rationale: `docs/superpowers/specs/2026-07-06-social-ad-safety-split-design.md`.
 
+### The daily news post — `pulse-post.mjs`
+
+Everything above composes from the catalogue, which is the same on Tuesday as it
+was in March. This one composes from the **Pulse** — the ranked feed of things
+that actually happened, dated — so it has a reason to fire today.
+
+```sh
+node scripts/social/pulse-post.mjs --dry-run   # compose + print, write nothing
+node scripts/social/pulse-post.mjs             # compose + queue for review
+node scripts/social/pulse-post.mjs --force     # recompose even if today has one
+```
+
+Three rules, enforced in code rather than by convention:
+
+1. **The gate is mandatory.** `assertSafeClaim` in `pulse-claim.mjs` refuses
+   causal language ("because", "drove", "sparked" — the app joins a surge to a
+   nearby event by _date_, which is not proof one caused the other) and refuses
+   claims of insider knowledge ("confirmed", "leaked", "revealed"). It fails
+   **closed**: a film whose own title contains a banned word blocks that post.
+2. **One a day, and none on a quiet day.** Comics are excluded outright — a
+   weekly shipment is a schedule, not news. Most days there is nothing, and
+   nothing is the correct output.
+3. **It queues; it never publishes.** `posted_at` stays null and there is no
+   publish path in the file. Review in Command center › Social.
+
+`social_posts.source_key` records what each post was about, so the same trailer
+is never posted twice. A live event's daily digest keys per day, which is the
+intended exception.
+
+Design: `docs/superpowers/specs/2026-07-27-pulse-reach-design.md` §2. Ranking
+model and the copy discipline it follows: `src/lib/home/pulse.ts`.
+
 ### The safety layer — `safety.mjs`
 
 Single source of truth for what a character may show **in a paid ad**. Each hero
 gets a risk tier from its `publisher` (`S/A/B/C`, with per-character overrides):
 
-| Tier | In a paid ad… | Who |
-| --- | --- | --- |
-| **S** | nothing (name + data only) | Marvel, Disney, Nintendo/Pokémon, manga, DC-adjacent majors, HP, LOTR, Alien… |
-| **A** | stylized only (duotone) | DC Comics, Dark Horse, major game studios |
-| **B** | small raw portrait when data dominates | smaller / licensed publishers |
-| **C** | full-fidelity portrait | public-domain, non-fictional, Mythique-original |
+| Tier  | In a paid ad…                          | Who                                                                           |
+| ----- | -------------------------------------- | ----------------------------------------------------------------------------- |
+| **S** | nothing (name + data only)             | Marvel, Disney, Nintendo/Pokémon, manga, DC-adjacent majors, HP, LOTR, Alien… |
+| **A** | stylized only (duotone)                | DC Comics, Dark Horse, major game studios                                     |
+| **B** | small raw portrait when data dominates | smaller / licensed publishers                                                 |
+| **C** | full-fidelity portrait                 | public-domain, non-fictional, Mythique-original                               |
 
 Hard invariants: unknown publisher → **Tier A** (never C); **ads never use the
 official-art fallback** (`safePortrait(hero, {context:'ad'})` emits your render or
@@ -175,3 +207,5 @@ Unit tests for the safety logic: `yarn test:social`.
   render helpers (`renderPng`, `renderVideo`).
 - `generate-reels.mjs`, `generate-carousels.mjs`, `generate-bios.mjs`,
   `generate-rankings.mjs` — the four templates + CLI.
+- `pulse-claim.mjs` — pure: picks today's event, writes the claim, and gates it.
+  `pulse-post.mjs` — the I/O around it. Tests: `yarn test:social`.

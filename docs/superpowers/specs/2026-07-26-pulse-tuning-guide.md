@@ -87,6 +87,31 @@ not when it happened. `heroes.views_daily` (written by `sync-wiki-pageviews` fro
 a response it was already fetching) holds the curve. Sanity check: it dates Doctor
 Doom's surge to 2026-07-20, which is the day the Doomsday trailer published.
 
+### Social composer — `scripts/social/pulse-claim.mjs`
+
+The same feed, asked a stricter question: is there ONE thing worth saying today?
+
+| Knob                   | Now                          | Notes                                                                             |
+| ---------------------- | ---------------------------- | --------------------------------------------------------------------------------- |
+| `POST_KINDS`           | live_event / trailer / surge | `issue` excluded outright — a shipping schedule is not news                       |
+| `KIND_PRIORITY`        | event → trailer → surge      | Same order as `KIND_WEIGHT`, without importing the scoring                        |
+| `MAX_AGE_HOURS`        | trailer 120h, surge 336h     | **Per kind on purpose.** See below                                                |
+| `REPEAT_LOOKBACK_DAYS` | 14                           | Longer than any candidate survives, so in practice: never twice                   |
+| `CAUSAL_PATTERNS`      | 9 phrases                    | The gate. Refuses "because", "drove", "sparked" — the join is temporal            |
+| `OVERCLAIM_PATTERNS`   | 7 phrases                    | Refuses "confirmed", "leaked", "revealed" — the app has no source inside a studio |
+
+**`occurred_at` does not mean the same thing for each kind, and one max-age for
+all of them was wrong.** A trailer's is an instant that is over. A surge's is
+`surge_started_at` — the first day of a run that is _still running_, which the
+RPC nulls once the curve falls back. A single 72h bound refused a live 11× He-Man
+surge for having begun on Wednesday. Caught by the first dry run against
+production, not by a test.
+
+`social_posts.source_key` (migration `20260727210000`) records what each queued
+post was about. `batch`/`ord` caps volume at one a day; `source_key` caps
+_repetition_, which is the more damaging failure — an event outlives a day, so
+without it the composer posts the same trailer every morning until it decays.
+
 ### Freshness label — `src/lib/home/freshness.ts`
 
 | Constant             | Line | Now      | Notes                                                  |
@@ -120,6 +145,8 @@ Doom's surge to 2026-07-20, which is the day the Doomsday trailer published.
 | `supabase/functions/sync-tmdb-slate`              | Ingests the UPCOMING slate. Cron `40 5 * * 1`                        |
 | `supabase/functions/verify-issue-cast`            | Replaces guessed comic casts with ComicVine truth. Cron `10 5 * * *` |
 | `src/constants/eventBrands.ts`                    | The 20 event marks, by `watched_events.slug`                         |
+| `scripts/social/pulse-claim.mjs`                  | Picks today's post, writes the claim, **gates** it. Pure + tested    |
+| `scripts/social/pulse-post.mjs`                   | The I/O around it. Queues to `social_posts`; never publishes         |
 | `supabase/functions/_shared/videos.ts`            | Shared by the sweep and `enrich-tmdb-batch`                          |
 
 **Migrations** — all applied. In order:
@@ -127,7 +154,9 @@ Doom's surge to 2026-07-20, which is the day the Doomsday trailer published.
 `…230000_pulse_event_window` · `20260727090000_schedule_tmdb_slate` ·
 `…120000_verify_issue_cast` · `…122000_strip_anthology_issue_casts` ·
 `…140000_schedule_verify_issue_cast` · `…150000_trending_wiki_exclude_encyclopedia_traffic` ·
-`…160000_hero_views_daily` · `…170000_pulse_surge_events`
+`…160000_hero_views_daily` · `…170000_pulse_surge_events` · `…180000_attribute_surge` ·
+`…181000_pulse_candidates_with_cause` · `…190000_get_event_dossier` · `…200000_get_event_index` ·
+`…210000_social_posts_source_key`
 
 **`create or replace` cannot add a column to a `RETURNS TABLE` signature** —
 Postgres rejects it with 42P13. Every migration that widens `get_pulse_candidates`
