@@ -1,7 +1,11 @@
 # Matchup link-unfurl OG images — design (plan for "(b)")
 
 **Date:** 2026-06-18
-**Status:** Plan — not yet scheduled. Sibling of the shipped in-app share image
+**Status (updated 2026-07-27): SHIPPED — this line originally said "not yet
+scheduled" and went stale.** The crawler surface lives in `api/` (`og.tsx`,
+`share-meta.ts`, `bot-page.ts`) wired via `vercel.json` UA rewrites; the
+as-shipped reference is `docs/features/sharing-and-og.md`.
+Sibling of the shipped in-app share image
 (`ShareableMatchupCard` + `useMatchupShareImage`, captured client-side).
 
 ## Goal
