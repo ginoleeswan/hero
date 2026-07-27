@@ -212,6 +212,27 @@ interface ResolvedVolume {
   max_fame: number | null;
 }
 
+// A periodical ANTHOLOGY's volume roster is the union of every character across
+// every serial the magazine ever ran, so attributing it to a single issue is
+// fabrication rather than approximation. Measured 2026-07-27: Morning #2491, a
+// Kodansha seinen magazine, was carrying a cast of "Joker, Batman" and a max_fame
+// of 100 off those two invented links — enough to clear the >= 25 fame gate and
+// outrank Avengers: Doomsday in the Pulse rail.
+//
+// Detected by name or by issue number, which separate cleanly here: the
+// anthologies run 1663-3963 (Big Comic, Morning, Young Jump, 2000 AD, Shonen
+// Magazine/Sunday) while the longest-running single series are Action Comics
+// #1100 and Detective Comics #1111. Kept in step with the copy in
+// verify-issue-cast — change both together.
+const ANTHOLOGY_NAME = /(weekly|monthly|magazine|megazine|\bjump\b|2000 ad|corocoro|big comic)/i;
+const ANTHOLOGY_ISSUE_NO = 1500;
+
+function isAnthology(volumeName: string | null, issueNumber: string | null): boolean {
+  if (volumeName && ANTHOLOGY_NAME.test(volumeName)) return true;
+  const n = Number.parseInt((issueNumber ?? '').replace(/[^0-9]/g, ''), 10);
+  return Number.isFinite(n) && n >= ANTHOLOGY_ISSUE_NO;
+}
+
 // Phase 3 — upsert issues whose volume is cached + resolved.
 async function storeIssues(sb: SB, issues: WindowIssue[]): Promise<number> {
   const volIds = [...new Set(issues.map((i) => i.volume_id))];
@@ -226,11 +247,29 @@ async function storeIssues(sb: SB, issues: WindowIssue[]): Promise<number> {
       vol.set(v.volume_id, v);
     }
   }
+  // Issues verify-issue-cast has already adjudicated. This job runs hourly and
+  // used to re-upsert the roster guess straight over the verifier's work six
+  // minutes later, so the cleanup never survived an hour. Ground truth wins.
+  const issueIds = issues.map((i) => `cvi:${i.id}`);
+  const settled = new Set<string>();
+  for (const ids of chunk(issueIds, 500)) {
+    const { data } = await sb
+      .from('comic_issues')
+      .select('id, cast_source')
+      .in('id', ids)
+      .in('cast_source', ['issue', 'none', 'volume_filtered']);
+    for (const r of (data ?? []) as Array<{ id: string }>) settled.add(r.id);
+  }
+
   let stored = 0;
   for (const i of issues) {
     const v = vol.get(i.volume_id);
     if (!v || v.character_ids.length === 0) continue;
     const issueId = `cvi:${i.id}`;
+    const anthology = isAnthology(i.volume_name, i.issue_number);
+    // Don't re-assert a cast the verifier has already ruled on, and never
+    // invent one for an anthology.
+    const keepCast = !settled.has(issueId) && !anthology;
     const { error: upErr } = await sb.from('comic_issues').upsert(
       {
         id: issueId,
@@ -242,8 +281,13 @@ async function storeIssues(sb: SB, issues: WindowIssue[]): Promise<number> {
         store_date: i.store_date,
         cover_date: i.cover_date,
         publisher: v.publisher,
-        lead_hero_id: v.lead_hero_id,
-        max_fame: v.max_fame,
+        lead_hero_id: keepCast ? v.lead_hero_id : null,
+        // max_fame is what the fame gate reads. Leaving the volume's high-water
+        // mark on an anthology is exactly how "Joker, Batman" floated a Kodansha
+        // magazine into the Pulse, so an issue with no cast of its own carries
+        // no fame either.
+        max_fame: keepCast ? v.max_fame : null,
+        cast_source: keepCast ? 'volume' : anthology ? 'none' : undefined,
         synced_at: new Date().toISOString(),
       },
       { onConflict: 'id' },
@@ -252,12 +296,14 @@ async function storeIssues(sb: SB, issues: WindowIssue[]): Promise<number> {
       console.error('[sync-new-comics] issue upsert failed', issueId, upErr.message);
       continue;
     }
-    await sb
-      .from('comic_issue_appearances')
-      .upsert(
-        v.character_ids.map((hid) => ({ issue_id: issueId, hero_id: hid })),
-        { onConflict: 'issue_id,hero_id', ignoreDuplicates: true },
-      );
+    if (keepCast) {
+      await sb
+        .from('comic_issue_appearances')
+        .upsert(
+          v.character_ids.map((hid) => ({ issue_id: issueId, hero_id: hid })),
+          { onConflict: 'issue_id,hero_id', ignoreDuplicates: true },
+        );
+    }
     stored++;
   }
   return stored;
