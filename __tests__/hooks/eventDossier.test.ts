@@ -1,5 +1,5 @@
 import { formatWindow, windowLengthDays } from '../../src/hooks/useEventDossier';
-import { mapEventDossier } from '../../src/lib/db/events.dossier';
+import { mapEventDossier, mapEventIndex } from '../../src/lib/db/events.dossier';
 
 describe('windowLengthDays', () => {
   it('counts both ends — a Thu-to-Sun convention is four days, not three', () => {
@@ -87,5 +87,38 @@ describe('mapEventDossier', () => {
       spike: 10.4,
       causeLabel: 'Avengers: Doomsday',
     });
+  });
+});
+
+describe('mapEventIndex', () => {
+  it('survives a null or malformed payload', () => {
+    // The index page renders its own empty state; it must never throw on the way
+    // there.
+    expect(mapEventIndex(null)).toEqual({ events: [], watched: 0 });
+    expect(mapEventIndex({ events: 'nope' })).toEqual({ events: [], watched: 0 });
+  });
+
+  it('keeps the watched count, which is what makes one row honest', () => {
+    // Twenty events are polled and one has fired. An index showing a single row
+    // without that context reads like a broken feature rather than a quiet one.
+    const i = mapEventIndex({
+      watched: 20,
+      events: [
+        { slug: 'sdcc', headline: 'San Diego Comic-Con', is_live: true, spike_ratio: '7.42' },
+      ],
+    });
+    expect(i.watched).toBe(20);
+    expect(i.events).toHaveLength(1);
+    expect(i.events[0].isLive).toBe(true);
+    expect(i.events[0].spikeRatio).toBe(7.42);
+  });
+
+  it('drops rows that cannot be routed to', () => {
+    // A row without a slug is a dead link; better absent than broken.
+    const i = mapEventIndex({
+      watched: 3,
+      events: [{ headline: 'No slug' }, { slug: 'ok', headline: 'Fine' }],
+    });
+    expect(i.events.map((e) => e.slug)).toEqual(['ok']);
   });
 });

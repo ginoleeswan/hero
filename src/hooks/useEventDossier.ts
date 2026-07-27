@@ -3,7 +3,12 @@
 // the fetching. Per the repo convention for .web/.native view pairs.
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getEventDossier, type EventDossier } from '../lib/db/events.dossier';
+import {
+  getEventDossier,
+  getEventIndex,
+  type EventDossier,
+  type EventIndex,
+} from '../lib/db/events.dossier';
 
 /** Days between two ISO dates, inclusive of both ends. Null when either is
  *  missing or unparseable, so the caller shows nothing rather than "NaN days". */
@@ -61,4 +66,14 @@ export function useEventDossier(slug: string | undefined): UseEventDossier {
       windowDays: dossier ? windowLengthDays(dossier.event.liveFrom, dossier.event.liveTo) : null,
     };
   }, [data, isLoading, slug]);
+}
+
+/** Every event that has a page, newest first. */
+export function useEventIndex(): { index: EventIndex | null; loading: boolean } {
+  const { data, isLoading } = useQuery({
+    queryKey: ['event-index'],
+    queryFn: getEventIndex,
+    staleTime: 5 * 60_000,
+  });
+  return { index: data ?? null, loading: isLoading };
 }

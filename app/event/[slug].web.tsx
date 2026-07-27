@@ -31,6 +31,7 @@ export default function EventPageWeb() {
             onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}
             onHeroPress={(id) => router.push(`/character/${encodeURIComponent(id)}`)}
             onIssuePress={(id) => router.push(`/issue/${encodeURIComponent(id)}`)}
+            onIndexPress={() => router.push('/event')}
           />
         )}
       </View>

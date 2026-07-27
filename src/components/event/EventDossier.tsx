@@ -33,6 +33,8 @@ export interface EventDossierProps {
   onTitlePress: (titleId: string) => void;
   onHeroPress: (heroId: string) => void;
   onIssuePress: (issueId: string) => void;
+  /** Back to the index. Optional so the component stays usable without it. */
+  onIndexPress?: () => void;
 }
 
 export function EventDossier({
@@ -45,6 +47,7 @@ export function EventDossier({
   onTitlePress,
   onHeroPress,
   onIssuePress,
+  onIndexPress,
 }: EventDossierProps) {
   const { event, trailers, surges, issues } = dossier;
   const accent = event.accent ?? COLORS.goldAccent;
@@ -80,9 +83,17 @@ export function EventDossier({
         />
 
         <View style={[inner, { paddingHorizontal: pad, paddingTop: wide ? 44 : 28 }]}>
-          <Text style={[s.eyebrow, { color: accent }]}>
-            {event.ongoing ? 'Happening now' : 'Detected event'}
-          </Text>
+          {onIndexPress ? (
+            <Pressable onPress={onIndexPress} accessibilityRole="link">
+              <Text style={[s.eyebrow, { color: accent }]}>
+                {(event.ongoing ? 'Happening now' : 'Detected event') + '  ·  All events'}
+              </Text>
+            </Pressable>
+          ) : (
+            <Text style={[s.eyebrow, { color: accent }]}>
+              {event.ongoing ? 'Happening now' : 'Detected event'}
+            </Text>
+          )}
 
           {brand ? (
             <View style={s.markBox}>

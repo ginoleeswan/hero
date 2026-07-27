@@ -145,3 +145,64 @@ export async function getEventDossier(slug: string): Promise<EventDossier | null
   }
   return mapEventDossier(data);
 }
+
+// ── index ────────────────────────────────────────────────────────────────────
+
+export interface EventIndexEntry {
+  slug: string;
+  headline: string;
+  accent: string | null;
+  liveFrom: string | null;
+  liveTo: string | null;
+  ongoing: boolean;
+  spikeRatio: number | null;
+  peak: number | null;
+  /** Still inside the detection window — the rail is showing it right now. */
+  isLive: boolean;
+  viewsDaily: { date: string; views: number }[];
+}
+
+export interface EventIndex {
+  events: EventIndexEntry[];
+  /** How many events are polled at all. Most have never fired, and the page says
+   *  so — one row without that context reads like a broken feature. */
+  watched: number;
+}
+
+export function mapEventIndex(raw: unknown): EventIndex {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const list = Array.isArray(r.events) ? (r.events as Record<string, unknown>[]) : [];
+  return {
+    watched: num(r.watched) ?? 0,
+    events: list
+      .filter((e) => typeof e.slug === 'string' && typeof e.headline === 'string')
+      .map((e) => ({
+        slug: e.slug as string,
+        headline: e.headline as string,
+        accent: (e.accent as string) ?? null,
+        liveFrom: (e.live_from as string) ?? null,
+        liveTo: (e.live_to as string) ?? null,
+        ongoing: e.ongoing === true,
+        spikeRatio: num(e.spike_ratio),
+        peak: num(e.peak),
+        isLive: e.is_live === true,
+        viewsDaily: (Array.isArray(e.views_daily)
+          ? (e.views_daily as Record<string, unknown>[])
+          : []
+        )
+          .map((d) => ({ date: String(d.date ?? ''), views: num(d.views) ?? 0 }))
+          .filter((d) => d.date),
+      })),
+  };
+}
+
+/** Degrades to an empty index so the page renders its own empty state rather
+ *  than erroring. */
+export async function getEventIndex(): Promise<EventIndex> {
+  const { data, error } = await supabase.rpc('get_event_index');
+  if (error) {
+    console.warn('[getEventIndex] error:', error.message);
+    return { events: [], watched: 0 };
+  }
+  return mapEventIndex(data);
+}
