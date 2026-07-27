@@ -151,6 +151,14 @@ Four rules learned the hard way seating twenty-two of them:
    renders the empty state. Cassel, Umber, Manderly, Reed, Royce, Seaworth,
    Tallhart and Payne are all waiting on relations, not on a house row.
 
+**Check the kinship before you build on it.** Batman (hero `69`) had Terry
+McGinnis's parents recorded as his own — the tell was a parent row whose role
+was "biological father" and whose name was _Bruce Wayne_. The two heroes'
+outbound relatives were hung on the wrong owner, while every inbound edge
+(Alfred, three Robins) was correct. Fixed in
+`20260727110000_unswap_batman_kinship.sql`, which moves sixteen rows by explicit
+id and documents its own reversal.
+
 Deep `ancestor` rows with no `tree_parent_id` land in the chart's "generation
 unrecorded" list. That is the honest treatment where the succession order isn't
 recorded — see House of Atlan, which leaves fourteen forebears unplaced on
@@ -158,9 +166,9 @@ purpose rather than inventing a line of descent.
 
 ## Coverage
 
-186 heroes of ~50,500 are in a house — **0.37%**. Twenty-two houses across four
-universes: fourteen in Westeros, plus El, Wakanda, Richards, Maximoff, Xavier,
-Allen, Atlan and the Parrs.
+201 heroes of ~50,500 are in a house — **0.40%**. Twenty-three houses across
+four universes: fourteen in Westeros, plus El, Wayne, Atlan, Allen, Wakanda,
+Richards, Maximoff, Xavier and the Parrs.
 
 That number stays small for a reason, and it isn't neglect: a family chart needs
 a connected graph, and edge density is wildly uneven. GoT characters average ~15
