@@ -1,4 +1,0 @@
-{
-  "//": "Declares the api/ functions as ES modules. api/tsconfig.json sets module: ESNext (api/og.tsx needs it for import.meta), so the builder emits `import`/`export` syntax — but the repo root has no `type`, which makes Node read every emitted .js as CommonJS and throw at load. That is a crash before any handler runs, which is exactly what production showed: every Node function returning FUNCTION_INVOCATION_FAILED on every route, including api/health.ts, which imports nothing. See the header of api/health.ts.",
-  "type": "module"
-}

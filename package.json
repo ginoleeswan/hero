@@ -2,6 +2,9 @@
   "name": "mythique",
   "version": "1.0.0",
   "main": "expo-router/entry",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
