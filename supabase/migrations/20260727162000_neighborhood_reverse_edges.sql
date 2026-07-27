@@ -17,14 +17,49 @@
 -- candidate at ~1ms under the free-tier IO ceiling, so the fix is to score
 -- fewer candidates, not to index harder.
 --
--- `rank` is the subject's position in the OTHER character's list, so rank 1
--- means the subject is that character's top enemy. Ordering the reverse pull by
--- it is a genuine relevance signal, not an arbitrary cut.
+-- `rank` is the subject's position in the OTHER character's list. It was chosen
+-- as the reverse pull's sort on the theory that rank 1 means "the subject is
+-- that character's top enemy" -- a relevance signal. MEASURED 2026-07-27, that
+-- theory is WRONG for exactly the subjects where the bound bites: 3,217 of
+-- Batman's 3,221 reverse edges are rank 1, because rank is assigned by
+-- issue_count within the other character's list and Batman outranks nearly
+-- everyone. So on a famous subject the cut is an arbitrary slice of one huge
+-- tie block, and `hero_id` below is what makes that slice at least repeatable.
 --
--- Why outgoing WINS. A character's own stated cast outranks people who merely
--- name them, so is_out sorts first in both the per-kind window and the final
--- order. Batman has 135 outgoing candidates for 24 slots, so his page is
--- unchanged; Dracula has none, so his fills entirely from reverse edges.
+-- This is tolerable rather than good, on two grounds. The bound only truncates
+-- when a subject has >150 incoming edges, and only MATTERS for slot-filling
+-- when that subject also has <24 outgoing -- measured: 1 hero in the catalogue.
+-- And for bucketing (see min(kind_ord) below) the cut can only ever move a
+-- candidate to a MORE specific kind, never a worse one, so an arbitrary slice
+-- means some mutual pairs miss the improvement, not that any pair regresses.
+--
+-- The principled fix, if this ever matters: order the reverse pull by the
+-- CANDIDATE's fame_score rather than by rank, or decouple bucketing from the
+-- bound by computing min(kind_ord) over the unbounded reverse set. Deferred.
+--
+-- Why outgoing WINS a SLOT. A character's own stated cast outranks people who
+-- merely name them, so is_out sorts first in both the per-kind window and the
+-- final order. No reverse candidate can take a slot an outgoing one wanted:
+-- Batman's 135 outgoing candidates fill all 24. Dracula has none, so his page
+-- fills entirely from reverse edges -- that is the blank-page fix.
+--
+-- But the reverse source DOES change which BUCKET a mutual pair lands in, and
+-- that is deliberate. min(kind_ord) below is computed over both directions, so
+-- a pair the subject calls "teammate" while the counterpart calls it "ally"
+-- now buckets as ally. Measured: 9 of Batman's 135 candidates re-bucket 3->2
+-- (Batgirl, Green Arrow, Hal Jordan, Lex Luthor, Martian Manhunter, Poison Ivy,
+-- Starfire, Supergirl, Superman). WHICH 9 is a function of the 150-row reverse
+-- cut, which slices an arbitrary-but-repeatable point in a 3,217-row rank tie --
+-- see the header. Only ever a move to a MORE specific kind, so pairs outside the
+-- cut keep the bucket they always had; none regresses.
+--
+-- This FIXES a pre-existing disagreement rather than causing one. pair_edges
+-- below is direction-agnostic, so those edges already rendered as 'ally' while
+-- the node sat in the teammate cluster -- exactly the split 20260725204300 was
+-- written to forbid: "Both orderings have to agree, otherwise a node sits in
+-- the ally cluster while its edge to the subject reports teammate." Bucket and
+-- edge now agree. Do NOT "fix" this by adding filter (where is_out = 1) to
+-- min(kind_ord); that would restore the disagreement.
 create or replace function public.get_hero_neighborhood(p_hero_id text, p_limit integer default 24)
  returns json
  language sql
@@ -53,9 +88,17 @@ as $function$
   cand as (
     select id,
            min(kind_ord) as kind_ord,
-           -- Prefer the outgoing rank when the pair is mutual, so an existing
-           -- page's ordering is untouched by the new reverse source.
-           coalesce(min(best_rank) filter (where is_out = 1), min(best_rank)) as best_rank,
+           -- Prefer the outgoing rank when the pair is mutual, so a candidate's
+           -- position WITHIN its bucket is not perturbed by the reverse source.
+           -- (Its bucket may still change -- see the header on min(kind_ord).)
+           -- Presence-based, not value-based: `min() filter` returns null both
+           -- when there are no outgoing rows AND when every outgoing rank is
+           -- null, and the latter would silently fall through to a reverse rank,
+           -- promoting a nulls-last candidate. No null ranks exist today; this
+           -- keeps it correct if any appear.
+           case when max(is_out) = 1
+                then min(best_rank) filter (where is_out = 1)
+                else min(best_rank) end as best_rank,
            max(is_out) as is_out
     from (
       select r.related_id as id,
@@ -75,7 +118,10 @@ as $function$
         from public.hero_relationships r
         where r.related_id = p_hero_id
           and r.source is distinct from 'curated'
-        order by r.rank asc
+        -- hero_id breaks rank ties so the 150-row cut is itself deterministic;
+        -- ranks are small dense integers, so the tier straddling row 150 would
+        -- otherwise be sliced by whatever the plan produced.
+        order by r.rank asc, r.hero_id
         limit 150
       ) rev
       union all
