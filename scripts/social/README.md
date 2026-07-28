@@ -168,6 +168,14 @@ node scripts/social/ads/ad-web-hero.mjs --size all   # 16x9 | og | wide
 # where/when/how per post, one-click caption copy, and posted checkboxes.
 node scripts/social/ads/batch-week.mjs               # 4x5 feed; --size 9x16 for stories
 node scripts/social/ads/batch-week.mjs --dry-run     # print the plan only
+node scripts/social/ads/batch-week.mjs --no-rebias   # ignore measured results
+
+# MEASURED REBIAS (batch-week + batch-month): when social_post_results has
+# data (service-role key in .env.local — the Insights CSV import / syncs feed
+# it), the plan mix is weighted by MEDIAN views per angle family (weights.mjs):
+# floor of one slot per angle, cap of 3, unmeasured angles get a neutral prior.
+# The plan logs the derived cycle ("Measured rebias: ranking×3 matchup×2 …");
+# with no readable data it says so and uses the static rotation.
 open "out/social/week-$(date +%F)/week.html"         # the planner
 
 # Each caption gets a UTM-tagged link (campaign = post label) + a bio link in the

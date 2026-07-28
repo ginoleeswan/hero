@@ -11,6 +11,7 @@ import { mkdirSync, copyFileSync, writeFileSync, existsSync, readFileSync } from
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { OUT_DIR, RIVALRIES, loadEnv, makeSb, heroByName } from '../lib.mjs';
+import { fetchAngleViews, medianViewsByFamily, weightedCycle, describeCycle } from './weights.mjs';
 
 const ADS = dirname(fileURLToPath(import.meta.url));
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -79,20 +80,26 @@ function taggedLink({ site, source, medium, campaign, path = '/' }) {
   return u.toString();
 }
 
-function buildPlan(pool) {
+// Static fallback mix — used when no measured results are readable.
+const STATIC_KINDS = ['brand', 'matchup', 'ranking', 'brand', 'matchup', 'brand', 'ranking'];
+
+function buildPlan(pool, kinds = STATIC_KINDS) {
   const bs = (i) => BRAND_STYLES[(week + i) % BRAND_STYLES.length];
   const riv = (i) => pool[(week * 2 + i) % pool.length];
   const rank = (i) => RANKINGS[(week + i) % RANKINGS.length];
-  // Mon..Sun: brand / matchup / ranking / brand / matchup / brand / ranking
-  return [
-    { kind: 'brand', style: bs(0) },
-    { kind: 'matchup', pair: riv(0).pair, ids: riv(0).ids },
-    { kind: 'ranking', by: rank(0)[0], slug: rank(0)[1] },
-    { kind: 'brand', style: bs(1) },
-    { kind: 'matchup', pair: riv(1).pair, ids: riv(1).ids },
-    { kind: 'brand', style: bs(2) },
-    { kind: 'ranking', by: rank(1)[0], slug: rank(1)[1] },
-  ];
+  // Day slots follow the (possibly rebias-weighted) kind cycle; each kind keeps
+  // its own weekly-rotating cursor so repeats within the week never duplicate.
+  const cursors = { brand: 0, matchup: 0, ranking: 0 };
+  return kinds.map((kind) => {
+    const i = cursors[kind]++;
+    if (kind === 'brand') return { kind, style: bs(i) };
+    if (kind === 'matchup') {
+      const r = riv(i);
+      return { kind, pair: r.pair, ids: r.ids };
+    }
+    const rk = rank(i);
+    return { kind, by: rk[0], slug: rk[1] };
+  });
 }
 
 // Chrome launches flake occasionally — retry each generator before giving up.
@@ -221,7 +228,23 @@ async function main() {
     console.error('No rivalry pair resolves against the heroes table.');
     process.exit(1);
   }
-  const plan = buildPlan(pool);
+  // Measured rebias: the week's brand/matchup/ranking mix follows median views
+  // per kind from social_post_results (service-role read; static mix + a loud
+  // note when unreadable). --no-rebias forces the static mix.
+  let kinds;
+  if (!args.includes('--no-rebias')) {
+    const measured = await fetchAngleViews(makeSb(loadEnv()));
+    if (measured) {
+      kinds = weightedCycle(['matchup', 'ranking', 'brand'], medianViewsByFamily(measured), {
+        slots: 7,
+        maxShare: 3,
+      });
+      console.log(`Measured rebias: ${describeCycle(kinds)} (from ${measured.length} measured posts)`);
+    } else {
+      console.log('No measured results readable — using the static brand/matchup/ranking mix.');
+    }
+  }
+  const plan = buildPlan(pool, kinds);
   console.log(`Week plan (rotation #${week}, size ${size}):`);
   plan.forEach((p, i) => console.log(`  ${DAYS[i]}  ${label(p)}`));
   if (dry) return;

@@ -37,6 +37,33 @@ export const capKey = (s: string | null | undefined): string =>
     .replace(/[^a-z0-9]+/g, '')
     .slice(0, 40);
 
+/** Full-length normalisation (no 40-char cut) for substring matching. */
+export const capNorm = (s: string | null | undefined): string =>
+  (s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+/** Match a posted caption back to a queue post. A strict prefix match fails in
+ *  practice: when posting, the first caption line (the on-image headline) is
+ *  often dropped, so the platform's stored title starts mid-caption. Worse,
+ *  caption TEMPLATES share their opening boilerplate across posts of the same
+ *  format ("Drop them below 👇 …" on every gauntlet), so a short key alone is
+ *  ambiguous. Strategy: try the FULL normalised posted caption as a substring
+ *  first — the hashtags name the characters, which disambiguates template
+ *  siblings — then fall back to the 40-char key. Either way the hit must be
+ *  UNIQUE; a multi-hit is reported as ambiguous, never guessed. */
+export function matchByCaption<T extends { caption: string | null }>(
+  postedCaption: string,
+  posts: T[],
+): { post: T | null; candidates: number } {
+  const full = capNorm(postedCaption);
+  const key = capKey(postedCaption);
+  if (!key) return { post: null, candidates: 0 };
+  const fullHits =
+    full.length > key.length ? posts.filter((p) => capNorm(p.caption).includes(full)) : [];
+  if (fullHits.length === 1) return { post: fullHits[0], candidates: 1 };
+  const keyHits = posts.filter((p) => capNorm(p.caption).includes(key));
+  return { post: keyHits.length === 1 ? keyHits[0] : null, candidates: keyHits.length };
+}
+
 /** Minimal RFC-4180-ish parser: quoted fields, "" escapes, CRLF. */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];

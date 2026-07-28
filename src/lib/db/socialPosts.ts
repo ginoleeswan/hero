@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import type { Tables } from '../../types/database.generated';
-import { capKey, type TiktokContentRow, type TiktokOverviewRow } from '../social/tiktokCsv';
+import { matchByCaption, type TiktokContentRow, type TiktokOverviewRow } from '../social/tiktokCsv';
 
 // Social posting queue — published from the local studio (publish-posts.mjs),
 // consumed by the command-center Social lane. Reads/updates are admin-gated RLS.
@@ -94,19 +94,15 @@ export async function importChannelStats(
   return { imported: rows.length };
 }
 
-/** Match the Content export's per-post rows to queue posts by caption key and
- *  write result snapshots (platform=tiktok, source=manual). Mirrors the match
- *  the tiktok-sync edge function performs. */
+/** Match the Content export's per-post rows to queue posts by caption and
+ *  write result snapshots (platform=tiktok, source=manual). Substring match —
+ *  posted captions often drop the first line — and an ambiguous hit (several
+ *  queue posts share the caption) is reported, never guessed. */
 export async function importTiktokContentResults(
   rows: TiktokContentRow[],
-): Promise<{ scanned: number; matched: number; unmatched: string[] }> {
+): Promise<{ scanned: number; matched: number; unmatched: string[]; ambiguous: string[] }> {
   const { data: posts, error } = await supabase.from('social_posts').select('id, caption');
   if (error) throw new Error(error.message);
-  const byCap = new Map<string, string>();
-  for (const p of posts ?? []) {
-    const k = capKey(p.caption);
-    if (k && !byCap.has(k)) byCap.set(k, p.id);
-  }
   const snapshots: {
     post_id: string;
     platform: string;
@@ -118,14 +114,15 @@ export async function importTiktokContentResults(
     source: string;
   }[] = [];
   const unmatched: string[] = [];
+  const ambiguous: string[] = [];
   for (const r of rows) {
-    const postId = byCap.get(capKey(r.caption));
-    if (!postId) {
-      unmatched.push(r.caption.slice(0, 60));
+    const { post, candidates } = matchByCaption(r.caption, posts ?? []);
+    if (!post) {
+      (candidates > 1 ? ambiguous : unmatched).push(r.caption.slice(0, 60));
       continue;
     }
     snapshots.push({
-      post_id: postId,
+      post_id: post.id,
       platform: 'tiktok',
       views: r.views,
       likes: r.likes,
@@ -139,7 +136,7 @@ export async function importTiktokContentResults(
     const { error: insErr } = await supabase.from('social_post_results').insert(snapshots);
     if (insErr) throw new Error(insErr.message);
   }
-  return { scanned: rows.length, matched: snapshots.length, unmatched };
+  return { scanned: rows.length, matched: snapshots.length, unmatched, ambiguous };
 }
 
 /** Trigger the Instagram sync edge function — matches recent IG media to queue

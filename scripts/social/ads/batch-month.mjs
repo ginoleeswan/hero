@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import { loadEnv, makeSb, fonts, OUT_DIR } from '../lib.mjs';
 import { fetchPools } from './data.mjs';
 import { buildPlan, rng } from './plan.mjs';
+import { fetchAngleViews, medianViewsByFamily, weightedCycle, describeCycle } from './weights.mjs';
 import { renderCarousel } from './render-carousel.mjs';
 import { renderReel } from './render-reel.mjs';
 import { relative } from 'node:path';
@@ -41,7 +42,20 @@ async function main() {
   const rand = rng(seed);
   console.log(`Fetching ad-safe data pools…`);
   const pools = await fetchPools(sb, rand, { excludeTierS });
-  const plan = buildPlan({ n, seed, mix, pools });
+  // Measured rebias: weight the angle cycle by median views per angle family
+  // (needs the service-role key to read social_post_results — falls back to
+  // the static cycle, loudly, when there's no data). --no-rebias forces static.
+  let angles = null;
+  if (!args.includes('--no-rebias')) {
+    const measured = await fetchAngleViews(sb);
+    if (measured) {
+      angles = weightedCycle(['matchup', 'ranking', 'guess', 'fact', 'lore'], medianViewsByFamily(measured), { slots: 7 });
+      console.log(`Measured rebias: ${describeCycle(angles)} (from ${measured.length} measured posts)`);
+    } else {
+      console.log('No measured results readable — using the static angle cycle.');
+    }
+  }
+  const plan = buildPlan({ n, seed, mix, pools, angles });
   console.log(`Plan: ${plan.length} entries (seed ${seed})`);
   for (const e of plan) console.log(`  ${String(e.ord).padStart(2, '0')}  ${e.format.padEnd(8)} ${e.angle.padEnd(8)} ${e.title}`);
   if (dry) return;

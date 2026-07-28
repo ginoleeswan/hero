@@ -7,7 +7,7 @@ const H = (name, over = {}) => ({ name, fame_score: 90, tier: 'A',
 const pools = {
   matchups: Array.from({ length: 15 }, (_, i) => ({ a: H(`A${i}`), b: H(`B${i}`), rounds: [['SPEED', 80, 70], ['POWER', 60, 90], ['COMBAT', 95, 50]] })),
   rankings: Array.from({ length: 15 }, (_, i) => ({ dimension: `d${i}`, label: `dim ${i}`, rows: Array.from({ length: 10 }, (_, j) => ({ name: `R${i}-${j}`, value: 100 - j })) })),
-  guesses: Array.from({ length: 12 }, (_, i) => H(`G${i}`)),
+  guesses: Array.from({ length: 12 }, (_, i) => H(`G${i}`, { intelligence: 50 + i })),
   facts: Array.from({ length: 12 }, (_, i) => ({ headline: `Fact ${i}`, detail: `detail ${i}`, stat: `${i}` })),
   lore: Array.from({ length: 20 }, (_, i) => {
     if (i % 3 === 0) return { sub: 'family', a: `HeroF${i}A`, b: `HeroF${i}B`, relation: 'sibling' };
@@ -52,6 +52,28 @@ test('every entry has ord, caption and music', () => {
     assert.ok(e.caption.length > 10);
     assert.ok(e.music.length > 10);
   });
+});
+
+test('angles override reweights the mix; invalid overrides fall back', () => {
+  // A matchup-heavy measured cycle should produce more matchups than the default.
+  const heavy = buildPlan({ n: 21, seed: 5, mix: { carousel: 14, reel: 7 }, pools,
+    angles: ['matchup', 'ranking', 'matchup', 'matchup', 'guess', 'fact', 'lore'] });
+  const light = buildPlan({ n: 21, seed: 5, mix: { carousel: 14, reel: 7 }, pools,
+    angles: ['matchup', 'ranking', 'guess', 'fact', 'lore'] });
+  const m = (p) => p.filter((e) => e.angle === 'matchup').length;
+  assert.ok(m(heavy) > m(light), `expected heavier matchup mix (${m(heavy)} vs ${m(light)})`);
+  // Unknown angles are dropped; a fully-invalid override falls back to the static cycle.
+  const junk = buildPlan({ n: 14, seed: 5, mix: { carousel: 7, reel: 7 }, pools, angles: ['nope'] });
+  assert.equal(junk.length, 14);
+  assert.ok(junk.some((e) => e.angle === 'matchup'));
+});
+
+test('guess captions are unique per hero (stat line), never boilerplate-identical', () => {
+  const plan = buildPlan({ n: 40, seed: 2, mix: { carousel: 24, reel: 16 }, pools });
+  const guesses = plan.filter((e) => e.angle === 'guess');
+  assert.ok(guesses.length >= 2, 'need at least two guess entries to compare');
+  const caps = new Set(guesses.map((e) => e.caption));
+  assert.equal(caps.size, guesses.length, 'guess captions must be distinguishable for analytics matching');
 });
 
 test('lore angle appears in both formats with stance CTAs', () => {

@@ -164,7 +164,8 @@ export function SocialInsightsDomain() {
         const r = await importTiktokContentResults(parsed.rows);
         setSyncMsg(
           `Matched ${r.matched}/${r.scanned} TikTok posts` +
-            (r.unmatched.length ? ` · ${r.unmatched.length} unmatched` : ''),
+            (r.unmatched.length ? ` · ${r.unmatched.length} unmatched` : '') +
+            (r.ambiguous.length ? ` · ${r.ambiguous.length} ambiguous (log manually)` : ''),
         );
         qc.invalidateQueries({ queryKey: ['socialPostResults'] });
       }

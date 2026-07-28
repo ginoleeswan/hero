@@ -16,9 +16,18 @@ both, auto-detected by header shape:
 - **Overview** (daily account totals: views / profile views / likes / comments
   / shares) → upserted into `social_channel_stats`, rendered as the "Channel —
   TikTok daily views" trend panel.
-- **Content** (per-post rows) → matched to queue posts **by caption** — the
-  same normalised caption key `tiktok-sync` and `ig-sync` use — and written as
-  `social_post_results` snapshots (platform=`tiktok`, source=`manual`).
+- **Content** (per-post rows) → matched to queue posts **by caption** and
+  written as `social_post_results` snapshots (platform=`tiktok`,
+  source=`manual`). Matching is **substring, full-caption-first** (see
+  `matchByCaption`): posted captions often drop the first line (the on-image
+  headline), and caption templates share their opening boilerplate across
+  posts of the same format — the hashtags in the full caption disambiguate.
+  A hit must be unique; ambiguous rows are reported for manual logging, never
+  guessed. `tiktok-sync` carries the same matcher — keep them in lockstep.
+
+These results feed the **measured rebias** in `scripts/social/ads/weights.mjs`:
+`batch-week` / `batch-month` weight their plan mix by median views per angle
+family, so importing a CSV directly steers the next batch.
 
 Parser (pure, unit-tested): `src/lib/social/tiktokCsv.ts` · import functions:
 `src/lib/db/socialPosts.ts` · tests: `__tests__/lib/social/tiktokCsv.test.ts`.

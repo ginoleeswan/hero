@@ -3,6 +3,7 @@ import {
   parseCsv,
   parseTiktokDay,
   parseTiktokCsv,
+  matchByCaption,
 } from '../../../src/lib/social/tiktokCsv';
 
 // Header + row shapes taken verbatim from a real TikTok Studio Overview export.
@@ -78,6 +79,65 @@ describe('parseTiktokCsv — content export', () => {
 
   it('throws on an unrecognised shape', () => {
     expect(() => parseTiktokCsv('"Foo","Bar"\n"1","2"\n', TODAY)).toThrow(/Unrecognised/);
+  });
+});
+
+describe('matchByCaption', () => {
+  // Real posting habit: the first caption line (the on-image headline) gets
+  // dropped when posting, so the platform title starts mid-caption.
+  const posts = [
+    {
+      id: 'a',
+      caption:
+        'Godzilla or Thing — who runs the city? Comment your pick — no wrong answers (except the wrong one 😏). mythique.app',
+    },
+    { id: 'b', caption: 'Top 10 Best Fighters. Do you agree? Who is too low? Settle it below 👇' },
+    { id: 'c', caption: 'Six stats. One legend. Who is it? 🤔 Answer in the last slide' },
+    { id: 'd', caption: 'Six stats. One legend. Who is it? 🤔 Answer in the last slide' },
+  ];
+
+  it('matches a caption whose first line was dropped at post time', () => {
+    const r = matchByCaption(
+      'Comment your pick — no wrong answers (except the wrong one 😏). mythique.app',
+      posts,
+    );
+    expect(r.post?.id).toBe('a');
+    expect(r.candidates).toBe(1);
+  });
+
+  it('still matches a full verbatim caption (prefix is a substring)', () => {
+    const r = matchByCaption('Top 10 Best Fighters. Do you agree? Who is too low?', posts);
+    expect(r.post?.id).toBe('b');
+  });
+
+  it('disambiguates template siblings via the full caption (hashtags)', () => {
+    const siblings = [
+      {
+        id: 'aq',
+        caption:
+          "Name one character who beats Aquaman. I'll wait. Drop them below 👇 back it up. #aquaman #comics",
+      },
+      {
+        id: 'ls',
+        caption:
+          "Name one character who beats Luke Skywalker. I'll wait. Drop them below 👇 back it up. #lukeskywalker #comics",
+      },
+    ];
+    // Same 40-char opener once the first line is dropped — only the tail differs.
+    const r = matchByCaption('Drop them below 👇 back it up. #aquaman #comics', siblings);
+    expect(r.post?.id).toBe('aq');
+  });
+
+  it('refuses to guess between posts sharing an identical caption', () => {
+    const r = matchByCaption('Six stats. One legend. Who is it? 🤔', posts);
+    expect(r.post).toBeNull();
+    expect(r.candidates).toBe(2);
+  });
+
+  it('no hits → unmatched with zero candidates', () => {
+    const r = matchByCaption('Something never queued', posts);
+    expect(r.post).toBeNull();
+    expect(r.candidates).toBe(0);
   });
 });
 

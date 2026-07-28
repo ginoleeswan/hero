@@ -94,13 +94,26 @@ Deno.serve(async (req) => {
 
     const token = await freshToken(cred);
 
-    // Queue posts keyed by caption prefix (only those with a caption).
+    // Queue posts for caption matching. Substring, not prefix: posted captions
+    // often drop the first line (the on-image headline), so the platform title
+    // starts mid-caption. A key must hit exactly ONE queue caption — several
+    // posts can share boilerplate (identical guess captions), and a multi-hit
+    // is left unmatched rather than mis-attributed. Keep in lockstep with
+    // matchByCaption in src/lib/social/tiktokCsv.ts (the CSV import route).
     const { data: posts } = await supabase.from('social_posts').select('id, caption');
-    const byCap = new Map<string, string>();
-    for (const p of posts ?? []) {
-      const k = capKey(p.caption);
-      if (k.length >= 12 && !byCap.has(k)) byCap.set(k, p.id);
-    }
+    const capNorm = (s: string | null | undefined) =>
+      (s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+    const matchPost = (caption: string | null | undefined): string | null => {
+      const k = capKey(caption);
+      if (k.length < 12) return null;
+      // Full caption first (hashtags disambiguate template siblings), then key.
+      const full = capNorm(caption);
+      const fullHits =
+        full.length > k.length ? (posts ?? []).filter((p) => capNorm(p.caption).includes(full)) : [];
+      if (fullHits.length === 1) return fullHits[0].id;
+      const hits = (posts ?? []).filter((p) => capNorm(p.caption).includes(k));
+      return hits.length === 1 ? hits[0].id : null;
+    };
 
     // Display API: list recent videos with their public metrics. Fields go in
     // the query string; pagination via cursor in the JSON body (two pages).
@@ -131,7 +144,7 @@ Deno.serve(async (req) => {
     const failures: string[] = [];
     for (const v of videos) {
       const caption = v.title || v.video_description;
-      const postId = byCap.get(capKey(caption));
+      const postId = matchPost(caption);
       const permalink = `https://www.tiktok.com/@${cred.external_id ?? 'me'}/video/${v.id}`;
       if (!postId) {
         unmatched.push(permalink);
@@ -144,9 +157,9 @@ Deno.serve(async (req) => {
           views: v.view_count ?? null,
           likes: v.like_count ?? null,
           comments: v.comment_count ?? null,
+          shares: v.share_count ?? null,
           post_url: permalink,
           source: 'auto',
-          note: v.share_count != null ? `${v.share_count} shares` : null,
         });
         if (error) throw new Error(error.message);
         matched++;

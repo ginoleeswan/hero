@@ -39,7 +39,11 @@ const MAKERS = {
   guess: (g) => ({
     title: `Guess the hero — ${g.name}`,
     data: g,
-    caption: `Six stats. One legend. Who is it? 🤔\n\nAnswer in the last slide — 35,000+ more on mythique.app\n\n#guesswho #superheroes #quiz #comics #mythique`,
+    // The stat line makes every guess caption UNIQUE without naming the answer
+    // — identical captions made these posts impossible to caption-match back
+    // to their analytics (five early guess posts shared one caption and their
+    // results could never be attributed).
+    caption: `Six stats. One legend. Who is it? 🤔\n\n🧠 ${g.stats.intelligence} · 💪 ${g.stats.strength} · ⚡ ${g.stats.speed} · 🛡️ ${g.stats.durability} · 🔥 ${g.stats.power} · 🥊 ${g.stats.combat}\n\nAnswer in the last slide — 35,000+ more on mythique.app\n\n#guesswho #superheroes #quiz #comics #mythique`,
   }),
   fact: (f) => ({
     title: f.headline,
@@ -75,8 +79,13 @@ const POOL_KEY = { matchup: 'matchups', ranking: 'rankings', guess: 'guesses', f
 // music.mjs kinds: matchup|ranking|bio|brand|post — map guess/fact to fitting kinds.
 const MUSIC_KIND = { matchup: 'matchup', ranking: 'ranking', guess: 'post', fact: 'brand', lore: 'brand' };
 
-export function buildPlan({ n = 30, seed = 1, mix = { carousel: 18, reel: 12 }, pools }) {
+export function buildPlan({ n = 30, seed = 1, mix = { carousel: 18, reel: 12 }, pools, angles }) {
   const rand = rng(seed);
+  // Optional measured override of the static ANGLES cycle (see weights.mjs —
+  // derived from social_post_results medians). Only known angles survive; an
+  // empty/invalid override falls back to the static cycle.
+  const cycle = (angles ?? []).filter((a) => a in POOL_KEY);
+  const ANGLE_CYCLE = cycle.length ? cycle : ANGLES;
   // shuffle each pool deterministically so different seeds pick different items
   const shuffled = {};
   for (const [k, arr] of Object.entries(pools)) {
@@ -105,12 +114,12 @@ export function buildPlan({ n = 30, seed = 1, mix = { carousel: 18, reel: 12 }, 
 
   const entries = [];
   // Separate round-robin angle cursors per format stream: each stream cycles
-  // through ALL angles independently, so any stream with >= ANGLES.length
+  // through ALL angles independently, so any stream with >= ANGLE_CYCLE.length
   // entries and live pools structurally covers every angle in that format —
   // no reliance on the interleaved global order lining up by luck.
   const streamAngleCursor = {
-    carousel: Math.floor(rand() * ANGLES.length),
-    reel: Math.floor(rand() * ANGLES.length),
+    carousel: Math.floor(rand() * ANGLE_CYCLE.length),
+    reel: Math.floor(rand() * ANGLE_CYCLE.length),
   };
   for (let i = 0; i < n; i++) {
     const format = formats[i];
@@ -120,13 +129,13 @@ export function buildPlan({ n = 30, seed = 1, mix = { carousel: 18, reel: 12 }, 
     // the cycle repeats 'matchup', and indexOf would always resolve to its
     // first slot, collapsing the rotation.
     let item = null, angle = null, idx = ai;
-    for (let tries = 0; tries < ANGLES.length && !item; tries++) {
-      idx = (ai + tries) % ANGLES.length;
-      angle = ANGLES[idx];
+    for (let tries = 0; tries < ANGLE_CYCLE.length && !item; tries++) {
+      idx = (ai + tries) % ANGLE_CYCLE.length;
+      angle = ANGLE_CYCLE[idx];
       item = next(angle);
     }
     if (!item) break; // all pools exhausted
-    streamAngleCursor[format] = (idx + 1) % ANGLES.length;
+    streamAngleCursor[format] = (idx + 1) % ANGLE_CYCLE.length;
     const made = MAKERS[angle](item);
     entries.push({
       ord: entries.length + 1,
