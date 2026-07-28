@@ -143,6 +143,13 @@ export type Database = {
             foreignKeyName: "comic_issue_appearances_hero_id_fkey"
             columns: ["hero_id"]
             isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comic_issue_appearances_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
             referencedRelation: "heroes"
             referencedColumns: ["id"]
           },
@@ -236,6 +243,13 @@ export type Database = {
             foreignKeyName: "comic_issues_lead_hero_id_fkey"
             columns: ["lead_hero_id"]
             isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comic_issues_lead_hero_id_fkey"
+            columns: ["lead_hero_id"]
+            isOneToOne: false
             referencedRelation: "heroes"
             referencedColumns: ["id"]
           },
@@ -295,6 +309,13 @@ export type Database = {
             foreignKeyName: "comic_volumes_lead_hero_id_fkey"
             columns: ["lead_hero_id"]
             isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comic_volumes_lead_hero_id_fkey"
+            columns: ["lead_hero_id"]
+            isOneToOne: false
             referencedRelation: "heroes"
             referencedColumns: ["id"]
           },
@@ -347,6 +368,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contributions_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contributions_hero_id_fkey"
             columns: ["hero_id"]
@@ -449,7 +477,21 @@ export type Database = {
             foreignKeyName: "daily_debate_hero_a_id_fkey"
             columns: ["hero_a_id"]
             isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_debate_hero_a_id_fkey"
+            columns: ["hero_a_id"]
+            isOneToOne: false
             referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_debate_hero_b_id_fkey"
+            columns: ["hero_b_id"]
+            isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
             referencedColumns: ["id"]
           },
           {
@@ -506,6 +548,13 @@ export type Database = {
           run_id?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "enrichment_run_heroes_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "enrichment_run_heroes_hero_id_fkey"
             columns: ["hero_id"]
@@ -647,6 +696,36 @@ export type Database = {
           },
         ]
       }
+      hero_cast_tags: {
+        Row: {
+          cast_tag: string
+          hero_id: string
+        }
+        Insert: {
+          cast_tag: string
+          hero_id: string
+        }
+        Update: {
+          cast_tag?: string
+          hero_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_cast_tags_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_cast_tags_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hero_facts: {
         Row: {
           hero_id: string
@@ -667,6 +746,13 @@ export type Database = {
           value?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "hero_facts_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "hero_facts_hero_id_fkey"
             columns: ["hero_id"]
@@ -712,6 +798,13 @@ export type Database = {
             foreignKeyName: "hero_images_hero_id_fkey"
             columns: ["hero_id"]
             isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_images_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
             referencedRelation: "heroes"
             referencedColumns: ["id"]
           },
@@ -749,6 +842,13 @@ export type Database = {
           tmdb_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "hero_film_appearances_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "hero_film_appearances_hero_id_fkey"
             columns: ["hero_id"]
@@ -804,6 +904,13 @@ export type Database = {
             foreignKeyName: "hero_narrative_facts_hero_id_fkey"
             columns: ["hero_id"]
             isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_narrative_facts_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
             referencedRelation: "heroes"
             referencedColumns: ["id"]
           },
@@ -839,6 +946,13 @@ export type Database = {
             foreignKeyName: "hero_people_hero_id_fkey"
             columns: ["hero_id"]
             isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_people_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
             referencedRelation: "heroes"
             referencedColumns: ["id"]
           },
@@ -857,6 +971,7 @@ export type Database = {
           blurb: string | null
           hero_a: string
           hero_b: string
+          kind_correction: string | null
           note: string | null
           status: string
           updated_at: string
@@ -867,6 +982,7 @@ export type Database = {
           blurb?: string | null
           hero_a: string
           hero_b: string
+          kind_correction?: string | null
           note?: string | null
           status?: string
           updated_at?: string
@@ -877,6 +993,7 @@ export type Database = {
           blurb?: string | null
           hero_a?: string
           hero_b?: string
+          kind_correction?: string | null
           note?: string | null
           status?: string
           updated_at?: string
@@ -887,7 +1004,21 @@ export type Database = {
             foreignKeyName: "hero_relationship_blurbs_hero_a_fkey"
             columns: ["hero_a"]
             isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_relationship_blurbs_hero_a_fkey"
+            columns: ["hero_a"]
+            isOneToOne: false
             referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_relationship_blurbs_hero_b_fkey"
+            columns: ["hero_b"]
+            isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
             referencedColumns: ["id"]
           },
           {
@@ -980,7 +1111,21 @@ export type Database = {
             foreignKeyName: "hero_relatives_hero_id_fkey"
             columns: ["hero_id"]
             isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_relatives_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
             referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_relatives_related_hero_id_fkey"
+            columns: ["related_hero_id"]
+            isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
             referencedColumns: ["id"]
           },
           {
@@ -1034,6 +1179,13 @@ export type Database = {
           tag?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "hero_tags_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "hero_tags_hero_id_fkey"
             columns: ["hero_id"]
@@ -1328,6 +1480,13 @@ export type Database = {
           via?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "house_members_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "house_members_hero_id_fkey"
             columns: ["hero_id"]
@@ -1662,6 +1821,13 @@ export type Database = {
             foreignKeyName: "reports_hero_id_fkey"
             columns: ["hero_id"]
             isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
             referencedRelation: "heroes"
             referencedColumns: ["id"]
           },
@@ -1710,6 +1876,39 @@ export type Database = {
         }
         Relationships: []
       }
+      social_channel_stats: {
+        Row: {
+          comments: number | null
+          day: string
+          imported_at: string
+          likes: number | null
+          platform: string
+          profile_views: number | null
+          shares: number | null
+          views: number | null
+        }
+        Insert: {
+          comments?: number | null
+          day: string
+          imported_at?: string
+          likes?: number | null
+          platform: string
+          profile_views?: number | null
+          shares?: number | null
+          views?: number | null
+        }
+        Update: {
+          comments?: number | null
+          day?: string
+          imported_at?: string
+          likes?: number | null
+          platform?: string
+          profile_views?: number | null
+          shares?: number | null
+          views?: number | null
+        }
+        Relationships: []
+      }
       social_post_results: {
         Row: {
           comments: number | null
@@ -1720,6 +1919,7 @@ export type Database = {
           post_id: string
           post_url: string | null
           recorded_at: string
+          shares: number | null
           source: string
           views: number | null
         }
@@ -1732,6 +1932,7 @@ export type Database = {
           post_id: string
           post_url?: string | null
           recorded_at?: string
+          shares?: number | null
           source?: string
           views?: number | null
         }
@@ -1744,6 +1945,7 @@ export type Database = {
           post_id?: string
           post_url?: string | null
           recorded_at?: string
+          shares?: number | null
           source?: string
           views?: number | null
         }
@@ -1775,6 +1977,7 @@ export type Database = {
           ord: number
           posted_at: string | null
           slide_urls: string[]
+          source_key: string | null
           title: string
           video_url: string | null
         }
@@ -1795,6 +1998,7 @@ export type Database = {
           ord: number
           posted_at?: string | null
           slide_urls?: string[]
+          source_key?: string | null
           title: string
           video_url?: string | null
         }
@@ -1815,6 +2019,7 @@ export type Database = {
           ord?: number
           posted_at?: string | null
           slide_urls?: string[]
+          source_key?: string | null
           title?: string
           video_url?: string | null
         }
@@ -1887,6 +2092,13 @@ export type Database = {
           team_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "team_members_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "team_members_hero_id_fkey"
             columns: ["hero_id"]
@@ -2160,6 +2372,13 @@ export type Database = {
             foreignKeyName: "user_favourites_hero_id_fkey"
             columns: ["hero_id"]
             isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_favourites_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
             referencedRelation: "heroes"
             referencedColumns: ["id"]
           },
@@ -2320,6 +2539,27 @@ export type Database = {
       }
     }
     Views: {
+      hero_cast_untagged: {
+        Row: {
+          fame_score: number | null
+          id: string | null
+          name: string | null
+          publisher: string | null
+        }
+        Insert: {
+          fame_score?: number | null
+          id?: string | null
+          name?: string | null
+          publisher?: string | null
+        }
+        Update: {
+          fame_score?: number | null
+          id?: string | null
+          name?: string | null
+          publisher?: string | null
+        }
+        Relationships: []
+      }
       hero_relationship_blurb_queue: {
         Row: {
           fame_a: number | null
@@ -2331,6 +2571,8 @@ export type Database = {
           name_a: string | null
           name_b: string | null
           publisher: string | null
+          same_cast: boolean | null
+          shared_casts: string | null
         }
         Relationships: []
       }

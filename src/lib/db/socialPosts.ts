@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import type { Tables } from '../../types/database.generated';
+import { capKey, type TiktokContentRow, type TiktokOverviewRow } from '../social/tiktokCsv';
 
 // Social posting queue — published from the local studio (publish-posts.mjs),
 // consumed by the command-center Social lane. Reads/updates are admin-gated RLS.
@@ -51,6 +52,94 @@ export async function logPostResult(input: {
 }): Promise<void> {
   const { error } = await supabase.from('social_post_results').insert(input);
   if (error) throw new Error(error.message);
+}
+
+// ── CSV import (the no-API TikTok route) ─────────────────────────────────────
+// TikTok Studio › Analytics › Download data → drop the file in Publish ›
+// Insights. Overview rows land in social_channel_stats (daily account trend);
+// Content rows caption-match to queue posts exactly like tiktok-sync would.
+
+export type SocialChannelStat = Tables<'social_channel_stats'>;
+
+/** Daily channel series, oldest first. */
+export async function listChannelStats(): Promise<SocialChannelStat[]> {
+  const { data, error } = await supabase
+    .from('social_channel_stats')
+    .select('*')
+    .order('day', { ascending: true });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+/** Upsert the Overview export's daily rows — re-imports refresh in place. */
+export async function importChannelStats(
+  platform: string,
+  rows: TiktokOverviewRow[],
+): Promise<{ imported: number }> {
+  if (rows.length === 0) return { imported: 0 };
+  const { error } = await supabase.from('social_channel_stats').upsert(
+    rows.map((r) => ({
+      platform,
+      day: r.day,
+      views: r.views,
+      profile_views: r.profileViews,
+      likes: r.likes,
+      comments: r.comments,
+      shares: r.shares,
+      imported_at: new Date().toISOString(),
+    })),
+    { onConflict: 'platform,day' },
+  );
+  if (error) throw new Error(error.message);
+  return { imported: rows.length };
+}
+
+/** Match the Content export's per-post rows to queue posts by caption key and
+ *  write result snapshots (platform=tiktok, source=manual). Mirrors the match
+ *  the tiktok-sync edge function performs. */
+export async function importTiktokContentResults(
+  rows: TiktokContentRow[],
+): Promise<{ scanned: number; matched: number; unmatched: string[] }> {
+  const { data: posts, error } = await supabase.from('social_posts').select('id, caption');
+  if (error) throw new Error(error.message);
+  const byCap = new Map<string, string>();
+  for (const p of posts ?? []) {
+    const k = capKey(p.caption);
+    if (k && !byCap.has(k)) byCap.set(k, p.id);
+  }
+  const snapshots: {
+    post_id: string;
+    platform: string;
+    views: number | null;
+    likes: number | null;
+    comments: number | null;
+    shares: number | null;
+    post_url: string | null;
+    source: string;
+  }[] = [];
+  const unmatched: string[] = [];
+  for (const r of rows) {
+    const postId = byCap.get(capKey(r.caption));
+    if (!postId) {
+      unmatched.push(r.caption.slice(0, 60));
+      continue;
+    }
+    snapshots.push({
+      post_id: postId,
+      platform: 'tiktok',
+      views: r.views,
+      likes: r.likes,
+      comments: r.comments,
+      shares: r.shares,
+      post_url: r.postUrl,
+      source: 'manual',
+    });
+  }
+  if (snapshots.length > 0) {
+    const { error: insErr } = await supabase.from('social_post_results').insert(snapshots);
+    if (insErr) throw new Error(insErr.message);
+  }
+  return { scanned: rows.length, matched: snapshots.length, unmatched };
 }
 
 /** Trigger the Instagram sync edge function — matches recent IG media to queue

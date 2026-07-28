@@ -5,6 +5,27 @@ Publish › Insights). **Phase 1 (analytics) is built and deployed** but dormant
 until the one-time connect below is done — the `tiktok-sync` function returns
 `{ error: "TikTok not connected" }` and the "Pull TikTok" button surfaces that.
 
+## The CSV route (LIVE — no developer account needed)
+
+The primary analytics path is now the **TikTok Studio CSV import** — it needs
+no app registration, review, OAuth, or secrets, and can't be revoked or
+rate-limited. TikTok Studio › Analytics › **Download data** (set the range to
+60 days first) offers two exports; Publish › Insights › **Import CSV** accepts
+both, auto-detected by header shape:
+
+- **Overview** (daily account totals: views / profile views / likes / comments
+  / shares) → upserted into `social_channel_stats`, rendered as the "Channel —
+  TikTok daily views" trend panel.
+- **Content** (per-post rows) → matched to queue posts **by caption** — the
+  same normalised caption key `tiktok-sync` and `ig-sync` use — and written as
+  `social_post_results` snapshots (platform=`tiktok`, source=`manual`).
+
+Parser (pure, unit-tested): `src/lib/social/tiktokCsv.ts` · import functions:
+`src/lib/db/socialPosts.ts` · tests: `__tests__/lib/social/tiktokCsv.test.ts`.
+Cost: ~2 minutes a week. The API connect below remains an **optional upgrade**
+(one-click freshness instead of a weekly export) — nothing else on the roadmap
+depends on it.
+
 ## The hard reality (why comments aren't auto-replied)
 
 TikTok exposes **no reply-to-comments write API** to third-party apps. Reading
@@ -21,7 +42,7 @@ researchers). So the roadmap is:
   referenced against the catalog. Trending data is gated/limited — a research
   spike, not a commitment.
 
-## One-time connect (unblocks Phase 1) — you must do this
+## One-time connect (the optional API upgrade)
 
 1. **Register an app** at <https://developers.tiktok.com> (Manage apps → Connect
    an app). Product: **Login Kit** + **Display API**. Request scopes

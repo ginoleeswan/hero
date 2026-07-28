@@ -23,11 +23,15 @@ import { COLORS } from '../../../../constants/colors';
 import {
   listSocialPosts,
   listPostResults,
+  listChannelStats,
+  importChannelStats,
+  importTiktokContentResults,
   syncInstagram,
   syncTiktok,
   type SocialPost,
   type SocialPostResult,
 } from '../../../../lib/db/socialPosts';
+import { parseTiktokCsv } from '../../../../lib/social/tiktokCsv';
 
 const GOLD = '#e0a83e';
 
@@ -75,14 +79,32 @@ const platformMeta = (p: string) =>
     icon: 'globe-outline' as const,
   };
 
+// Web-only file pick (the admin surface is web). Resolves null when the DOM is
+// unavailable or no file is chosen; a cancelled dialog simply never resolves,
+// which is fine — no state is touched until a file arrives.
+const pickCsvText = (): Promise<string | null> =>
+  new Promise((resolve) => {
+    if (typeof document === 'undefined') return resolve(null);
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv,text/csv';
+    input.onchange = () => {
+      const f = input.files?.[0];
+      if (!f) return resolve(null);
+      f.text().then(resolve, () => resolve(null));
+    };
+    input.click();
+  });
+
 export function SocialInsightsDomain() {
   const qc = useQueryClient();
   const postsQ = useQuery({ queryKey: ['socialPosts'], queryFn: listSocialPosts });
   const resultsQ = useQuery({ queryKey: ['socialPostResults'], queryFn: listPostResults });
+  const channelQ = useQuery({ queryKey: ['socialChannelStats'], queryFn: listChannelStats });
   const narrow = useWindowDimensions().width < 640;
   // One control per connected platform — pulls that platform's post metrics
   // into social_post_results. TikTok is read-only analytics (no reply API).
-  const [syncing, setSyncing] = useState<'instagram' | 'tiktok' | null>(null);
+  const [syncing, setSyncing] = useState<'instagram' | 'tiktok' | 'csv' | null>(null);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
   const runSync = async (platform: 'instagram' | 'tiktok') => {
@@ -123,11 +145,54 @@ export function SocialInsightsDomain() {
     </Pressable>
   );
 
+  // TikTok Studio CSV import — the no-developer-account analytics route.
+  // Accepts both exports (Analytics › Download data): the Overview daily series
+  // → social_channel_stats, the per-post Content export → caption-matched
+  // social_post_results, auto-detected from the file's headers.
+  const runCsvImport = async () => {
+    const text = await pickCsvText();
+    if (!text) return;
+    setSyncing('csv');
+    setSyncMsg(null);
+    try {
+      const parsed = parseTiktokCsv(text);
+      if (parsed.kind === 'overview') {
+        const r = await importChannelStats('tiktok', parsed.rows);
+        setSyncMsg(`Imported ${r.imported} days of TikTok channel stats`);
+        qc.invalidateQueries({ queryKey: ['socialChannelStats'] });
+      } else {
+        const r = await importTiktokContentResults(parsed.rows);
+        setSyncMsg(
+          `Matched ${r.matched}/${r.scanned} TikTok posts` +
+            (r.unmatched.length ? ` · ${r.unmatched.length} unmatched` : ''),
+        );
+        qc.invalidateQueries({ queryKey: ['socialPostResults'] });
+      }
+    } catch (e) {
+      setSyncMsg(e instanceof Error ? e.message : 'CSV import failed');
+    }
+    setSyncing(null);
+    setTimeout(() => setSyncMsg(null), 6000);
+  };
+
   const syncBtn = (
     <View style={styles.syncRow}>
       {syncMsg ? <Text style={styles.syncMsg}>{syncMsg}</Text> : null}
       {renderSyncButton('instagram', 'logo-instagram', 'Pull Instagram')}
       {renderSyncButton('tiktok', 'logo-tiktok', 'Pull TikTok')}
+      <Pressable
+        style={styles.syncBtn}
+        onPress={runCsvImport}
+        disabled={syncing !== null}
+        hitSlop={6}
+      >
+        {syncing === 'csv' ? (
+          <ActivityIndicator size="small" color={GOLD} />
+        ) : (
+          <Ionicons name="document-attach-outline" size={14} color={COLORS.navy} />
+        )}
+        <Text style={styles.syncBtnText}>{syncing === 'csv' ? 'Importing…' : 'Import CSV'}</Text>
+      </Pressable>
     </View>
   );
 
@@ -143,11 +208,46 @@ export function SocialInsightsDomain() {
   const postById = new Map(posts.map((p) => [p.id, p]));
   const latest = latestPerPostPlatform(resultsQ.data ?? []);
 
+  // Daily channel trend (account-level, from the Overview CSV import). Rendered
+  // whether or not per-post results exist — it's a different lens on the loop.
+  const channelRows = (channelQ.data ?? []).filter((c) => c.platform === 'tiktok').slice(-30);
+  const channelPanel = channelRows.length ? (
+    <Panel
+      title="Channel — TikTok daily views"
+      hint="From the TikTok Studio Overview export"
+      style={styles.panel}
+    >
+      <View style={styles.chanBars}>
+        {channelRows.map((r) => {
+          const maxV = Math.max(1, ...channelRows.map((c) => c.views ?? 0));
+          return (
+            <View
+              key={r.day}
+              style={[styles.chanBar, { height: Math.max(2, ((r.views ?? 0) / maxV) * 64) }]}
+            />
+          );
+        })}
+      </View>
+      <View style={styles.chanMetaRow}>
+        <Text style={styles.chanMeta}>
+          {channelRows[0].day} → {channelRows[channelRows.length - 1].day}
+        </Text>
+        <Text style={styles.chanMeta}>
+          peak {fmt(Math.max(...channelRows.map((c) => c.views ?? 0)))} · last 7d{' '}
+          {fmt(channelRows.slice(-7).reduce((a, c) => a + (c.views ?? 0), 0))}
+        </Text>
+      </View>
+    </Panel>
+  ) : null;
+
   if (latest.length === 0) {
     return (
-      <Panel title="Insights" hint="Numbers appear here as results come in" action={syncBtn}>
-        <EmptyState text="No results yet — hit Pull Instagram / Pull TikTok to import your posts, or log numbers from Post today › Posted (reddit & instagram refresh nightly)." />
-      </Panel>
+      <View style={styles.wrap}>
+        <Panel title="Insights" hint="Numbers appear here as results come in" action={syncBtn}>
+          <EmptyState text="No results yet — hit Pull Instagram / Pull TikTok, use Import CSV (TikTok Studio › Analytics › Download data), or log numbers from Post today › Posted (reddit & instagram refresh nightly)." />
+        </Panel>
+        {channelPanel}
+      </View>
     );
   }
 
@@ -338,10 +438,13 @@ export function SocialInsightsDomain() {
             </View>
           ))}
           <Text style={styles.footNote}>
-            reddit &amp; instagram refresh nightly · tiktok is manual until its API app is approved
+            reddit &amp; instagram refresh nightly · tiktok: Import CSV from TikTok Studio (its API
+            app is optional)
           </Text>
         </Panel>
       </View>
+
+      {channelPanel}
 
       {/* TOP PERFORMERS — full width so thumbnails + numbers breathe */}
       <Panel title="Top performers" hint="Make more like these" style={styles.panel}>
@@ -573,6 +676,18 @@ const styles = StyleSheet.create({
     color: 'rgba(41,60,67,0.5)',
     textAlign: 'right',
   },
+  // Channel trend — bottom-aligned daily bars, single hue (magnitude only)
+  chanBars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 64 },
+  chanBar: { flex: 1, borderRadius: 2, backgroundColor: GOLD },
+  chanMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6,
+  },
+  chanMeta: { fontFamily: 'Nunito_600SemiBold', fontSize: 11, color: 'rgba(41,60,67,0.5)' },
+
   footNote: {
     fontFamily: 'Nunito_600SemiBold',
     fontSize: 11,
