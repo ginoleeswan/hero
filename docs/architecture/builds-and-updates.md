@@ -112,6 +112,20 @@ Locally, `yarn update:dev` picks these up from `.env.local` the same way
 - **`--environment` is required on SDK 55+.** `eas update` needs
   `--environment development|preview|production` to know which server-side EAS
   environment variables to load. Both the script and the workflow pass it.
+- **Updates are published iOS-only, and that's load-bearing.** `android/` is a
+  committed prebuild (custom icon, splash, env-var `applicationId`), which makes
+  this a *bare* project for Android — and bare projects can't use
+  `runtimeVersion` policies. `eas update` resolves a runtime version for every
+  targeted platform, so an unscoped publish dies with `You're currently using
+  the bare workflow, where runtime version policies are not supported`, after
+  bundling and uploading. `--platform ios` sidesteps it: iOS has no tracked
+  `ios/` dir, so it stays managed and `appVersion` resolves normally. Nothing is
+  lost today — there has never been an Android EAS build, and
+  `android/app/src/main/AndroidManifest.xml` carries no `expo-updates`
+  meta-data, so no Android binary could consume an update anyway. **The day
+  Android ships**, drop `--platform ios` and replace the policy with a literal
+  string (`runtimeVersion: '1.0.0'`) in `app.config.ts`, bumped by hand from
+  then on — or stop tracking `android/` and let prebuild regenerate it.
 
 ## History
 

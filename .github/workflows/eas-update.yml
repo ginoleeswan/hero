@@ -109,10 +109,14 @@ jobs:
           echo "Publishing '$message' to EAS branch '$EAS_BRANCH'"
           # --environment is required on SDK 55+; it selects which server-side
           # EAS environment variables are loaded for the bundle.
+          # --platform ios because the tracked android/ prebuild makes this a
+          # bare project for Android, where runtimeVersion policies are an
+          # error — see "Traps" in docs/architecture/builds-and-updates.md.
           eas update \
             --branch "$EAS_BRANCH" \
             --message "$message" \
             --environment development \
+            --platform ios \
             --non-interactive
 
       - name: Summary
