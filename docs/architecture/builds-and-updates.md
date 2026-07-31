@@ -53,7 +53,8 @@ against it.
 
 1. Publish one — either push to `main` (CI does it), or run the **EAS Update
    (dev)** workflow from the Actions tab against any branch, or run
-   `yarn update:dev` locally.
+   `yarn update:dev` locally. The Actions-tab route only exists once
+   `eas-update.yml` has landed on `main` — see the trap below.
 2. Open **Mythique (Dev)** → **Updates** tab.
 3. Make sure you're signed into the Expo account that owns the project (the
    avatar top-right) — the list is empty when signed out.
@@ -112,6 +113,13 @@ Locally, `yarn update:dev` picks these up from `.env.local` the same way
 - **`--environment` is required on SDK 55+.** `eas update` needs
   `--environment development|preview|production` to know which server-side EAS
   environment variables to load. Both the script and the workflow pass it.
+- **`workflow_dispatch` needs the file on the default branch.** GitHub only
+  registers a manually-dispatchable workflow from `main`; until `eas-update.yml`
+  is merged there, the workflow doesn't exist as far as the API is concerned —
+  `gh workflow run eas-update.yml --ref some-branch` returns `HTTP 404: workflow
+  eas-update.yml not found on the default branch`, and no Run-workflow button
+  appears. Once it's on `main`, dispatching it against *any* ref works as
+  described above. Until then, `yarn update:dev` is the only way to publish.
 - **Updates are published iOS-only, and that's load-bearing.** `android/` is a
   committed prebuild (custom icon, splash, env-var `applicationId`), which makes
   this a *bare* project for Android — and bare projects can't use
