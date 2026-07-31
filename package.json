@@ -10,6 +10,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "update:dev": "APP_VARIANT=development eas update --branch development --environment development --auto",
     "test": "jest --watchAll",
     "test:ci": "jest --ci",
     "test:social": "node --test \"scripts/social/**/*.test.mjs\"",

@@ -209,3 +209,4 @@ the hook. When adding a screen with a web variant, both `foo.tsx` and
 | Feature-domain docs            | `docs/features/` — index at `docs/README.md` (read first)        |
 | Data pipelines / enrichment    | `docs/architecture/data-pipelines.md` (read it first)            |
 | Family trees / houses          | `docs/architecture/family-trees-and-houses.md` (read it first)   |
+| Builds / OTA updates           | `eas.json` · `docs/architecture/builds-and-updates.md`           |

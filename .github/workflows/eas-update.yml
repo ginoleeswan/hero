@@ -1,0 +1,128 @@
+# Publishes an EAS Update — a new JS bundle the installed dev build can open
+# from its Updates tab, with no rebuild and no App Store round-trip.
+#
+# Two ways in:
+#   • push to main       → publishes to the `development` EAS branch, so the
+#                          latest main is always one tap away in the launcher.
+#   • workflow_dispatch  → publishes whatever ref you pick, under whatever EAS
+#                          branch name you type, so a feature branch becomes an
+#                          openable version alongside main.
+#
+# This lane is the DEV variant only (APP_VARIANT=development). Shipping to the
+# `preview` / `default` channels that real installs follow is a release
+# decision, not a push side effect — do that deliberately with `yarn update`.
+#
+# Setup: docs/architecture/builds-and-updates.md. Needs the EXPO_TOKEN secret;
+# without it the job self-skips with a warning rather than failing the tree red.
+name: EAS Update (dev)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'EAS Update branch to publish to'
+        required: false
+        default: 'development'
+      message:
+        description: 'Label shown in the dev launcher (default: commit subject)'
+        required: false
+
+# One publish per ref at a time; a newer push supersedes an in-flight one.
+concurrency:
+  group: eas-update-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      # Secrets can't be read in a job-level `if`, so the gate is a step output.
+      - name: Check credentials
+        id: gate
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::warning title=EAS Update skipped::Add the EXPO_TOKEN repository secret (expo.dev → Account settings → Access tokens) to enable OTA publishing."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # EXPO_PUBLIC_* vars are inlined by Metro at bundle time. Publishing
+      # without them yields an update that installs fine and then can't reach
+      # Supabase — a silently broken version in the launcher list. Fail first.
+      - name: Verify bundle env
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_KEY }}
+        run: |
+          missing=""
+          if [ -z "$EXPO_PUBLIC_SUPABASE_URL" ]; then missing="$missing EXPO_PUBLIC_SUPABASE_URL"; fi
+          if [ -z "$EXPO_PUBLIC_SUPABASE_KEY" ]; then missing="$missing EXPO_PUBLIC_SUPABASE_KEY"; fi
+          if [ -n "$missing" ]; then
+            echo "::error title=Missing bundle secrets::Set these repository secrets before publishing:$missing — Metro inlines them, so an update built without them cannot reach the database."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v6
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          node-version: 24
+          cache: yarn
+
+      - name: Install dependencies
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          corepack enable
+          yarn install --immutable
+
+      - name: Install EAS CLI
+        if: steps.gate.outputs.ready == 'true'
+        run: npm install -g eas-cli
+
+      - name: Publish update
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          # Build the dev variant so the manifest matches the dev build's
+          # identity (name, scheme, bundle id) — see app.config.ts.
+          APP_VARIANT: development
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_KEY }}
+          EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
+          EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
+          EXPO_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.EXPO_PUBLIC_VAPID_PUBLIC_KEY }}
+          EAS_BRANCH: ${{ github.event.inputs.branch || 'development' }}
+          INPUT_MESSAGE: ${{ github.event.inputs.message }}
+        run: |
+          message="$INPUT_MESSAGE"
+          if [ -z "$message" ]; then message="$(git log -1 --pretty=%s)"; fi
+          echo "Publishing '$message' to EAS branch '$EAS_BRANCH'"
+          # --environment is required on SDK 55+; it selects which server-side
+          # EAS environment variables are loaded for the bundle.
+          eas update \
+            --branch "$EAS_BRANCH" \
+            --message "$message" \
+            --environment development \
+            --non-interactive
+
+      - name: Summary
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          {
+            echo "### EAS Update published"
+            echo ""
+            echo "- **EAS branch:** \`${{ github.event.inputs.branch || 'development' }}\`"
+            echo "- **Commit:** \`${{ github.sha }}\`"
+            echo ""
+            echo "Open it from the dev build: **Updates** tab → tap the newest entry."
+          } >> "$GITHUB_STEP_SUMMARY"
