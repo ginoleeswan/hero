@@ -81,15 +81,47 @@ warning rather than failing CI red, so an unconfigured repo stays green.
 | `EXPO_PUBLIC_SENTRY_DSN` | Optional — empty means reporting off. |
 | `EXPO_PUBLIC_VAPID_PUBLIC_KEY` | Optional — empty hides the web-push toggle. |
 
-Locally, `yarn update:dev` picks these up from `.env.local` the same way
-`yarn start` does.
+**Repository secrets are not what ends up in the bundle.** Because both lanes
+pass `--environment development`, the values Metro inlines come from the
+**EAS environment** of that name, not from `.env.local` and not from the GitHub
+secrets above. `.env.local` is gitignored, so it never reaches CI — and it does
+not reach an `--environment` publish either, even locally. The GitHub secrets
+remain useful as the workflow's fail-fast gate; they are not the source.
+
+So the *actual* requirement is that the `development` EAS environment is
+populated:
+
+```sh
+eas env:list --environment development
+eas env:set --name EXPO_PUBLIC_SUPABASE_URL --value '…' \
+  --environment development --visibility plaintext --type string --scope project
+```
+
+`eas env:set` upserts, so there is no `--force` flag. Use `plaintext` for the
+Supabase URL and `sensitive` for the keys, mirroring `production`.
 
 ## Traps
 
 - **`EXPO_PUBLIC_*` are baked in at bundle time.** An update published without
   them installs perfectly and then can't reach Supabase — a broken version
   sitting in the launcher list looking legitimate. The workflow hard-fails on
-  the two Supabase vars for exactly this reason; don't relax that check.
+  the two Supabase vars for exactly this reason; don't relax that check. But
+  note what that check actually proves: only that the *GitHub secrets* exist,
+  not that the bundle got them. See the next trap.
+- **Only `production` had EAS environment variables — this bit once.** The first
+  updates published fine and then threw `supabaseUrl is required` on launch,
+  because `eas env:list --environment development` was empty while `production`
+  had the full set (which is why store builds were unaffected). `development` is
+  populated now; **`preview` is still empty**, so the first publish to it will
+  fail the same way. Verify a bundle rather than trusting the publish succeeded:
+
+  ```sh
+  grep -a -o -E 'https://[a-z0-9]{15,}\.supabase\.co' dist/_expo/static/js/ios/*.hbc
+  ```
+
+  One hit means it's inlined; no hits means you just shipped a broken version.
+  Beware a bare `grep supabase.co` — the bundle's string table contains an
+  unrelated `*.supabase.content_typeof` fragment that matches it.
 - **Runtime version is the app version.** With `policy: 'appVersion'`, every
   update is stamped `1.0.0` and only builds also stamped `1.0.0` can load it.
   Bump `version` in `app.config.ts` and every already-installed build stops
