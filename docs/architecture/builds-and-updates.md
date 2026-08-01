@@ -135,6 +135,18 @@ Supabase URL and `sensitive` for the keys, mirroring `production`.
   profiles applies to builds made *after* that change; a dev build installed
   before it has no channel and won't auto-fetch. Opening updates manually from
   the Updates tab still works — the channel only matters for automatic delivery.
+- **Declaring a channel in `eas.json` does not create it.** The channel object
+  only comes into being when a build using it runs, or when you create it by
+  hand. Until then the manifest endpoint 404s for that channel —
+  `There is no channel named development for the app with ID …` — even though
+  updates are published and the branch exists. `default` was the only channel
+  here for a while for exactly this reason. Fixed once with:
+
+  ```sh
+  eas channel:create development   # auto-links to the same-named branch
+  ```
+
+  Check with `eas channel:list`, which also shows which branch each points at.
 - **`development:simulator` has no `APP_VARIANT`**, so it builds with the
   production name and bundle id (`Mythique`, `com.ginoswanepoel.mythique`).
   Left as-is deliberately: adding it would change the bundle id and orphan any
