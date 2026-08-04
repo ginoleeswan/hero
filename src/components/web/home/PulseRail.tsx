@@ -7,7 +7,7 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, ELEVATION, HOVER_TRANSITION } from '../../../constants/colors';
+import { COLORS, ELEVATION, HOVER_TRANSITION, INK_TEXT } from '../../../constants/colors';
 import { brandForEvent, fitMark } from '../../../constants/eventBrands';
 import type { PulseEvent, PulseKind } from '../../../lib/home/pulse';
 
@@ -233,7 +233,7 @@ const live = StyleSheet.create({
     letterSpacing: 1.8,
     textTransform: 'uppercase',
   } as object,
-  statusSep: { fontSize: 11, color: 'rgba(245,235,220,0.35)' } as object,
+  statusSep: { fontSize: 11, color: INK_TEXT.faint } as object,
   day: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
@@ -253,7 +253,7 @@ const live = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 1.8,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
     marginBottom: 4,
   } as object,
   moverName: {
@@ -328,7 +328,7 @@ const s = StyleSheet.create({
     letterSpacing: 0.5,
     color: 'rgba(245,235,220,0.82)',
   } as object,
-  sep: { fontSize: 11, color: 'rgba(245,235,220,0.4)' } as object,
+  sep: { fontSize: 11, color: INK_TEXT.faint } as object,
   meta: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,

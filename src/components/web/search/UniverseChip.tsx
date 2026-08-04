@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, INK_TEXT, PAPER_TEXT } from '../../../constants/colors';
 import { BrandLogoView } from '../../PublisherBadge';
 import type { UniverseResult } from '../../../lib/db/universes';
 
@@ -102,10 +102,10 @@ const styles = StyleSheet.create({
   kicker: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   } as object,
-  kickerLight: { color: 'rgba(29,45,51,0.5)' } as object,
+  kickerLight: { color: PAPER_TEXT.faint } as object,
   fallback: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.navy } as object,
 });

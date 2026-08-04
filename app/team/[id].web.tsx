@@ -32,7 +32,7 @@ import { FilterSheet } from '../../src/components/web/category/FilterSheet';
 import { ActiveFilterChips } from '../../src/components/web/category/ActiveFilterChips';
 import { BrowseBanner } from '../../src/components/web/category/BrowseBanner';
 import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS, SURFACE } from '../../src/constants/colors';
+import { COLORS, SURFACE, INK_TEXT } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { SeoHead } from '../../src/components/web/SeoHead';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
@@ -363,7 +363,7 @@ export default function WebTeamScreen() {
               <TextInput
                 style={styles.searchInput as object}
                 placeholder={`Search ${team.name}…`}
-                placeholderTextColor="rgba(245,235,220,0.4)"
+                placeholderTextColor={INK_TEXT.placeholder}
                 value={filters.search}
                 onChangeText={(t) => setFilter('search', t)}
                 onFocus={() => setSearchFocused(true)}

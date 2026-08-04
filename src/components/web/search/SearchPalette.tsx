@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { View, TextInput, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, INK_TEXT } from '../../../constants/colors';
 import { useSearch } from '../../../contexts/SearchContext';
 import { useSearchHistory } from '../../../hooks/useSearchHistory';
 import { SearchDropdownContent, type NavItem } from './SearchDropdownContent';
@@ -128,7 +128,7 @@ export function SearchPalette() {
             ref={inputRef}
             style={styles.input as object}
             placeholder="Search characters, teams & universes…"
-            placeholderTextColor="rgba(245,235,220,0.4)"
+            placeholderTextColor={INK_TEXT.placeholder}
             value={query}
             onChangeText={setQuery}
             onSubmitEditing={submit}
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   escText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   } as object,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   hint: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: 'rgba(245,235,220,0.4)',
+    color: INK_TEXT.faint,
   } as object,
   hintKey: {
     fontFamily: 'Nunito_700Bold',

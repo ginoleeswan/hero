@@ -1,6 +1,6 @@
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, ORANGE_INK } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import { VsBadge } from '../../compare/VsBadge';
 import type { Rivalry } from '../../../lib/db/heroes';
@@ -101,7 +101,7 @@ const c = StyleSheet.create({
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },

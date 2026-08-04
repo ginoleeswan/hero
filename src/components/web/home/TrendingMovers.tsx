@@ -2,7 +2,7 @@ import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../../HeroImage';
 import { HeroAvatar } from '../../HeroAvatar';
-import { COLORS, EYEBROW, pageGutter } from '../../../constants/colors';
+import { COLORS, EYEBROW, pageGutter, INK_TEXT } from '../../../constants/colors';
 import type { WikiTrendingHero } from '../../../lib/db/trending';
 
 function MoverRow({
@@ -144,7 +144,7 @@ const s = StyleSheet.create({
   rank: {
     fontFamily: 'Flame-Regular',
     fontSize: 18,
-    color: 'rgba(245,235,220,0.25)',
+    color: INK_TEXT.faint,
     width: 18,
     textAlign: 'center',
   } as object,

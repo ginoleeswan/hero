@@ -12,7 +12,7 @@
 import { View, Text, StyleSheet, Pressable, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLORS, PAPER_TEXT } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, INK_TEXT, ORANGE_INK } from '../../constants/colors';
 import { TRACKING } from '../../constants/tokens';
 
 // The rail gutter, NOT SCREEN_PAD. A section header lines up with the cards in
@@ -43,7 +43,7 @@ export function SectionHeader({
   return (
     <View style={[styles.row, style]}>
       <View style={styles.textCol}>
-        {!!eyebrow && <Text style={styles.eyebrow}>{eyebrow}</Text>}
+        {!!eyebrow && <Text style={[styles.eyebrow, light && styles.eyebrowLight]}>{eyebrow}</Text>}
         <Text style={[styles.title, light && styles.titleLight]} numberOfLines={1}>
           {title}
         </Text>
@@ -60,11 +60,7 @@ export function SectionHeader({
           style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
         >
           <Text style={[styles.actionText, light && styles.actionTextLight]}>{action.label}</Text>
-          <Ionicons
-            name="chevron-forward"
-            size={13}
-            color={light ? COLORS.navy : 'rgba(245,235,220,0.7)'}
-          />
+          <Ionicons name="chevron-forward" size={13} color={light ? COLORS.navy : INK_TEXT.muted} />
         </Pressable>
       )}
     </View>
@@ -86,20 +82,24 @@ const styles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: TRACKING.widest,
     textTransform: 'uppercase',
+    // Orange is 5.92:1 on ink but only 2.58:1 on paper, so the eyebrow has to
+    // follow `tone` like everything else here — a single shared orange was the
+    // one part of this header that failed on the light canvas.
     color: COLORS.orange,
   },
+  eyebrowLight: { color: ORANGE_INK },
   title: { fontFamily: 'Flame-Regular', fontSize: 24, lineHeight: 30, color: COLORS.beige },
   titleLight: { color: COLORS.navy },
   sub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     lineHeight: 18,
-    color: 'rgba(245,235,220,0.6)',
+    color: INK_TEXT.faint,
     marginTop: 2,
   },
   subLight: { color: PAPER_TEXT.faint },
   action: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 },
   actionPressed: { opacity: 0.6 },
-  actionText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(245,235,220,0.7)' },
+  actionText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: INK_TEXT.muted },
   actionTextLight: { color: COLORS.navy },
 });

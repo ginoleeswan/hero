@@ -55,7 +55,7 @@ import { ContributionsList } from '../../src/components/profile/ContributionsLis
 import { MyTakes } from '../../src/components/profile/MyTakes';
 import { TasteMixBar } from '../../src/components/profile/TasteMixBar';
 import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
 import * as Haptics from 'expo-haptics';
 
@@ -957,7 +957,7 @@ const styles = StyleSheet.create({
   disclaimer: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 10,
-    color: 'rgba(29,45,51,0.35)',
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     paddingHorizontal: 24,
     paddingTop: 8,
@@ -980,7 +980,7 @@ const styles = StyleSheet.create({
   guestBody: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     lineHeight: 21,
   },
@@ -1006,7 +1006,7 @@ const styles = StyleSheet.create({
   benefitSub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12.5,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: 1,
   },
   guestActions: {
@@ -1188,13 +1188,13 @@ const styles = StyleSheet.create({
   email: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 2,
   },
   memberSince: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 14,
   },
   tierPill: {
@@ -1214,7 +1214,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
-    color: COLORS.orange,
+    color: ORANGE_INK,
   },
   statStripWrap: { alignSelf: 'stretch', paddingHorizontal: 8 },
   tierProg: { alignSelf: 'stretch', alignItems: 'center', marginTop: 14, paddingHorizontal: 8 },
@@ -1231,7 +1231,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: 5,
   },
   shareUniverseBtn: {
@@ -1278,7 +1278,7 @@ const styles = StyleSheet.create({
     fontSize: 9.5,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 3,
   },
   tasteFacetValue: {
@@ -1292,7 +1292,7 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 9,
   },
   ghostTile: {
@@ -1305,7 +1305,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
   },
-  ghostText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
+  ghostText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: ORANGE_INK },
   badgeWall: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   badgeBarTrack: {
     width: '100%',
@@ -1333,7 +1333,7 @@ const styles = StyleSheet.create({
   tasteFootnote: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: 12,
   },
 
@@ -1369,13 +1369,13 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
     textAlign: 'center',
   },
-  badgeLabelLocked: { color: COLORS.grey },
+  badgeLabelLocked: { color: PAPER_TEXT.faint },
   badgeSub: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
   },
 
   // Favourites
@@ -1427,7 +1427,7 @@ const styles = StyleSheet.create({
   emptyBody: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     lineHeight: 19,
     marginBottom: 20,
@@ -1484,7 +1484,7 @@ const styles = StyleSheet.create({
   accountValue: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     maxWidth: SCREEN_WIDTH * 0.4,
   },
   divider: {

@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useAuth } from '../../src/hooks/useAuth';
-import { COLORS, PAPER_TEXT } from '../../src/constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { DotGrid } from '../../src/components/ui/DotGrid';
 import { AnimatedInput } from '../../src/components/ui/AnimatedInput';
@@ -324,11 +324,10 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: COLORS.navy,
+    color: PAPER_TEXT.faint,
     marginBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    opacity: 0.55,
   },
   input: {
     backgroundColor: 'white',
@@ -373,7 +372,7 @@ const styles = StyleSheet.create({
   forgotText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 0.2,
   },
   button: {
@@ -407,7 +406,7 @@ const styles = StyleSheet.create({
   switchText: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
   },
   switchLink: {
     fontFamily: 'Nunito_700Bold',

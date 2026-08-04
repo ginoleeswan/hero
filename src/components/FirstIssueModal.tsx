@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import type { FirstIssue } from '../types';
-import { COLORS, INK_TEXT } from '../constants/colors';
+import { COLORS, INK_TEXT, PAPER_TEXT, ORANGE_INK } from '../constants/colors';
 
 const DARK_BG = '#1B2A30';
 
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    color: COLORS.orange,
+    color: ORANGE_INK,
     marginBottom: 10,
   },
   seriesName: {
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 10,
     letterSpacing: 0.3,
   },
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 8,
   },
   chipGroupLabelDark: { color: INK_TEXT.faint },

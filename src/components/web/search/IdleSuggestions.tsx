@@ -1,6 +1,6 @@
 import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, INK_TEXT } from '../../../constants/colors';
 import { SEARCH_UNIVERSES } from '../../../constants/publishers';
 import type { HeroSearchResult } from '../../../lib/db/heroes';
 import { HeroRail, type RailHero } from './HeroRail';
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
     letterSpacing: 0.2,
     textTransform: 'uppercase',
     paddingHorizontal: RAIL_INSET,

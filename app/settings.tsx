@@ -16,7 +16,7 @@ import { useProfile } from '../src/hooks/useProfile';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
 import { providerMeta } from '../src/lib/profile/provider';
 import { openKofi } from '../src/lib/support/kofi';
-import { COLORS } from '../src/constants/colors';
+import { COLORS, PAPER_TEXT } from '../src/constants/colors';
 import { Toast, useToast } from '../src/components/ui/Toast';
 import { SectionShell } from '../src/components/profile/SectionShell';
 
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     lineHeight: 19,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 8,
   },
 
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   value: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     maxWidth: 200,
   },
   rowIndicator: { width: 34 },
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   disclaimer: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: 'rgba(29,45,51,0.4)',
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     paddingHorizontal: 12,
     marginTop: 8,

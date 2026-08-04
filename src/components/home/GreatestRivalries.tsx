@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { VsBadge } from '../compare/VsBadge';
 import { PressScale } from '../ui/PressScale';
-import { COLORS } from '../../constants/colors';
+import { COLORS, ORANGE_INK } from '../../constants/colors';
 import type { Rivalry } from '../../lib/db/heroes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -111,7 +111,7 @@ const c = StyleSheet.create({
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },

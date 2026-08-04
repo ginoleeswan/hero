@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import { COLORS, pageGutter } from '../../../constants/colors';
+import { COLORS, pageGutter, INK_TEXT } from '../../../constants/colors';
 import { HeroLogo } from '../HeroLogo';
 
 interface HomeFooterProps {
@@ -183,7 +183,7 @@ const s = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     marginBottom: 4,
   } as object,
   linkWrap: { transition: 'opacity 150ms ease' } as object,
@@ -223,6 +223,6 @@ const s = StyleSheet.create({
   meta: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: 'rgba(245,235,220,0.35)',
+    color: INK_TEXT.faint,
   } as object,
 });

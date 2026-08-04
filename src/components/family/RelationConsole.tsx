@@ -11,7 +11,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../constants/colors';
+import { COLORS, HOUSE_INK } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import type { KinshipDescription, KinshipStop } from '../../lib/family/kinshipPath';
 import { reignLine, lifeLine } from '../../lib/family/lifespan';
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.6,
     textTransform: 'uppercase',
-    color: '#a99b84',
+    color: HOUSE_INK,
   },
   seats: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
   seat: {
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-    color: '#a99b84',
+    color: HOUSE_INK,
   },
   clear: { padding: 4 },
   emptySeat: {
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
   },
   emptySeatLink: { flexDirection: 'row', gap: 8, cursor: 'pointer' } as object,
   emptySeatHover: { borderColor: '#cdbfa6', backgroundColor: '#fffaf0' } as object,
-  emptySeatText: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: '#a99b84' },
+  emptySeatText: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: HOUSE_INK },
   swap: {
     width: 32,
     height: 32,
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: '#a99b84',
+    color: HOUSE_INK,
   },
   verdict: { fontFamily: 'Flame-Regular', fontSize: 34, lineHeight: 42, color: COLORS.black },
 
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
-    color: '#a99b84',
+    color: HOUSE_INK,
   },
   routeRule: { flexGrow: 1, flexShrink: 1, height: 1, backgroundColor: '#f0e6d4' },
   routeCount: {

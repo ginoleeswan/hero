@@ -9,7 +9,7 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../../constants/colors';
+import { COLORS, ORANGE_INK, HOUSE_INK } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import { mixHex } from './HouseCrest';
 import { nodeDates, recordedSpan } from '../../lib/family/lifespan';
@@ -224,14 +224,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.6,
     textTransform: 'uppercase',
-    color: COLORS.orange,
+    color: ORANGE_INK,
   },
   count: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10.5,
     letterSpacing: 0.9,
     textTransform: 'uppercase',
-    color: '#a99b84',
+    color: HOUSE_INK,
     marginLeft: 'auto',
   },
   divider: { height: 1, backgroundColor: '#f0e6d4', marginTop: 12, marginBottom: 4 },
@@ -306,13 +306,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
     letterSpacing: 0.4,
-    color: '#a99b84',
+    color: HOUSE_INK,
   },
   unplacedNote: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12.5,
     lineHeight: 20,
-    color: '#a99b84',
+    color: HOUSE_INK,
     width: '100%',
   },
 });

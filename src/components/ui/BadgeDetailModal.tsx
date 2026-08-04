@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, View, Text, Pressable, StyleSheet, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, ACCENT_INK } from '../../constants/colors';
 import type { Badge } from '../../lib/profile/badges';
 
 const isWeb = Platform.OS === 'web';
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   description: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     lineHeight: 21,
     marginBottom: 20,
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 24,
   },
-  earnedText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.green },
+  earnedText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: ACCENT_INK.green },
   lockedPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 24,
   },
-  lockedText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.grey },
+  lockedText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: PAPER_TEXT.faint },
   progressWrap: { alignSelf: 'stretch', marginBottom: 24, gap: 8 },
   progressTrack: {
     height: 8,
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   progressText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
   },
   button: {

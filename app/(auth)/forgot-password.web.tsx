@@ -13,7 +13,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { PageEndCap } from '../../src/components/web/PageEndCap';
-import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';
+import {
+  COLORS,
+  SURFACE,
+  SURFACE_GRADIENT,
+  INK_TEXT,
+  PAPER_TEXT,
+} from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { Image } from 'expo-image';
 
@@ -148,7 +154,7 @@ export default function WebForgotPasswordScreen() {
       <TextInput
         style={[styles.input, emailFocused && styles.inputFocused] as object}
         placeholder="you@example.com"
-        placeholderTextColor="rgba(41,60,67,0.3)"
+        placeholderTextColor={PAPER_TEXT.placeholder}
         value={email}
         onChangeText={setEmail}
         onFocus={() => setEmailFocused(true)}
@@ -343,7 +349,7 @@ const styles = StyleSheet.create({
   brandSub: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     lineHeight: 22,
     marginBottom: 24,
   },
@@ -376,7 +382,7 @@ const styles = StyleSheet.create({
   backText: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
   },
   headingRow: {
     flexDirection: 'row',
@@ -406,7 +412,7 @@ const styles = StyleSheet.create({
   subheading: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     lineHeight: 20,
     textAlign: 'center',
   },
@@ -417,7 +423,7 @@ const styles = StyleSheet.create({
   hint: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: 'rgba(41,60,67,0.4)',
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 28,
@@ -448,11 +454,10 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: COLORS.navy,
+    color: PAPER_TEXT.faint,
     marginBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    opacity: 0.55,
   },
   input: {
     backgroundColor: 'white',
@@ -523,6 +528,6 @@ const styles = StyleSheet.create({
   resendCooldown: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: 'rgba(41,60,67,0.4)',
+    color: PAPER_TEXT.faint,
   },
 });

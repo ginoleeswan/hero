@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   pendingBody: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 15,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     lineHeight: 23,
     marginBottom: 8,
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   pendingBackText: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textDecorationLine: 'underline',
   },
 
@@ -429,11 +429,10 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: COLORS.navy,
+    color: PAPER_TEXT.faint,
     marginBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    opacity: 0.55,
   },
   input: {
     backgroundColor: 'white',
@@ -514,7 +513,7 @@ const styles = StyleSheet.create({
   switchText: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
   },
   switchLink: {
     fontFamily: 'Nunito_700Bold',

@@ -27,7 +27,7 @@ import { SearchProvider } from '../src/contexts/SearchContext';
 import { WebChromeProvider, AdaptiveStatusBarCover } from '../src/contexts/WebChromeContext';
 import { CommandAlertsProvider } from '../src/contexts/CommandAlertsContext';
 import { queryClient } from '../src/lib/query/queryClient';
-import { COLORS } from '../src/constants/colors';
+import { COLORS, INK_TEXT } from '../src/constants/colors';
 import { postAuthTarget } from '../src/lib/loginRedirect';
 import AnalyticsProvider from '../src/components/Analytics';
 import { recordClientError, installGlobalErrorCapture } from '../src/lib/db/clientErrors';
@@ -83,7 +83,7 @@ const eb = StyleSheet.create({
   detail: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: 'rgba(245,235,220,0.4)',
+    color: INK_TEXT.faint,
     textAlign: 'center',
     marginTop: 14,
   },

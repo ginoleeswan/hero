@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { COLORS, PAPER_TEXT } from '../constants/colors';
 import type { HeroPortrayals } from '../lib/db/people';
 
 function Group({
@@ -74,8 +74,7 @@ const styles = StyleSheet.create({
   groupLabel: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: COLORS.navy,
-    opacity: 0.55,
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1.1,
   },

@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../../constants/colors';
 import { DidYouKnowDeck } from '../../character/DidYouKnowDeck';
 import { PortrayedBySection } from '../../PortrayedBySection';
 import type { HeroPortrayals } from '../../../lib/db/people';
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 10,
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
   },
   debutName: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy, lineHeight: 18 },
   flow: { flex: 1, minWidth: 260, gap: 22, position: 'relative', paddingLeft: 18 } as object,
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
   },
   // The deck sizes cards from window width; clip so it can't overflow the band.
   deckClip: { overflow: 'hidden', borderRadius: 12 } as object,

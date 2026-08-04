@@ -876,7 +876,7 @@ const wh = StyleSheet.create({
   rank: {
     fontFamily: 'Flame-Regular',
     fontSize: 26,
-    color: 'rgba(245,235,220,0.35)',
+    color: INK_TEXT.faint,
     width: 26,
     textAlign: 'center',
   } as object,

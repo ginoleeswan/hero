@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 
 // Web variant of the "did you know" deck: a horizontal scroll-snap row of dark
 // pull-quote cards with hover arrows and clickable dots. Follows the codebase's
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   quote: { position: 'absolute', top: 12, right: 16, opacity: 0.22 } as object,
   cardHead: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   index: { fontFamily: 'Nunito_900Black', fontSize: 24, color: COLORS.orange, letterSpacing: 0.5 },
-  total: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: 'rgba(245,235,220,0.45)' },
+  total: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: INK_TEXT.faint },
   text: { fontFamily: 'FlameSans-Regular', fontSize: 16, lineHeight: 24, color: COLORS.beige },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 7 },
   dot: {

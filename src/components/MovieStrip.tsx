@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import type { MovieAppearance } from '../types';
-import { COLORS } from '../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../constants/colors';
 import { MovieGridModal } from './MovieGridModal';
 import type { HeroTitle } from '../lib/db/titles';
 import { pickFeaturedTitle } from '../lib/db/titles';
@@ -555,8 +555,7 @@ const webStyles = StyleSheet.create({
   groupLabel: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: COLORS.navy,
-    opacity: 0.45,
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
     marginBottom: 12,
@@ -588,7 +587,7 @@ const webStyles = StyleSheet.create({
   featuredKicker: {
     fontFamily: 'Flame-Regular',
     fontSize: 10,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     textTransform: 'uppercase',
     letterSpacing: 1.6,
   },
@@ -699,7 +698,7 @@ const webStyles = StyleSheet.create({
   posterYear: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: 1,
   },
 
@@ -711,7 +710,7 @@ const webStyles = StyleSheet.create({
   showAllText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     textDecorationLine: 'underline',
   },
 });
@@ -779,9 +778,8 @@ const styles = StyleSheet.create({
   placeholderName: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 10,
-    color: COLORS.navy,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
-    opacity: 0.65,
     paddingHorizontal: 4,
   },
   ratingChip: {
@@ -814,7 +812,7 @@ const styles = StyleSheet.create({
   year: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 10,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: 2,
     textAlign: 'center',
   },
@@ -833,7 +831,7 @@ const styles = StyleSheet.create({
   overflowLabel: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
   },
 });

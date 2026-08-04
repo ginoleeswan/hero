@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, INK_TEXT } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import { HeroAvatar } from '../../HeroAvatar';
 import { BrandLogoView } from '../../PublisherBadge';
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12.5,
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
   } as object,
   enter: {
     width: 26,

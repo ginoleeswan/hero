@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import type { MovieAppearance } from '../types';
-import { COLORS } from '../constants/colors';
+import { COLORS, PAPER_TEXT } from '../constants/colors';
 
 interface Props {
   movies: MovieAppearance[];
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   cardYear: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 9,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: 2,
     textAlign: 'center',
   },

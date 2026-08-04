@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, INK_TEXT } from '../../../constants/colors';
 
 export type SearchScope = 'all' | 'characters' | 'teams' | 'films' | 'universes';
 
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12.5,
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     letterSpacing: 0.2,
   } as object,
   labelActive: { color: COLORS.orange } as object,

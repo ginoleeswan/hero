@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 import { shortPublisher, type TasteFacet } from '../../lib/db/taste';
 
 // Warm, on-brand, mutually distinguishable segment colours (orange lead, then a
@@ -80,5 +80,5 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 9, height: 9, borderRadius: 3 },
   legendName: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
-  legendPct: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey },
+  legendPct: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: PAPER_TEXT.faint },
 });

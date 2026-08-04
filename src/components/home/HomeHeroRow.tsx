@@ -10,7 +10,7 @@ import { HERO_ROW } from './homeGeometry';
 import { HeroCard, HERO_CARD_RADIUS } from '../HeroCard';
 import { ThumbCard, type ThumbHero } from './ThumbCard';
 import { prefetchHeroRow } from '../../lib/query/heroQueries';
-import { COLORS } from '../../constants/colors';
+import { COLORS, ORANGE_INK } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PORTRAIT_CARD_WIDTH = HERO_ROW.cardWidth;
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },

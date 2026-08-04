@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { COLORS, PAPER_TEXT } from '../constants/colors';
 import { groupPowers } from '../constants/powerIcons';
 import { Skeleton } from './ui/Skeleton';
 import { SkeletonProvider } from './ui/SkeletonProvider';
@@ -140,8 +140,7 @@ const styles = StyleSheet.create({
   groupCount: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: COLORS.navy,
-    opacity: 0.35,
+    color: PAPER_TEXT.faint,
   },
 
   // Abilities flow and wrap within a category.

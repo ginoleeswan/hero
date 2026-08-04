@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { getHeroByComicvineId } from '../../src/lib/db/heroes';
 import { useHeroRow } from '../../src/lib/query/heroQueries';
-import { COLORS, SURFACE } from '../../src/constants/colors';
+import { COLORS, SURFACE, ORANGE_INK, PAPER_TEXT } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
@@ -47,7 +47,7 @@ const HTML_STYLES = `
     margin: 16px 0 4px;
     text-transform: uppercase;
     letter-spacing: 1.2px;
-    opacity: 0.5;
+    opacity: 0.8;
   }
   p { margin: 0 0 14px; }
   /* Slightly larger opening paragraph */
@@ -59,12 +59,12 @@ const HTML_STYLES = `
     line-height: 0.82;
     float: left;
     margin: 3px 9px -2px 0;
-    color: ${COLORS.orange};
+    color: ${ORANGE_INK};
   }
   strong, b { font-weight: 600; }
   /* Wiki-style links: persistent subtle underline, full colour on hover */
-  a { color: ${COLORS.orange}; text-decoration: none; border-bottom: 1px solid rgba(231,115,51,0.35); }
-  a:hover { border-bottom-color: ${COLORS.orange}; }
+  a { color: ${ORANGE_INK}; text-decoration: none; border-bottom: 1px solid rgba(168,71,24,0.45); }
+  a:hover { border-bottom-color: ${ORANGE_INK}; }
   ul, ol { padding-left: 22px; margin: 0 0 14px; }
   li { margin-bottom: 5px; }
   blockquote {
@@ -641,8 +641,7 @@ const styles = StyleSheet.create({
   tocTitle: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 10,
-    color: COLORS.navy,
-    opacity: 0.4,
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase' as const,
     letterSpacing: 1.5,
     marginBottom: 10,
@@ -663,7 +662,7 @@ const styles = StyleSheet.create({
   tocNum: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     lineHeight: 18,
     width: 16,
   },
@@ -693,5 +692,5 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
 
-  empty: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.navy, opacity: 0.4 },
+  empty: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: PAPER_TEXT.faint },
 });

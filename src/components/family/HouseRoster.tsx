@@ -10,7 +10,7 @@ import { useMemo, useState } from 'react';
 import { View, Text, Pressable, TextInput, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../../constants/colors';
+import { COLORS, HOUSE_INK } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import { PressScale } from '../ui/PressScale';
 import { mixHex } from './HouseCrest';
@@ -211,13 +211,13 @@ const styles = StyleSheet.create({
   panel: { gap: 12 },
   pressed: { opacity: 0.6 },
   head: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  direction: { fontFamily: 'FlameSans-Regular', fontSize: 12.5, color: '#a99b84', marginTop: -6 },
+  direction: { fontFamily: 'FlameSans-Regular', fontSize: 12.5, color: HOUSE_INK, marginTop: -6 },
   title: { fontFamily: 'Flame-Regular', fontSize: 21, lineHeight: 27, color: COLORS.black },
   count: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     letterSpacing: 1,
-    color: '#a99b84',
+    color: HOUSE_INK,
     marginLeft: 'auto',
   },
   search: {
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     fontSize: 9.5,
     letterSpacing: 0.5,
-    color: '#a99b84',
+    color: HOUSE_INK,
   },
   more: {
     flexDirection: 'row',
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 0.9,
     textTransform: 'uppercase',
-    color: '#a99b84',
+    color: HOUSE_INK,
     paddingHorizontal: 4,
   },
   rootBtn: {

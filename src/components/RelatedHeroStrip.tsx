@@ -9,7 +9,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, HOVER_TRANSITION } from '../constants/colors';
+import { COLORS, HOVER_TRANSITION, PAPER_TEXT } from '../constants/colors';
 import { HeroImage } from './HeroImage';
 import type { RelatedHeroCard } from '../lib/db/heroes';
 
@@ -197,8 +197,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 10,
-    color: COLORS.navy,
-    opacity: 0.55,
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },

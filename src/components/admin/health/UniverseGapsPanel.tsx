@@ -18,7 +18,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../../constants/colors';
 import { Panel } from './Panel';
 import { InfoTip } from './InfoTip';
 import { HeroThumb } from './atoms';
@@ -558,9 +558,8 @@ const styles = StyleSheet.create({
   subEmpty: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11.5,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     fontStyle: 'italic',
-    opacity: 0.7,
   },
   input: {
     width: 150,

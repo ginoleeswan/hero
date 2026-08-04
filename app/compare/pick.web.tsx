@@ -24,7 +24,7 @@ import { useBattleBuilder } from '../../src/hooks/useBattleBuilder';
 import { useCuratedRows } from '../../src/hooks/useCuratedRows';
 import { usePresetTeams } from '../../src/hooks/usePresetTeams';
 import { FACTION_A, FACTION_B } from '../../src/components/versus/factionColors';
-import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';
+import { COLORS, SURFACE, SURFACE_GRADIENT, INK_TEXT } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { withViewTransition } from '../../src/lib/viewTransition';
@@ -177,7 +177,7 @@ export default function BattleBuilderWeb() {
         <TextInput
           style={s.input}
           placeholder="Search any hero or villain…"
-          placeholderTextColor="rgba(245,235,220,0.4)"
+          placeholderTextColor={INK_TEXT.placeholder}
           value={query}
           onChangeText={setQuery}
         />
@@ -597,7 +597,7 @@ const s = StyleSheet.create({
   empty: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     paddingVertical: 36,
     textAlign: 'center',
     width: '100%',
@@ -634,7 +634,7 @@ const s = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     letterSpacing: 2,
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     textTransform: 'uppercase',
   },
   hintFull: { textAlign: 'center', paddingVertical: 16 },
@@ -664,12 +664,15 @@ const fs = StyleSheet.create({
   },
   mirror: { transform: [{ scaleX: -1 }] },
   empty: { alignItems: 'center', justifyContent: 'center', gap: 4 },
-  emptyQ: { fontFamily: 'Flame-Regular', fontSize: 48, color: 'rgba(255,255,255,0.22)' },
+  // The empty slot's "?" and its hint are the ONLY cue that a fighter is
+  // missing, so they hold the text floor rather than fading into the slot fill.
+  // 0.5a over #16242b = 5.0:1; the old 0.22a was 2.01:1.
+  emptyQ: { fontFamily: 'Flame-Regular', fontSize: 48, color: 'rgba(255,255,255,0.5)' },
   emptyHint: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
     letterSpacing: 1,
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(255,255,255,0.55)',
     textTransform: 'uppercase',
   },
   nameTag: {
@@ -699,7 +702,8 @@ const fs = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addPlus: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: 'rgba(255,255,255,0.4)' },
+  // 0.55a over the #1b2a30 chip = 5.51:1. The '+' is the add affordance.
+  addPlus: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: 'rgba(255,255,255,0.55)' },
   rm: {
     position: 'absolute',
     top: 1,

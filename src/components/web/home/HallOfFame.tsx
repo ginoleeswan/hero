@@ -2,7 +2,7 @@ import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../../HeroImage';
 import { HeroAvatar } from '../../HeroAvatar';
-import { COLORS, pageGutter } from '../../../constants/colors';
+import { COLORS, pageGutter, PAPER_TEXT, ORANGE_INK } from '../../../constants/colors';
 import type { Hero } from '../../../lib/db/heroes';
 
 // Rank tint — first 3 entries get progressively warmer orange, rest stay dim
@@ -173,7 +173,7 @@ const s = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 2.5,
     textTransform: 'uppercase',
-    color: COLORS.orange,
+    color: ORANGE_INK,
     marginBottom: 4,
   } as object,
   title: {
@@ -185,7 +185,7 @@ const s = StyleSheet.create({
   sub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: 'rgba(41,60,67,0.65)',
+    color: PAPER_TEXT.faint,
     lineHeight: 20,
     marginTop: 8,
     maxWidth: 520,
@@ -350,7 +350,7 @@ const s = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
   } as object,
   // Fame meter — a quiet data bar filling the row's right side.
   fameTrack: {

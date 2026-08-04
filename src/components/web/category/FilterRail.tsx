@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, Pressable, TextInput, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, INK_TEXT } from '../../../constants/colors';
 import type { CategorySlug } from '../../../lib/db/heroes';
 import type { CategoryFilters, FacetCounts } from '../../../lib/db/categoryFilters';
 import { FilterControls } from './FilterControls';
@@ -64,7 +64,7 @@ export function FilterRail({
         <TextInput
           style={s.searchInput as object}
           placeholder={searchPlaceholder}
-          placeholderTextColor="rgba(245,235,220,0.32)"
+          placeholderTextColor={INK_TEXT.placeholder}
           value={filters.search}
           onChangeText={(t) => setFilter('search', t)}
           onFocus={() => setFocused(true)}

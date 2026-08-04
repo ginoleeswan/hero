@@ -380,7 +380,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  plus: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: 'rgba(255,255,255,0.4)' },
+  plus: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: 'rgba(255,255,255,0.6)' },
   mirror: { transform: [{ scaleX: -1 }] },
   rm: {
     position: 'absolute',
@@ -443,7 +443,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deckQ: { fontFamily: 'Flame-Regular', fontSize: 16, color: 'rgba(255,255,255,0.3)' },
+  deckQ: { fontFamily: 'Flame-Regular', fontSize: 16, color: 'rgba(255,255,255,0.6)' },
 
   ctaFull: {
     flexDirection: 'row',

@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 import type { ProfileStat } from '../../lib/profile/stats';
 
 /**
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: 4,
     textAlign: 'center',
   },

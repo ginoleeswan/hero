@@ -179,6 +179,40 @@ export const ORANGE_INK = '#A84718';
 export const GOLD_INK = COLORS.goldAccent;
 
 /**
+ * The semantic accents as *text on paper* — ORANGE_INK generalised. Every
+ * COLORS accent is tuned as a fill, and most of them are unreadable as ink:
+ * green 2.45:1, blue 2.65:1, gold 3.08:1, goldAccent 2.13:1 against beige. The
+ * tinted taxonomy chips (alignment/origin on the character page) paint accent
+ * text over a 12-18% wash of the same hue, which lands barely off beige — so
+ * the chip label was inheriting the fill colour's failing ratio.
+ *
+ * Each entry is the fill hue darkened until it clears the floor, so it still
+ * reads as the same colour. `red`, `purple`, `black` and `brown` already pass
+ * as ink and are re-exported unchanged rather than restated, which keeps this
+ * map the single place to ask "what is <accent> when it's text?".
+ */
+export const ACCENT_INK = {
+  /** 4.70:1 beige / 5.55:1 white — matches ORANGE_INK's role. */
+  orange: ORANGE_INK,
+  /** 4.67:1 beige. */
+  green: '#437523',
+  /** 4.62:1 beige. */
+  blue: '#0C757C',
+  /** 4.72:1 beige. */
+  gold: '#8D5F00',
+  /** 4.68:1 beige — the goldAccent hue, darkened for paper. */
+  goldAccent: '#85631D',
+  /** Already 5.20:1 as a fill. */
+  red: COLORS.red,
+  /** Already 4.83:1. */
+  purple: COLORS.purple,
+  /** Already 11.67:1. */
+  black: COLORS.black,
+  /** Already 11.18:1. */
+  brown: COLORS.brown,
+} as const;
+
+/**
  * The house eyebrow — the small orange uppercase kicker above titles. One size
  * everywhere: 11px is the legibility floor for tracked uppercase; the old 8–9px
  * variants read as timid. Spread into a StyleSheet entry and override `color`
@@ -191,6 +225,25 @@ export const EYEBROW = {
   textTransform: 'uppercase',
   color: COLORS.orange,
 } as const;
+
+/**
+ * The same eyebrow on the beige canvas. The colour is the ONLY difference —
+ * COLORS.orange is 5.92:1 on ink but 2.58:1 on paper, so a shared spread was
+ * silently failing every time a section header landed in a light zone (the
+ * Explore Library rows, the character dossier, the film sections). Spread this
+ * instead of EYEBROW whenever the eyebrow sits on paper.
+ */
+/**
+ * The houses/family-tree module's warm parchment ink. That domain deliberately
+ * runs a warmer canvas than the rest of the app (#fdf9f4 cards on beige), and
+ * it had grown its own muted tone, #a99b84 — which measured 2.31:1 on beige and
+ * 2.72:1 on white. This is the same hue darkened to 4.61:1 beige / 5.44:1 white,
+ * so the module keeps its taupe character instead of being flattened into the
+ * navy PAPER_TEXT ramp.
+ */
+export const HOUSE_INK = '#756852';
+
+export const EYEBROW_ON_PAPER = { ...EYEBROW, color: ORANGE_INK } as const;
 
 /** Standard hover-lift recipe (web) — one duration, one spring-ish curve. */
 export const HOVER_TRANSITION =
