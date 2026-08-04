@@ -1,7 +1,7 @@
 // src/components/home/SpotlightCarousel.tsx
 import { useState } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import type { SharedValue } from 'react-native-reanimated';
+import { useReducedMotion, type SharedValue } from 'react-native-reanimated';
 import Carousel from 'react-native-reanimated-carousel';
 import * as Haptics from 'expo-haptics';
 import { SpotlightSlide } from './SpotlightSlide';
@@ -32,6 +32,7 @@ export function SpotlightCarousel({
 }) {
   const height = spotlightHeight(insetTop);
   const [active, setActive] = useState(0);
+  const reduced = useReducedMotion();
 
   if (heroes.length === 0) return null;
 
@@ -45,12 +46,14 @@ export function SpotlightCarousel({
         height={height}
         data={heroes}
         loop={heroes.length > 1}
-        autoPlay={heroes.length > 1}
+        autoPlay={heroes.length > 1 && !reduced}
         autoPlayInterval={6000}
         scrollAnimationDuration={750}
         onSnapToItem={(i: number) => {
           setActive(i);
-          Haptics.selectionAsync();
+          // Only on a user-driven swipe — an unattended auto-advance shouldn't
+          // buzz the device, and under Reduce Motion there's no auto-advance.
+          if (!reduced) Haptics.selectionAsync();
         }}
         renderItem={({ item }: { item: Hero }) => (
           <SpotlightSlide

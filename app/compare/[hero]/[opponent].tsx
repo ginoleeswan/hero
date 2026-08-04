@@ -155,6 +155,8 @@ export default function NativeCompareScreen() {
               hitSlop={8}
               activeOpacity={0.7}
               style={styles.headerBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Back"
             >
               <Ionicons name="chevron-back" size={26} color={COLORS.beige} />
             </TouchableOpacity>

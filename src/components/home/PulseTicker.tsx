@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
   Easing,
   cancelAnimation,
+  useReducedMotion,
 } from 'react-native-reanimated';
 import { COLORS } from '../../constants/colors';
 
@@ -26,6 +27,8 @@ export function PulseTicker({ heroCount, newlyAddedCount }: PulseTickerProps) {
   const text = `${heroCount.toLocaleString()} Heroes & Villains  ·  Marvel, DC & Beyond  ·  Powers, Origins & First Appearances  ·  500+ Teams & Affiliations  ·  ${newlyAddedCount} Recently Added  ·  `;
   const [copyW, setCopyW] = useState(0);
   const tx = useSharedValue(0);
+  // Under Reduce Motion the marquee never scrolls — the strip renders static.
+  const reduced = useReducedMotion();
 
   const onCopyLayout = (e: LayoutChangeEvent) => {
     const w = e.nativeEvent.layout.width;
@@ -33,7 +36,7 @@ export function PulseTicker({ heroCount, newlyAddedCount }: PulseTickerProps) {
   };
 
   useEffect(() => {
-    if (copyW <= 0) return;
+    if (copyW <= 0 || reduced) return;
     tx.value = 0;
     tx.value = withRepeat(
       withTiming(-copyW, { duration: (copyW / SPEED) * 1000, easing: Easing.linear }),
@@ -41,7 +44,7 @@ export function PulseTicker({ heroCount, newlyAddedCount }: PulseTickerProps) {
       false,
     );
     return () => cancelAnimation(tx);
-  }, [copyW, tx]);
+  }, [copyW, tx, reduced]);
 
   const style = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }] }));
 

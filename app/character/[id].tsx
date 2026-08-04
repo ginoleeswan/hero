@@ -933,6 +933,9 @@ export default function CharacterScreen() {
                   disabled={favLoading}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={styles.headerBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={favourited ? 'Remove from favourites' : 'Add to favourites'}
+                  accessibilityState={{ selected: favourited }}
                 >
                   <Ionicons
                     name={favourited ? 'heart' : 'heart-outline'}
@@ -1802,7 +1805,9 @@ const styles = StyleSheet.create({
 
   // Immersive hero: the spacer reserves the image height and pins the identity to
   // the bottom of the portrait (over the dark scrim); the sheet rises over it.
-  heroSpacer: { height: HERO_IMAGE_HEIGHT, justifyContent: 'flex-end' },
+  // minHeight, not height: at large OS text sizes the identity block grows, and a
+  // fixed box would push it up off-screen under the header instead of expanding.
+  heroSpacer: { minHeight: HERO_IMAGE_HEIGHT, justifyContent: 'flex-end' },
   identity: { paddingHorizontal: 20, paddingBottom: SHEET_OVERLAP + 14, gap: 8 },
   sheet: {
     backgroundColor: COLORS.beige,

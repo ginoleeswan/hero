@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
   interpolate,
   Extrapolation,
+  useReducedMotion,
   type SharedValue,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -32,10 +33,13 @@ export function SpotlightSlide({
   const sub = [hero.publisher, align].filter(Boolean).join('   ·   ');
 
   // Slow Ken-Burns drift — a continuous, gentle scale so the portrait feels alive.
+  // Under Reduce Motion it never starts; kb stays at 0 (unscaled).
+  const reduced = useReducedMotion();
   const kb = useSharedValue(0);
   useEffect(() => {
+    if (reduced) return;
     kb.value = withRepeat(withTiming(1, { duration: 9000 }), -1, true);
-  }, [kb]);
+  }, [kb, reduced]);
 
   const imageStyle = useAnimatedStyle(() => {
     const kbScale = 1 + kb.value * 0.06;

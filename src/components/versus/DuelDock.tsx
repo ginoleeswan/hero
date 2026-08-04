@@ -105,7 +105,13 @@ export function DuelDock({ b, act, expanded, onToggle, onPrimary, onBack, onRand
           <Ionicons name="chevron-up" size={18} color="rgba(245,235,220,0.6)" style={s.chev} />
         </Pressable>
         {!isSquad ? (
-          <Pressable onPress={onBack} style={s.back} hitSlop={6}>
+          <Pressable
+            onPress={onBack}
+            style={s.back}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel="Back to squad"
+          >
             <Ionicons name="arrow-back" size={16} color="rgba(245,235,220,0.8)" />
           </Pressable>
         ) : null}
@@ -247,7 +253,13 @@ function ManageSide({
           ) : null}
         </Pressable>
         <View style={s.sideActs}>
-          <Pressable onPress={onRandom} style={s.act} hitSlop={8}>
+          <Pressable
+            onPress={onRandom}
+            style={s.act}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Random fighters"
+          >
             <Ionicons name="dice" size={16} color="rgba(245,235,220,0.85)" />
           </Pressable>
           {roster.length > 0 ? (

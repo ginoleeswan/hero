@@ -181,6 +181,9 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
         disabled={loading}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         style={styles.button}
+        accessibilityRole="button"
+        accessibilityLabel={favourited ? 'Remove from favourites' : 'Add to favourites'}
+        accessibilityState={{ selected: favourited }}
       >
         <Animated.View style={heartStyle}>
           <Ionicons

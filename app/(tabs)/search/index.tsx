@@ -393,7 +393,12 @@ export default function SearchScreen() {
           </View>
           <View style={styles.recentChips}>
             {recent.map((term) => (
-              <Pressable key={term} style={styles.recentChip} onPress={() => applyRecent(term)}>
+              <Pressable
+                key={term}
+                style={styles.recentChip}
+                onPress={() => applyRecent(term)}
+                hitSlop={8}
+              >
                 <Ionicons name="time-outline" size={13} color="rgba(245,235,220,0.5)" />
                 <Text style={styles.recentChipText} numberOfLines={1}>
                   {term}
@@ -746,7 +751,9 @@ const styles = StyleSheet.create({
     gap: 5,
     maxWidth: 180,
     paddingHorizontal: 12,
-    height: 32,
+    // minHeight + padding so the chip grows with large OS text instead of clipping.
+    minHeight: 32,
+    paddingVertical: 6,
     borderRadius: 16,
     borderCurve: 'continuous',
     backgroundColor: 'rgba(245,235,220,0.08)',

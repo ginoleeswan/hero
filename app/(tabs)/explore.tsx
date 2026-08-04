@@ -27,7 +27,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter, useFocusEffect, type Href } from 'expo-router';
 import { signalFirstPaint } from '../../src/lib/bootReveal';
 import { DUR, STAGGER, SPRING_SETTLE } from '../../src/lib/nativeMotion';
 import * as Haptics from 'expo-haptics';
@@ -173,6 +173,19 @@ export default function HomeScreen() {
     }
     return { transform: [{ translateY: sy * SPOTLIGHT_PARALLAX }] };
   });
+  // THE BAND BUG: scrollY only updates from onScroll, which does NOT fire when
+  // the list is moved programmatically — leaving a tab and coming back (or the
+  // tab bar's scroll-to-top) resets the list to offset 0 while scrollY keeps
+  // its last value. The billboard then parallaxes DOWN by staleY × 0.5 with
+  // nothing scrolled away above it, so the stage shows through as a band of
+  // flat colour above the art. Re-syncing on focus is the fix; any real scroll
+  // corrects it immediately afterwards.
+  useFocusEffect(
+    useCallback(() => {
+      scrollY.value = 0;
+    }, [scrollY]),
+  );
+
   // As the stage slides up over the portrait, a dark frost fades in over it.
   const spotlightBlur = useAnimatedStyle(() => ({
     opacity: interpolate(scrollY.value, [0, 220], [0, 1], Extrapolation.CLAMP),

@@ -1,13 +1,19 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Animated, Easing } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SHIMMER_MS } from '../../lib/nativeMotion';
 
 const SkeletonContext = createContext<Animated.Value | null>(null);
 
 export function SkeletonProvider({ children }: { children: React.ReactNode }) {
   const [shimmer] = useState(() => new Animated.Value(1));
+  const reduced = useReducedMotion();
 
   useEffect(() => {
+    // Every loading state in the app reads this one value — under Reduce Motion
+    // leave it parked at 1 so nothing shimmers.
+    if (reduced) return;
+
     Animated.loop(
       Animated.sequence([
         Animated.timing(shimmer, {
@@ -26,7 +32,7 @@ export function SkeletonProvider({ children }: { children: React.ReactNode }) {
     ).start();
 
     return () => shimmer.stopAnimation();
-  }, [shimmer]);
+  }, [shimmer, reduced]);
 
   return <SkeletonContext.Provider value={shimmer}>{children}</SkeletonContext.Provider>;
 }
