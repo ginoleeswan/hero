@@ -2,28 +2,16 @@ import { useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, Linking, useWindowDimensions } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import RenderHTML, { type MixedStyleDeclaration } from 'react-native-render-html';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
-import { getHeroByComicvineId } from '../../src/lib/db/heroes';
-import { useHeroRow } from '../../src/lib/query/heroQueries';
+import { useBiography, resolveBioLink } from '../../src/hooks/useBiography';
 import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS, PAPER_TEXT } from '../../src/constants/colors';
+import { COLORS, PAPER_TEXT, INK_TEXT, ORANGE_INK, SEAM_COLOR } from '../../src/constants/colors';
 import { EmptyState } from '../../src/components/ui/EmptyState';
-
-// ComicVine biography HTML ships with lazy-load placeholders and <noscript>
-// fallbacks that render as broken/blank images. Swap the real source in and
-// strip the cruft so images actually paint on native.
-function preprocessHtml(html: string): string {
-  return html
-    .replace(/<noscript>[\s\S]*?<\/noscript>/gi, '')
-    .replace(/\ssrc="data:image\/gif;base64,[^"]*"/gi, '')
-    .replace(/\sdata-src="/gi, ' src="')
-    .replace(/\sdata-srcset="/gi, ' srcset="')
-    .replace(/\ssizes="[^"]*"/gi, '');
-}
 
 const ORANGE_FAINT = 'rgba(231,115,51,0.3)';
 const ORANGE_RULE = 'rgba(231,115,51,0.45)';
@@ -33,6 +21,15 @@ const BASE_STYLE: MixedStyleDeclaration = {
   fontSize: 15,
   color: COLORS.navy,
   lineHeight: 26,
+};
+
+// The opening paragraph is set one step larger and looser than the body — the
+// same lead treatment the web prose uses, and the reason the drop cap has room
+// to sit against three lines instead of two.
+const LEAD_STYLE: MixedStyleDeclaration = {
+  ...BASE_STYLE,
+  fontSize: 16.5,
+  lineHeight: 29,
 };
 
 // Editorial typography ported from the web biography: orange-underlined h2s,
@@ -70,7 +67,10 @@ const TAG_STYLES: Record<string, MixedStyleDeclaration> = {
     marginTop: 16,
     marginBottom: 4,
   },
-  a: { color: COLORS.orange, textDecorationLine: 'none' },
+  // ORANGE_INK, not COLORS.orange: prose links sit on the beige body, where the
+  // brand orange measures 2.58:1. The underline carries the affordance so the
+  // link is not colour-only.
+  a: { color: ORANGE_INK, textDecorationLine: 'underline' },
   b: { fontFamily: 'Flame-Regular' },
   strong: { fontFamily: 'Flame-Regular' },
   em: { fontStyle: 'italic' },
@@ -107,20 +107,17 @@ const TAG_STYLES: Record<string, MixedStyleDeclaration> = {
 };
 
 const SYSTEM_FONTS = ['FlameSans-Regular', 'Flame-Regular'];
-// Tables render as unstyled stacked text on native — skip them.
-const IGNORED_TAGS = ['table', 'thead', 'tbody', 'tr', 'td', 'th'];
+
+// Floor for the identity stage, so a hero with a short name and no summary
+// still gets a stage with presence instead of collapsing onto its portrait.
+const STAGE_MIN_H = 210;
 
 export default function BiographyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  // Shares the hero-row cache with the character screen (useHeroRow), so opening
-  // a hero's full biography after viewing the character is instant.
-  const hero = useHeroRow(id).data ?? null;
-
-  // The React Compiler memoises this derivation automatically.
-  const html = hero?.description ? preprocessHtml(hero.description) : null;
+  const { hero, lead, hasBiography } = useBiography(id);
 
   const contentWidth = width - 40;
 
@@ -148,36 +145,77 @@ export default function BiographyScreen() {
     </SkeletonProvider>
   );
 
-  // Intercept ComicVine character links (/slug/4005-{cvId}/) → resolve to a hero
-  // in our DB and navigate in-app; everything else opens in the browser.
+  // Link resolution is shared (useBiography); only the *acting* differs by
+  // platform, so this is the whole platform-specific half.
   const renderersProps = useMemo(
     () => ({
       a: {
         onPress: (_e: unknown, href: string) => {
-          const match = href.match(/\/slug\/4005-(\d+)\//);
-          if (match) {
-            getHeroByComicvineId(match[1])
-              .then((found) => {
-                if (found) router.push(`/character/${found.id}`);
-                else Linking.openURL(`https://comicvine.gamespot.com${href}`);
-              })
-              .catch(() => {});
-            return;
-          }
-          if (href.startsWith('/slug/')) {
-            Linking.openURL(`https://comicvine.gamespot.com${href}`);
-          } else if (href.startsWith('http')) {
-            Linking.openURL(href);
-          }
+          resolveBioLink(href)
+            .then((action) => {
+              if (action.kind === 'hero') router.push(`/character/${action.heroId}`);
+              else if (action.kind === 'external') Linking.openURL(action.url);
+            })
+            .catch(() => {});
         },
       },
     }),
     [router],
   );
 
+  const prose = hasBiography ? (
+    <View>
+      {lead.cap ? (
+        <View style={styles.leadBlock}>
+          {/* The drop cap. Web gets this from `::first-letter`, which
+              react-native-render-html has no equivalent for, so the lead is
+              split in the shared hook and the letter is a real sibling here —
+              absolutely positioned so the paragraph's own text can flow past
+              it, since RN has no float. */}
+          <Text style={styles.dropCap} allowFontScaling={false}>
+            {lead.cap}
+          </Text>
+          <RenderHTML
+            contentWidth={contentWidth}
+            source={{ html: `<p>${lead.rest}</p>` }}
+            baseStyle={LEAD_STYLE}
+            tagsStyles={{ ...TAG_STYLES, p: { ...TAG_STYLES.p, ...styles.leadPara } }}
+            systemFonts={SYSTEM_FONTS}
+            renderersProps={renderersProps}
+            enableExperimentalMarginCollapsing
+          />
+        </View>
+      ) : null}
+      {lead.body ? (
+        <RenderHTML
+          contentWidth={contentWidth}
+          source={{ html: lead.body }}
+          baseStyle={BASE_STYLE}
+          tagsStyles={TAG_STYLES}
+          systemFonts={SYSTEM_FONTS}
+          renderersProps={renderersProps}
+          enableExperimentalMarginCollapsing
+        />
+      ) : null}
+      <View style={styles.colophon}>
+        <View style={styles.colophonRule} />
+        <Text style={styles.colophonMark}>❖</Text>
+        <Text style={styles.colophonText}>Biography sourced from ComicVine</Text>
+      </View>
+    </View>
+  ) : (
+    <EmptyState
+      icon="document-text-outline"
+      title="No biography yet"
+      body="We don’t have a written history for this character yet."
+      tone="light"
+      compact
+    />
+  );
+
   return (
     <View style={styles.container}>
-      {/* Transparent native header — content flows under it (the navy banner
+      {/* Transparent native header — content flows under it (the identity stage
           fills behind the bar + status bar). Mirrors the character screen's
           header exactly; note we never set headerBackground, since on
           native-stack that forces a translucent backdrop that reads as a
@@ -190,7 +228,7 @@ export default function BiographyScreen() {
           // Chevron only — hides the previous route name ("character/[id]").
           headerBackButtonDisplayMode: 'minimal',
           headerStyle: { backgroundColor: 'transparent' },
-          // Orange reads on both the navy banner (top) and the beige body (scrolled).
+          // Orange reads on both the dark stage (top) and the beige body (scrolled).
           headerTintColor: COLORS.orange,
           headerTitle: '',
         }}
@@ -200,62 +238,82 @@ export default function BiographyScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 48 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Navy banner — fills full-bleed behind the transparent header + status bar */}
-        <View style={[styles.banner, { paddingTop: insets.top + 52 }]}>
-          <HeroImage
-            id={String(id ?? '')}
-            name={hero?.name ?? ''}
-            imageUrl={hero?.image_url}
-            portraitUrl={hero?.portrait_url}
-            style={styles.portrait}
-            contentFit="cover"
-            contentPosition="top"
-            recyclingKey={id}
+        {/* Identity stage — the native counterpart of the web page's cinematic
+            header. Four layers, back to front: a heavily blurred portrait for
+            atmosphere, a vertical scrim that guarantees the title's contrast, a
+            deep-ink cap that fuses the top into the status bar, and the seam. */}
+        <View style={[styles.stage, { paddingTop: insets.top + 52 }]}>
+          {hero ? (
+            <HeroImage
+              id={String(id ?? '')}
+              name={hero.name}
+              imageUrl={hero.image_url}
+              portraitUrl={hero.portrait_url}
+              style={styles.backdrop}
+              contentFit="cover"
+              contentPosition="top"
+              blurRadius={38}
+              recyclingKey={id}
+            />
+          ) : null}
+          {/* Guarantees the title block's contrast whatever the portrait is. */}
+          <LinearGradient
+            colors={['rgba(11,24,32,0.55)', 'rgba(11,24,32,0.34)', 'rgba(11,24,32,0.9)']}
+            locations={[0, 0.42, 1]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
           />
-          <View style={styles.titleBlock}>
-            <Text style={styles.eyebrow}>Biography</Text>
-            {hero ? (
-              <View>
-                <Text style={styles.heroName} numberOfLines={3}>
-                  {hero.name}
+          {/* Deep-ink cap: solid through the status-bar zone so the stage's top
+              is the SAME pixel value as the chrome, then easing off so the
+              portrait blooms in below the floating chevron rather than being
+              sliced by it. */}
+          <LinearGradient
+            colors={[COLORS.deepNavy, COLORS.deepNavy, 'rgba(11,24,32,0)']}
+            locations={[0, 0.45, 1]}
+            style={[styles.topCap, { height: insets.top + 96 }]}
+            pointerEvents="none"
+          />
+
+          <View style={styles.stageInner}>
+            <HeroImage
+              id={String(id ?? '')}
+              name={hero?.name ?? ''}
+              imageUrl={hero?.image_url}
+              portraitUrl={hero?.portrait_url}
+              style={styles.portrait}
+              contentFit="cover"
+              contentPosition="top"
+              recyclingKey={id}
+            />
+            <View style={styles.titleBlock}>
+              <Text style={styles.eyebrow}>Biography</Text>
+              {hero ? (
+                <View>
+                  <Text style={styles.heroName} numberOfLines={3}>
+                    {hero.name}
+                  </Text>
+                  {phase === 'crossfade' ? <FadeOutSkeleton>{nameSkeleton}</FadeOutSkeleton> : null}
+                </View>
+              ) : phase === 'skeleton' ? (
+                nameSkeleton
+              ) : null}
+              {hero?.summary ? (
+                <Text style={styles.deck} numberOfLines={3}>
+                  {hero.summary}
                 </Text>
-                {phase === 'crossfade' ? <FadeOutSkeleton>{nameSkeleton}</FadeOutSkeleton> : null}
-              </View>
-            ) : phase === 'skeleton' ? (
-              nameSkeleton
-            ) : null}
-            {hero?.summary ? (
-              <Text style={styles.deck} numberOfLines={4}>
-                {hero.summary}
-              </Text>
-            ) : null}
+              ) : null}
+            </View>
           </View>
+
+          {/* The seam — the house hairline where a dark band meets beige. */}
+          <View style={styles.seam} pointerEvents="none" />
         </View>
 
         {/* Body */}
         <View style={styles.body}>
           {hero ? (
             <View>
-              {html ? (
-                <RenderHTML
-                  contentWidth={contentWidth}
-                  source={{ html }}
-                  baseStyle={BASE_STYLE}
-                  tagsStyles={TAG_STYLES}
-                  systemFonts={SYSTEM_FONTS}
-                  ignoredDomTags={IGNORED_TAGS}
-                  renderersProps={renderersProps}
-                  enableExperimentalMarginCollapsing
-                />
-              ) : (
-                <EmptyState
-                  icon="document-text-outline"
-                  title="No biography yet"
-                  body="We don’t have a written history for this character yet."
-                  tone="light"
-                  compact
-                />
-              )}
+              {prose}
               {/* The prose sits settled underneath; only this layer animates. */}
               {phase === 'crossfade' ? <FadeOutSkeleton>{bodySkeleton}</FadeOutSkeleton> : null}
             </View>
@@ -272,47 +330,99 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.beige },
   scroll: { flex: 1 },
 
-  // Navy banner — fills behind the transparent header; paddingTop is applied
-  // inline (insets.top + header height) so content clears the floating chevron.
-  banner: {
-    flexDirection: 'row',
-    gap: 16,
-    backgroundColor: COLORS.navy,
-    paddingHorizontal: 20,
+  // ── Identity stage ──
+  stage: {
+    backgroundColor: COLORS.deepNavy,
     paddingBottom: 26,
+    minHeight: STAGE_MIN_H,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
   },
+  // Scaled past the bounds so the blur's soft edges never reach the frame.
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    transform: [{ scale: 1.25 }],
+    opacity: 0.45,
+  },
+  topCap: { position: 'absolute', top: 0, left: 0, right: 0 },
+  stageInner: { flexDirection: 'row', gap: 16, paddingHorizontal: 20 },
   portrait: {
-    width: 86,
-    height: 115,
-    borderRadius: 10,
+    width: 92,
+    height: 122,
+    borderRadius: 12,
     borderCurve: 'continuous',
     backgroundColor: 'rgba(245,235,220,0.08)',
+    // A hairline lip so the portrait separates from the blurred version of
+    // itself sitting directly behind it.
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(245,235,220,0.22)',
   },
   titleBlock: { flex: 1, justifyContent: 'flex-end' },
   eyebrow: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: COLORS.beige,
-    opacity: 0.5,
+    color: COLORS.orange,
     textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 4,
+    letterSpacing: 2.5,
+    marginBottom: 5,
   },
   heroName: {
     fontFamily: 'Flame-Regular',
-    fontSize: 28,
-    lineHeight: 35,
+    fontSize: 32,
+    lineHeight: 39,
     color: COLORS.beige,
   },
   deck: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
     lineHeight: 19,
-    color: COLORS.beige,
-    opacity: 0.6,
+    color: INK_TEXT.muted,
     marginTop: 8,
   },
+  seam: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 2,
+    backgroundColor: COLORS.orange,
+  },
 
-  // Body
-  body: { paddingHorizontal: 20, paddingTop: 24 },
+  // ── Body ──
+  body: { paddingHorizontal: 20, paddingTop: 26 },
+
+  // The drop cap sits in the paragraph's top-left corner; the lead paragraph
+  // indents its first lines around it. Flame's ink runs tall, so the cap is
+  // nudged up to sit on the lead's first baseline rather than above it.
+  leadBlock: { position: 'relative' },
+  dropCap: {
+    position: 'absolute',
+    left: 0,
+    top: -6,
+    fontFamily: 'Flame-Regular',
+    fontSize: 58,
+    lineHeight: 58,
+    color: ORANGE_INK,
+    zIndex: 1,
+  },
+  // Three lines of clearance for the cap. RN has no float, so the indent is
+  // paid by the whole paragraph — at 16.5/29 the cap spans two lines and the
+  // third recovers most of the measure.
+  leadPara: { paddingLeft: 46, marginBottom: 18 },
+
+  // ── Colophon ──
+  colophon: { alignItems: 'center', marginTop: 34, gap: 8 },
+  colophonRule: { width: 44, height: 1, backgroundColor: SEAM_COLOR },
+  colophonMark: { fontSize: 13, color: ORANGE_INK },
+  colophonText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10.5,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: PAPER_TEXT.faint,
+  },
 });
