@@ -164,6 +164,20 @@ Supabase URL and `sensitive` for the keys, mirroring `production`.
   eas-update.yml not found on the default branch`, and no Run-workflow button
   appears. Once it's on `main`, dispatching it against *any* ref works as
   described above. Until then, `yarn update:dev` is the only way to publish.
+- **Sentry's source-map upload runs inside the Xcode build, and it is not
+  configured.** `'@sentry/react-native/expo'` is declared in `app.config.ts`
+  with no options, so the generated `sentry.properties` carries no org — and no
+  `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` exists in any EAS
+  environment. The build dies in **Run fastlane** with `An organization ID or
+  slug is required (provide with --org)`. This sat undetected because Sentry
+  landed after the last successful build; the first build to run it was the
+  first to fail on it. The dev profiles now set
+  `SENTRY_DISABLE_AUTO_UPLOAD=true` — a dev build has no use for uploaded source
+  maps, and runtime reporting is unaffected (that's driven by
+  `EXPO_PUBLIC_SENTRY_DSN`, which is also unset, so the SDK no-ops). **`preview`
+  and `production` are still broken**: don't disable the upload there — it's the
+  whole point of shipping Sentry — populate the three `SENTRY_*` variables in
+  those environments, or pass `organization`/`project` to the plugin.
 - **Don't let the EAS builder pick its own yarn.** The `eas-build-pre-install`
   script in `package.json` used to be `corepack enable && yarn set version 4`,
   and `set version 4` means *latest 4.x*. The day Yarn 4.18.0 shipped, every

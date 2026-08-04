@@ -11,7 +11,8 @@
       "node": "20.19.4",
       "env": {
         "APP_VARIANT": "development",
-        "APPLICATION_ID": "com.ginoswanepoel.mythique.dev"
+        "APPLICATION_ID": "com.ginoswanepoel.mythique.dev",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "android": {
         "image": "ubuntu-22.04-jdk-17-ndk-r25b"
@@ -23,6 +24,9 @@
       "distribution": "internal",
       "channel": "development",
       "node": "20.19.4",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "ios": {
         "simulator": true
       }
