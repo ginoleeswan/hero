@@ -3,8 +3,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
+    // No backgroundColor: a solid color suppresses the iOS 26 liquid-glass
+    // capsule entirely, leaving bare icons floating over the content. The
+    // system material adapts to the dark canvas on its own.
     <NativeTabs
-      backgroundColor="#1a1a1a"
       tintColor="#e8621a"
       iconColor={{ default: '#666', selected: '#e8621a' }}
       labelStyle={{ default: { color: '#666' }, selected: { color: '#e8621a' } }}
