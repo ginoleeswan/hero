@@ -3,18 +3,26 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
-    // tintColor ONLY. Any appearance customization — backgroundColor,
-    // iconColor, labelStyle — swaps in a custom UITabBarAppearance and
-    // suppresses the iOS 26 liquid-glass capsule, leaving bare icons floating
-    // over the content. The system material handles colors and the dark
-    // canvas on its own; tint is the one safe knob.
-    //
-    // Every icon must carry an explicit renderingMode="template": without it,
-    // expo-router derives the mode per state from whether that state has an
-    // icon color, and with only tintColor set the selected state resolves to
-    // 'template' while normal resolves to 'original' — RNScreens then throws
-    // "icon and selectedIcon must be same type" and red-screens on boot.
-    <NativeTabs tintColor="#e8621a">
+    // The transparent-tab-bar saga, so nobody relitigates it:
+    // • expo-router forces the SCROLL-EDGE appearance fully transparent
+    //   (blurEffect 'none', background null) unless
+    //   disableTransparentOnScrollEdge is set — and when iOS can't pair the
+    //   screen's scroll view with the bar (ours are custom FlatLists), UIKit
+    //   applies the scroll-edge appearance PERMANENTLY. That was the
+    //   "icons floating naked over content" bug.
+    // • blurEffect gives the bar a real dark material on every device;
+    //   solid backgroundColor / iconColor / labelStyle stay banned — they
+    //   also suppress the iOS 26 glass treatment where it exists.
+    // • Every icon carries renderingMode="template": without it expo-router
+    //   derives the mode per state from whether that state has an icon
+    //   color, and with tintColor alone the selected state goes 'template'
+    //   while normal goes 'original' — RNScreens throws "icon and
+    //   selectedIcon must be same type" and red-screens on boot.
+    <NativeTabs
+      tintColor="#e8621a"
+      blurEffect="systemChromeMaterialDark"
+      disableTransparentOnScrollEdge
+    >
       <NativeTabs.Trigger name="explore">
         <NativeTabs.Trigger.Icon
           src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="compass-outline" />}
