@@ -19,9 +19,12 @@ import { COLORS } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Placeholder fill for the dark stage — beige at 8% reads as "not yet here"
-// without the light-on-light glare of the paper-zone tone.
-const ON_DARK = 'rgba(245,235,220,0.08)';
+// Placeholder fill for the dark stage. 8% beige on deepNavy was almost
+// invisible — the billboard read as a broken void rather than a placeholder —
+// so the base is lifted and the billboard itself gets a slightly stronger
+// wash to separate it from the stage rows beneath.
+const ON_DARK = 'rgba(245,235,220,0.13)';
+const ON_DARK_SOFT = 'rgba(245,235,220,0.07)';
 
 // PublisherGrid: H_PAD 16, GAP 10, tile minHeight 84, radius 16.
 const H_PAD = 16;
@@ -36,14 +39,31 @@ const CARD_GAP = 12;
 
 // SpotlightCarousel.spotlightHeight(): insetTop + 50% of the screen. Rendered
 // with showLip={false} on the feed, so NO beige lip here either.
+//
+// A bare rectangle over half the screen reads as "something is broken", not
+// "a billboard is coming" — so the slide's own furniture is sketched in at its
+// real offsets: the name (SpotlightSlide.meta, bottom 40) and the pager dots
+// (SpotlightCarousel.dots, bottom 22, 5×5 with a 14-wide active pill).
 function SpotlightSkeleton({ insetTop }: { insetTop: number }) {
+  const height = insetTop + Math.round(SCREEN_HEIGHT * 0.5);
   return (
-    <Skeleton
-      width="100%"
-      height={insetTop + Math.round(SCREEN_HEIGHT * 0.5)}
-      borderRadius={0}
-      color={ON_DARK}
-    />
+    <View style={{ height }}>
+      <Skeleton width="100%" height={height} borderRadius={0} color={ON_DARK_SOFT} />
+      <View style={styles.spotlightMeta}>
+        <Skeleton width={Math.round(SCREEN_WIDTH * 0.52)} height={34} borderRadius={8} />
+        <Skeleton
+          width={Math.round(SCREEN_WIDTH * 0.28)}
+          height={12}
+          borderRadius={4}
+          style={styles.spotlightSub}
+        />
+      </View>
+      <View style={styles.spotlightDots}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} width={i === 0 ? 14 : 5} height={5} borderRadius={2.5} />
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -149,6 +169,25 @@ const styles = StyleSheet.create({
   // whole background tone at the handoff.
   scroll: { flex: 1, backgroundColor: COLORS.deepNavy },
   stage: { backgroundColor: COLORS.deepNavy },
+  // SpotlightSlide.meta: absolute, bottom 40, centred.
+  spotlightMeta: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+  },
+  spotlightSub: { marginTop: 9 },
+  // SpotlightCarousel.dots: absolute, bottom 22, centred row, gap 6.
+  spotlightDots: {
+    position: 'absolute',
+    bottom: 22,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
   sheet: {
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 24,

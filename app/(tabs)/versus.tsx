@@ -57,6 +57,8 @@ export default function VersusScreen() {
       <StatusBar style="light" />
       <ScrollView
         style={styles.scroll}
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
       >
