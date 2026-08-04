@@ -53,6 +53,7 @@ import { useAuth } from '../../../src/hooks/useAuth';
 import { useRecentSearches } from '../../../src/hooks/useRecentSearches';
 import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
 import { DUR } from '../../../src/lib/nativeMotion';
+import { useDebouncedValue, flushWhenBlank } from '../../../src/hooks/useDebouncedValue';
 import type { FavouriteHero } from '../../../src/types';
 
 const SEARCH_NAVY = '#1a262b';
@@ -75,22 +76,6 @@ const ALIGNMENT_OPTIONS: FilterOption<AlignmentFilter>[] = [
   { value: 'Anti', label: 'Anti-Heroes' },
 ];
 
-function useDebouncedQuery(value: string, delay: number): string {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    // Clearing flushes immediately — the idle surface (recent · pods) must not
-    // coexist with the old query's result sections for a debounce beat.
-    if (!value.trim()) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDebounced(value);
-      return;
-    }
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debounced;
-}
-
 export default function SearchScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -109,7 +94,7 @@ export default function SearchScreen() {
   const [peek, setPeek] = useState<PeekHero | null>(null);
 
   const cardWidth = (width - H_PAD * 2 - GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
-  const debouncedQuery = useDebouncedQuery(query, 250);
+  const debouncedQuery = useDebouncedValue(query, 250, flushWhenBlank);
 
   const handleSearchText = useCallback(
     (e: string | { nativeEvent?: { text?: string } }) =>
