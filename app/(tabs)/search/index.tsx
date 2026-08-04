@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -38,6 +38,8 @@ import { PublisherGrid } from '../../../src/components/home/PublisherGrid';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../../src/components/ui/SkeletonProvider';
+import { FadeOutSkeleton } from '../../../src/components/ui/FadeOutSkeleton';
+import { useSkeletonTransition } from '../../../src/hooks/useSkeletonTransition';
 import type { PublisherFilter, AlignmentFilter } from '../../../src/lib/db/heroes';
 import { searchUniverses } from '../../../src/lib/db/universes';
 import { searchHouses, type HouseSearchResult } from '../../../src/lib/db/houses';
@@ -163,6 +165,27 @@ export default function SearchScreen() {
     },
     [router, navigating, recordQuery],
   );
+
+  // The results grid navigates via <Link> rather than an imperative push, so
+  // its cards can be the ORIGIN of Apple's fluid zoom transition — the same
+  // one the Explore rows use. Without this the identical hero zoomed open from
+  // the feed and slid open from search. The Link performs the navigation and
+  // this runs the side effects only; Slot composes both handlers.
+  const characterHref = useCallback(
+    (item: { id: string; portrait_url?: string | null; image_url?: string | null }): Href => {
+      const img = item.portrait_url ?? item.image_url;
+      return `/character/${item.id}${img ? `?imageUri=${encodeURIComponent(img)}` : ''}` as Href;
+    },
+    [],
+  );
+
+  const handleCardPress = useCallback(() => {
+    if (navigating) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setNavigating(true);
+    recordQuery();
+    setTimeout(() => setNavigating(false), 1000);
+  }, [navigating, recordQuery]);
 
   const openPeek = useCallback((item: PeekHero) => {
     Haptics.selectionAsync();
@@ -321,6 +344,23 @@ export default function SearchScreen() {
     : topResult?.kind === 'hero'
       ? displayedHeroes.filter((h) => h.id !== topResult.hero.id)
       : displayedHeroes;
+
+  // The results grid is pending — the debounce beat, or the first fetch for a
+  // settled query. pre → nothing (a cached query never blinks a skeleton).
+  const gridLoading = settling || (!isIdle && isPending);
+  const gridPhase = useSkeletonTransition(gridLoading);
+  const skelCardHeight = Math.round(cardWidth * 1.48);
+  // 8 cards over 2 columns = 4 rows, plus the grid's own 4px lead-in.
+  const skelGridHeight = skelCardHeight * 4 + GAP * 3 + 4;
+  const skelGrid = (
+    <SkeletonProvider>
+      <View style={styles.skelGrid}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} width={cardWidth} height={skelCardHeight} borderRadius={10} />
+        ))}
+      </View>
+    </SkeletonProvider>
+  );
 
   const listHeader = (
     <>
@@ -498,32 +538,34 @@ export default function SearchScreen() {
           </Text>
         </View>
       )}
+
+      {/* Grid crossfade. The skeleton has to dissolve over the real cards, but
+          those are list items, not something we can wrap — so a zero-height
+          anchor at the header's bottom edge (i.e. exactly where the first row
+          starts, whatever sections the header grew) carries the overlay. */}
+      {gridPhase === 'crossfade' ? (
+        <View style={styles.skelAnchor}>
+          <View style={[styles.skelOverlay, { height: skelGridHeight }]}>
+            <FadeOutSkeleton>{skelGrid}</FadeOutSkeleton>
+          </View>
+        </View>
+      ) : null}
     </>
   );
 
-  const listEmpty =
-    settling || (!isIdle && isPending) ? (
-      <SkeletonProvider>
-        <View style={styles.skelGrid}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton
-              key={i}
-              width={cardWidth}
-              height={Math.round(cardWidth * 1.48)}
-              borderRadius={10}
-            />
-          ))}
-        </View>
-      </SkeletonProvider>
-    ) : isIdle ? null : isFetching ? null : topResult ? null : (
-      <View style={styles.center}>
-        <View style={styles.emptyIconWrap}>
-          <Ionicons name="search-outline" size={30} color={COLORS.orange} />
-        </View>
-        <Text style={styles.emptyHeadline}>No characters found</Text>
-        <Text style={styles.emptySub}>Try a different search or filter</Text>
+  const listEmpty = gridLoading ? (
+    gridPhase === 'skeleton' ? (
+      skelGrid
+    ) : null
+  ) : isIdle ? null : isFetching ? null : topResult ? null : (
+    <View style={styles.center}>
+      <View style={styles.emptyIconWrap}>
+        <Ionicons name="search-outline" size={30} color={COLORS.orange} />
       </View>
-    );
+      <Text style={styles.emptyHeadline}>No characters found</Text>
+      <Text style={styles.emptySub}>Try a different search or filter</Text>
+    </View>
+  );
 
   return (
     <View style={styles.root} collapsable={false}>
@@ -618,7 +660,8 @@ export default function SearchScreen() {
             <PortraitCard
               item={item}
               cardWidth={cardWidth}
-              onPress={() => handlePress(item)}
+              href={characterHref(item)}
+              onPress={handleCardPress}
               onLongPress={() => openPeek(item)}
               disabled={navigating}
               onDark
@@ -665,6 +708,8 @@ const styles = StyleSheet.create({
   chipStack: { marginHorizontal: -H_PAD, paddingBottom: 2 },
   browseGrid: { marginHorizontal: -H_PAD, paddingBottom: 4 },
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingTop: 4 },
+  skelAnchor: { height: 0 },
+  skelOverlay: { position: 'absolute', top: 0, left: 0, right: 0 },
   gridRow: { gap: GAP },
   footer: { paddingVertical: 24, alignItems: 'center' },
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 100 },

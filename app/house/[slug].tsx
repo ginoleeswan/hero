@@ -17,6 +17,8 @@ import { HouseGenerations } from '../../src/components/family/HouseGenerations';
 import { StageSwitch, type StageView } from '../../src/components/family/StageSwitch';
 import { useHouse } from '../../src/hooks/useHouse';
 import { HouseSkeleton } from '../../src/components/skeletons/HouseSkeleton';
+import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
+import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 
 // The root stack hides headers globally, so `title` alone renders nothing —
 // without headerShown there is no back affordance on this screen at all.
@@ -65,6 +67,10 @@ export default function HousePage() {
   // screen rather than the 360px a character page allots it.
   const stageHeight = Math.max(380, Math.round(winHeight * 0.62));
 
+  // pre → bare beige root (a cached house never blinks a skeleton); skeleton →
+  // placeholders; crossfade → the chart renders and the skeleton dissolves off it.
+  const phase = useSkeletonTransition(isLoading);
+
   const [picking, setPicking] = useState<PickerMode | null>(null);
   const scrollRef = useRef<ScrollView | null>(null);
   const [bodyY, setBodyY] = useState(0);
@@ -84,10 +90,10 @@ export default function HousePage() {
 
   if (isLoading) {
     return (
-      <>
+      <View style={styles.root}>
         <Stack.Screen options={{ ...headerOptions, title: chrome?.name ?? 'House' }} />
-        <HouseSkeleton chrome={chrome} stageHeight={stageHeight} />
-      </>
+        {phase === 'skeleton' ? <HouseSkeleton chrome={chrome} stageHeight={stageHeight} /> : null}
+      </View>
     );
   }
   if (error || !house) {
@@ -175,6 +181,13 @@ export default function HousePage() {
           )}
         </View>
       </ScrollView>
+
+      {/* The page sits settled underneath; only this layer animates. */}
+      {phase === 'crossfade' ? (
+        <FadeOutSkeleton>
+          <HouseSkeleton chrome={chrome} stageHeight={stageHeight} />
+        </FadeOutSkeleton>
+      ) : null}
 
       <HousePicker
         mode={picking}

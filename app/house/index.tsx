@@ -10,11 +10,15 @@ import { HouseGrid } from '../../src/components/family/HouseIndex';
 import { useHouseList } from '../../src/hooks/useHouseList';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { HouseIndexSkeleton } from '../../src/components/skeletons/HouseIndexSkeleton';
+import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
+import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 
 export default function HouseIndexPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { houses, isLoading } = useHouseList();
+  // pre → the grid region stays empty, so a cached list never blinks a skeleton.
+  const phase = useSkeletonTransition(isLoading);
 
   return (
     <View style={styles.root}>
@@ -30,7 +34,20 @@ export default function HouseIndexPage() {
             A house is a family tree with a front door. Open one to walk the lineage, or to ask how
             any two of its members are related.
           </Text>
-          {isLoading ? <HouseIndexSkeleton /> : <HouseGrid houses={houses} />}
+          <View>
+            {isLoading ? (
+              phase === 'skeleton' ? (
+                <HouseIndexSkeleton />
+              ) : null
+            ) : (
+              <HouseGrid houses={houses} />
+            )}
+            {phase === 'crossfade' ? (
+              <FadeOutSkeleton>
+                <HouseIndexSkeleton />
+              </FadeOutSkeleton>
+            ) : null}
+          </View>
           {!isLoading && houses.length === 0 ? (
             <EmptyState
               icon="home-outline"

@@ -45,6 +45,8 @@ import { HeroImage } from '../../src/components/HeroImage';
 import { BrandLogoView } from '../../src/components/PublisherBadge';
 import { COLORS } from '../../src/constants/colors';
 import { CategorySkeleton } from '../../src/components/skeletons/CategorySkeleton';
+import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
+import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 
@@ -252,6 +254,9 @@ export default function CategoryScreen() {
   const heroes = flattenCategoryPages(activeQuery.data);
   const total = activeQuery.data?.pages[0]?.total ?? 0;
   const loading = activeQuery.isPending;
+  // pre → bare navy root (a cached page never blinks a skeleton); skeleton →
+  // placeholders; crossfade → the grid renders and the skeleton dissolves off it.
+  const phase = useSkeletonTransition(loading);
   const loadingMore = isFetchingNextPage;
   const tagline = categorySlug ? CATEGORY_TAGLINES[categorySlug] : null;
 
@@ -528,7 +533,9 @@ export default function CategoryScreen() {
       </Stack.Toolbar>
 
       {loading ? (
-        <CategorySkeleton topPadding={headerHeight + SEARCH_BAR_PAD} />
+        phase === 'skeleton' ? (
+          <CategorySkeleton topPadding={headerHeight + SEARCH_BAR_PAD} />
+        ) : null
       ) : (
         <FlatList
           style={styles.list}
@@ -566,6 +573,13 @@ export default function CategoryScreen() {
           }
         />
       )}
+
+      {/* The grid sits settled underneath; only this layer animates. */}
+      {phase === 'crossfade' ? (
+        <FadeOutSkeleton>
+          <CategorySkeleton topPadding={headerHeight + SEARCH_BAR_PAD} />
+        </FadeOutSkeleton>
+      ) : null}
 
       {peek && (
         <HeroPeek
