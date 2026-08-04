@@ -12,7 +12,7 @@
 //               gradient gives the stage dimension, a warm ember halo breathes
 //               in behind the mark, and the mark itself starts a slow breath.
 //               Calm by intent: this is the state a slow network sits in.
-//   3. Open   — gated on the home feed's FIRST PAINT (src/lib/bootReveal.ts,
+//   3. Open   — gated on the home feed's FIRST PAINT (useSignalFirstPaint,
 //               capped at 1.4s past boot so a dead network can't hold the
 //               door): an accent ring ripples out, the mark blooms toward the
 //               viewer and is fully gone by 55% of the reveal, and the stage
@@ -23,9 +23,17 @@
 // Honors Reduce Motion: no breathing, no ripple — a plain crossfade handoff.
 // AuthGate mounts the router as this component's child only once boot is done.
 // The overlay unmounts after the reveal so nothing lingers over touch targets.
-import { useEffect, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
@@ -42,7 +50,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LOGO_MASK_PATH as LOGO_PATH } from '../../constants/logo';
 import { COLORS } from '../../constants/colors';
-import { onFirstPaint } from '../../lib/bootReveal';
 import { DUR, EASE_REVEAL } from '../../lib/nativeMotion';
 
 // Match the native splash exactly (app.config.ts: image 200px wide on
@@ -60,12 +67,28 @@ const ALIVE_MS = 900; // the still frame waking up
 const BREATHE_MS = 2600; // full in-out breath
 const REVEAL_CAP_MS = 1400; // max wait for the feed's first paint after boot
 
+// The first meaningful screen calls this once it has real content laid out, so
+// the reveal opens onto content rather than a skeleton. A context, not a
+// module-level singleton: the signal is scoped to this BootStage instance, it
+// cannot leak between mounts (or across tests), and it needs no hand-written
+// subscribe/emit — React already does that.
+const SignalFirstPaintContext = createContext<() => void>(() => {});
+
+/** Call when the first screen's real content has been laid out. */
+export function useSignalFirstPaint(): () => void {
+  return useContext(SignalFirstPaintContext);
+}
+
 export function BootStage({ booting, children }: { booting: boolean; children: ReactNode }) {
   const reduceMotion = useReducedMotion();
   const [revealDone, setRevealDone] = useState(!booting);
   const alive = useSharedValue(0); // act 2: 0→1 once
   const breathe = useSharedValue(0); // act 2: 0↔1 forever
   const exit = useSharedValue(0); // act 3: 0→1 once
+  // Held in a ref so the context value stays referentially stable — consumers
+  // must not re-render when the reveal effect re-runs.
+  const startRevealRef = useRef<(() => void) | null>(null);
+  const signalFirstPaint = useCallback(() => startRevealRef.current?.(), []);
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -105,11 +128,11 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
         },
       );
     };
+    startRevealRef.current = start;
     const cap = setTimeout(start, REVEAL_CAP_MS);
-    const unsub = onFirstPaint(start);
     return () => {
       clearTimeout(cap);
-      unsub();
+      startRevealRef.current = null;
       cancelAnimation(exit);
     };
   }, [booting, revealDone, exit, breathe, reduceMotion]);
@@ -162,7 +185,9 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   return (
     <View style={styles.root}>
       <Animated.View style={[styles.app, revealDone || reduceMotion ? styles.appAtRest : appStyle]}>
-        {children}
+        <SignalFirstPaintContext.Provider value={signalFirstPaint}>
+          {children}
+        </SignalFirstPaintContext.Provider>
       </Animated.View>
 
       {!revealDone && (
@@ -181,12 +206,20 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
           </Animated.View>
 
           <View style={styles.centre} pointerEvents="none">
-            {/* Ember halo — stacked translucent ellipses approximate a soft
-                glow behind the wide mask with no blur cost. */}
+            {/* Ember halo. A real radial gradient (react-native-svg, as in
+                NotFoundView) — three stacked translucent discs faking one gave
+                visible hard edges where they met. */}
             <Animated.View style={[styles.haloWrap, haloStyle]}>
-              <View style={[styles.halo, styles.haloOuter]} />
-              <View style={[styles.halo, styles.haloMid]} />
-              <View style={[styles.halo, styles.haloCore]} />
+              <Svg width={HALO_W} height={HALO_H}>
+                <Defs>
+                  <RadialGradient id="boot-ember" cx="50%" cy="50%" r="50%">
+                    <Stop offset="0" stopColor={COLORS.orange} stopOpacity={0.22} />
+                    <Stop offset="0.55" stopColor={COLORS.orange} stopOpacity={0.08} />
+                    <Stop offset="1" stopColor={COLORS.orange} stopOpacity={0} />
+                  </RadialGradient>
+                </Defs>
+                <Rect width={HALO_W} height={HALO_H} fill="url(#boot-ember)" />
+              </Svg>
             </Animated.View>
 
             {/* Reveal ripple */}
@@ -224,18 +257,6 @@ const styles = StyleSheet.create({
     height: HALO_H,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  halo: { position: 'absolute', borderRadius: 999 },
-  haloOuter: { width: HALO_W, height: HALO_H, backgroundColor: 'rgba(231,115,51,0.05)' },
-  haloMid: {
-    width: HALO_W * 0.72,
-    height: HALO_H * 0.72,
-    backgroundColor: 'rgba(231,115,51,0.06)',
-  },
-  haloCore: {
-    width: HALO_W * 0.46,
-    height: HALO_H * 0.46,
-    backgroundColor: 'rgba(231,115,51,0.09)',
   },
   ring: {
     position: 'absolute',

@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { SURFACE, INK_TEXT } from '../../src/constants/colors';
 import {
   getHeroNeighborhood,
@@ -127,15 +128,19 @@ export default function SocialWebExplorerNative() {
     <View style={styles.screen}>
       <StatusBar style="light" />
 
-      {/* Faint accent floor under the subject — the native stand-in for the
-          web's tight radial bloom (stacked discs, no blur cost). */}
+      {/* Faint accent floor under the subject — the same tight radial bloom
+          the web screen paints in CSS, as an SVG gradient here. */}
       <View style={styles.bloomWrap} pointerEvents="none">
-        <View
-          style={[styles.bloom, styles.bloomOuter, { backgroundColor: theme.accentDeep + '14' }]}
-        />
-        <View
-          style={[styles.bloom, styles.bloomCore, { backgroundColor: theme.accentDeep + '1f' }]}
-        />
+        <Svg width={BLOOM} height={BLOOM * 0.82}>
+          <Defs>
+            <RadialGradient id="universe-bloom" cx="50%" cy="50%" r="50%">
+              <Stop offset="0" stopColor={theme.accentDeep} stopOpacity={0.18} />
+              <Stop offset="0.6" stopColor={theme.accentDeep} stopOpacity={0.06} />
+              <Stop offset="1" stopColor={theme.accentDeep} stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Rect width={BLOOM} height={BLOOM * 0.82} fill="url(#universe-bloom)" />
+        </Svg>
       </View>
 
       {/* Full-bleed scene: canvas centre and screen centre must be the same
@@ -278,9 +283,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bloom: { position: 'absolute', borderRadius: BLOOM },
-  bloomOuter: { width: BLOOM, height: BLOOM * 0.82 },
-  bloomCore: { width: BLOOM * 0.6, height: BLOOM * 0.5 },
   topFade: { position: 'absolute', left: 0, right: 0, top: 0 },
   bottomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 110 },
   header: {

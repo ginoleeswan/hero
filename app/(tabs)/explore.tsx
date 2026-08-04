@@ -28,7 +28,7 @@ import Animated, {
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, type Href } from 'expo-router';
-import { signalFirstPaint } from '../../src/lib/bootReveal';
+import { useSignalFirstPaint } from '../../src/components/ui/BootStage';
 import { DUR, STAGGER, SPRING_SETTLE } from '../../src/lib/nativeMotion';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
@@ -155,6 +155,8 @@ export default function HomeScreen() {
   const spotlight = spotlightAll.slice(0, SPOTLIGHT_POOL);
   const heroCount = heroCountRaw ?? 0;
   const [navigating, setNavigating] = useState(false);
+
+  const signalFirstPaint = useSignalFirstPaint();
 
   const scrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler((e) => {

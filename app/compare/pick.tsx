@@ -22,21 +22,13 @@ import { COLORS } from '../../src/constants/colors';
 import { getTeamRoster } from '../../src/lib/db/teams';
 import type { PickedHero } from '../../src/lib/battleBuilderState';
 import type { PublisherFilter, AlignmentFilter } from '../../src/lib/db/heroes/types';
+import { useDebouncedValue } from '../../src/hooks/useDebouncedValue';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const H_PAD = 16;
 const GAP = 10;
 const CARD_W = (SCREEN_W - H_PAD * 2 - GAP * 2) / 3;
 const CARD_H = Math.round(CARD_W * 1.4);
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [d, setD] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setD(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return d;
-}
 
 function pickRandom<T extends { id: string }>(pool: T[], n: number): T[] {
   const copy = [...pool];
@@ -57,7 +49,7 @@ export default function BattleBuilderScreen() {
   const [alignment, setAlignment] = useState<AlignmentFilter>('All');
   const [focal, setFocal] = useState<PickedHero | null>(null);
   const [peek, setPeek] = useState<PeekHero | null>(null);
-  const debounced = useDebounce(query, 200);
+  const debounced = useDebouncedValue(query, 200);
 
   const searchQ = useHeroSearchInfinite(debounced, publisher, alignment);
   const heroes = useMemo(

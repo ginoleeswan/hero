@@ -23,6 +23,7 @@ import { AccentRail } from '../../../src/components/search/AccentRail';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { stashFighters } from '../../../src/lib/compareHandoff';
 import { COLORS } from '../../../src/constants/colors';
+import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const H_PAD = 16;
@@ -43,15 +44,6 @@ const headerOptions = {
   headerTintColor: COLORS.beige,
   headerBackButtonDisplayMode: 'minimal',
 } as const;
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
-}
 
 /** Skeleton screen for the initial roster load — mirrors a suggestion rail plus
  *  the grid so content swaps in place instead of jumping in after a spinner. */
@@ -86,7 +78,7 @@ export default function PickOpponentScreen() {
 
   const [query, setQuery] = useState('');
   const [peek, setPeek] = useState<PeekHero | null>(null);
-  const debouncedQuery = useDebounce(query, 200);
+  const debouncedQuery = useDebouncedValue(query, 200);
   const { subject, rivals, sameUniverse, similar, all, loading } = usePickOpponents(
     hero ?? '',
     name,
