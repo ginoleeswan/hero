@@ -545,14 +545,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'stretch',
     gap: 24,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     marginTop: -128,
   } as object,
   posterColWide: { width: 300, flexShrink: 0, gap: 18 } as object,
   // The poster floats high and scrolls away; the info pins beneath it.
   stickyInfo: { gap: 18, position: 'sticky', top: 80 } as object,
   // Full-width stack below the two columns (universe, recommendations).
-  fullStack: { paddingHorizontal: 24, paddingTop: 18, gap: 18 },
+  fullStack: { paddingHorizontal: 20, paddingTop: 18, gap: 18 },
   posterFloat: {
     marginTop: -260,
     borderRadius: 16,

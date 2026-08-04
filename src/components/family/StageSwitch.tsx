@@ -33,11 +33,12 @@ export function StageSwitch({
             onPress={() => onChange(option.value)}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+            style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
               [
                 styles.option,
                 active && styles.optionActive,
                 hovered && !active && (styles.optionHover as object),
+                pressed && styles.pressed,
               ] as object
             }
           >
@@ -57,6 +58,7 @@ export function StageSwitch({
 }
 
 const styles = StyleSheet.create({
+  pressed: { opacity: 0.6 },
   track: {
     flexDirection: 'row',
     alignSelf: 'flex-start',

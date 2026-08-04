@@ -15,7 +15,9 @@ import {
   ActionSheetIOS,
   Platform,
 } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Defs, Pattern, Circle, Rect, Path } from 'react-native-svg';
+import { DUR } from '../../src/lib/nativeMotion';
 import { LOGO_MASK_PATH as HERO_LOGO_PATH } from '../../src/constants/logo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -147,7 +149,13 @@ function GuestProfileScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container} collapsable={false}>
+    // Entrance parity with Explore — three of four tabs used to snap in
+    // while Explore rose into place, which read as two different apps.
+    <Animated.View
+      style={styles.container}
+      collapsable={false}
+      entering={FadeIn.duration(DUR.base)}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
@@ -249,7 +257,7 @@ function GuestProfileScreen() {
           any other publisher.
         </Text>
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -536,7 +544,13 @@ export default function ProfileScreen() {
   if (!user) return <GuestProfileScreen />;
 
   return (
-    <View style={styles.container} collapsable={false}>
+    // Entrance parity with Explore — three of four tabs used to snap in
+    // while Explore rose into place, which read as two different apps.
+    <Animated.View
+      style={styles.container}
+      collapsable={false}
+      entering={FadeIn.duration(DUR.base)}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
@@ -920,7 +934,7 @@ export default function ProfileScreen() {
         onConvert={nudge.onConvert}
         onDismiss={nudge.onDismiss}
       />
-    </View>
+    </Animated.View>
   );
 }
 

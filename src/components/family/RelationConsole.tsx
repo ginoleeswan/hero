@@ -9,6 +9,7 @@
 import { Fragment } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
@@ -75,8 +76,12 @@ export function RelationConsole({
             onPress={onSwap}
             accessibilityRole="button"
             accessibilityLabel="Swap: root the tree on the compared member"
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [styles.swap, hovered && (styles.swapHover as object)] as object
+            style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
+              [
+                styles.swap,
+                hovered && (styles.swapHover as object),
+                pressed && styles.pressed,
+              ] as object
             }
           >
             <Ionicons name="swap-horizontal" size={16} color={COLORS.navy} />
@@ -136,9 +141,10 @@ export function RelationConsole({
             <ConsoleAction
               icon="arrow-forward"
               label="Open profile"
-              onPress={() =>
-                router.push(`/character/${partner.id}?name=${encodeURIComponent(partner.name)}`)
-              }
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/character/${partner.id}?name=${encodeURIComponent(partner.name)}`);
+              }}
             />
           </View>
         </>
@@ -161,11 +167,12 @@ function PickSeat({ onPress }: { onPress?: () => void }) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="Pick a second name from the house"
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           styles.emptySeat,
           styles.emptySeatLink,
           hovered && (styles.emptySeatHover as object),
+          pressed && styles.pressed,
         ] as object
       }
     >
@@ -265,7 +272,14 @@ function Route({
             <Stop
               stop={stop}
               // The ends are the two seats above; only the middle is new.
-              onPress={onCompare && i > 0 && i < last ? () => onCompare(stop.id) : undefined}
+              onPress={
+                onCompare && i > 0 && i < last
+                  ? () => {
+                      Haptics.selectionAsync();
+                      onCompare(stop.id);
+                    }
+                  : undefined
+              }
               accent={i === last ? tint : undefined}
             />
           </Fragment>
@@ -299,8 +313,14 @@ function Stop({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Trace the line to ${stop.name} instead`}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [styles.stop, styles.stopLink, tinted, hovered && (styles.stopHover as object)] as object
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
+        [
+          styles.stop,
+          styles.stopLink,
+          tinted,
+          hovered && (styles.stopHover as object),
+          pressed && styles.pressed,
+        ] as object
       }
     >
       <Text style={styles.stopName}>{stop.name}</Text>
@@ -390,8 +410,12 @@ function Seat({
           onPress={onPress}
           accessibilityRole="button"
           accessibilityLabel={`Change who sits in ${caption.toLowerCase()} — currently ${member.name}`}
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [styles.seatMain, hovered && (styles.seatMainHover as object)] as object
+          style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
+            [
+              styles.seatMain,
+              hovered && (styles.seatMainHover as object),
+              pressed && styles.pressed,
+            ] as object
           }
         >
           {body}
@@ -406,7 +430,7 @@ function Seat({
           accessibilityRole="button"
           accessibilityLabel={`Stop comparing with ${member.name}`}
           hitSlop={8}
-          style={styles.clear}
+          style={({ pressed }) => [styles.clear, pressed && styles.pressed]}
         >
           <Ionicons name="close" size={14} color="#8d8375" />
         </Pressable>
@@ -430,11 +454,12 @@ function ConsoleAction({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           styles.action,
           primary && styles.actionPrimary,
           hovered && ((primary ? styles.actionPrimaryHover : styles.actionHover) as object),
+          pressed && styles.pressed,
         ] as object
       }
     >
@@ -447,6 +472,7 @@ function ConsoleAction({
 }
 
 const styles = StyleSheet.create({
+  pressed: { opacity: 0.6 },
   card: {
     backgroundColor: 'white',
     borderRadius: 20,

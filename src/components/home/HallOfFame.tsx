@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { HeroAvatar } from '../HeroAvatar';
 import { PressScale } from '../ui/PressScale';
+import { SectionHeader } from '../ui/SectionHeader';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 
@@ -24,11 +25,13 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
 
   return (
     <View style={s.section}>
-      <View style={s.head}>
-        <Text style={s.kicker}>The Canon</Text>
-        <Text style={s.title}>Hall of Fame</Text>
-        <Text style={s.sub}>The characters the whole world knows.</Text>
-      </View>
+      <SectionHeader
+        eyebrow="The Canon"
+        title="Hall of Fame"
+        sub="The characters the whole world knows."
+        tone="light"
+        style={s.head}
+      />
 
       <PressScale style={s.lead} scale={0.97} onPress={() => onPress(String(lead.id))}>
         <HeroImage
@@ -101,23 +104,7 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
 
 const s = StyleSheet.create({
   section: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 8 },
-  head: { marginBottom: 16 },
-  kicker: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 2.5,
-    textTransform: 'uppercase',
-    color: COLORS.orange,
-    marginBottom: 3,
-  },
-  title: { fontFamily: 'Flame-Regular', fontSize: 30, color: COLORS.navy, lineHeight: 32 },
-  sub: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: 'rgba(41,60,67,0.6)',
-    lineHeight: 18,
-    marginTop: 4,
-  },
+  head: { marginBottom: 16, paddingHorizontal: 0 },
   lead: {
     height: 320,
     borderRadius: 18,

@@ -84,6 +84,7 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
       {/* Back button — native only; web has the floating TopBar for navigation */}
       {Platform.OS !== 'web' ? (
         <TouchableOpacity
+          activeOpacity={0.7}
           onPress={onBack}
           style={[styles.backBtn, { top: insets.top + 12 }]}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

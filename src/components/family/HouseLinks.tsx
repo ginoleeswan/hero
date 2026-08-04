@@ -15,7 +15,9 @@ import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../constants/colors';
+import { PressScale } from '../ui/PressScale';
 import type { HeroHouse } from '../../hooks/useHeroHouses';
 
 /** Land on the house page with this character already picked out of the line. */
@@ -56,10 +58,13 @@ function InlineHouse({ house, heroId }: { house: HeroHouse; heroId: string | nul
     <Pressable
       accessibilityRole="link"
       accessibilityLabel={`See the ${house.name} family tree`}
-      style={styles.inline}
+      style={({ pressed }) => [styles.inline, pressed && styles.pressed]}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
-      onPress={() => router.push(houseHref(house.slug, heroId))}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push(houseHref(house.slug, heroId));
+      }}
     >
       <View
         style={[styles.dot, { backgroundColor: house.sigil_tint ?? COLORS.orange }] as object}
@@ -91,12 +96,16 @@ export function HouseFooterLink({
   return (
     <View style={styles.footer}>
       {houses.map((house) => (
-        <Pressable
+        <PressScale
           key={house.slug}
+          scale={0.97}
           accessibilityRole="link"
           accessibilityLabel={`See the ${house.name} family tree`}
           style={styles.footerRow}
-          onPress={() => router.push(houseHref(house.slug, heroId))}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push(houseHref(house.slug, heroId));
+          }}
         >
           <View
             style={[styles.dot, { backgroundColor: house.sigil_tint ?? COLORS.orange }] as object}
@@ -105,7 +114,7 @@ export function HouseFooterLink({
           <View style={styles.spacer} />
           <Text style={styles.footerHint}>Full dynasty</Text>
           <Ionicons name="chevron-forward" size={14} color="#b3a791" />
-        </Pressable>
+        </PressScale>
       ))}
     </View>
   );
@@ -122,10 +131,13 @@ export function HouseLinks({ houses, heroId }: { houses: HeroHouse[]; heroId: st
           key={house.slug}
           accessibilityRole="link"
           accessibilityLabel={`See the ${house.name} family tree`}
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [styles.link, hovered && styles.linkHover] as object
+          style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
+            [styles.link, hovered && styles.linkHover, pressed && styles.pressed] as object
           }
-          onPress={() => router.push(houseHref(house.slug, heroId))}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push(houseHref(house.slug, heroId));
+          }}
         >
           <View
             style={[styles.dot, { backgroundColor: house.sigil_tint ?? COLORS.orange }] as object}
@@ -139,6 +151,7 @@ export function HouseLinks({ houses, heroId }: { houses: HeroHouse[]; heroId: st
 }
 
 const styles = StyleSheet.create({
+  pressed: { opacity: 0.6 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   link: {
     flexDirection: 'row',

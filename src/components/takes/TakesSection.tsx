@@ -48,7 +48,11 @@ function SideChip({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Pick ${label}`}
-      style={[s.chip, active && { backgroundColor: tint, borderColor: tint }]}
+      style={({ pressed }) => [
+        s.chip,
+        active && { backgroundColor: tint, borderColor: tint },
+        pressed && s.pressed,
+      ]}
     >
       <Text style={[s.chipText, active && s.chipTextActive]} numberOfLines={1}>
         {label}
@@ -98,7 +102,7 @@ function TakeCard({
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="More options"
-          style={s.menuBtn}
+          style={({ pressed }) => [s.menuBtn, pressed && s.pressed]}
         >
           <Ionicons name="ellipsis-horizontal" size={16} color="rgba(41,60,67,0.4)" />
         </Pressable>
@@ -112,7 +116,7 @@ function TakeCard({
           onPress={onAgree}
           accessibilityRole="button"
           accessibilityLabel="Agree with this take"
-          style={[s.agreePill, agreed && s.agreePillActive]}
+          style={({ pressed }) => [s.agreePill, agreed && s.agreePillActive, pressed && s.pressed]}
         >
           <Ionicons
             name={agreed ? 'thumbs-up' : 'thumbs-up-outline'}
@@ -131,7 +135,7 @@ function TakeCard({
                 setMenuOpen(false);
                 onDelete();
               }}
-              style={s.menuItem}
+              style={({ pressed }) => [s.menuItem, pressed && s.pressed]}
             >
               <Ionicons name="trash-outline" size={14} color={COLORS.red} />
               <Text style={[s.menuItemText, { color: COLORS.red }]}>Delete</Text>
@@ -142,7 +146,7 @@ function TakeCard({
                 setMenuOpen(false);
                 onReport();
               }}
-              style={s.menuItem}
+              style={({ pressed }) => [s.menuItem, pressed && s.pressed]}
             >
               <Ionicons name="flag-outline" size={14} color={COLORS.grey} />
               <Text style={s.menuItemText}>Report</Text>
@@ -262,7 +266,11 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
                 disabled={posting || !pick || !body.trim()}
                 accessibilityRole="button"
                 accessibilityLabel="Post take"
-                style={[s.submitBtn, (posting || !pick || !body.trim()) && s.submitBtnDisabled]}
+                style={({ pressed }) => [
+                  s.submitBtn,
+                  (posting || !pick || !body.trim()) && s.submitBtnDisabled,
+                  pressed && s.pressed,
+                ]}
               >
                 <Text style={s.submitBtnText}>{posting ? 'Posting...' : 'Post'}</Text>
               </Pressable>
@@ -273,7 +281,7 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
             onPress={goToLogin}
             accessibilityRole="button"
             accessibilityLabel="Sign in to post a take"
-            style={s.signInRow}
+            style={({ pressed }) => [s.signInRow, pressed && s.pressed]}
           >
             <Text style={s.signInText}>Sign in to weigh in</Text>
             <Ionicons name="chevron-forward" size={15} color={COLORS.orange} />
@@ -300,6 +308,7 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
 
 const s = StyleSheet.create({
   section: { gap: 14 },
+  pressed: { opacity: 0.6 },
   headingRow: {
     flexDirection: 'row',
     alignItems: 'baseline',

@@ -8,6 +8,8 @@ import { COLORS } from '../../src/constants/colors';
 import { StageHeader } from '../../src/components/StageHeader';
 import { HouseGrid } from '../../src/components/family/HouseIndex';
 import { useHouseList } from '../../src/hooks/useHouseList';
+import { EmptyState } from '../../src/components/ui/EmptyState';
+import { HouseIndexSkeleton } from '../../src/components/skeletons/HouseIndexSkeleton';
 
 export default function HouseIndexPage() {
   const router = useRouter();
@@ -28,9 +30,15 @@ export default function HouseIndexPage() {
             A house is a family tree with a front door. Open one to walk the lineage, or to ask how
             any two of its members are related.
           </Text>
-          {isLoading ? <Text style={styles.muted}>Loading…</Text> : <HouseGrid houses={houses} />}
+          {isLoading ? <HouseIndexSkeleton /> : <HouseGrid houses={houses} />}
           {!isLoading && houses.length === 0 ? (
-            <Text style={styles.muted}>No houses are charted yet.</Text>
+            <EmptyState
+              icon="home-outline"
+              title="No houses are charted yet."
+              body="Dynasties appear here as their family trees are drawn."
+              tone="light"
+              compact
+            />
           ) : null}
         </View>
       </ScrollView>
@@ -42,5 +50,4 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
   body: { padding: 16, gap: 18 },
   intro: { fontFamily: 'FlameSans-Regular', fontSize: 14.5, lineHeight: 22, color: '#5a6a72' },
-  muted: { fontFamily: 'FlameSans-Regular', fontSize: 13.5, color: '#8d8375' },
 });

@@ -5,6 +5,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'expo-router';
+import { SPRING_PRESS } from '../../lib/nativeMotion';
 import { HeroCard, HERO_CARD_RADIUS } from '../HeroCard';
 import { ThumbCard, type ThumbHero } from './ThumbCard';
 import { prefetchHeroRow } from '../../lib/query/heroQueries';
@@ -55,10 +56,11 @@ function PortraitZoomCard({
     pressed.value = 0;
   };
 
+  // SPRING_PRESS, not a local config: this card can't use PressScale (it wraps
+  // a <Link> for prefetch), but it must not press at a different rate than the
+  // PressScale cards sitting beside it in the same feed.
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: withSpring(pressed.value ? 0.95 : 1, { damping: 18, stiffness: 260, mass: 0.6 }) },
-    ],
+    transform: [{ scale: withSpring(pressed.value ? 0.95 : 1, SPRING_PRESS) }],
   }));
 
   return (

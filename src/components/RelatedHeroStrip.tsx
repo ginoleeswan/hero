@@ -149,6 +149,7 @@ export function RelatedHeroStrip({
             : null}
           {monogramTiles && !showAllChips && remainder > 0 ? (
             <TouchableOpacity
+              activeOpacity={0.7}
               style={[styles.card, styles.monoTile, cardEdge]}
               onPress={() => setShowAllChips(true)}
             >
@@ -167,7 +168,11 @@ export function RelatedHeroStrip({
             </View>
           ))}
           {!showAllChips && remainder > 0 ? (
-            <TouchableOpacity style={styles.chip} onPress={() => setShowAllChips(true)}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.chip}
+              onPress={() => setShowAllChips(true)}
+            >
               <Text style={styles.chipText}>+{remainder} more</Text>
             </TouchableOpacity>
           ) : null}

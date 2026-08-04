@@ -46,6 +46,7 @@ import { BrandLogoView } from '../../src/components/PublisherBadge';
 import { COLORS } from '../../src/constants/colors';
 import { CategorySkeleton } from '../../src/components/skeletons/CategorySkeleton';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
+import { EmptyState } from '../../src/components/ui/EmptyState';
 
 // Publishers (marvel/dc/image/dark-horse) are NOT here — they're universes now,
 // served by /universe/[slug] (this same screen, resolved via the registry). Only
@@ -548,9 +549,13 @@ export default function CategoryScreen() {
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.3}
           ListEmptyComponent={
-            <View style={styles.center}>
-              <Text style={styles.empty}>No characters found</Text>
-            </View>
+            <EmptyState
+              icon="search-outline"
+              title="No characters found"
+              body="Try a different search, or clear a filter."
+              tone="light"
+              compact
+            />
           }
           ListFooterComponent={
             loadingMore ? (
@@ -648,7 +653,5 @@ const styles = StyleSheet.create({
   cardName: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.beige, lineHeight: 14 },
 
   // States
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
-  empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
   footerLoader: { paddingVertical: 20, alignItems: 'center' },
 });

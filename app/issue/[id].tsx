@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  ActivityIndicator,
   Platform,
   Pressable,
   useWindowDimensions,
@@ -23,6 +22,7 @@ import { brandForPublisher } from '../../src/constants/publishers';
 import { COLORS, SURFACE, SEAM_COLOR } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { NotFoundView } from '../../src/components/NotFoundView';
+import { IssueSkeleton } from '../../src/components/skeletons/IssueSkeleton';
 import { PageEndCap } from '../../src/components/web/PageEndCap';
 
 // Wide editorial layout constants — the cover straddles the dark→paper seam.
@@ -373,10 +373,12 @@ export default function IssueScreen() {
   }
 
   if (issue === undefined) {
+    // The skeleton lays out the whole page, so it sits in the page container
+    // rather than a centring box (which would centre the layout too).
     return (
-      <View style={styles.loading}>
+      <View style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
-        <ActivityIndicator size="large" color={COLORS.navy} />
+        <IssueSkeleton contentTop={isWeb ? 80 : insets.top + 60} />
       </View>
     );
   }
@@ -896,12 +898,6 @@ const styles = StyleSheet.create({
     ...Platform.select({ web: { minHeight: '100lvh' } as object, default: { flex: 1 } }),
   } as object,
   webPage: { width: '100%', backgroundColor: COLORS.beige },
-  loading: {
-    flex: 1,
-    backgroundColor: COLORS.beige,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   paper: { backgroundColor: COLORS.beige },
   section: { paddingTop: 22, paddingBottom: 10 },
   sectionLabel: {

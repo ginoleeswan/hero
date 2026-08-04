@@ -175,6 +175,7 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
       ))}
 
       <TouchableOpacity
+        activeOpacity={0.7}
         testID="heart-button"
         onPress={handlePress}
         disabled={loading}

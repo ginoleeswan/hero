@@ -23,6 +23,7 @@ function Header({ onEdit }: { onEdit?: () => void }) {
         <Text style={styles.sectionTitle}>Abilities</Text>
         {onEdit ? (
           <TouchableOpacity
+            activeOpacity={0.7}
             onPress={onEdit}
             hitSlop={10}
             style={styles.pencil}
