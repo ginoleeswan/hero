@@ -18,6 +18,18 @@ import { COLORS } from '../../src/constants/colors';
 import { EventDossier } from '../../src/components/event/EventDossier';
 import { useEventDossier } from '../../src/hooks/useEventDossier';
 
+// The root stack hides headers globally — `title` alone renders nothing, and
+// event pages are shared/deep-linked, so they need a visible back affordance.
+const headerOptions = {
+  headerShown: true,
+  headerTitle: '',
+  headerTransparent: true,
+  headerStyle: { backgroundColor: 'transparent' },
+  headerShadowVisible: false,
+  headerTintColor: COLORS.beige,
+  headerBackButtonDisplayMode: 'minimal',
+} as const;
+
 export default function EventPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -27,7 +39,7 @@ export default function EventPage() {
 
   return (
     <View style={s.screen}>
-      <Stack.Screen options={{ title: dossier?.event.headline ?? 'Event' }} />
+      <Stack.Screen options={{ ...headerOptions, title: dossier?.event.headline ?? 'Event' }} />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
         {/* Bleed the ink stage under the status bar — the page opens on ink. */}
         <View style={{ height: insets.top, backgroundColor: COLORS.deepNavy }} />
@@ -41,6 +53,13 @@ export default function EventPage() {
           // normal case for anything the detector hasn't had confirmed.
           <View style={s.centre}>
             <Text style={s.empty}>No page for this event yet.</Text>
+          </View>
+        )}
+        {!loading && !notFound && !dossier && (
+          // Fetch error: the event may exist but didn't load — same quiet copy,
+          // never a blank ink page.
+          <View style={s.centre}>
+            <Text style={s.empty}>Couldn’t load this event — try again shortly.</Text>
           </View>
         )}
         {dossier && (

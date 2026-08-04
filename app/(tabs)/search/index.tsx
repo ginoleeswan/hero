@@ -71,9 +71,16 @@ const ALIGNMENT_OPTIONS: FilterOption<AlignmentFilter>[] = [
   { value: 'Anti', label: 'Anti-Heroes' },
 ];
 
-function useDebounce<T>(value: T, delay: number): T {
+function useDebouncedQuery(value: string, delay: number): string {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
+    // Clearing flushes immediately — the idle surface (recent · pods) must not
+    // coexist with the old query's result sections for a debounce beat.
+    if (!value.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDebounced(value);
+      return;
+    }
     const timer = setTimeout(() => setDebounced(value), delay);
     return () => clearTimeout(timer);
   }, [value, delay]);
@@ -98,7 +105,7 @@ export default function SearchScreen() {
   const [peek, setPeek] = useState<PeekHero | null>(null);
 
   const cardWidth = (width - H_PAD * 2 - GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
-  const debouncedQuery = useDebounce(query, 300);
+  const debouncedQuery = useDebouncedQuery(query, 250);
 
   const handleSearchText = useCallback(
     (e: string | { nativeEvent?: { text?: string } }) =>
@@ -136,17 +143,23 @@ export default function SearchScreen() {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // Tapping any result is a successful search — record the term. The Search
+  // keyboard button alone missed the common path (type → tap a card), so
+  // Recent stayed empty for most sessions. addRecent no-ops on short/empty.
+  const recordQuery = useCallback(() => addRecent(query), [addRecent, query]);
+
   const handlePress = useCallback(
     (item: { id: string; portrait_url?: string | null; image_url?: string | null }) => {
       if (navigating) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setNavigating(true);
+      recordQuery();
       const img = item.portrait_url ?? item.image_url;
       const suffix = img ? `?imageUri=${encodeURIComponent(img)}` : '';
       router.push(`/character/${item.id}${suffix}`);
       setTimeout(() => setNavigating(false), 1000);
     },
-    [router, navigating],
+    [router, navigating, recordQuery],
   );
 
   const openPeek = useCallback((item: PeekHero) => {
@@ -272,6 +285,7 @@ export default function SearchScreen() {
   const openTop = useCallback(
     (top: TopResult) => {
       Haptics.selectionAsync();
+      recordQuery();
       const push = (href: string) => router.push(href as Parameters<typeof router.push>[0]);
       switch (top.kind) {
         case 'universe':
@@ -288,11 +302,15 @@ export default function SearchScreen() {
         }
       }
     },
-    [router],
+    [router, recordQuery],
   );
 
   const isIdle = !debouncedQuery.trim();
   const showIdleExtras = !query.trim();
+  // The beat between the first keystroke and the debounced query settling:
+  // idle extras are already hidden but results haven't been asked for yet.
+  // Without this the screen blanks for the debounce window.
+  const settling = isIdle && !showIdleExtras;
   // When idle, the screen is a browse surface (recent · recently viewed · the
   // category pods) — not a results grid. Suppress the hero list so the pods read
   // as the primary doorway instead of competing with a "Popular" wall.
@@ -404,6 +422,7 @@ export default function SearchScreen() {
               universe={u}
               onPress={() => {
                 Haptics.selectionAsync();
+                recordQuery();
                 router.push(`/universe/${u.slug}` as Parameters<typeof router.push>[0]);
               }}
             />
@@ -422,6 +441,7 @@ export default function SearchScreen() {
               team={t}
               onPress={() => {
                 Haptics.selectionAsync();
+                recordQuery();
                 router.push(`/team/${t.id}` as Parameters<typeof router.push>[0]);
               }}
             />
@@ -440,6 +460,7 @@ export default function SearchScreen() {
               house={h}
               onPress={() => {
                 Haptics.selectionAsync();
+                recordQuery();
                 router.push(`/house/${h.slug}` as Parameters<typeof router.push>[0]);
               }}
             />
@@ -458,6 +479,7 @@ export default function SearchScreen() {
               title={t}
               onPress={() => {
                 Haptics.selectionAsync();
+                recordQuery();
                 router.push(`/title/${t.id}` as Parameters<typeof router.push>[0]);
               }}
             />
@@ -467,34 +489,39 @@ export default function SearchScreen() {
 
       {!isIdle && !isPending && listData.length > 0 && (
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>{`Characters  ·  ${listData.length}`}</Text>
+          {/* Only claim a count once every page is in — a page-sized number
+              next to an infinite list reads as "30 results" when there are 400. */}
+          <Text style={styles.sectionLabel}>
+            {hasNextPage ? 'Characters' : `Characters  ·  ${listData.length}`}
+          </Text>
         </View>
       )}
     </>
   );
 
-  const listEmpty = isIdle ? null : isPending ? (
-    <SkeletonProvider>
-      <View style={styles.skelGrid}>
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton
-            key={i}
-            width={cardWidth}
-            height={Math.round(cardWidth * 1.48)}
-            borderRadius={10}
-          />
-        ))}
+  const listEmpty =
+    settling || (!isIdle && isPending) ? (
+      <SkeletonProvider>
+        <View style={styles.skelGrid}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton
+              key={i}
+              width={cardWidth}
+              height={Math.round(cardWidth * 1.48)}
+              borderRadius={10}
+            />
+          ))}
+        </View>
+      </SkeletonProvider>
+    ) : isIdle ? null : isFetching ? null : topResult ? null : (
+      <View style={styles.center}>
+        <View style={styles.emptyIconWrap}>
+          <Ionicons name="search-outline" size={30} color={COLORS.orange} />
+        </View>
+        <Text style={styles.emptyHeadline}>No characters found</Text>
+        <Text style={styles.emptySub}>Try a different search or filter</Text>
       </View>
-    </SkeletonProvider>
-  ) : isFetching ? null : topResult ? null : (
-    <View style={styles.center}>
-      <View style={styles.emptyIconWrap}>
-        <Ionicons name="search-outline" size={30} color={COLORS.orange} />
-      </View>
-      <Text style={styles.emptyHeadline}>No characters found</Text>
-      <Text style={styles.emptySub}>Try a different search or filter</Text>
-    </View>
-  );
+    );
 
   return (
     <View style={styles.root} collapsable={false}>

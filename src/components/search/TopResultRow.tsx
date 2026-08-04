@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   monoOrange: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.orange },
   text: { flex: 1, flexDirection: 'column', gap: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  name: { fontFamily: 'Flame-Regular', fontSize: 19, color: COLORS.beige, flexShrink: 1 },
+  name: { fontFamily: 'Flame-Regular', fontSize: 19, lineHeight: 24, color: COLORS.beige, flexShrink: 1 },
   tag: {
     paddingHorizontal: 7,
     paddingVertical: 2,

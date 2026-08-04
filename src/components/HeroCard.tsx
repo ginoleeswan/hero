@@ -86,6 +86,7 @@ const styles = StyleSheet.create({
   name: {
     fontFamily: 'Flame-Regular',
     fontSize: 20,
+    lineHeight: 25,
     color: COLORS.beige,
     textShadowColor: 'rgba(0, 0, 0, 1)',
     textShadowOffset: { width: -1, height: 1 },

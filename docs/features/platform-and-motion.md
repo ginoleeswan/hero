@@ -122,6 +122,12 @@ half-frame of skeleton.
 - `src/components/ui/LogoLoader.tsx` — **mounted once** in `app/_layout.web.tsx`
   spanning the whole cold start (fonts → auth settle), so the boot animation
   never restarts.
+- `src/components/ui/BootStage.tsx` — the **native** boot surface
+  (`app/_layout.tsx`). Same single-mount cold-start rule, plus an opening
+  reveal: when boot resolves, the logo solidifies and zooms through while the
+  stage fades and the app settles up from 96.5% scale — the router mounts as
+  its child only once boot is done, so the reveal replaces the old hard
+  loader→app cut. `LogoLoader` remains the simple fallback (web, Suspense).
 - React Query conventions: `placeholderData` / `keepPreviousData` keep stale
   content on screen through refetches; `prefetchHeroRow`
   (`src/lib/query/heroQueries.ts`) fires on `onPressIn` so the detail page is

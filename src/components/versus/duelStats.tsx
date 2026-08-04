@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     gap: 10,
   },
-  cName: { flex: 1, fontFamily: 'Flame-Regular', fontSize: 15 },
+  cName: { flex: 1, fontFamily: 'Flame-Regular', fontSize: 15, lineHeight: 19 },
   tally: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tallyN: { fontFamily: 'Flame-Regular', fontSize: 18, color: 'rgba(245,235,220,0.5)' },
   tallyDash: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.35)' },

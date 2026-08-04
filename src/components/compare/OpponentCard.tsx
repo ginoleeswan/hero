@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 15,
     color: COLORS.beige,
-    lineHeight: 18,
+    lineHeight: 19,
     ...Platform.select({
       web: { textShadow: '0 1px 8px rgba(0,0,0,0.9)' } as object,
       default: {},

@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: { fontFamily: 'Flame-Regular', fontSize: 13, color: '#fff' },
-  author: { fontFamily: 'Flame-Regular', fontSize: 14, color: COLORS.navy, flex: 1, minWidth: 0 },
+  author: { fontFamily: 'Flame-Regular', fontSize: 14, lineHeight: 18, color: COLORS.navy, flex: 1, minWidth: 0 },
   ratingPill: {
     flexDirection: 'row',
     alignItems: 'center',

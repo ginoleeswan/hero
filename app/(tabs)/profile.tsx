@@ -1377,6 +1377,7 @@ const styles = StyleSheet.create({
     right: 6,
     fontFamily: 'Flame-Regular',
     fontSize: 11,
+    lineHeight: 14,
     color: '#fff',
   },
 

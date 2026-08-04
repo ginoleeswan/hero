@@ -98,6 +98,17 @@ export default function BattleBuilderScreen() {
         colors={['#1c2f5a', '#13203a', '#0c1526']}
         style={[styles.stage, { paddingTop: insets.top + 20 }]}
       >
+        {/* The stack header is hidden — without this chevron the builder has
+            no visible way out (edge-swipe only). */}
+        <Pressable
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/versus'))}
+          style={[styles.backBtn, { top: insets.top + 4 }]}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
+          <Ionicons name="arrow-back" size={19} color="rgba(245,235,220,0.85)" />
+        </Pressable>
         <Text style={styles.eyebrow}>★ Build a Battle ★</Text>
         <Text style={styles.title}>Assemble Your Sides</Text>
 
@@ -324,7 +335,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   focalQ: { fontFamily: 'Flame-Regular', fontSize: 30, color: 'rgba(255,255,255,0.3)' },
-  focalName: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.beige, maxWidth: 150 },
+  focalName: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 17,
+    lineHeight: 21,
+    color: COLORS.beige,
+    maxWidth: 150,
+  },
+  backBtn: {
+    position: 'absolute',
+    left: 10,
+    zIndex: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(245,235,220,0.08)',
+  },
 
   seg: {
     flexDirection: 'row',

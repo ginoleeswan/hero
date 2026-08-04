@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Platform,
   ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -84,7 +85,13 @@ export default function ForgotPasswordScreen() {
       </Pressable>
 
       {/* Keyboard-aware scrollable content */}
-      <KeyboardAvoidingView style={styles.kav} behavior="padding" keyboardVerticalOffset={80}>
+      <KeyboardAvoidingView
+        style={styles.kav}
+        // iOS only: Android's adjustResize already resizes the window, and
+        // stacking "padding" on top of it double-shifts the form.
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+      >
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"

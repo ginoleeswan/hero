@@ -198,6 +198,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 26,
+    lineHeight: 32,
     color: COLORS.beige,
     marginBottom: 22,
     textAlign: 'center',
@@ -271,7 +272,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 6,
   },
-  teamTitle: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.beige },
+  teamTitle: { fontFamily: 'Flame-Regular', fontSize: 20, lineHeight: 25, color: COLORS.beige },
   teamCta: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,

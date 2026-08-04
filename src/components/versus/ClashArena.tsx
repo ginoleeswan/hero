@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
   coinTxt: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.beige, letterSpacing: 0.5 },
   crestText: { flexShrink: 1 },
   crestTextR: { flexShrink: 1, alignItems: 'flex-end' },
-  crestName: { fontFamily: 'Flame-Regular', fontSize: 18, letterSpacing: 0.3 },
+  crestName: { fontFamily: 'Flame-Regular', fontSize: 18, lineHeight: 22, letterSpacing: 0.3 },
   crestMeta: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,

@@ -890,7 +890,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroInitial: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.black },
-  heroName: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.beige },
+  heroName: { fontFamily: 'Flame-Regular', fontSize: 13, lineHeight: 16, color: COLORS.beige },
   heroTag: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 7,

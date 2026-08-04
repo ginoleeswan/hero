@@ -5,7 +5,17 @@
 // change is deferred. Opened by the in-place dossier editor on the character
 // screen (native + web via RNW).
 import { useEffect, useState } from 'react';
-import { Modal, View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../constants/colors';
@@ -51,6 +61,7 @@ export function ContributeSheet({
   onRequestSignIn,
   onSubmitted,
 }: ContributeSheetProps) {
+  const insets = useSafeAreaInsets();
   const [value, setValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,92 +148,100 @@ export function ContributeSheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={s.backdrop} onPress={onClose}>
-        <Pressable style={s.sheet} onPress={(e) => e.stopPropagation?.()}>
-          <View style={s.grabber} />
+        {/* The input autoFocuses, so the keyboard is up the moment the sheet
+            opens — lift the sheet above it (iOS; Android resizes the window)
+            and keep the CTA clear of the home indicator. */}
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <Pressable
+            style={[s.sheet, { paddingBottom: Math.max(insets.bottom, 8) + 20 }]}
+            onPress={(e) => e.stopPropagation?.()}
+          >
+            <View style={s.grabber} />
 
-          {!user ? (
-            <View style={s.body}>
-              <Text style={s.kicker}>{heroName}</Text>
-              <Text style={s.prompt}>Help complete this page</Text>
-              <Text style={s.guideline}>
-                Sign in to add what you know — it helps everyone who looks this hero up.
-              </Text>
-              <Pressable onPress={onRequestSignIn} style={[s.btn, s.btnPrimary]}>
-                <Text style={s.btnPrimaryText}>Sign in to contribute</Text>
-              </Pressable>
-            </View>
-          ) : done ? (
-            <View style={s.body}>
-              <View style={s.doneIcon}>
-                <Ionicons name="checkmark" size={28} color="#fff" />
-              </View>
-              <Text style={s.doneTitle}>
-                {isReport ? 'Reported' : isAdmin ? 'Saved' : 'Sent for review'}
-              </Text>
-              <Text style={s.doneSub}>
-                {isReport
-                  ? 'Thanks for flagging this.'
-                  : isAdmin
-                    ? "It's live now."
-                    : rewardLine(priorCount + 1)}
-              </Text>
-              {isReport ? (
-                <Text style={s.doneMeta}>A moderator will review it shortly.</Text>
-              ) : !isAdmin ? (
-                <Text style={s.doneMeta}>A moderator will take a look before it goes live.</Text>
-              ) : null}
-              <Pressable onPress={onClose} style={[s.btn, s.btnPrimary]}>
-                <Text style={s.btnPrimaryText}>Done</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={s.body}>
-              <Text style={s.kicker}>{heroName}</Text>
-              <Text style={s.prompt}>{prompt}</Text>
-              {!!guideline && <Text style={s.guideline}>{guideline}</Text>}
-              {isAdmin && !!currentValue && (
-                <View style={s.current}>
-                  <Text style={s.currentLabel}>Current</Text>
-                  <Text style={s.currentValue}>{currentValue}</Text>
-                </View>
-              )}
-              <TextInput
-                value={value}
-                onChangeText={setValue}
-                placeholder={placeholder}
-                placeholderTextColor={COLORS.grey}
-                multiline={multiline}
-                keyboardType={isStat ? 'number-pad' : 'default'}
-                maxLength={isStat ? 3 : undefined}
-                style={[s.input, multiline && s.inputMultiline]}
-                autoFocus
-                onSubmitEditing={multiline ? undefined : submit}
-                returnKeyType="done"
-              />
-              {!!error && <Text style={s.error}>{error}</Text>}
-              <Pressable
-                onPress={submit}
-                disabled={submitting}
-                style={[s.btn, s.btnPrimary, submitting && s.btnDisabled]}
-              >
-                <Text style={s.btnPrimaryText}>
-                  {submitting
-                    ? 'Saving…'
-                    : isReport
-                      ? 'Submit report'
-                      : isAdmin
-                        ? 'Save'
-                        : 'Submit for review'}
+            {!user ? (
+              <View style={s.body}>
+                <Text style={s.kicker}>{heroName}</Text>
+                <Text style={s.prompt}>Help complete this page</Text>
+                <Text style={s.guideline}>
+                  Sign in to add what you know — it helps everyone who looks this hero up.
                 </Text>
-              </Pressable>
-              {isReport ? (
-                <Text style={s.reviewNote}>Reports are reviewed by a moderator.</Text>
-              ) : !isAdmin ? (
-                <Text style={s.reviewNote}>Suggestions are reviewed before they appear.</Text>
-              ) : null}
-            </View>
-          )}
-        </Pressable>
+                <Pressable onPress={onRequestSignIn} style={[s.btn, s.btnPrimary]}>
+                  <Text style={s.btnPrimaryText}>Sign in to contribute</Text>
+                </Pressable>
+              </View>
+            ) : done ? (
+              <View style={s.body}>
+                <View style={s.doneIcon}>
+                  <Ionicons name="checkmark" size={28} color="#fff" />
+                </View>
+                <Text style={s.doneTitle}>
+                  {isReport ? 'Reported' : isAdmin ? 'Saved' : 'Sent for review'}
+                </Text>
+                <Text style={s.doneSub}>
+                  {isReport
+                    ? 'Thanks for flagging this.'
+                    : isAdmin
+                      ? "It's live now."
+                      : rewardLine(priorCount + 1)}
+                </Text>
+                {isReport ? (
+                  <Text style={s.doneMeta}>A moderator will review it shortly.</Text>
+                ) : !isAdmin ? (
+                  <Text style={s.doneMeta}>A moderator will take a look before it goes live.</Text>
+                ) : null}
+                <Pressable onPress={onClose} style={[s.btn, s.btnPrimary]}>
+                  <Text style={s.btnPrimaryText}>Done</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={s.body}>
+                <Text style={s.kicker}>{heroName}</Text>
+                <Text style={s.prompt}>{prompt}</Text>
+                {!!guideline && <Text style={s.guideline}>{guideline}</Text>}
+                {isAdmin && !!currentValue && (
+                  <View style={s.current}>
+                    <Text style={s.currentLabel}>Current</Text>
+                    <Text style={s.currentValue}>{currentValue}</Text>
+                  </View>
+                )}
+                <TextInput
+                  value={value}
+                  onChangeText={setValue}
+                  placeholder={placeholder}
+                  placeholderTextColor={COLORS.grey}
+                  multiline={multiline}
+                  keyboardType={isStat ? 'number-pad' : 'default'}
+                  maxLength={isStat ? 3 : undefined}
+                  style={[s.input, multiline && s.inputMultiline]}
+                  autoFocus
+                  onSubmitEditing={multiline ? undefined : submit}
+                  returnKeyType="done"
+                />
+                {!!error && <Text style={s.error}>{error}</Text>}
+                <Pressable
+                  onPress={submit}
+                  disabled={submitting}
+                  style={[s.btn, s.btnPrimary, submitting && s.btnDisabled]}
+                >
+                  <Text style={s.btnPrimaryText}>
+                    {submitting
+                      ? 'Saving…'
+                      : isReport
+                        ? 'Submit report'
+                        : isAdmin
+                          ? 'Save'
+                          : 'Submit for review'}
+                  </Text>
+                </Pressable>
+                {isReport ? (
+                  <Text style={s.reviewNote}>Reports are reviewed by a moderator.</Text>
+                ) : !isAdmin ? (
+                  <Text style={s.reviewNote}>Suggestions are reviewed before they appear.</Text>
+                ) : null}
+              </View>
+            )}
+          </Pressable>
+        </KeyboardAvoidingView>
       </Pressable>
     </Modal>
   );
@@ -238,7 +257,6 @@ const s = StyleSheet.create({
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     borderCurve: 'continuous',
-    paddingBottom: 28,
   },
   grabber: {
     width: 40,

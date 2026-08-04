@@ -98,6 +98,9 @@ Search history is a platform pair: `useSearchHistory` (web, localStorage) and
 `useRecentSearches` (native, AsyncStorage). Both run entries through
 `tidySearchHistory` (exported from `src/hooks/useSearchHistory.ts`), which
 collapses typing prefixes so "spi", "spide", "spider" store as one entry.
+On native, a term is recorded on the keyboard Search button **and on tapping
+any result** (card, top result, or a section row) — tap-through is the common
+path, and recording only on the rarely-pressed Search key left Recent empty.
 
 Idle (empty-query) surfaces: recent searches, the Recently Viewed rail
 (`useRecentlyViewed`), fame-ranked trending heroes via `useIdleHeroes` →
@@ -106,7 +109,12 @@ the web palette — `useIdleShowcase` (trending teams + films, cached once per
 session).
 
 Native (`app/(tabs)/search/index.tsx`) uses the iOS `Stack.SearchBar` in the
-header plus `Stack.Toolbar.Menu` filter menus (Publisher, Alignment). Web
+header plus `Stack.Toolbar.Menu` filter menus (Publisher, Alignment). Its
+screen debounce is 250 ms with two feel rules: **clearing flushes
+immediately** (the idle surface must not coexist with the old query's
+sections), and the **settle gap shows the skeleton grid** — the beat between
+the first keystroke and the debounced query landing used to render a blank
+screen. Web
 (`index.web.tsx`) is driven by the TopBar's `?q=` URL param — the input
 commits to the URL after 300 ms, and the page renders from the URL, so results
 are linkable and back/forward work. Both screens must exist (expo-router
