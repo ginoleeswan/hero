@@ -26,10 +26,18 @@ export default function TabLayout() {
     //   the pairing — both its appearances are pinned above. SEARCH is the
     //   exception and keeps automatic insets: it has a real native header and
     //   Stack.SearchBar for its content to sit under.
+    // iconColor/labelStyle are safe HERE, though they were removed earlier as
+    // part of fixing the bar: what actually suppresses the system treatment is
+    // swapping in a custom appearance, and blurEffect already does that. Given
+    // the appearance is custom regardless, the unselected items may as well be
+    // legible — the system default resolves near-black against this material.
+    // Selected state is left to tintColor (expo-router falls back to it).
     <NativeTabs
       tintColor="#e8621a"
       blurEffect="systemChromeMaterialDark"
       disableTransparentOnScrollEdge
+      iconColor="rgba(245,235,220,0.72)"
+      labelStyle={{ color: 'rgba(245,235,220,0.72)' }}
     >
       <NativeTabs.Trigger name="explore" disableAutomaticContentInsets>
         <NativeTabs.Trigger.Icon

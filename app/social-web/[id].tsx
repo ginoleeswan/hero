@@ -194,6 +194,8 @@ export default function SocialWebExplorerNative() {
           }
           style={styles.back}
           hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
         >
           <Ionicons name="arrow-back" size={20} color={INK_TEXT.primary} />
         </Pressable>

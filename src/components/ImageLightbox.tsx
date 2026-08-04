@@ -106,6 +106,8 @@ export function ImageLightbox({ images, initialIndex, onClose, onReport }: Props
           onPress={onClose}
           style={[styles.closeBtn, { top: insets.top + 12 }]}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
         >
           <Ionicons name="close" size={24} color="#fff" />
         </TouchableOpacity>
@@ -116,6 +118,8 @@ export function ImageLightbox({ images, initialIndex, onClose, onReport }: Props
             onPress={() => onReport(images[indexRef.current])}
             style={[styles.reportBtn, { top: insets.top + 12 }]}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Report image"
           >
             <Ionicons name="flag-outline" size={22} color="#fff" />
           </TouchableOpacity>

@@ -77,7 +77,14 @@ export function FighterAnchor({
         <Text style={[styles.q, stage && (styles.qStage as object)] as object}>?</Text>
       )}
       {filled && onClear ? (
-        <Pressable aria-label="Remove" onPress={onClear} hitSlop={10} style={styles.clear as object}>
+        <Pressable
+          aria-label="Remove"
+          accessibilityRole="button"
+          accessibilityLabel="Remove"
+          onPress={onClear}
+          hitSlop={10}
+          style={styles.clear as object}
+        >
           <Ionicons name="close" size={15} color={COLORS.beige} />
         </Pressable>
       ) : null}
@@ -153,7 +160,13 @@ const styles = StyleSheet.create({
   } as object,
   q: { fontFamily: 'Flame-Regular', fontSize: 42, color: 'rgba(41,60,67,0.3)' },
   qStage: { color: 'rgba(245,235,220,0.4)' } as object,
-  name: { fontFamily: 'Flame-Regular', fontSize: 17, lineHeight: 21, color: COLORS.navy, textAlign: 'center' },
+  name: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 17,
+    lineHeight: 21,
+    color: COLORS.navy,
+    textAlign: 'center',
+  },
   nameStage: {
     color: COLORS.beige,
     ...Platform.select({
