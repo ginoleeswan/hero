@@ -1,14 +1,20 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { useBiography, resolveBioLink } from '../../src/hooks/useBiography';
+import {
+  useBiography,
+  resolveBioLink,
+  MIN_SECTIONS_FOR_CONTENTS,
+} from '../../src/hooks/useBiography';
 import { COLORS, SURFACE, ORANGE_INK, PAPER_TEXT } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { PageEndCap } from '../../src/components/web/PageEndCap';
+import { BiographyContents } from '../../src/components/biography/BiographyContents';
+import { useDocumentReadingPosition } from '../../src/hooks/useDocumentReadingPosition.web';
 
 const HTML_STYLES = `
   body {
@@ -26,7 +32,9 @@ const HTML_STYLES = `
     margin: 40px 0 10px;
     padding-bottom: 8px;
     border-bottom: 2px solid rgba(231,115,51,0.3);
-    scroll-margin-top: 32px;
+    /* Clear the FIXED TopBar, or a contents jump lands the heading underneath
+       it. This was 32px against a 64px bar — every jump was half-buried. */
+    scroll-margin-top: ${TOPBAR_HEIGHT + 20}px;
     font-weight: normal;
   }
   h2:first-child { margin-top: 0; }
@@ -294,6 +302,13 @@ export default function WebBiographyScreen() {
   // live in the shared hook, so this view and its native twin can't drift.
   const { hero, processedHtml, toc, hasBiography } = useBiography(id);
 
+  // Mobile gets the docked reading pill; desktop already has the sticky rail
+  // and the gutter to put it in, so a second contents affordance there would
+  // just be two ways to do one thing.
+  const showContents = !isDesktop && hasBiography && toc.length >= MIN_SECTIONS_FOR_CONTENTS;
+  const [contentsOpen, setContentsOpen] = useState(false);
+  const { activeIndex, progress, hidden } = useDocumentReadingPosition(toc.length, showContents);
+
   const heroImage = id ? heroImageSource(String(id), hero?.image_url, hero?.portrait_url) : null;
 
   const scrollToSection = (index: number) => {
@@ -457,6 +472,19 @@ export default function WebBiographyScreen() {
           </View>
           {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
           <PageEndCap />
+          {showContents ? (
+            <View style={styles.contentsDock as object} pointerEvents="box-none">
+              <BiographyContents
+                toc={toc}
+                activeIndex={activeIndex}
+                progress={progress}
+                hidden={hidden && !contentsOpen}
+                open={contentsOpen}
+                onOpenChange={setContentsOpen}
+                onJump={scrollToSection}
+              />
+            </View>
+          ) : null}
         </>
       )}
     </View>
@@ -468,6 +496,16 @@ const styles = StyleSheet.create({
   // Mobile: the scroll surface goes dark so the header fuses uninterrupted into the
   // dark status strip (no beige peeking between). The beige comes from mobileBody.
   scrollDarkMobile: { backgroundColor: COLORS.deepNavy } as object,
+
+  // Fixed to the viewport, not the document — the pill has to stay put while
+  // the page scrolls under it. box-none so only the pill takes pointer events.
+  contentsDock: {
+    position: 'fixed',
+    left: 0,
+    right: 0,
+    bottom: 'calc(16px + env(safe-area-inset-bottom))',
+    zIndex: 40,
+  } as object,
 
   // Cinematic identity header — mirrors the character page stage
   identityHeader: {
