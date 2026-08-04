@@ -11,6 +11,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../constants/colors';
+import { RADIUS, TRACKING } from '../../constants/tokens';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -102,10 +103,15 @@ const styles = StyleSheet.create({
   btn: {
     marginTop: 12,
     backgroundColor: COLORS.orange,
-    borderRadius: 999,
+    borderRadius: RADIUS.pill,
     paddingVertical: 11,
     paddingHorizontal: 22,
   },
   btnPressed: { opacity: 0.75 },
-  btnText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: '#fff', letterSpacing: 0.3 },
+  btnText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: '#fff',
+    letterSpacing: TRACKING.wide,
+  },
 });

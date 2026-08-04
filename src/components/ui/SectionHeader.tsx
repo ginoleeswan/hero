@@ -13,6 +13,13 @@ import { View, Text, StyleSheet, Pressable, type StyleProp, type ViewStyle } fro
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../constants/colors';
+import { TRACKING } from '../../constants/tokens';
+
+// The rail gutter, NOT SCREEN_PAD. A section header lines up with the cards in
+// its own rail (16), which is a different measure from the screen-level gutter
+// (20) — snapping this to SCREEN_PAD would push every header 4px out of line
+// with the row beneath it.
+const RAIL_PAD = 16;
 
 export function SectionHeader({
   eyebrow,
@@ -70,14 +77,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'space-between',
     gap: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: RAIL_PAD,
     marginBottom: 12,
   },
   textCol: { flex: 1, gap: 2 },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
-    letterSpacing: 2,
+    letterSpacing: TRACKING.widest,
     textTransform: 'uppercase',
     color: COLORS.orange,
   },
