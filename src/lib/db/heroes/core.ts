@@ -44,10 +44,16 @@ export async function getHeroByComicvineId(cvId: string): Promise<Hero | null> {
 
 export async function getHeroById(id: string): Promise<Hero | null> {
   const { data, error } = await supabase.from('heroes').select('*').eq('id', id).single();
-  // PGRST116 = "no rows found" — hero not yet enriched, caller falls back to API.
-  // Log any other error so DB outages are observable.
+  // PGRST116 = "no rows found". That is the ONLY error that means null — the id
+  // genuinely is not in the catalog.
+  //
+  // Anything else (network down, 500, RLS) has to throw. Returning null for it
+  // told React Query the fetch had SUCCEEDED with no hero, so `retry` never
+  // fired, staleTime cached the nothing, and `planHeroLoad` reported
+  // 'not-found' — the character page declared the hero missing instead of
+  // offering its retry. Its 'error' branch was unreachable because of this.
   if (error && error.code !== 'PGRST116') {
-    console.warn('[getHeroById] Supabase error:', error.message);
+    throw new Error(`[getHeroById] ${error.message}`);
   }
   return data ?? null;
 }

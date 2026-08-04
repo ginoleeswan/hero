@@ -163,8 +163,10 @@ export async function getTeamById(id: string): Promise<TeamSummary | null> {
     .select(TEAM_SUMMARY_COLS)
     .eq('id', id)
     .single();
+  // PGRST116 (no rows) is the only null; every other failure throws so the
+  // screen can tell "no such team" from "could not reach the database".
   if (error && error.code !== 'PGRST116') {
-    console.warn('[getTeamById] error:', error.message);
+    throw new Error(`[getTeamById] ${error.message}`);
   }
   return (data as TeamSummary | null) ?? null;
 }

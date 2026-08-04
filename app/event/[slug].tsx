@@ -32,7 +32,8 @@ export default function EventPage() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { dossier, loading, notFound, windowLabel, windowDays } = useEventDossier(slug);
+  const { dossier, loading, notFound, failed, retry, windowLabel, windowDays } =
+    useEventDossier(slug);
   // pre → bare ink page, so a cached dossier never blinks a skeleton.
   const phase = useSkeletonTransition(loading);
 
@@ -52,13 +53,15 @@ export default function EventPage() {
             body="An event gets a page once its detection is confirmed."
           />
         )}
-        {!loading && !notFound && !dossier && (
-          // Fetch error: the event may exist but didn't load — same quiet copy,
-          // never a blank ink page.
+        {failed && (
+          // The event may well exist — this is a failed fetch, not a dead link,
+          // so it offers a retry rather than the "no page yet" copy. This branch
+          // used to be unreachable: `notFound` was true for outages too.
           <EmptyState
             icon="cloud-offline-outline"
             title="Couldn’t load this event"
-            body="Try again shortly."
+            body="Check your connection and try again."
+            action={{ label: 'Try again', onPress: retry }}
           />
         )}
         {dossier && (

@@ -139,10 +139,10 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
  *  not-found rather than an empty shell. */
 export async function getEventDossier(slug: string): Promise<EventDossier | null> {
   const { data, error } = await supabase.rpc('get_event_dossier', { p_slug: slug });
-  if (error) {
-    console.warn('[getEventDossier] error:', error.message);
-    return null;
-  }
+  // Throw rather than returning null: a null here means "no event with that
+  // slug", and a failed RPC is a different thing the screen must be able to
+  // retry. Returning null for both made every outage look like a dead link.
+  if (error) throw new Error(`[getEventDossier] ${error.message}`);
   return mapEventDossier(data);
 }
 

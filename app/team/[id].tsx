@@ -4,14 +4,7 @@
 // grid. A team is "heroes whose teams[] contains the team name", so it reuses
 // the same paginated/faceted query path (useTeamHeroes → getTeamPage).
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-} from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -57,7 +50,6 @@ export default function TeamScreen() {
   // and the membership term that drives useTeamHeroes below.
   const teamQuery = useTeam(id);
   const team = teamQuery.data ?? null;
-  const teamLoaded = teamQuery.isFetched;
   const [filters, setFilters] = useState<CategoryFilters>(() => ({ ...DEFAULT_FILTERS }));
   const [peek, setPeek] = useState<PeekHero | null>(null);
 
@@ -91,7 +83,10 @@ export default function TeamScreen() {
 
   const heroes = flattenCategoryPages(data);
   const total = data?.pages[0]?.total ?? 0;
-  const notFound = teamLoaded && team === null;
+  // isSuccess, not isFetched: isFetched is true after a FAILURE too, so an
+  // outage used to render "This team doesn't exist."
+  const notFound = teamQuery.isSuccess && team === null;
+  const failed = teamQuery.isError;
 
   // The roster grid is pending (the stage header is already real). pre → nothing,
   // so a cached roster never blinks a skeleton.
@@ -310,6 +305,15 @@ export default function TeamScreen() {
             gridPhase === 'skeleton' ? (
               <TeamSkeleton />
             ) : null
+          ) : failed ? (
+            <EmptyState
+              icon="cloud-offline-outline"
+              title="Couldn’t load this team"
+              body="Check your connection and try again."
+              action={{ label: 'Try again', onPress: () => void teamQuery.refetch() }}
+              tone="light"
+              compact
+            />
           ) : notFound ? (
             <EmptyState
               icon="people-outline"
