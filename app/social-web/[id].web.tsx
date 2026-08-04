@@ -17,6 +17,7 @@ import UniverseScene, { type UniverseNode } from '../../src/components/character
 import { SocialWebFocusCard } from '../../src/components/character/SocialWebFocusCard';
 import { SocialWebSearch } from '../../src/components/character/SocialWebSearch';
 import { NebulaLoader } from '../../src/components/character/NebulaLoader';
+import { EmptyState } from '../../src/components/ui/EmptyState';
 import { getSharedTitles } from '../../src/lib/db/heroes/sharedTitles';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
@@ -40,7 +41,7 @@ export default function SocialWebExplorer() {
     queryFn: () => getHeroNeighborhood(heroId, nodeLimit),
     staleTime: 5 * 60 * 1000,
   });
-  const { data } = useQuery({
+  const { data, isError, refetch } = useQuery({
     ...neighbourhoodQuery(focusSubject),
     // Hold the outgoing universe on screen while the next one loads. Without
     // this `data` goes undefined the moment you travel, the scene below
@@ -216,10 +217,21 @@ export default function SocialWebExplorer() {
         }
       />
 
-      {/* Full-screen nebula behind the chrome while the neighbourhood loads */}
-      {!data ? (
+      {/* Full-screen nebula behind the chrome while the neighbourhood loads.
+          Gated on isError too, or a failed fetch spins forever. */}
+      {!data && !isError ? (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <NebulaLoader />
+        </View>
+      ) : null}
+      {isError ? (
+        <View style={styles.failed as object}>
+          <EmptyState
+            icon="cloud-offline-outline"
+            title="Couldn’t load this universe"
+            body="Check your connection and try again."
+            action={{ label: 'Try again', onPress: () => void refetch() }}
+          />
         </View>
       ) : null}
       <View style={[styles.header, narrow && styles.headerNarrow] as object}>
@@ -305,6 +317,16 @@ export default function SocialWebExplorer() {
 }
 
 const styles = StyleSheet.create({
+  failed: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  } as object,
   // 100dvh, not flex:1 of the layout viewport: on iOS Safari the layout viewport
   // is the LARGE one (browser chrome collapsed), so a full-height scene ran
   // taller than the visible area — the page could scroll, which slid this
