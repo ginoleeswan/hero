@@ -189,6 +189,15 @@ into a dozen variants.
 | `src/components/ui/EmptyState.tsx` | "nothing here" surfaces | plain grey text. `tone` picks the canvas (dark stage / beige paper); `compact` for inline sections. |
 | `src/components/ui/SectionHeader.tsx` | section eyebrow + title (+ "See all") | eleven different eyebrow sizes and letter-spacings outside `home/`. |
 | `src/lib/nativeMotion.ts` | every duration, easing, spring | ~25 ad-hoc `withTiming` durations and 6 spring configs. |
+| `src/constants/tokens.ts` | radii, spacing, tracking, `SCREEN_PAD` | 30 distinct radii, 27 letter-spacings, 8 screen gutters. |
+
+`tokens.ts` is **descriptive, not a migration**: every step is a value the
+codebase already favours, and ~700 existing radius call sites were left alone
+on purpose — many are deliberate (a 2px bar, a 26px squircle tuned to its art)
+and the only way to verify a sweep would be visual. Use it for new work and
+when you're already editing a rule. Note `SCREEN_PAD` (20, the screen gutter)
+is a different measure from a rail's 16 — `SectionHeader` uses the rail gutter
+so headers line up with the cards beneath them, not with the screen edge.
 
 Small controls (icon buttons, chips, toggles) take a `pressed` opacity style
 rather than `PressScale` — a scale animation on a small control feels wrong.
