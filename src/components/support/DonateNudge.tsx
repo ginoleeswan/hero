@@ -1,4 +1,5 @@
-import { Modal, Text, Pressable, StyleSheet } from 'react-native';
+import { Text, Pressable, StyleSheet } from 'react-native';
+import { Sheet } from '../ui/Sheet';
 import { COLORS, PAPER_TEXT } from '../../constants/colors';
 
 export function DonateNudge({
@@ -11,45 +12,25 @@ export function DonateNudge({
   onDismiss: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
-      <Pressable style={styles.backdrop} onPress={onDismiss}>
-        <Pressable style={styles.card} onPress={() => {}}>
-          <Text style={styles.emoji}>☕</Text>
-          <Text style={styles.title}>Enjoying Mythique?</Text>
-          <Text style={styles.body}>It’s free, made by one person — a coffee keeps it alive.</Text>
-          <Pressable
-            onPress={onConvert}
-            style={({ pressed }) => [styles.primary, pressed && styles.primaryPressed]}
-          >
-            <Text style={styles.primaryText}>Buy me a coffee</Text>
-          </Pressable>
-          <Pressable onPress={onDismiss} style={styles.later} hitSlop={8}>
-            <Text style={styles.laterText}>Maybe later</Text>
-          </Pressable>
-        </Pressable>
+    <Sheet visible={visible} onClose={onDismiss} label="Support Mythique" style={styles.card}>
+      <Text style={styles.emoji}>☕</Text>
+      <Text style={styles.title}>Enjoying Mythique?</Text>
+      <Text style={styles.body}>It’s free, made by one person — a coffee keeps it alive.</Text>
+      <Pressable
+        onPress={onConvert}
+        style={({ pressed }) => [styles.primary, pressed && styles.primaryPressed]}
+      >
+        <Text style={styles.primaryText}>Buy me a coffee</Text>
       </Pressable>
-    </Modal>
+      <Pressable onPress={onDismiss} style={styles.later} hitSlop={8}>
+        <Text style={styles.laterText}>Maybe later</Text>
+      </Pressable>
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(20,28,32,0.5)',
-    justifyContent: 'flex-end',
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingTop: 22,
-    paddingBottom: 34,
-    alignItems: 'center',
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 520,
-  },
+  card: { paddingHorizontal: 24, alignItems: 'center' },
   emoji: { fontSize: 34, marginBottom: 8 },
   title: {
     fontFamily: 'Flame-Regular',
