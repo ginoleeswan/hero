@@ -12,8 +12,9 @@ import { COLORS } from '../../constants/colors';
 import { statSplit, statLead, type MatchupSide } from '../../lib/home/matchupVote';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 import type { TodaysMatchup as Matchup } from '../../lib/matchup';
+import { MATCHUP_CARD } from './homeGeometry';
 
-const PORTRAIT = 96;
+const PORTRAIT = MATCHUP_CARD.portrait;
 
 function Fighter({
   hero,

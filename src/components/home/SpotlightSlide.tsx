@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
+import { SPOTLIGHT } from './homeGeometry';
 
 const ALIGN_LABEL: Record<string, string> = { good: 'Hero', bad: 'Villain', neutral: 'Anti-Hero' };
 
@@ -98,7 +99,13 @@ const styles = StyleSheet.create({
   // (Ken Burns + overscroll) grows downward and never eats that headroom.
   imageWrap: { transformOrigin: 'top' },
   // Sits low on the portrait; the dark stage overlaps the fade just below it.
-  meta: { position: 'absolute', bottom: 40, left: 20, right: 20, alignItems: 'center' },
+  meta: {
+    position: 'absolute',
+    bottom: SPOTLIGHT.metaBottom,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+  },
   name: {
     fontFamily: 'Flame-Regular',
     fontSize: 38,
