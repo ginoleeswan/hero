@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { INK_TEXT } from '../../constants/colors';
+import { SITE_URL } from '../../constants/site';
 
 /**
  * Send this universe somewhere else.
@@ -29,12 +30,21 @@ export function ShareUniverseButton({
   if (!heroId) return null;
 
   const share = async () => {
-    // `location.href` rather than a rebuilt path: travelling updates the params
-    // in place, so the address bar is already the canonical link to what's on
-    // screen, including any future query state.
-    const url = typeof window !== 'undefined' ? window.location.href : '';
+    // Web: `location.href` rather than a rebuilt path — travelling updates the
+    // params in place, so the address bar is already the canonical link.
+    // Native has no address bar, so rebuild the canonical URL from SITE_URL.
+    const url =
+      Platform.OS === 'web' && typeof window !== 'undefined'
+        ? window.location.href
+        : `${SITE_URL}/social-web/${heroId}`;
     const title = name ? `${name}'s universe` : 'Universe';
     try {
+      if (Platform.OS !== 'web') {
+        // RN's native share sheet — navigator.share doesn't exist here, and
+        // the old clipboard fallback silently threw, making the button a no-op.
+        await Share.share(Platform.OS === 'ios' ? { url, title } : { message: url, title });
+        return;
+      }
       // The native sheet is far better than a toast where it exists (all of
       // mobile Safari and Android), and it's the only route to Messages,
       // WhatsApp and the rest.

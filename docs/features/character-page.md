@@ -107,11 +107,14 @@ styles. `preprocessHtml` strips `<noscript>` blocks and base64 placeholder
 gifs and promotes `data-src`/`data-srcset` to real attributes, or images render
 blank.
 
-**`/social-web/[id]`** (`app/social-web/[id].tsx` + `.web.tsx`) draws a
-force-directed relationship graph from the `get_hero_neighborhood` RPC
-(`src/lib/db/heroes/neighborhood.ts`, layout in `src/lib/graph/forceLayout.ts`)
-via `SocialWebCanvas` / `SocialWebGraph` / `SocialWebFocusCard` /
-`SocialWebSearch`. The character page's doorway in is a constellation preview
+**`/social-web/[id]`** (`app/social-web/[id].tsx` + `.web.tsx`) — both
+platforms now render the SAME three.js constellation, `UniverseScene.dom.tsx`
+(a `'use dom'` component: an iframe on web, a WebView on native), fed by the
+`get_hero_neighborhood` RPC (`src/lib/db/heroes/neighborhood.ts`) with
+`SocialWebFocusCard` / `SocialWebSearch` / `UniverseTrail` /
+`ShareUniverseButton` as chrome. The old native-only flat canvas
+(`SocialWebCanvas` + `forceLayout`) is retired from this screen;
+`SocialWebGraph` still powers the character-page portal previews. The character page's doorway in is a constellation preview
 below the relationship shelves — `SocialWebPreview`
 (`src/components/web/character/`, web: CSS-gradient portal) and its native
 sibling `SocialWebPortal` (`src/components/character/`, LinearGradient portal);
