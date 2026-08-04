@@ -1,10 +1,11 @@
 // src/components/home/TitlePosterRail.tsx — a calm horizontal rail of film/TV
 // posters for the "On Screen Now" section. The badge (In Theaters / provider /
 // Coming) carries the status; the cast lives one tap away on the title page.
-import { View, Text, FlatList, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { PressScale } from '../ui/PressScale';
 import { COLORS } from '../../constants/colors';
 import { trendingBadge, type BadgeTone, type TrendingTitle } from '../../lib/db/trending';
 
@@ -56,7 +57,7 @@ export function TitlePosterRail({
           const badge = trendingBadge(item);
           const uri = item.poster_url ?? item.backdrop_url ?? undefined;
           return (
-            <Pressable style={s.card} onPress={() => onTitlePress(item.id)}>
+            <PressScale style={s.card} onPress={() => onTitlePress(item.id)}>
               {uri ? (
                 <Image
                   source={{ uri }}
@@ -100,7 +101,7 @@ export function TitlePosterRail({
               <Text style={s.cardName} numberOfLines={2}>
                 {item.title}
               </Text>
-            </Pressable>
+            </PressScale>
           );
         }}
       />

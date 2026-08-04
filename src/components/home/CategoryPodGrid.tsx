@@ -1,9 +1,10 @@
 // src/components/home/CategoryPodGrid.tsx — the "Browse" block. Image-backed
 // category tiles in a real two-up grid (each wears a representative character's
 // art), so browse reads as premium as the rest of the page — not a text menu.
-import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
+import { PressScale } from '../ui/PressScale';
 import { COLORS } from '../../constants/colors';
 import type { BrowseCover } from '../../lib/db/heroes';
 
@@ -69,7 +70,7 @@ export function CategoryPodGrid({
       {BROWSE_PODS.map((p) => {
         const c = covers?.[p.slug];
         return (
-          <Pressable key={p.slug} style={s.tile} onPress={() => onPress(p.slug)}>
+          <PressScale key={p.slug} style={s.tile} onPress={() => onPress(p.slug)}>
             <HeroImage
               id={p.slug}
               name={c?.name ?? p.label}
@@ -92,7 +93,7 @@ export function CategoryPodGrid({
             <Text style={s.label} numberOfLines={2}>
               {p.label}
             </Text>
-          </Pressable>
+          </PressScale>
         );
       })}
     </View>

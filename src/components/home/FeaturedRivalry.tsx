@@ -1,9 +1,10 @@
 // Native "Featured Rivalry" — the curated lead for the Arena chapter: one rivalry
 // as a full-width face-off banner (the versus identity), tapping into /compare.
 // Mirrors the web FeaturedRivalry. Sits on the beige content sheet.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
+import { PressScale } from '../ui/PressScale';
 import { VsBadge } from '../compare/VsBadge';
 import { COLORS } from '../../constants/colors';
 import type { Rivalry } from '../../lib/db/heroes';
@@ -18,7 +19,7 @@ export function FeaturedRivalry({
   const { a, b } = rivalry;
   return (
     <View style={s.wrap}>
-      <Pressable style={s.card} onPress={() => onOpen(`/compare/${a.id}/${b.id}`)}>
+      <PressScale style={s.card} scale={0.97} onPress={() => onOpen(`/compare/${a.id}/${b.id}`)}>
         <View style={s.faceA}>
           <HeroImage
             id={a.id}
@@ -60,7 +61,7 @@ export function FeaturedRivalry({
             {b.name}
           </Text>
         </View>
-      </Pressable>
+      </PressScale>
     </View>
   );
 }

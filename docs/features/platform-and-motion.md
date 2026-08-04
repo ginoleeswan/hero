@@ -135,9 +135,37 @@ half-frame of skeleton.
   grey wash. Honors Reduce Motion (plain crossfade). `LogoLoader` remains the
   simple fallback (web, Suspense).
 - Explore's entrance: the skeleton dissolves in place (exiting fade overlay)
-  and the first six feed rows cascade once (90ms stagger, soft spring), keyed
-  to the boot reveal via `signalFirstPaint()` — scroll-mounted rows never
-  replay it.
+  and the first batch of feed rows cascades once (`STAGGER.step`, soft
+  spring), keyed to the boot reveal via `signalFirstPaint()` — only rows in
+  the first batch (`index < STAGGER.cap`, matching `initialNumToRender`)
+  cascade, because later-batch rows would start their delay from whenever
+  virtualization mounted them and read as ragged pop-in.
+
+## The motion scale
+
+`src/lib/motion.ts` is the **web** scale (CSS strings). `src/lib/nativeMotion.ts`
+is the **native** one — `DUR` (fast/base/enter/exit/feature), `STAGGER`,
+`EASE_OUT`/`EASE_IN_OUT`/`EASE_REVEAL`, `SPRING_PRESS`/`SPRING_SETTLE`, and
+`SHIMMER_MS`. Reach for a token before typing a number; native had ~25 distinct
+`withTiming` durations and 6 different spring configs before it existed.
+`SHIMMER_MS` is the one skeleton tempo — `SkeletonProvider` and `ClashSkeleton`
+both read it so two skeletons never breathe at different rates.
+
+## Native performance notes
+
+Three costs that specifically hurt the home screen's first paint, all fixed —
+don't reintroduce them:
+
+- **`BlurView` composites every frame even at `opacity: 0`.** Explore's
+  spotlight frost is mounted only after the first real scroll
+  (`useAnimatedReaction` on `scrollY`), so the entrance cascade isn't taxed by
+  an invisible full-screen blur.
+- **`PaperSurface`'s halftone is per-row.** It's `memo`ised and rasterised
+  (`shouldRasterizeIOS` / `renderToHardwareTextureAndroid`) — otherwise a dozen
+  live SVG pattern fills re-rasterise down the feed.
+- **`HomeSkeleton` must mirror the real feed** — row order AND the
+  dark-stage/beige-paper zone split. It previously put beige directly under the
+  spotlight, so the entire background flipped tone at the handoff.
 - React Query conventions: `placeholderData` / `keepPreviousData` keep stale
   content on screen through refetches; `prefetchHeroRow`
   (`src/lib/query/heroQueries.ts`) fires on `onPressIn` so the detail page is

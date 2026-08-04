@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useEffect } from 'react';
 import { COLORS } from '../../constants/colors';
+import { SHIMMER_MS } from '../../lib/nativeMotion';
 
 /**
  * Placeholder for the team-clash stage while the rosters + verdict resolve. It
@@ -29,10 +30,13 @@ export function ClashSkeleton({
   const pulse = useSharedValue(0.5);
 
   useEffect(() => {
+    // SHIMMER_MS, not a local number: this is the same opacity pulse the
+    // shared SkeletonProvider runs, and two skeletons breathing at different
+    // tempos in one session is a coherence tell.
     pulse.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 720, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.5, { duration: 720, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: SHIMMER_MS, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.5, { duration: SHIMMER_MS, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
       false,

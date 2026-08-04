@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Animated, Easing } from 'react-native';
+import { SHIMMER_MS } from '../../lib/nativeMotion';
 
 const SkeletonContext = createContext<Animated.Value | null>(null);
 
@@ -11,13 +12,13 @@ export function SkeletonProvider({ children }: { children: React.ReactNode }) {
       Animated.sequence([
         Animated.timing(shimmer, {
           toValue: 0.45,
-          duration: 850,
+          duration: SHIMMER_MS,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(shimmer, {
           toValue: 1,
-          duration: 850,
+          duration: SHIMMER_MS,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),

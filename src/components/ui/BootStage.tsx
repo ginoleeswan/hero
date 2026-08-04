@@ -43,6 +43,7 @@ import Animated, {
 import { LOGO_MASK_PATH as LOGO_PATH } from '../../constants/logo';
 import { COLORS } from '../../constants/colors';
 import { onFirstPaint } from '../../lib/bootReveal';
+import { DUR, EASE_REVEAL } from '../../lib/nativeMotion';
 
 // Match the native splash exactly (app.config.ts: image 200px wide on
 // #293c43). The mask spans ~83.3% of its 1024 viewBox, so a 240px Svg shows
@@ -57,9 +58,7 @@ const SPLASH_NAVY = '#293C43'; // must equal app.config.ts splash backgroundColo
 const ALIVE_DELAY_MS = 250; // hold the perfect splash match for a beat
 const ALIVE_MS = 900; // the still frame waking up
 const BREATHE_MS = 2600; // full in-out breath
-const REVEAL_MS = 620;
 const REVEAL_CAP_MS = 1400; // max wait for the feed's first paint after boot
-const EASE_OUT = Easing.bezier(0.22, 1, 0.36, 1);
 
 export function BootStage({ booting, children }: { booting: boolean; children: ReactNode }) {
   const reduceMotion = useReducedMotion();
@@ -100,7 +99,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
       cancelAnimation(breathe);
       exit.value = withTiming(
         1,
-        { duration: reduceMotion ? 260 : REVEAL_MS, easing: EASE_OUT },
+        { duration: reduceMotion ? DUR.base : DUR.feature, easing: EASE_REVEAL },
         (done) => {
           if (done) runOnJS(setRevealDone)(true);
         },

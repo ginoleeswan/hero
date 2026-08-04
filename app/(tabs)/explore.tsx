@@ -19,6 +19,8 @@ import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
   useAnimatedStyle,
+  useAnimatedReaction,
+  runOnJS,
   interpolate,
   Extrapolation,
   type AnimatedProps,
@@ -27,6 +29,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, type Href } from 'expo-router';
 import { signalFirstPaint } from '../../src/lib/bootReveal';
+import { DUR, STAGGER, SPRING_SETTLE } from '../../src/lib/nativeMotion';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
@@ -174,6 +177,18 @@ export default function HomeScreen() {
   const spotlightBlur = useAnimatedStyle(() => ({
     opacity: interpolate(scrollY.value, [0, 220], [0, 1], Extrapolation.CLAMP),
   }));
+  // The frost is a full-screen BlurView. iOS composites a live blur EVERY
+  // frame even at opacity 0, so mounting it up front taxed the most
+  // performance-critical moment in the app — first paint and the entrance
+  // cascade — for something invisible until you scroll. Mount it on the first
+  // real scroll instead; it fades in from 0 anyway, so there is no pop.
+  const [frostMounted, setFrostMounted] = useState(false);
+  useAnimatedReaction(
+    () => scrollY.value > 24,
+    (scrolled, was) => {
+      if (scrolled && !was) runOnJS(setFrostMounted)(true);
+    },
+  );
   const spotlightPool = spotlight;
 
   const handlePress = useCallback(
@@ -343,22 +358,23 @@ export default function HomeScreen() {
   const [cascadeWindow, setCascadeWindow] = useState(true);
   useEffect(() => {
     if (!initialLoaded) return;
-    // Tell the boot stage the first real screen is ready — it holds its
-    // reveal for this, so the open lands on content, never on a skeleton.
-    signalFirstPaint();
     const t = setTimeout(() => setCascadeWindow(false), 1900);
     return () => clearTimeout(t);
   }, [initialLoaded]);
   const cascadeFor = useCallback(
     (index: number) => {
-      if (!cascadeWindow || index > 5) return undefined;
+      // Only the FIRST BATCH cascades (index < initialNumToRender). Rows in
+      // later batches mount whenever virtualization gets to them, so their
+      // delay would start from that later moment — reading as rows popping in
+      // raggedly after the entrance, which is exactly the "disjointed" feel.
+      if (!cascadeWindow || index >= STAGGER.cap) return undefined;
       // Base delay ≈ when the boot stage is half-dissolved, so the rows are
       // seen rising into place as the open completes — one continuous motion.
-      return FadeInDown.delay(220 + index * 90)
+      return FadeInDown.delay(DUR.base + index * STAGGER.step)
         .duration(480)
         .springify()
-        .damping(18)
-        .stiffness(160);
+        .damping(SPRING_SETTLE.damping)
+        .stiffness(SPRING_SETTLE.stiffness);
     },
     [cascadeWindow],
   );
@@ -377,12 +393,14 @@ export default function HomeScreen() {
                   onHeroPress={handlePress}
                   showLip={false}
                 />
-                <Animated.View
-                  style={[StyleSheet.absoluteFill, spotlightBlur]}
-                  pointerEvents="none"
-                >
-                  <BlurView intensity={48} tint="dark" style={StyleSheet.absoluteFill} />
-                </Animated.View>
+                {frostMounted && (
+                  <Animated.View
+                    style={[StyleSheet.absoluteFill, spotlightBlur]}
+                    pointerEvents="none"
+                  >
+                    <BlurView intensity={48} tint="dark" style={StyleSheet.absoluteFill} />
+                  </Animated.View>
+                )}
               </Animated.View>
             );
           case 'publishers':
@@ -530,6 +548,7 @@ export default function HomeScreen() {
       firstBeigeIndex,
       spotlightParallax,
       spotlightBlur,
+      frostMounted,
       cascadeFor,
     ],
   );
@@ -546,7 +565,7 @@ export default function HomeScreen() {
       <View style={styles.bottomFill} pointerEvents="none" />
       {initialLoaded && (
         <FeedList
-          entering={FadeIn.duration(220)}
+          entering={FadeIn.duration(DUR.base)}
           style={styles.scroll}
           data={rows}
           keyExtractor={keyExtractor}
@@ -564,6 +583,11 @@ export default function HomeScreen() {
           }
           scrollEventThrottle={16}
           onScroll={scrollHandler}
+          // The boot stage holds its reveal until this fires. Content SIZE
+          // (not the data arriving) is the honest signal that rows have been
+          // laid out — gating on data alone opened the stage onto a list that
+          // was still mounting, which is what made the handoff feel late.
+          onContentSizeChange={signalFirstPaint}
           initialNumToRender={3}
           maxToRenderPerBatch={3}
           windowSize={5}
@@ -576,7 +600,7 @@ export default function HomeScreen() {
       {!initialLoaded && (
         <Animated.View
           style={StyleSheet.absoluteFill}
-          exiting={FadeOut.duration(320)}
+          exiting={FadeOut.duration(DUR.enter)}
           pointerEvents="none"
         >
           <HomeSkeleton insets={insets} />
