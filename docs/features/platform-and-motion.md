@@ -123,11 +123,14 @@ half-frame of skeleton.
   spanning the whole cold start (fonts → auth settle), so the boot animation
   never restarts.
 - `src/components/ui/BootStage.tsx` — the **native** boot surface
-  (`app/_layout.tsx`). Same single-mount cold-start rule, plus an opening
-  reveal: when boot resolves, the logo solidifies and zooms through while the
-  stage fades and the app settles up from 96.5% scale — the router mounts as
-  its child only once boot is done, so the reveal replaces the old hard
-  loader→app cut. `LogoLoader` remains the simple fallback (web, Suspense).
+  (`app/_layout.tsx`). Same single-mount cold-start rule, staged as three
+  acts: **trace** (the logo strokes in once — never a restarting loop, which
+  reads as a glitch when boot outlasts a cycle), **hold** (the filled mark
+  breathes over an ember halo), **reveal** (accent ring ripples out, the mark
+  blooms through, the stage dissolves while the app settles up from 96.5%).
+  Honors Reduce Motion (plain crossfade). The router mounts as its child only
+  once boot is done, so the reveal replaces the old hard loader→app cut.
+  `LogoLoader` remains the simple fallback (web, Suspense).
 - React Query conventions: `placeholderData` / `keepPreviousData` keep stale
   content on screen through refetches; `prefetchHeroRow`
   (`src/lib/query/heroQueries.ts`) fires on `onPressIn` so the detail page is
