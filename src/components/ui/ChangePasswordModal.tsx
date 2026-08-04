@@ -1,20 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Animated,
-} from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Sheet } from './Sheet';
 import { COLORS, PAPER_TEXT } from '../../constants/colors';
-
-const isWeb = Platform.OS === 'web';
 
 interface Props {
   visible: boolean;
@@ -32,18 +20,6 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
   const [error, setError] = useState<string | null>(null);
   const nextRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
-  const [slideAnim] = useState(() => new Animated.Value(0));
-
-  useEffect(() => {
-    if (isWeb) return;
-    Animated.spring(slideAnim, {
-      toValue: visible ? 1 : 0,
-      useNativeDriver: true,
-      bounciness: 0,
-      speed: 14,
-    }).start();
-  }, [visible, slideAnim]);
-
   const reset = () => {
     setCurrent('');
     setNext('');
@@ -85,152 +61,102 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
   };
 
   return (
-    <Modal visible={visible} animationType="fade" transparent onRequestClose={handleClose}>
-      <KeyboardAvoidingView
-        style={isWeb ? styles.overlayWeb : styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <Pressable style={styles.backdrop} onPress={handleClose} />
-        <Animated.View
-          style={[
-            isWeb ? (styles.dialog as object) : styles.sheet,
-            !isWeb && {
-              transform: [
-                {
-                  translateY: slideAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [600, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          {!isWeb && <View style={styles.handle} />}
+    <Sheet
+      visible={visible}
+      onClose={handleClose}
+      avoidKeyboard
+      label="Change password"
+      style={styles.body}
+    >
+      <View style={styles.header}>
+        <Text style={styles.title}>Change Password</Text>
+        <Pressable onPress={handleClose} hitSlop={12}>
+          <Ionicons name="close" size={22} color={COLORS.navy} />
+        </Pressable>
+      </View>
 
-          <View style={styles.header}>
-            <Text style={styles.title}>Change Password</Text>
-            <Pressable onPress={handleClose} hitSlop={12}>
-              <Ionicons name="close" size={22} color={COLORS.navy} />
-            </Pressable>
-          </View>
+      {error && (
+        <View style={styles.errorBox}>
+          <Ionicons name="alert-circle-outline" size={14} color={COLORS.red} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
 
-          {error && (
-            <View style={styles.errorBox}>
-              <Ionicons name="alert-circle-outline" size={14} color={COLORS.red} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-
-          <Text style={styles.label}>Current password</Text>
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              value={current}
-              onChangeText={setCurrent}
-              secureTextEntry={!showCurrent}
-              autoComplete="password"
-              returnKeyType="next"
-              onSubmitEditing={() => nextRef.current?.focus()}
-              placeholderTextColor="rgba(41,60,67,0.3)"
-              placeholder="••••••••"
-            />
-            <Pressable onPress={() => setShowCurrent((v) => !v)} style={styles.eye}>
-              <Ionicons
-                name={showCurrent ? 'eye-off-outline' : 'eye-outline'}
-                size={18}
-                color="rgba(41,60,67,0.4)"
-              />
-            </Pressable>
-          </View>
-
-          <Text style={styles.label}>New password</Text>
-          <View style={styles.inputRow}>
-            <TextInput
-              ref={nextRef}
-              style={styles.input}
-              value={next}
-              onChangeText={setNext}
-              secureTextEntry={!showNext}
-              autoComplete="new-password"
-              returnKeyType="next"
-              onSubmitEditing={() => confirmRef.current?.focus()}
-              placeholderTextColor="rgba(41,60,67,0.3)"
-              placeholder="••••••••"
-            />
-            <Pressable onPress={() => setShowNext((v) => !v)} style={styles.eye}>
-              <Ionicons
-                name={showNext ? 'eye-off-outline' : 'eye-outline'}
-                size={18}
-                color="rgba(41,60,67,0.4)"
-              />
-            </Pressable>
-          </View>
-
-          <Text style={styles.label}>Confirm new password</Text>
-          <TextInput
-            ref={confirmRef}
-            style={[styles.inputRow, styles.inputStandalone]}
-            value={confirm}
-            onChangeText={setConfirm}
-            secureTextEntry
-            returnKeyType="done"
-            onSubmitEditing={handleSubmit}
-            placeholderTextColor="rgba(41,60,67,0.3)"
-            placeholder="••••••••"
+      <Text style={styles.label}>Current password</Text>
+      <View style={styles.inputRow}>
+        <TextInput
+          style={styles.input}
+          value={current}
+          onChangeText={setCurrent}
+          secureTextEntry={!showCurrent}
+          autoComplete="password"
+          returnKeyType="next"
+          onSubmitEditing={() => nextRef.current?.focus()}
+          placeholderTextColor="rgba(41,60,67,0.3)"
+          placeholder="••••••••"
+        />
+        <Pressable onPress={() => setShowCurrent((v) => !v)} style={styles.eye}>
+          <Ionicons
+            name={showCurrent ? 'eye-off-outline' : 'eye-outline'}
+            size={18}
+            color="rgba(41,60,67,0.4)"
           />
+        </Pressable>
+      </View>
 
-          <Pressable
-            style={({ pressed }) => [styles.button, (pressed || loading) && styles.buttonPressed]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.buttonText}>Update Password</Text>
-            )}
-          </Pressable>
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </Modal>
+      <Text style={styles.label}>New password</Text>
+      <View style={styles.inputRow}>
+        <TextInput
+          ref={nextRef}
+          style={styles.input}
+          value={next}
+          onChangeText={setNext}
+          secureTextEntry={!showNext}
+          autoComplete="new-password"
+          returnKeyType="next"
+          onSubmitEditing={() => confirmRef.current?.focus()}
+          placeholderTextColor="rgba(41,60,67,0.3)"
+          placeholder="••••••••"
+        />
+        <Pressable onPress={() => setShowNext((v) => !v)} style={styles.eye}>
+          <Ionicons
+            name={showNext ? 'eye-off-outline' : 'eye-outline'}
+            size={18}
+            color="rgba(41,60,67,0.4)"
+          />
+        </Pressable>
+      </View>
+
+      <Text style={styles.label}>Confirm new password</Text>
+      <TextInput
+        ref={confirmRef}
+        style={[styles.inputRow, styles.inputStandalone]}
+        value={confirm}
+        onChangeText={setConfirm}
+        secureTextEntry
+        returnKeyType="done"
+        onSubmitEditing={handleSubmit}
+        placeholderTextColor="rgba(41,60,67,0.3)"
+        placeholder="••••••••"
+      />
+
+      <Pressable
+        style={({ pressed }) => [styles.button, (pressed || loading) && styles.buttonPressed]}
+        onPress={handleSubmit}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.buttonText}>Update Password</Text>
+        )}
+      </Pressable>
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: 'flex-end' },
-  overlayWeb: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: {
-    backgroundColor: COLORS.beige,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-    paddingTop: 12,
-  },
-  dialog: {
-    backgroundColor: COLORS.beige,
-    borderRadius: 20,
-    paddingHorizontal: 28,
-    paddingBottom: 28,
-    paddingTop: 24,
-    width: 420,
-    maxWidth: '90%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(41,60,67,0.15)',
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
+  body: { paddingHorizontal: 22 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

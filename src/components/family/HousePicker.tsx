@@ -6,11 +6,11 @@
 // back. One verb per opening — root the tree, or trace to — because the sheet
 // is opened by the seat that asked.
 import { useMemo, useState } from 'react';
-import { View, Text, Pressable, TextInput, Modal, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, Pressable, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS, HOUSE_INK } from '../../constants/colors';
+import { Sheet } from '../ui/Sheet';
 import { HeroAvatar } from '../HeroAvatar';
 import { nodeDates } from '../../lib/family/lifespan';
 import type { RosterMember } from './HouseRoster';
@@ -31,7 +31,6 @@ export function HousePicker({
   onPick: (id: string) => void;
   onClose: () => void;
 }) {
-  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
 
   const shown = useMemo(() => {
@@ -41,124 +40,102 @@ export function HousePicker({
   }, [members, query, excludeId]);
 
   return (
-    <Modal
+    <Sheet
       visible={mode !== null}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      onDismiss={() => setQuery('')}
+      onClose={onClose}
+      footPad={12}
+      label={mode === 'root' ? 'Root the tree on' : 'Trace the line to'}
+      style={styles.sheet}
     >
-      <View style={styles.backdrop}>
+      <View style={styles.head}>
+        <Text style={styles.title}>
+          {mode === 'root' ? 'Root the tree on' : 'Trace the line to'}
+        </Text>
         <Pressable
-          style={StyleSheet.absoluteFill}
           onPress={onClose}
-          accessibilityLabel="Close"
+          hitSlop={10}
           accessibilityRole="button"
-        />
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }] as object}>
-          <View style={styles.head}>
-            <Text style={styles.title}>
-              {mode === 'root' ? 'Root the tree on' : 'Trace the line to'}
-            </Text>
-            <Pressable
-              onPress={onClose}
-              hitSlop={10}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              style={({ pressed }) => [styles.close, pressed && styles.pressed]}
-            >
-              <Ionicons name="close" size={17} color="#8d8375" />
-            </Pressable>
-          </View>
-
-          <View style={styles.search}>
-            <Ionicons name="search" size={15} color="#a99b84" />
-            <TextInput
-              autoFocus
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Find a name"
-              placeholderTextColor="#b3a894"
-              style={styles.searchInput as object}
-              accessibilityLabel="Find a name in this house"
-            />
-            {query ? (
-              <Pressable
-                onPress={() => setQuery('')}
-                hitSlop={8}
-                accessibilityLabel="Clear search"
-                style={({ pressed }) => [pressed && styles.pressed]}
-              >
-                <Ionicons name="close-circle" size={16} color="#c4b8a3" />
-              </Pressable>
-            ) : null}
-          </View>
-
-          <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
-            {shown.map((m) => {
-              const reign = m.reign_start
-                ? nodeDates({ reign_start: m.reign_start, reign_end: m.reign_end })
-                : null;
-              return (
-                <Pressable
-                  key={m.id}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    onPick(m.id);
-                  }}
-                  accessibilityRole="button"
-                  style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
-                    [
-                      styles.row,
-                      hovered && (styles.rowHover as object),
-                      pressed && styles.pressed,
-                    ] as object
-                  }
-                >
-                  <HeroAvatar
-                    id={m.id}
-                    name={m.name}
-                    avatarUrl={m.avatar_url}
-                    fallbackUrl={m.portrait_url ?? m.image_md_url ?? m.image_url}
-                    size={32}
-                    radius={16}
-                    bare
-                  />
-                  <Text style={styles.name} numberOfLines={1}>
-                    {m.name}
-                  </Text>
-                  {reign ? (
-                    <View style={styles.reign}>
-                      <MaterialCommunityIcons name="crown-outline" size={11} color="#b3a48b" />
-                      <Text style={styles.reignText}>{reign}</Text>
-                    </View>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-            {shown.length === 0 ? <Text style={styles.empty}>No one by that name.</Text> : null}
-          </ScrollView>
-        </View>
+          accessibilityLabel="Close"
+          style={({ pressed }) => [styles.close, pressed && styles.pressed]}
+        >
+          <Ionicons name="close" size={17} color="#8d8375" />
+        </Pressable>
       </View>
-    </Modal>
+
+      <View style={styles.search}>
+        <Ionicons name="search" size={15} color="#a99b84" />
+        <TextInput
+          autoFocus
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Find a name"
+          placeholderTextColor="#b3a894"
+          style={styles.searchInput as object}
+          accessibilityLabel="Find a name in this house"
+        />
+        {query ? (
+          <Pressable
+            onPress={() => setQuery('')}
+            hitSlop={8}
+            accessibilityLabel="Clear search"
+            style={({ pressed }) => [pressed && styles.pressed]}
+          >
+            <Ionicons name="close-circle" size={16} color="#c4b8a3" />
+          </Pressable>
+        ) : null}
+      </View>
+
+      <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
+        {shown.map((m) => {
+          const reign = m.reign_start
+            ? nodeDates({ reign_start: m.reign_start, reign_end: m.reign_end })
+            : null;
+          return (
+            <Pressable
+              key={m.id}
+              onPress={() => {
+                Haptics.selectionAsync();
+                onPick(m.id);
+              }}
+              accessibilityRole="button"
+              style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
+                [
+                  styles.row,
+                  hovered && (styles.rowHover as object),
+                  pressed && styles.pressed,
+                ] as object
+              }
+            >
+              <HeroAvatar
+                id={m.id}
+                name={m.name}
+                avatarUrl={m.avatar_url}
+                fallbackUrl={m.portrait_url ?? m.image_md_url ?? m.image_url}
+                size={32}
+                radius={16}
+                bare
+              />
+              <Text style={styles.name} numberOfLines={1}>
+                {m.name}
+              </Text>
+              {reign ? (
+                <View style={styles.reign}>
+                  <MaterialCommunityIcons name="crown-outline" size={11} color="#b3a48b" />
+                  <Text style={styles.reignText}>{reign}</Text>
+                </View>
+              ) : null}
+            </Pressable>
+          );
+        })}
+        {shown.length === 0 ? <Text style={styles.empty}>No one by that name.</Text> : null}
+      </ScrollView>
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(11,24,32,0.45)', justifyContent: 'flex-end' },
   pressed: { opacity: 0.6 },
-  sheet: {
-    backgroundColor: COLORS.beige,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    gap: 12,
-    maxHeight: '82%',
-    width: '100%',
-    maxWidth: 560,
-    alignSelf: 'center',
-  },
+  sheet: { paddingHorizontal: 16, gap: 12, maxHeight: '82%', maxWidth: 560 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   title: { fontFamily: 'Flame-Regular', fontSize: 22, lineHeight: 28, color: COLORS.black },
   close: { marginLeft: 'auto', padding: 4 },
