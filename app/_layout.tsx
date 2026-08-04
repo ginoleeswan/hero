@@ -28,7 +28,7 @@ import AnalyticsProvider from '../src/components/Analytics';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../src/lib/query/queryClient';
 import { postAuthTarget } from '../src/lib/loginRedirect';
-import { COLORS } from '../src/constants/colors';
+import { COLORS, INK_TEXT } from '../src/constants/colors';
 import { initSentry, captureException } from '../src/lib/sentry';
 
 // Start crash reporting as early as possible (module scope, before any render).
@@ -103,7 +103,7 @@ const eb = StyleSheet.create({
   detail: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: 'rgba(245,235,220,0.4)',
+    color: INK_TEXT.faint,
     textAlign: 'center',
     marginTop: 14,
   },

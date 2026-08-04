@@ -12,7 +12,7 @@ import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressScale } from '../ui/PressScale';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import type { PulseEvent, PulseKind } from '../../lib/home/pulse';
 
@@ -250,7 +250,7 @@ const live = StyleSheet.create({
     letterSpacing: 1.6,
     textTransform: 'uppercase',
   },
-  statusSep: { fontSize: 10, color: 'rgba(245,235,220,0.35)' },
+  statusSep: { fontSize: 10, color: INK_TEXT.faint },
   day: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
@@ -270,7 +270,7 @@ const live = StyleSheet.create({
     fontSize: 8.5,
     letterSpacing: 1.6,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
     marginBottom: 3,
   },
   moverName: {
@@ -341,7 +341,7 @@ const s = StyleSheet.create({
     letterSpacing: 0.5,
     color: 'rgba(245,235,220,0.82)',
   },
-  sep: { fontSize: 10, color: 'rgba(245,235,220,0.4)' },
+  sep: { fontSize: 10, color: INK_TEXT.faint },
   meta: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 10,

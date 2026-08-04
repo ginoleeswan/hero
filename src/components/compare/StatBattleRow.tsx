@@ -8,7 +8,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import type { StatResult } from '../../lib/compare';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 
 const BAR_DIM = 'rgba(41,60,67,0.16)';
 
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   valDim: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 14,
-    color: 'rgba(41,60,67,0.4)',
+    color: PAPER_TEXT.faint,
   },
   label: {
     fontFamily: 'Nunito_700Bold',

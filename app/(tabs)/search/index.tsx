@@ -25,7 +25,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import type { SearchBarCommands } from 'react-native-screens';
 import { useQueryClient } from '@tanstack/react-query';
-import { COLORS } from '../../../src/constants/colors';
+import { COLORS, INK_TEXT } from '../../../src/constants/colors';
 import { PortraitCard } from '../../../src/components/search/PortraitCard';
 import { UniverseResultRow } from '../../../src/components/search/UniverseResultRow';
 import { TeamResultRow } from '../../../src/components/search/TeamResultRow';
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
   },
   recentClear: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
   recentChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

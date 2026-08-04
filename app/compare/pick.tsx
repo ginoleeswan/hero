@@ -18,7 +18,7 @@ import { PresetRail } from '../../src/components/versus/PresetRail';
 import { useBattleBuilder } from '../../src/hooks/useBattleBuilder';
 import { usePresetTeams } from '../../src/hooks/usePresetTeams';
 import { FACTION_A, FACTION_B } from '../../src/components/versus/factionColors';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, PAPER_TEXT, INK_TEXT } from '../../src/constants/colors';
 import { getTeamRoster } from '../../src/lib/db/teams';
 import type { PickedHero } from '../../src/lib/battleBuilderState';
 import type { PublisherFilter, AlignmentFilter } from '../../src/lib/db/heroes/types';
@@ -188,7 +188,7 @@ export default function BattleBuilderScreen() {
           <TextInput
             style={styles.input}
             placeholder="Search any hero or villain…"
-            placeholderTextColor="rgba(41,60,67,0.38)"
+            placeholderTextColor={PAPER_TEXT.placeholder}
             value={query}
             onChangeText={setQuery}
             autoCapitalize="none"
@@ -291,13 +291,11 @@ function Segment({
 }) {
   return (
     <Pressable onPress={onPress} style={[styles.segBtn, active ? styles.segOn : null]}>
-      <Text style={[styles.segLabel, { color: active ? tint : 'rgba(245,235,220,0.6)' }]}>
+      <Text style={[styles.segLabel, { color: active ? tint : INK_TEXT.faint }]}>
         {label} · {count}
       </Text>
       {count >= 2 ? (
-        <Text style={[styles.segSyn, { color: active ? tint : 'rgba(245,235,220,0.4)' }]}>
-          +{synergy}%
-        </Text>
+        <Text style={[styles.segSyn, { color: active ? tint : INK_TEXT.faint }]}>+{synergy}%</Text>
       ) : null}
     </Pressable>
   );
@@ -326,7 +324,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  focalQ: { fontFamily: 'Flame-Regular', fontSize: 30, color: 'rgba(255,255,255,0.3)' },
+  // 0.5a over the #16242b slot = 5.0:1. The old 0.3a read as 2.69:1 — the empty
+  // slot's "?" is the only cue that a fighter is missing, so it has to be legible.
+  focalQ: { fontFamily: 'Flame-Regular', fontSize: 30, color: 'rgba(255,255,255,0.5)' },
   focalName: {
     fontFamily: 'Flame-Regular',
     fontSize: 17,
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   empty: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
     paddingTop: 8,
   },
 

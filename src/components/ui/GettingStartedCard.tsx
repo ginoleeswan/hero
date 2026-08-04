@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 
 const isWeb = Platform.OS === 'web';
 
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
   },
   labelDone: {
-    color: 'rgba(41,60,67,0.4)',
+    color: PAPER_TEXT.faint,
     textDecorationLine: 'line-through',
   },
 });

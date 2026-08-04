@@ -4,7 +4,7 @@
 // web (RNW).
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import { winPct, type GameStats } from '../../lib/game/stats';
 import type { StreakState } from '../../lib/game/streak';
 
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     marginTop: 2,
     textAlign: 'center',
   },

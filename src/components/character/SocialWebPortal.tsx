@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SURFACE } from '../../constants/colors';
+import { SURFACE, PAPER_TEXT } from '../../constants/colors';
 import { getHeroNeighborhood } from '../../lib/db/heroes/neighborhood';
 import { SocialWebGraph } from './SocialWebGraph';
 
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
   },
   explore: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   exploreText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },

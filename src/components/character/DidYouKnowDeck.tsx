@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDE = 20;
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   total: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
   },
   text: {
     fontFamily: 'FlameSans-Regular',

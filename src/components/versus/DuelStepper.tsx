@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 
 type Act = 'squad' | 'challenger';
 
@@ -89,5 +89,5 @@ const s = StyleSheet.create({
     color: 'rgba(245,235,220,0.7)',
   },
   labelOn: { color: COLORS.beige },
-  labelMuted: { color: 'rgba(245,235,220,0.4)' },
+  labelMuted: { color: INK_TEXT.faint },
 });

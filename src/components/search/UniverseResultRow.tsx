@@ -6,7 +6,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PressScale } from '../ui/PressScale';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import { BrandLogoView } from '../PublisherBadge';
 import type { UniverseResult } from '../../lib/db/universes';
 
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   kicker: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },

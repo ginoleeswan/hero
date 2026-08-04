@@ -3,7 +3,7 @@
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { HeroImage } from '../HeroImage';
 import { PressScale } from '../ui/PressScale';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 import type { EraBucket, EraHero } from '../../lib/db/heroes';
 
 const ERA_YEARS: Record<string, string> = {
@@ -126,7 +126,7 @@ const t = StyleSheet.create({
   eraYears: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -146,7 +146,7 @@ const t = StyleSheet.create({
   cardYear: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
     marginTop: 1,
   },
 });

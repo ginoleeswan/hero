@@ -14,7 +14,7 @@ import Animated, {
   withSequence,
 } from 'react-native-reanimated';
 import { HeroImage } from '../HeroImage';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import { TitlePosterRail } from './TitlePosterRail';
 import { ComicCoverRail } from './ComicCoverRail';
 import { TrendingMovers } from './TrendingMovers';
@@ -352,7 +352,7 @@ const bandStyles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
   },
   shelfHeader: {
     flexDirection: 'row',

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import type { FirstIssue } from '../types';
-import { COLORS } from '../constants/colors';
+import { COLORS, INK_TEXT } from '../constants/colors';
 
 const DARK_BG = '#1B2A30';
 
@@ -374,9 +374,9 @@ const styles = StyleSheet.create({
 
   /* Dark overrides (native) */
   seriesNameDark: { color: COLORS.beige },
-  subtitleDark: { color: 'rgba(245,235,220,0.48)' },
+  subtitleDark: { color: INK_TEXT.faint },
   issueNameDark: { color: 'rgba(245,235,220,0.72)' },
-  deckDark: { color: 'rgba(245,235,220,0.48)' },
+  deckDark: { color: INK_TEXT.faint },
 
   /* ── Chips ── */
   chipGroup: { marginBottom: 16 },
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     color: COLORS.grey,
     marginBottom: 8,
   },
-  chipGroupLabelDark: { color: 'rgba(245,235,220,0.38)' },
+  chipGroupLabelDark: { color: INK_TEXT.faint },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
 
   chip: {

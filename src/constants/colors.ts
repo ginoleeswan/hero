@@ -128,7 +128,55 @@ export const INK_TEXT = {
   primary: COLORS.beige,
   muted: 'rgba(245,235,220,0.72)',
   faint: 'rgba(245,235,220,0.6)',
+  /** Input placeholders on ink. Placeholder copy is text under WCAG 1.4.3, so
+   *  it holds the same floor as `faint` (6.13:1) rather than fading to a hint. */
+  placeholder: 'rgba(245,235,220,0.6)',
 } as const;
+
+/**
+ * Text-on-PAPER ramp — the beige counterpart to INK_TEXT, and the reason the
+ * contrast rule kept being broken: dark surfaces had a documented ramp, light
+ * surfaces had none, so every muted label on beige invented its own alpha and
+ * every one of them failed. Navy needs far more opacity on beige than beige
+ * needs on ink: measured against COLORS.beige, navy at 0.4a is 2.11:1 and even
+ * 0.65a is only 3.79:1 — nothing under ~0.73a clears the 4.5:1 floor.
+ *
+ * Ratios below are measured, not estimated.
+ */
+export const PAPER_TEXT = {
+  /** Solid navy — 9.77:1. */
+  primary: COLORS.navy,
+  /** Supporting copy — 5.61:1. */
+  muted: 'rgba(41,60,67,0.8)',
+  /** The floor for readable text on paper — 4.89:1. */
+  faint: 'rgba(41,60,67,0.75)',
+  /**
+   * Input placeholders. Placeholder copy is still text under WCAG 1.4.3, so it
+   * gets the same floor — the old 0.3a placeholders measured 1.72:1, which is
+   * effectively invisible rather than merely low-contrast.
+   */
+  placeholder: 'rgba(41,60,67,0.75)',
+} as const;
+
+/**
+ * Orange for TEXT on light surfaces. The brand orange is a fill colour, not an
+ * ink one: COLORS.orange measures 2.58:1 on beige and 3.04:1 on white, so it
+ * fails AA as body text or a link everywhere it sits on paper. This deeper
+ * burnt tone measures 4.97:1 on beige and 5.87:1 on white.
+ *
+ * Keep COLORS.orange for fills, accents and orange-on-dark (which passes at
+ * ~5.9:1 against deepNavy). Reach for this only when orange is the text.
+ * Distinct from the #C2551B used as a BUTTON FILL behind white text — that one
+ * is measured for white-on-orange, which is the opposite direction.
+ */
+export const ORANGE_INK = '#A84718';
+
+/**
+ * Arena gold as *text* on the deep-ink stage. The gold accent (#ce9b33) is a
+ * fill/stroke colour; at 0.7a it measured 4.09:1, just under the floor. Solid
+ * gold on deepNavy is 7.17:1, so eyebrows and verdict labels use this.
+ */
+export const GOLD_INK = COLORS.goldAccent;
 
 /**
  * The house eyebrow — the small orange uppercase kicker above titles. One size

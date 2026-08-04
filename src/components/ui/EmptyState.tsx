@@ -10,7 +10,7 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 import { RADIUS, TRACKING } from '../../constants/tokens';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     color: 'rgba(245,235,220,0.55)',
     textAlign: 'center',
   },
-  bodyLight: { color: 'rgba(41,60,67,0.6)' },
+  bodyLight: { color: PAPER_TEXT.faint },
   btn: {
     marginTop: 12,
     backgroundColor: COLORS.orange,

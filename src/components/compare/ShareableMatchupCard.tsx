@@ -7,7 +7,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SHARE_CARD } from '../../constants/colors';
+import { COLORS, SHARE_CARD, INK_TEXT } from '../../constants/colors';
 import { MythiqueMark } from '../ui/MythiqueMark';
 import { CardTexture } from '../ui/CardTexture';
 
@@ -165,7 +165,7 @@ const s = StyleSheet.create({
   mirror: { transform: [{ scaleX: -1 }] },
   dim: { opacity: 0.55 } as object,
   portraitFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#243842' },
-  fallbackInitial: { fontFamily: 'Flame-Regular', fontSize: 200, color: 'rgba(245,235,220,0.5)' },
+  fallbackInitial: { fontFamily: 'Flame-Regular', fontSize: 200, color: INK_TEXT.faint },
   portraitScrim: {
     position: 'absolute',
     left: 0,
@@ -250,6 +250,6 @@ const s = StyleSheet.create({
     letterSpacing: 3,
     textTransform: 'uppercase',
     textAlign: 'center',
-    color: 'rgba(245,235,220,0.4)',
+    color: INK_TEXT.faint,
   },
 });

@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { HeroAvatar } from '../HeroAvatar';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import type { WikiTrendingHero } from '../../lib/db/trending';
 
 export function TrendingMovers({
@@ -115,7 +115,7 @@ const s = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 15,
     lineHeight: 18,
-    color: 'rgba(245,235,220,0.35)',
+    color: INK_TEXT.faint,
     width: 14,
     textAlign: 'center',
   },

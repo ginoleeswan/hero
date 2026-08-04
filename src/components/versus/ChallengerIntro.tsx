@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CuratedRow } from './CuratedRow';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import type { PickedHero } from '../../lib/battleBuilderState';
 
 interface RowItem {
@@ -59,5 +59,5 @@ const s = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.16)',
   },
   pathText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige },
-  or: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: 'rgba(245,235,220,0.5)' },
+  or: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: INK_TEXT.faint },
 });

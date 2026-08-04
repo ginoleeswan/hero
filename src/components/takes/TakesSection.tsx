@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 import { useMatchupTakes } from '../../hooks/useMatchupTakes';
@@ -323,12 +323,12 @@ const s = StyleSheet.create({
   count: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
   },
   emptyText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
   },
   cards: { gap: 10 },
   card: {
@@ -371,7 +371,7 @@ const s = StyleSheet.create({
   byline: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
   },
   agreePill: {
     flexDirection: 'row',
@@ -447,7 +447,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  counter: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: 'rgba(41,60,67,0.4)' },
+  counter: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: PAPER_TEXT.faint },
   writeError: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.red, marginTop: 10 },
   submitBtn: {
     paddingHorizontal: 18,

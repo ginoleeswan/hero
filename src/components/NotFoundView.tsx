@@ -12,7 +12,7 @@ import Svg, {
   G,
 } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../constants/colors';
+import { COLORS, PAPER_TEXT } from '../constants/colors';
 
 // Off-white "paper" the poster is printed on — the halftone fades into this at
 // its edges so the dot disc dissolves into the card instead of hard-clipping.
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   posterSubline: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12.5,
-    color: 'rgba(41,60,67,0.6)',
+    color: PAPER_TEXT.faint,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   loadSubline: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
-    color: 'rgba(41,60,67,0.6)',
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     marginTop: 8,
     maxWidth: 260,
