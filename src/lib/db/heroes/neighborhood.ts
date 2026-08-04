@@ -87,10 +87,12 @@ export async function getHeroNeighborhood(heroId: string, limit = 24): Promise<N
     p_hero_id: heroId,
     p_limit: limit,
   });
-  if (error) {
-    console.warn('[getHeroNeighborhood] error:', error.message);
-    return { nodes: [], edges: [] };
-  }
+  // Throw rather than returning an empty graph. The social-web explorer IS this
+  // data, so a swallowed failure rendered an empty universe — the character has
+  // no connections, said the outage. The character page's portal preview reads
+  // the same function but already bails on missing data, so it degrades to
+  // hidden either way, and now gets a retry for free.
+  if (error) throw new Error(`[getHeroNeighborhood] ${error.message}`);
   const parsed = (data ?? { nodes: [], edges: [] }) as unknown as Neighborhood;
   return { nodes: parsed.nodes ?? [], edges: parsed.edges ?? [] };
 }

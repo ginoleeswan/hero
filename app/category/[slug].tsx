@@ -556,13 +556,27 @@ export default function CategoryScreen() {
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.3}
           ListEmptyComponent={
-            <EmptyState
-              icon="search-outline"
-              title="No characters found"
-              body="Try a different search, or clear a filter."
-              tone="light"
-              compact
-            />
+            // getCategoryPage throws, so isError is real here — it just was not
+            // being read. An outage rendered the empty-result copy, which tells
+            // the reader their FILTER is wrong when the network is the problem.
+            activeQuery.isError ? (
+              <EmptyState
+                icon="cloud-offline-outline"
+                title="Couldn’t load these characters"
+                body="Check your connection and try again."
+                action={{ label: 'Try again', onPress: () => void activeQuery.refetch() }}
+                tone="light"
+                compact
+              />
+            ) : (
+              <EmptyState
+                icon="search-outline"
+                title="No characters found"
+                body="Try a different search, or clear a filter."
+                tone="light"
+                compact
+              />
+            )
           }
           ListFooterComponent={
             loadingMore ? (

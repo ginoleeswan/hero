@@ -5,7 +5,7 @@
 // One column, so names are chosen in a sheet over the console rather than from
 // a list a screen below it.
 import { useCallback, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../src/constants/colors';
@@ -60,6 +60,7 @@ export default function HousePage() {
     pathIds,
     isLoading,
     error,
+    retry,
   } = useHouse(slug, focus ?? null, withId ?? null);
 
   const { height: winHeight } = useWindowDimensions();
@@ -96,14 +97,34 @@ export default function HousePage() {
       </View>
     );
   }
-  if (error || !house) {
+  // A failed fetch is not a missing house. The headline used to say "No such
+  // house" for both, with the raw Error.message underneath as the only tell —
+  // which is neither user-facing copy nor something you can act on.
+  if (error) {
+    return (
+      <View style={styles.centre}>
+        <Stack.Screen options={{ ...headerOptions, headerTintColor: COLORS.navy }} />
+        <Text style={styles.notFound}>Couldn’t load this house</Text>
+        <Text style={styles.muted}>Check your connection and try again.</Text>
+        <Pressable
+          onPress={retry}
+          accessibilityRole="button"
+          style={({ pressed }: { pressed: boolean }) => [
+            styles.retry,
+            pressed && styles.retryPressed,
+          ]}
+        >
+          <Text style={styles.retryText}>Try again</Text>
+        </Pressable>
+      </View>
+    );
+  }
+  if (!house) {
     return (
       <View style={styles.centre}>
         <Stack.Screen options={{ ...headerOptions, headerTintColor: COLORS.navy }} />
         <Text style={styles.notFound}>No such house</Text>
-        <Text style={styles.muted}>
-          {error ? error.message : 'Nothing in the catalogue answers to that name.'}
-        </Text>
+        <Text style={styles.muted}>Nothing in the catalogue answers to that name.</Text>
       </View>
     );
   }
@@ -223,5 +244,14 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   notFound: { fontFamily: 'Flame-Regular', fontSize: 27, lineHeight: 34, color: COLORS.black },
+  retry: {
+    marginTop: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 999,
+    backgroundColor: COLORS.orange,
+  },
+  retryPressed: { opacity: 0.75 },
+  retryText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: '#fff' },
   muted: { fontFamily: 'FlameSans-Regular', fontSize: 13.5, lineHeight: 21, color: '#8d8375' },
 });

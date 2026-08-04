@@ -1,7 +1,7 @@
 // src/hooks/useHouse.ts
 // Everything the house page needs, in one call, shared by the web and native
 // views so neither owns the fetching.
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import {
@@ -169,6 +169,8 @@ export interface UseHouseResult {
   pathIds: Set<string>;
   isLoading: boolean;
   error: Error | null;
+  /** Re-run the house fetch. Paired with `error`. */
+  retry: () => void;
 }
 
 /**
@@ -202,7 +204,7 @@ export function useHouse(
     },
   });
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['house', slug],
     enabled: !!slug,
     // The graph is small and never changes between deploys, so it is worth
@@ -217,6 +219,8 @@ export function useHouse(
     },
   });
 
+  const retry = useCallback(() => void refetch(), [refetch]);
+
   return useMemo(() => {
     const empty: UseHouseResult = {
       house: null,
@@ -230,6 +234,7 @@ export function useHouse(
       pathIds: new Set(),
       isLoading,
       error: (error as Error) ?? null,
+      retry,
     };
     if (!data?.house) return empty;
 
@@ -280,6 +285,7 @@ export function useHouse(
       pathIds,
       isLoading,
       error: (error as Error) ?? null,
+      retry,
     };
-  }, [data, chrome, focus, withId, isLoading, error]);
+  }, [data, chrome, focus, withId, isLoading, error, retry]);
 }

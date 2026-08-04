@@ -371,6 +371,9 @@ and the screen splits failure from absence:
 | `getHeroById` | character, biography | "this character doesn't exist" / "No biography yet" |
 | `getTeamById` | team (native + web) | "This team doesn't exist" |
 | `getEventDossier` | event (native + web) | "No page for this event yet" |
+| `useHouse` (already threw) | house (native + web) | "No such house", with the raw `Error.message` as the only tell |
+| `getCategoryPage` (already threw) | category | "No characters found — try a different search, or clear a filter" |
+| `getHeroNeighborhood` | social-web (native + web) | an empty universe, then a nebula loader that never resolves |
 
 Three of those error branches already existed and were **unreachable**.
 `heroLoadPlan.ts` even documents the intent — *"a transient query failure is
@@ -386,6 +389,15 @@ Two gotchas that recur:
   outage.
 - A `null` return must mean exactly one thing. `getHeroById` and `getTeamById`
   keep `null` for PGRST116 ("no rows") and throw for everything else.
+
+Two of those fetches **already threw** — the screens simply never read
+`isError`, which is its own lesson: making the data layer honest is only half
+the job. `getHeroNeighborhood` is the reverse case, and shows why the
+page-critical/optional-rail split has to be made per *consumer*, not per
+function: the social-web explorer **is** that data, while the character page's
+portal preview is an optional rail reading the same call. Throwing serves both
+— the explorer can retry, and the portal already hides itself when data is
+missing.
 
 The rest was not swept, because the split is real and only a human eye can draw it:
 

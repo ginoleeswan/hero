@@ -15,6 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { EmptyState } from '../../src/components/ui/EmptyState';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { SURFACE, INK_TEXT } from '../../src/constants/colors';
@@ -50,7 +51,7 @@ export default function SocialWebExplorerNative() {
     queryFn: () => getHeroNeighborhood(heroId, NODE_LIMIT),
     staleTime: 5 * 60 * 1000,
   });
-  const { data } = useQuery({
+  const { data, isError, refetch } = useQuery({
     ...neighbourhoodQuery(focusSubject),
     // Hold the outgoing universe on screen while the next one loads — without
     // this the scene unmounts on travel and the WebGL context is destroyed.
@@ -185,10 +186,21 @@ export default function SocialWebExplorerNative() {
         pointerEvents="none"
       />
 
-      {/* Full-screen nebula while the neighbourhood loads */}
-      {!data ? (
+      {/* Full-screen nebula while the neighbourhood loads. Gated on isError as
+          well, or a failed fetch leaves the loader spinning forever. */}
+      {!data && !isError ? (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <NebulaLoader />
+        </View>
+      ) : null}
+      {isError ? (
+        <View style={styles.failed}>
+          <EmptyState
+            icon="cloud-offline-outline"
+            title="Couldn’t load this universe"
+            body="Check your connection and try again."
+            action={{ label: 'Try again', onPress: () => void refetch() }}
+          />
         </View>
       ) : null}
 
@@ -273,6 +285,17 @@ export default function SocialWebExplorerNative() {
 const BLOOM = 340;
 
 const styles = StyleSheet.create({
+  // Centred over the stage; the nebula is gone by the time this shows.
+  failed: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
   screen: { flex: 1, backgroundColor: SURFACE.ink },
   bloomWrap: {
     position: 'absolute',

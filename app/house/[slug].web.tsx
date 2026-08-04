@@ -10,7 +10,7 @@
 // All state lives in the URL — ?focus re-roots the tree, ?with lights the
 // kinship path — so every view a reader reaches is a link they can send.
 import { useCallback, useRef, useState } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
@@ -71,6 +71,7 @@ export default function HousePage() {
     pathIds,
     isLoading,
     error,
+    retry,
   } = useHouse(slug, focus ?? null, withId ?? null);
 
   // The rail is a browse surface, not the only control: picking from it while
@@ -115,13 +116,23 @@ export default function HousePage() {
       </>
     );
   }
-  if (error || !house) {
+  // A failed fetch is not a missing house — same split as the native twin.
+  if (error) {
+    return (
+      <View style={styles.centre}>
+        <Text style={styles.notFound}>Couldn’t load this house</Text>
+        <Text style={styles.muted}>Check your connection and try again.</Text>
+        <Pressable onPress={retry} accessibilityRole="button" style={styles.retry as object}>
+          <Text style={styles.retryText as object}>Try again</Text>
+        </Pressable>
+      </View>
+    );
+  }
+  if (!house) {
     return (
       <View style={styles.centre}>
         <Text style={styles.notFound}>No such house</Text>
-        <Text style={styles.muted}>
-          {error ? error.message : 'Nothing in the catalogue answers to that name.'}
-        </Text>
+        <Text style={styles.muted}>Nothing in the catalogue answers to that name.</Text>
       </View>
     );
   }
@@ -288,6 +299,15 @@ const styles = StyleSheet.create({
     padding: 22,
   },
   notFound: { fontFamily: 'Flame-Regular', fontSize: 30, lineHeight: 38, color: COLORS.black },
+  retry: {
+    marginTop: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 999,
+    backgroundColor: COLORS.orange,
+    cursor: 'pointer',
+  } as object,
+  retryText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: '#fff' },
   muted: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13.5,
