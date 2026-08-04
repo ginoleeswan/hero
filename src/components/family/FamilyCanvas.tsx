@@ -507,16 +507,44 @@ function FamilyStage({
         </GestureDetector>
 
         <View style={[styles.zoomButtons, fullscreen && styles.zoomButtonsFs]}>
-          <TouchableOpacity style={styles.zoomBtn} onPress={zoomIn} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.zoomBtn}
+            onPress={zoomIn}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Zoom in"
+            hitSlop={ZOOM_SLOP}
+          >
             <Ionicons name="add" size={18} color={COLORS.black} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.zoomBtn} onPress={zoomOut} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.zoomBtn}
+            onPress={zoomOut}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Zoom out"
+            hitSlop={ZOOM_SLOP}
+          >
             <Ionicons name="remove" size={18} color={COLORS.black} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.zoomBtn} onPress={recenter} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.zoomBtn}
+            onPress={recenter}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Recentre the tree"
+            hitSlop={ZOOM_SLOP}
+          >
             <Ionicons name="locate-outline" size={16} color={COLORS.black} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.zoomBtn} onPress={onToggleFullscreen} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.zoomBtn}
+            onPress={onToggleFullscreen}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={fullscreen ? 'Exit full screen' : 'Full screen'}
+            hitSlop={ZOOM_SLOP}
+          >
             <Ionicons
               name={fullscreen ? 'contract-outline' : 'expand-outline'}
               size={16}
@@ -527,7 +555,14 @@ function FamilyStage({
 
         {fullscreen ? (
           <View style={styles.fsTopLeft}>
-            <TouchableOpacity style={styles.fsIconBtn} onPress={onClose} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.fsIconBtn}
+              onPress={onClose}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Close the tree"
+              hitSlop={FS_SLOP}
+            >
               <Ionicons name="close" size={20} color={COLORS.black} />
             </TouchableOpacity>
             {heroImage ? (
@@ -758,6 +793,12 @@ function AsideMemberNode({
     </View>
   );
 }
+
+// The canvas controls are deliberately small so they don't cover the tree, but
+// a 32pt button is well under the 44pt target floor. hitSlop buys the target
+// back without moving a pixel: 32 + 6*2 = 44, 38 + 3*2 = 44.
+const ZOOM_SLOP = 6;
+const FS_SLOP = 3;
 
 const styles = StyleSheet.create({
   header: {

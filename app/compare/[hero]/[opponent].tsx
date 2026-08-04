@@ -167,6 +167,8 @@ export default function NativeCompareScreen() {
               hitSlop={8}
               activeOpacity={0.7}
               style={styles.headerBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Share this matchup"
             >
               <SymbolView
                 name="square.and.arrow.up"

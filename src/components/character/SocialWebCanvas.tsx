@@ -155,19 +155,41 @@ export function SocialWebCanvas({
       </GestureDetector>
 
       <View style={styles.controls}>
-        <Pressable style={styles.ctrlBtn} onPress={zoomIn}>
+        <Pressable
+          style={styles.ctrlBtn}
+          onPress={zoomIn}
+          accessibilityRole="button"
+          accessibilityLabel="Zoom in"
+          hitSlop={CTRL_SLOP}
+        >
           <Ionicons name="add" size={18} color={INK_TEXT.primary} />
         </Pressable>
-        <Pressable style={styles.ctrlBtn} onPress={zoomOut}>
+        <Pressable
+          style={styles.ctrlBtn}
+          onPress={zoomOut}
+          accessibilityRole="button"
+          accessibilityLabel="Zoom out"
+          hitSlop={CTRL_SLOP}
+        >
           <Ionicons name="remove" size={18} color={INK_TEXT.primary} />
         </Pressable>
-        <Pressable style={styles.ctrlBtn} onPress={fit}>
+        <Pressable
+          style={styles.ctrlBtn}
+          onPress={fit}
+          accessibilityRole="button"
+          accessibilityLabel="Fit the whole web on screen"
+          hitSlop={CTRL_SLOP}
+        >
           <Ionicons name="scan-outline" size={16} color={INK_TEXT.primary} />
         </Pressable>
       </View>
     </View>
   );
 }
+
+// 38pt control + 3pt of slop each side = the 44pt target floor, without
+// growing the buttons over the constellation.
+const CTRL_SLOP = 3;
 
 const styles = StyleSheet.create({
   viewport: { flex: 1, overflow: 'hidden' },

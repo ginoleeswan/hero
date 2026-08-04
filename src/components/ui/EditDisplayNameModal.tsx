@@ -53,7 +53,12 @@ export function EditDisplayNameModal({ visible, currentName, onClose, onSubmit }
     >
       <View style={styles.header}>
         <Text style={styles.title}>Edit display name</Text>
-        <Pressable onPress={handleClose} hitSlop={12}>
+        <Pressable
+          onPress={handleClose}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+        >
           <Ionicons name="close" size={22} color={COLORS.navy} />
         </Pressable>
       </View>
