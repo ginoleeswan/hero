@@ -554,9 +554,13 @@ export default function HomeScreen() {
   );
 
   return (
-    // collapsable={false}: keep the wrapper in the native tree so iOS can pair
-    // the feed's scroll view with the tab bar (Expo native-tabs docs).
-    <View style={styles.root} collapsable={false}>
+    // NO collapsable={false} here, deliberately. Adding it let iOS pair this
+    // screen's scroll view with the tab bar, and pairing hands content insets
+    // to RNScreens — which insets the list below the status bar and exposes a
+    // band of the root's colour above this full-bleed billboard. The tab bar
+    // no longer needs the pairing: both its appearances are pinned explicitly
+    // in _layout.tsx (disableTransparentOnScrollEdge + blurEffect).
+    <View style={styles.root}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       {/* Two-tone bounce: the deep-navy root shows on the top rubber-band (matching
           the spotlight), this beige fill shows on the bottom one (matching the
