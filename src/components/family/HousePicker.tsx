@@ -9,6 +9,7 @@ import { useMemo, useState } from 'react';
 import { View, Text, Pressable, TextInput, Modal, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import { nodeDates } from '../../lib/family/lifespan';
@@ -64,7 +65,7 @@ export function HousePicker({
               hitSlop={10}
               accessibilityRole="button"
               accessibilityLabel="Close"
-              style={styles.close}
+              style={({ pressed }) => [styles.close, pressed && styles.pressed]}
             >
               <Ionicons name="close" size={17} color="#8d8375" />
             </Pressable>
@@ -82,7 +83,12 @@ export function HousePicker({
               accessibilityLabel="Find a name in this house"
             />
             {query ? (
-              <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityLabel="Clear search">
+              <Pressable
+                onPress={() => setQuery('')}
+                hitSlop={8}
+                accessibilityLabel="Clear search"
+                style={({ pressed }) => [pressed && styles.pressed]}
+              >
                 <Ionicons name="close-circle" size={16} color="#c4b8a3" />
               </Pressable>
             ) : null}
@@ -96,10 +102,17 @@ export function HousePicker({
               return (
                 <Pressable
                   key={m.id}
-                  onPress={() => onPick(m.id)}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    onPick(m.id);
+                  }}
                   accessibilityRole="button"
-                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                    [styles.row, hovered && (styles.rowHover as object)] as object
+                  style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
+                    [
+                      styles.row,
+                      hovered && (styles.rowHover as object),
+                      pressed && styles.pressed,
+                    ] as object
                   }
                 >
                   <HeroAvatar
@@ -133,6 +146,7 @@ export function HousePicker({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(11,24,32,0.45)', justifyContent: 'flex-end' },
+  pressed: { opacity: 0.6 },
   sheet: {
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 22,

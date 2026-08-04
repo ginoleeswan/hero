@@ -101,6 +101,7 @@ export function ImageLightbox({ images, initialIndex, onClose, onReport }: Props
         />
 
         <TouchableOpacity
+          activeOpacity={0.7}
           testID="lightbox-close"
           onPress={onClose}
           style={[styles.closeBtn, { top: insets.top + 12 }]}
@@ -110,6 +111,7 @@ export function ImageLightbox({ images, initialIndex, onClose, onReport }: Props
         </TouchableOpacity>
         {onReport ? (
           <TouchableOpacity
+            activeOpacity={0.7}
             testID="lightbox-report"
             onPress={() => onReport(images[indexRef.current])}
             style={[styles.reportBtn, { top: insets.top + 12 }]}

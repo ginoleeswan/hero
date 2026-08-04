@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +22,8 @@ import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { DEFAULT_FILTERS, type CategoryFilters } from '../../src/lib/db/categoryFilters';
 import { HeroImage } from '../../src/components/HeroImage';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
+import { EmptyState } from '../../src/components/ui/EmptyState';
+import { TeamSkeleton } from '../../src/components/skeletons/TeamSkeleton';
 import { BrandLogoView } from '../../src/components/PublisherBadge';
 import { COLORS } from '../../src/constants/colors';
 import { brandForPublisher } from '../../src/constants/publishers';
@@ -287,24 +288,25 @@ export default function TeamScreen() {
         )}
         ListEmptyComponent={
           isPending && team ? (
-            <View style={[styles.center, { paddingTop: 60 }]}>
-              <ActivityIndicator color={COLORS.orange} />
-            </View>
+            <TeamSkeleton />
+          ) : notFound ? (
+            <EmptyState
+              icon="people-outline"
+              title="This team doesn’t exist."
+              tone="light"
+              compact
+            />
           ) : (
-            <View style={styles.center}>
-              <Text style={styles.empty}>
-                {notFound ? 'This team doesn’t exist.' : 'No members found'}
-              </Text>
-            </View>
+            <EmptyState
+              icon="funnel-outline"
+              title="No members found"
+              body="Try clearing a filter or searching for a different name."
+              tone="light"
+              compact
+            />
           )
         }
-        ListFooterComponent={
-          isFetchingNextPage ? (
-            <View style={styles.footer}>
-              <ActivityIndicator color={COLORS.orange} />
-            </View>
-          ) : null
-        }
+        ListFooterComponent={isFetchingNextPage ? <TeamSkeleton rows={1} /> : null}
       />
 
       {peek && (
@@ -362,7 +364,4 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   cardName: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.beige, lineHeight: 14 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
-  empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
-  footer: { paddingVertical: 24, alignItems: 'center' },
 });

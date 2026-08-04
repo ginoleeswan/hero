@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -49,6 +50,7 @@ import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { useRecentSearches } from '../../../src/hooks/useRecentSearches';
 import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
+import { DUR } from '../../../src/lib/nativeMotion';
 import type { FavouriteHero } from '../../../src/types';
 
 const SEARCH_NAVY = '#1a262b';
@@ -581,40 +583,49 @@ export default function SearchScreen() {
         </Stack.Toolbar>
       )}
 
-      <FlatList
-        style={styles.list}
-        data={listData}
-        keyExtractor={(h) => h.id}
-        numColumns={GRID_COLUMNS}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="automatic"
-        ListHeaderComponent={listHeader}
-        ListEmptyComponent={listEmpty}
-        ListFooterComponent={
-          isFetchingNextPage ? (
-            <View style={styles.footer}>
-              <ActivityIndicator color={COLORS.orange} />
-            </View>
-          ) : null
-        }
-        onEndReachedThreshold={0.6}
-        onEndReached={loadMore}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 150 }]}
-        columnWrapperStyle={listData.length > 0 ? styles.gridRow : undefined}
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-        renderItem={({ item }) => (
-          <PortraitCard
-            item={item}
-            cardWidth={cardWidth}
-            onPress={() => handlePress(item)}
-            onLongPress={() => openPeek(item)}
-            disabled={navigating}
-            onDark
-          />
-        )}
-      />
+      {/* Entrance parity with Explore. Wrapping the list (rather than the
+          screen root) keeps Stack.Header/SearchBar/Toolbar as direct
+          children, which is how expo-router registers the native header. */}
+      <Animated.View
+        style={styles.listWrap}
+        collapsable={false}
+        entering={FadeIn.duration(DUR.base)}
+      >
+        <FlatList
+          style={styles.list}
+          data={listData}
+          keyExtractor={(h) => h.id}
+          numColumns={GRID_COLUMNS}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          contentInsetAdjustmentBehavior="automatic"
+          ListHeaderComponent={listHeader}
+          ListEmptyComponent={listEmpty}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View style={styles.footer}>
+                <ActivityIndicator color={COLORS.orange} />
+              </View>
+            ) : null
+          }
+          onEndReachedThreshold={0.6}
+          onEndReached={loadMore}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 150 }]}
+          columnWrapperStyle={listData.length > 0 ? styles.gridRow : undefined}
+          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          renderItem={({ item }) => (
+            <PortraitCard
+              item={item}
+              cardWidth={cardWidth}
+              onPress={() => handlePress(item)}
+              onLongPress={() => openPeek(item)}
+              disabled={navigating}
+              onDark
+            />
+          )}
+        />
+      </Animated.View>
 
       <LinearGradient
         colors={['transparent', 'rgba(26,38,43,0.92)']}
@@ -641,6 +652,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: SEARCH_NAVY },
   glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 260 },
   bottomScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
+  listWrap: { flex: 1 },
   list: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: H_PAD, paddingTop: 4 },
   screenTitle: {

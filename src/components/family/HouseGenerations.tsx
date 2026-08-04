@@ -8,6 +8,7 @@
 // views are a loop rather than a fork.
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import { mixHex } from './HouseCrest';
@@ -163,16 +164,20 @@ function Person({
   const crowned = !!member.reign_start;
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        Haptics.selectionAsync();
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={`Centre the chart on ${member.name}`}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           styles.person,
           stacked && styles.personStacked,
           onPath && { borderColor: tint, backgroundColor: wash },
           isFocus && styles.personFocus,
           hovered && !isFocus && (styles.personHover as object),
+          pressed && styles.pressed,
         ] as object
       }
     >
@@ -204,6 +209,7 @@ function Person({
 }
 
 const styles = StyleSheet.create({
+  pressed: { opacity: 0.6 },
   card: {
     backgroundColor: 'white',
     borderRadius: 20,

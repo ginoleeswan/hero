@@ -9,6 +9,7 @@ import { getHeroByComicvineId } from '../../src/lib/db/heroes';
 import { useHeroRow } from '../../src/lib/query/heroQueries';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
+import { EmptyState } from '../../src/components/ui/EmptyState';
 
 // ComicVine biography HTML ships with lazy-load placeholders and <noscript>
 // fallbacks that render as broken/blank images. Swap the real source in and
@@ -221,7 +222,13 @@ export default function BiographyScreen() {
                 enableExperimentalMarginCollapsing
               />
             ) : (
-              <Text style={styles.empty}>No biography available for this character yet.</Text>
+              <EmptyState
+                icon="document-text-outline"
+                title="No biography yet"
+                body="We don’t have a written history for this character yet."
+                tone="light"
+                compact
+              />
             )
           ) : (
             <SkeletonProvider>
@@ -291,10 +298,4 @@ const styles = StyleSheet.create({
 
   // Body
   body: { paddingHorizontal: 20, paddingTop: 24 },
-  empty: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
-    color: COLORS.navy,
-    opacity: 0.45,
-  },
 });

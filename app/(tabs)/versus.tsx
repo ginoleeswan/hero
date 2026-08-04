@@ -3,7 +3,7 @@
 // build-your-own / surprise-me actions, over a deck section of the greatest
 // rivalries. Shares useVersusHub with the web hub (versus.web.tsx) so the data
 // layer never drifts.
-import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -19,6 +19,7 @@ import { RivalriesRail } from '../../src/components/versus/RivalriesRail';
 import { HallOfInfamy } from '../../src/components/home/HallOfInfamy';
 import { YesterdayStrip } from '../../src/components/versus/YesterdayStrip';
 import { TodaysDailies } from '../../src/components/game/TodaysDailies';
+import { VersusSkeleton } from '../../src/components/skeletons/VersusSkeleton';
 
 export default function VersusScreen() {
   const router = useRouter();
@@ -76,9 +77,7 @@ export default function VersusScreen() {
           {matchup && hookText ? <Text style={styles.hook}>{hookText}</Text> : null}
 
           {loading && !matchup ? (
-            <View style={styles.loading}>
-              <ActivityIndicator color={COLORS.orange} />
-            </View>
+            <VersusSkeleton />
           ) : matchup ? (
             <>
               <ShowdownCards matchup={matchup} onOpen={openArena} />
@@ -216,7 +215,6 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     maxWidth: 320,
   },
-  loading: { paddingVertical: 70, alignItems: 'center' },
   takesLink: {
     flexDirection: 'row',
     alignItems: 'center',

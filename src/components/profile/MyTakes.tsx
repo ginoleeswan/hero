@@ -51,9 +51,10 @@ export function MyTakes({
               onPress={() => onDelete(t.id)}
               accessibilityLabel="Delete take"
               hitSlop={8}
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) => [
+              style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
                 styles.deleteBtn,
                 hovered && styles.deleteBtnHover,
+                pressed && styles.pressed,
               ]}
             >
               <Ionicons name="trash-outline" size={16} color={COLORS.grey} />
@@ -66,6 +67,7 @@ export function MyTakes({
 }
 
 const styles = StyleSheet.create({
+  pressed: { opacity: 0.6 },
   record: {
     marginBottom: 16,
     paddingBottom: 14,

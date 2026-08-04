@@ -4,19 +4,14 @@
 //
 // The body is shared with the web route (src/components/event/EventDossier);
 // only the scroll container differs, because web must scroll the document.
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  useWindowDimensions,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../src/constants/colors';
 import { EventDossier } from '../../src/components/event/EventDossier';
 import { useEventDossier } from '../../src/hooks/useEventDossier';
+import { EmptyState } from '../../src/components/ui/EmptyState';
+import { EventDossierSkeleton } from '../../src/components/skeletons/EventSkeleton';
 
 // The root stack hides headers globally — `title` alone renders nothing, and
 // event pages are shared/deep-linked, so they need a visible back affordance.
@@ -43,24 +38,24 @@ export default function EventPage() {
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
         {/* Bleed the ink stage under the status bar — the page opens on ink. */}
         <View style={{ height: insets.top, backgroundColor: COLORS.deepNavy }} />
-        {loading && (
-          <View style={s.centre}>
-            <ActivityIndicator color={COLORS.orange} />
-          </View>
-        )}
+        {loading && <EventDossierSkeleton />}
         {notFound && (
           // Only approved events have a page, so an unknown slug here is the
           // normal case for anything the detector hasn't had confirmed.
-          <View style={s.centre}>
-            <Text style={s.empty}>No page for this event yet.</Text>
-          </View>
+          <EmptyState
+            icon="calendar-outline"
+            title="No page for this event yet."
+            body="An event gets a page once its detection is confirmed."
+          />
         )}
         {!loading && !notFound && !dossier && (
           // Fetch error: the event may exist but didn't load — same quiet copy,
           // never a blank ink page.
-          <View style={s.centre}>
-            <Text style={s.empty}>Couldn’t load this event — try again shortly.</Text>
-          </View>
+          <EmptyState
+            icon="cloud-offline-outline"
+            title="Couldn’t load this event"
+            body="Try again shortly."
+          />
         )}
         {dossier && (
           <EventDossier
@@ -82,10 +77,4 @@ export default function EventPage() {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.deepNavy },
-  centre: { paddingTop: 80, alignItems: 'center' },
-  empty: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 15,
-    color: 'rgba(245,235,220,0.6)',
-  },
 });

@@ -151,6 +151,26 @@ is the **native** one — `DUR` (fast/base/enter/exit/feature), `STAGGER`,
 `SHIMMER_MS` is the one skeleton tempo — `SkeletonProvider` and `ClashSkeleton`
 both read it so two skeletons never breathe at different rates.
 
+## Shared native primitives
+
+Reach for these before hand-rolling; each replaced a pattern that had drifted
+into a dozen variants.
+
+| Primitive | Use for | Replaces |
+| --- | --- | --- |
+| `src/components/ui/PressScale.tsx` | any tappable **card/row/tile** | bare `Pressable` with no feedback; hand-rolled press springs. Forwards a11y + testID props, so adopting it never costs a label. |
+| `src/components/ui/EmptyState.tsx` | "nothing here" surfaces | plain grey text. `tone` picks the canvas (dark stage / beige paper); `compact` for inline sections. |
+| `src/components/ui/SectionHeader.tsx` | section eyebrow + title (+ "See all") | eleven different eyebrow sizes and letter-spacings outside `home/`. |
+| `src/lib/nativeMotion.ts` | every duration, easing, spring | ~25 ad-hoc `withTiming` durations and 6 spring configs. |
+
+Small controls (icon buttons, chips, toggles) take a `pressed` opacity style
+rather than `PressScale` — a scale animation on a small control feels wrong.
+
+All four tabs animate in with `FadeIn.duration(DUR.base)`. On Search the
+wrapper goes around the **list**, not the screen root, so `Stack.Header` /
+`Stack.SearchBar` / `Stack.Toolbar` stay direct children — that's how
+expo-router registers the native header.
+
 ## Native performance notes
 
 Three costs that specifically hurt the home screen's first paint, all fixed —

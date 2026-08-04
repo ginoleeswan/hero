@@ -7,6 +7,7 @@
 // and the shield is the one thing that makes a house recognisable at a glance.
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../constants/colors';
 import { HouseCrest } from './HouseCrest';
 import type { HouseSearchResult } from '../../lib/db/houses';
@@ -17,9 +18,17 @@ export function HouseCard({ house, width }: { house: HouseSearchResult; width?: 
     <Pressable
       accessibilityRole="link"
       accessibilityLabel={`${house.name} family tree`}
-      onPress={() => router.push(`/house/${house.slug}` as Parameters<typeof router.push>[0])}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [styles.card, width ? { width } : null, hovered && (styles.cardHover as object)] as object
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push(`/house/${house.slug}` as Parameters<typeof router.push>[0]);
+      }}
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
+        [
+          styles.card,
+          width ? { width } : null,
+          hovered && (styles.cardHover as object),
+          pressed && styles.pressed,
+        ] as object
       }
     >
       <HouseCrest name={house.name} tint={house.sigil_tint ?? COLORS.orange} size={78} />
@@ -53,6 +62,7 @@ export function HouseGrid({ houses }: { houses: HouseSearchResult[] }) {
 
 const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  pressed: { opacity: 0.6 },
   card: {
     flexGrow: 1,
     flexBasis: 190,

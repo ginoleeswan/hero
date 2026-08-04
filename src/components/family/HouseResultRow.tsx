@@ -3,6 +3,7 @@
 // page and the native one — it's RN primitives only, so all three read the same.
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HouseCrest } from './HouseCrest';
 import type { HouseSearchResult } from '../../lib/db/houses';
@@ -23,13 +24,17 @@ export function HouseResultRow({
   const dark = variant === 'dark';
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
       accessibilityRole="link"
       accessibilityLabel={`${house.name} family tree`}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           styles.row,
           (hovered || active) && (dark ? styles.rowActiveDark : styles.rowActive),
+          pressed && styles.pressed,
         ] as object
       }
     >
@@ -62,6 +67,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 12,
   },
+  pressed: { opacity: 0.6 },
   rowActive: { backgroundColor: 'rgba(41,60,67,0.06)' } as object,
   rowActiveDark: { backgroundColor: 'rgba(245,235,220,0.08)' } as object,
   meta: { flex: 1, minWidth: 0 },

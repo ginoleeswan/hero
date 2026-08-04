@@ -5,19 +5,14 @@
 // Exists because the dossier page had exactly one route in: the live card in the
 // Pulse rail, which disappears when the detection grace lapses. The pages are
 // permanent; their only link was not.
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  useWindowDimensions,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../src/constants/colors';
 import { EventIndexList } from '../../src/components/event/EventIndexList';
 import { useEventIndex } from '../../src/hooks/useEventDossier';
+import { EmptyState } from '../../src/components/ui/EmptyState';
+import { EventIndexSkeleton } from '../../src/components/skeletons/EventSkeleton';
 
 // The root stack hides headers globally — `title` alone renders nothing, and
 // this page is reachable by deep link, so it needs a visible back affordance.
@@ -43,16 +38,14 @@ export default function EventIndexPage() {
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
         {/* Bleed the ink stage under the status bar — the page opens on ink. */}
         <View style={{ height: insets.top, backgroundColor: COLORS.deepNavy }} />
-        {loading && !index && (
-          <View style={s.centre}>
-            <ActivityIndicator color={COLORS.orange} />
-          </View>
-        )}
+        {loading && !index && <EventIndexSkeleton />}
         {!loading && !index && (
           // Fetch failed or the index is empty — never leave a blank ink page.
-          <View style={s.centre}>
-            <Text style={s.empty}>No events right now — check back soon.</Text>
-          </View>
+          <EmptyState
+            icon="calendar-outline"
+            title="No events right now"
+            body="Check back soon — the next one shows up here when its readership moves."
+          />
         )}
         {index && (
           <EventIndexList
@@ -69,11 +62,4 @@ export default function EventIndexPage() {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.deepNavy },
-  centre: { paddingTop: 80, alignItems: 'center', paddingHorizontal: 32 },
-  empty: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 15,
-    color: 'rgba(245,235,220,0.6)',
-    textAlign: 'center',
-  },
 });

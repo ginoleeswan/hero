@@ -9,8 +9,10 @@
 import { useMemo, useState } from 'react';
 import { View, Text, Pressable, TextInput, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
+import { PressScale } from '../ui/PressScale';
 import { mixHex } from './HouseCrest';
 import { nodeDates } from '../../lib/family/lifespan';
 
@@ -90,7 +92,12 @@ export function HouseRoster({
             accessibilityLabel="Find a name in this house"
           />
           {query ? (
-            <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityLabel="Clear search">
+            <Pressable
+              onPress={() => setQuery('')}
+              hitSlop={8}
+              accessibilityLabel="Clear search"
+              style={({ pressed }) => [pressed && styles.pressed]}
+            >
               <Ionicons name="close-circle" size={15} color="#c4b8a3" />
             </Pressable>
           ) : null}
@@ -119,8 +126,12 @@ export function HouseRoster({
                 ] as object
               }
             >
-              <Pressable
-                onPress={() => (isRoot ? onRoot(m.id) : onCompare(m.id))}
+              <PressScale
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  if (isRoot) onRoot(m.id);
+                  else onCompare(m.id);
+                }}
                 disabled={isRoot}
                 accessibilityRole="button"
                 accessibilityLabel={
@@ -146,7 +157,7 @@ export function HouseRoster({
                     <Text style={styles.reignText}>{reign}</Text>
                   </View>
                 ) : null}
-              </Pressable>
+              </PressScale>
 
               {isRoot ? (
                 <Text style={styles.tag}>Root</Text>
@@ -156,8 +167,12 @@ export function HouseRoster({
                   accessibilityRole="button"
                   accessibilityLabel={`Centre the chart on ${m.name}`}
                   hitSlop={6}
-                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                    [styles.rootBtn, hovered && (styles.rootBtnHover as object)] as object
+                  style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
+                    [
+                      styles.rootBtn,
+                      hovered && (styles.rootBtnHover as object),
+                      pressed && styles.pressed,
+                    ] as object
                   }
                 >
                   {/* The console's filled button teaches this glyph once, so
@@ -173,8 +188,12 @@ export function HouseRoster({
           <Pressable
             onPress={() => setShowAll(true)}
             accessibilityRole="button"
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [styles.more, hovered && (styles.moreHover as object)] as object
+            style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
+              [
+                styles.more,
+                hovered && (styles.moreHover as object),
+                pressed && styles.pressed,
+              ] as object
             }
           >
             <Text style={styles.moreText}>Show all {matched.length}</Text>
@@ -190,6 +209,7 @@ export function HouseRoster({
 
 const styles = StyleSheet.create({
   panel: { gap: 12 },
+  pressed: { opacity: 0.6 },
   head: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   direction: { fontFamily: 'FlameSans-Regular', fontSize: 12.5, color: '#a99b84', marginTop: -6 },
   title: { fontFamily: 'Flame-Regular', fontSize: 21, lineHeight: 27, color: COLORS.black },
