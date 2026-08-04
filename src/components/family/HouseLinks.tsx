@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   linkHover: { borderColor: '#cdbfa6' },
   dot: { width: 7, height: 7, borderRadius: 3.5 },
-  text: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.black, fontWeight: '700' },
+  text: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
 
   // ── Inline, beside a section title ──────────────────────────────────────────
   inlineRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
@@ -186,10 +186,9 @@ const styles = StyleSheet.create({
   footer: { borderTopWidth: 1, borderTopColor: 'rgba(41,60,67,0.12)', marginTop: 16 },
   footerRow: { flexDirection: 'row', alignItems: 'center', gap: 9, minHeight: 46 },
   footerText: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 14,
     color: COLORS.black,
-    fontWeight: '700',
   },
   spacer: { flex: 1 },
   footerHint: {

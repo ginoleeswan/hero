@@ -614,6 +614,10 @@ const styles = StyleSheet.create({
     backgroundColor: GOLD,
     alignItems: 'center',
     justifyContent: 'center',
+    // GLOW, not a drop shadow — deliberately iOS-only. `elevation` would give
+    // Android a grey box shadow instead of a coloured bloom, which reads worse
+    // than no glow at all; Android has no glow primitive and the element still
+    // carries its own colour without it.
     shadowColor: GOLD,
     shadowOpacity: 0.8,
     shadowRadius: 6,
