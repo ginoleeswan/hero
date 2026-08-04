@@ -1,10 +1,11 @@
 // Native "Hall of Fame" — the authored treatment of Most Iconic: a chosen #1 shown
 // large, then a compact ranked list, instead of a flat rail. Mirrors the web
 // HallOfFame. Sits on the beige content sheet.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { HeroAvatar } from '../HeroAvatar';
+import { PressScale } from '../ui/PressScale';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 
@@ -29,7 +30,7 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
         <Text style={s.sub}>The characters the whole world knows.</Text>
       </View>
 
-      <Pressable style={s.lead} onPress={() => onPress(String(lead.id))}>
+      <PressScale style={s.lead} scale={0.97} onPress={() => onPress(String(lead.id))}>
         <HeroImage
           id={String(lead.id)}
           name={lead.name}
@@ -52,11 +53,11 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
           </Text>
           {!!lead.publisher && <Text style={s.leadStat}>{lead.publisher}</Text>}
         </View>
-      </Pressable>
+      </PressScale>
 
       <View style={s.list}>
         {rest.map((h, i) => (
-          <Pressable key={h.id} style={s.row} onPress={() => onPress(String(h.id))}>
+          <PressScale key={h.id} style={s.row} onPress={() => onPress(String(h.id))}>
             <Text style={[s.rank, { color: rankColor(i) }]}>{String(i + 2).padStart(2, '0')}</Text>
             <View style={[s.thumb, h.avatar_url && s.faceBare] as object}>
               {/* The pool is the top 25 by fame, which is the tier with full
@@ -91,7 +92,7 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
                 {h.publisher}
               </Text>
             )}
-          </Pressable>
+          </PressScale>
         ))}
       </View>
     </View>

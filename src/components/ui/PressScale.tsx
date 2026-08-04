@@ -1,5 +1,11 @@
-import { TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
+import {
+  TouchableOpacity,
+  type StyleProp,
+  type ViewStyle,
+  type AccessibilityRole,
+} from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { SPRING_PRESS } from '../../lib/nativeMotion';
 
 interface PressScaleProps {
   onPress?: () => void;
@@ -11,6 +17,12 @@ interface PressScaleProps {
    *  Most of these cards live in horizontal strips; without it onPressIn fires
    *  the instant a finger lands and the scale flickers while you scroll. */
   delayPressIn?: number;
+  /** Accessibility + test props are forwarded: this is the app's standard
+   *  tappable card, so a caller must never have to drop a label to adopt it. */
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  accessibilityRole?: AccessibilityRole;
+  testID?: string;
   children: React.ReactNode;
 }
 
@@ -23,6 +35,10 @@ export function PressScale({
   style,
   disabled = false,
   delayPressIn = 120,
+  accessibilityLabel,
+  accessibilityHint,
+  accessibilityRole,
+  testID,
   children,
 }: PressScaleProps) {
   const pressed = useSharedValue(false);
@@ -30,11 +46,7 @@ export function PressScale({
   const scaleStyle = useAnimatedStyle(() => ({
     transform: [
       {
-        scale: withSpring(pressed.value ? scale : 1, {
-          damping: 18,
-          stiffness: 250,
-          mass: 0.6,
-        }),
+        scale: withSpring(pressed.value ? scale : 1, SPRING_PRESS),
       },
     ],
   }));
@@ -56,6 +68,10 @@ export function PressScale({
       }}
       disabled={disabled}
       activeOpacity={1}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      accessibilityRole={accessibilityRole}
+      testID={testID}
       style={[style, scaleStyle]}
     >
       {children}

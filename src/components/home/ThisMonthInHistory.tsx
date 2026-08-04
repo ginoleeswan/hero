@@ -6,6 +6,7 @@
 // the web module. Reuses getDebutsThisMonth data untouched.
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
+import { PressScale } from '../ui/PressScale';
 import { COLORS } from '../../constants/colors';
 import type { DebutIssue, DebutCharacter } from '../../lib/db/anniversaries';
 
@@ -45,13 +46,13 @@ export function ThisMonthInHistory({
       </View>
 
       <View style={s.feature}>
-        <Pressable onPress={openLead} style={s.cover} disabled={!leadChar}>
+        <PressScale onPress={openLead} style={s.cover} disabled={!leadChar}>
           <Image
             source={leadCover ? { uri: leadCover } : undefined}
             contentFit="cover"
             style={StyleSheet.absoluteFill as object}
           />
-        </Pressable>
+        </PressScale>
 
         <View style={s.featureBody}>
           <Text style={s.anniv} numberOfLines={1}>
@@ -88,7 +89,7 @@ export function ThisMonthInHistory({
               const c = d.characters[0];
               const cover = coverUri(d);
               return (
-                <Pressable key={d.issueId} onPress={() => c && onHeroPress(c.id)} style={s.mini}>
+                <PressScale key={d.issueId} onPress={() => c && onHeroPress(c.id)} style={s.mini}>
                   <Image
                     source={cover ? { uri: cover } : undefined}
                     contentFit="cover"
@@ -97,7 +98,7 @@ export function ThisMonthInHistory({
                   <View style={s.miniBadge}>
                     <Text style={s.miniBadgeText}>{d.yearsAgo}y</Text>
                   </View>
-                </Pressable>
+                </PressScale>
               );
             })}
           </ScrollView>

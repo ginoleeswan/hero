@@ -8,9 +8,10 @@
 // relative timestamp is what makes it feel current rather than merely accurate.
 //
 // Ranking, decay and every string live in src/lib/home/pulse.ts. This is a view.
-import { View, Text, FlatList, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { PressScale } from '../ui/PressScale';
 import { COLORS } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import type { PulseEvent, PulseKind } from '../../lib/home/pulse';
@@ -98,9 +99,10 @@ export function PulseRail({
             const accent = item.accent ?? COLORS.goldAccent;
             const brand = brandForEvent(item.entityId);
             return (
-              <Pressable
+              <PressScale
                 onPress={() => onEventPress?.(item.entityId)}
                 style={[live.card, { borderColor: `${accent}55` }]}
+                accessibilityRole="button"
                 accessibilityLabel={`${item.headline}, live now`}
               >
                 <LinearGradient
@@ -154,12 +156,12 @@ export function PulseRail({
                     <Text style={live.moverLabel}>Happening now</Text>
                   )}
                 </View>
-              </Pressable>
+              </PressScale>
             );
           }
 
           return (
-            <Pressable
+            <PressScale
               style={s.card}
               onPress={() => open(item)}
               disabled={disabled}
@@ -212,7 +214,7 @@ export function PulseRail({
                   )}
                 </View>
               </View>
-            </Pressable>
+            </PressScale>
           );
         }}
       />

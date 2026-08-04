@@ -1,9 +1,10 @@
 // src/components/home/ComicCoverRail.tsx — a calm horizontal rail of this week's
 // comic covers for the "New This Week" section of the Right Now band. Sibling of
 // TitlePosterRail; taps open the lightweight issue page.
-import { View, Text, FlatList, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { PressScale } from '../ui/PressScale';
 import { COLORS } from '../../constants/colors';
 import type { NewComic } from '../../lib/db/comics';
 
@@ -56,7 +57,7 @@ export function ComicCoverRail({
         renderItem={({ item }) => {
           const day = onSaleDay(item.storeDate);
           return (
-            <Pressable style={s.card} onPress={() => onIssuePress(item.id)}>
+            <PressScale style={s.card} onPress={() => onIssuePress(item.id)}>
               {item.coverUrl ? (
                 <Image
                   source={{ uri: item.coverUrl }}
@@ -80,7 +81,7 @@ export function ComicCoverRail({
                 {item.volumeName}
                 {item.issueNumber ? ` #${item.issueNumber}` : ''}
               </Text>
-            </Pressable>
+            </PressScale>
           );
         }}
       />

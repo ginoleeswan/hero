@@ -1,64 +1,95 @@
 // src/components/skeletons/HomeSkeleton.tsx
+//
+// This must MIRROR app/(tabs)/explore.tsx's real feed, or the handoff jumps.
+// Two things it gets right that a generic skeleton cannot:
+//
+//  • Row ORDER matches the real `rows` array: spotlight → publishers →
+//    matchup → daily → (beige zone) portrait rows.
+//  • Zone COLOUR matches DARK_ROWS: the first four rows sit on the deep-navy
+//    stage, and beige paper only begins where the real page's first Library
+//    row does. The old skeleton put beige directly under the spotlight, so the
+//    whole background flipped dark↔beige at the handoff.
+//
+// Geometry constants are copied from the real components (cited inline). If
+// one of those changes, change it here in the same PR.
 import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { COLORS } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-// Mirror the real layout (see HomeHeroRow / SpotlightCarousel / PublisherGrid).
-const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
-const CARD_HEIGHT = Math.round(CARD_WIDTH * ((SCREEN_HEIGHT * 0.66) / SCREEN_WIDTH));
-const CARD_GAP = 12;
+
+// Placeholder fill for the dark stage — beige at 8% reads as "not yet here"
+// without the light-on-light glare of the paper-zone tone.
+const ON_DARK = 'rgba(245,235,220,0.08)';
+
+// PublisherGrid: H_PAD 16, GAP 10, tile minHeight 84, radius 16.
 const H_PAD = 16;
 const TILE_GAP = 10;
 const TILE_W = (SCREEN_WIDTH - H_PAD * 2 - TILE_GAP) / 2;
-const TILE_H = 88; // matches PublisherGrid card minHeight
+const TILE_H = 84;
 
+// HomeHeroRow portrait cards.
+const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
+const CARD_HEIGHT = Math.round(CARD_WIDTH * ((SCREEN_HEIGHT * 0.66) / SCREEN_WIDTH));
+const CARD_GAP = 12;
+
+// SpotlightCarousel.spotlightHeight(): insetTop + 50% of the screen. Rendered
+// with showLip={false} on the feed, so NO beige lip here either.
 function SpotlightSkeleton({ insetTop }: { insetTop: number }) {
-  const height = insetTop + Math.round(SCREEN_HEIGHT * 0.5);
   return (
-    <View>
-      <Skeleton width="100%" height={height} borderRadius={0} />
-      {/* Rounded beige lip — mirrors SpotlightCarousel's edge into the sheet. */}
-      <View style={styles.lip} pointerEvents="none" />
-    </View>
+    <Skeleton
+      width="100%"
+      height={insetTop + Math.round(SCREEN_HEIGHT * 0.5)}
+      borderRadius={0}
+      color={ON_DARK}
+    />
   );
 }
 
-function DailyBannerSkeleton() {
-  return (
-    <View style={styles.dailyBanner}>
-      <Skeleton width="100%" height={102} borderRadius={20} />
-    </View>
-  );
-}
-
-function MatchupSkeleton() {
-  return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <View style={styles.headerLeft}>
-          <Skeleton width="22%" height={10} borderRadius={4} />
-          <Skeleton width="46%" height={22} borderRadius={6} style={styles.titleSkeleton} />
-        </View>
-      </View>
-      <View style={styles.matchupCard}>
-        <Skeleton width="100%" height={210} borderRadius={20} />
-      </View>
-    </View>
-  );
-}
-
+// PublisherGrid — four tiles, two columns, on the dark stage.
 function PublisherGridSkeleton() {
   return (
     <View style={styles.publisherGrid}>
       {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} width={TILE_W} height={TILE_H} borderRadius={14} />
+        <Skeleton key={i} width={TILE_W} height={TILE_H} borderRadius={16} color={ON_DARK} />
       ))}
     </View>
   );
 }
 
+// TodaysMatchup — kicker + title, then the glass card (96px portraits +
+// 20px vertical padding + the vote row).
+function MatchupSkeleton() {
+  return (
+    <View style={styles.darkSection}>
+      <View style={styles.headerLeft}>
+        <Skeleton width="22%" height={10} borderRadius={4} color={ON_DARK} />
+        <Skeleton
+          width="52%"
+          height={22}
+          borderRadius={6}
+          color={ON_DARK}
+          style={styles.titleGap}
+        />
+      </View>
+      <View style={styles.matchupCard}>
+        <Skeleton width="100%" height={206} borderRadius={18} color={ON_DARK} />
+      </View>
+    </View>
+  );
+}
+
+// DailyChallengeBanner on the dark stage.
+function DailyBannerSkeleton() {
+  return (
+    <View style={styles.dailyBanner}>
+      <Skeleton width="100%" height={94} borderRadius={20} color={ON_DARK} />
+    </View>
+  );
+}
+
+// A Library row on beige paper.
 function PortraitRowSkeleton() {
   return (
     <View style={styles.section}>
@@ -95,11 +126,16 @@ export function HomeSkeleton({ insets }: HomeSkeletonProps) {
     <SkeletonProvider>
       <ScrollView scrollEnabled={false} showsVerticalScrollIndicator={false} style={styles.scroll}>
         <SpotlightSkeleton insetTop={insets.top} />
-        <View style={styles.sheet}>
-          <DailyBannerSkeleton />
+        {/* The dark stage — same four row types the real feed keeps on navy. */}
+        <View style={styles.stage}>
           <PublisherGridSkeleton />
           <MatchupSkeleton />
-          {Array.from({ length: 5 }).map((_, i) => (
+          <DailyBannerSkeleton />
+        </View>
+        {/* Beige paper begins exactly where the real first Library row does,
+            with the same rounded seam lip. */}
+        <View style={styles.sheet}>
+          {Array.from({ length: 3 }).map((_, i) => (
             <PortraitRowSkeleton key={i} />
           ))}
         </View>
@@ -109,19 +145,33 @@ export function HomeSkeleton({ insets }: HomeSkeletonProps) {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: COLORS.navy },
-  sheet: { backgroundColor: COLORS.beige },
-  lip: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 24,
+  // deepNavy, matching explore's root/content — NOT navy, which flipped the
+  // whole background tone at the handoff.
+  scroll: { flex: 1, backgroundColor: COLORS.deepNavy },
+  stage: { backgroundColor: COLORS.deepNavy },
+  sheet: {
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderCurve: 'continuous',
+    marginTop: 10,
+    overflow: 'hidden',
   },
+  publisherGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: TILE_GAP,
+    paddingHorizontal: H_PAD,
+    // podsOverlap: the real grid rides -14 up into the spotlight's fade.
+    marginTop: -14,
+    paddingTop: 12,
+    paddingBottom: 6,
+  },
+  darkSection: { paddingTop: 12, paddingBottom: 4 },
+  headerLeft: { gap: 2, paddingHorizontal: 15, marginBottom: 10 },
+  titleGap: { marginTop: 2 },
+  matchupCard: { paddingHorizontal: 15 },
+  dailyBanner: { paddingHorizontal: 15, paddingTop: 12, paddingBottom: 16 },
   section: { paddingTop: 14, paddingBottom: 4 },
   sectionHeader: {
     paddingHorizontal: 15,
@@ -130,25 +180,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'space-between',
   },
-  headerLeft: { gap: 2 },
-  titleSkeleton: { marginTop: 2 },
   seeAllSkeleton: { marginBottom: 4 },
-  dailyBanner: {
-    paddingHorizontal: 15,
-    paddingTop: 16,
-    paddingBottom: 4,
-  },
-  matchupCard: {
-    paddingHorizontal: 15,
-  },
-  publisherGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: TILE_GAP,
-    paddingHorizontal: H_PAD,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
   portraitRow: {
     paddingHorizontal: 15,
     gap: CARD_GAP,
