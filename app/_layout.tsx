@@ -27,6 +27,7 @@ import { BootStage } from '../src/components/ui/BootStage';
 import AnalyticsProvider from '../src/components/Analytics';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../src/lib/query/queryClient';
+import { startAppFocusTracking } from '../src/lib/query/appFocus';
 import { postAuthTarget } from '../src/lib/loginRedirect';
 import { COLORS, INK_TEXT } from '../src/constants/colors';
 import { initSentry, captureException } from '../src/lib/sentry';
@@ -139,6 +140,14 @@ function PresenceHeartbeat() {
   return null;
 }
 
+// Tells React Query when the app is foregrounded, so `refetchOnWindowFocus`
+// means something on native. Mounted beside the router for the same reason as
+// the heartbeat: one subscription for the whole session.
+function QueryFocusBridge() {
+  useEffect(() => startAppFocusTracking(), []);
+  return null;
+}
+
 function AuthGate({ fontsReady }: { fontsReady: boolean }) {
   const { user, loading } = useAuth();
   const segments = useSegments();
@@ -216,6 +225,7 @@ export default function RootLayout() {
         <StatusBar style="dark" />
         <AnalyticsProvider />
         <PresenceHeartbeat />
+        <QueryFocusBridge />
         <AuthGate fontsReady={fontsReady} />
       </QueryClientProvider>
     </GestureHandlerRootView>

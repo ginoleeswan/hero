@@ -295,6 +295,58 @@ history numeral), and hover/pressed/disabled state opacities.
 Ratios in the colour-token comments are computed, not estimated. Re-derive
 before changing a token.
 
+## Failure and offline states
+
+Two separate problems. One is fixed; the other is measured but deliberately
+not swept.
+
+### Focus revalidation (fixed)
+
+React Query decides "is this query focused?" from `document.hasFocus()` and
+`visibilitychange`. Neither exists on React Native, so the focusManager never
+changed state and `refetchOnWindowFocus` could not fire — which is why a
+backgrounded app came back to whatever it had cached, with nothing revalidating
+until the user navigated somewhere new. `refetchOnWindowFocus` was set to
+`false`, which was accurate about the effect but hid the cause.
+
+`src/lib/query/appFocus.ts` wires the focusManager to `AppState` (core RN, no
+native module, ships over the air) and `refetchOnWindowFocus` is now on. It is
+gated by the 5-minute `staleTime`, so returning quickly still costs nothing.
+`'inactive'` counts as blurred, not focused: it is the app-switcher/incoming-call
+state, and treating it as focused would mean peeking at the switcher never
+produces a false→true edge, so no refetch would ever fire.
+
+### Connectivity (blocked)
+
+`onlineManager` has no RN wiring either, so React Query assumes it is always
+online. That is the safer default — queries still try — but nothing
+auto-refetches on reconnect. Fixing it properly needs NetInfo or
+`expo-network`, both native modules, so it is blocked on a rebuild.
+
+### Errors that look like empty data (measured, not swept)
+
+**90 of the 155 `if (error)` branches in `src/lib/db/` swallow the failure and
+return `[]` / `null`.** The other 65 throw.
+
+Where a screen's own data does that, a network failure is indistinguishable
+from a genuinely empty result: React Query sees a *successful* empty response,
+so `retry` never fires, the 5-minute `staleTime` caches the emptiness, and the
+screen renders an empty state that is lying. Only three native screens
+(`character`, `issue`, `title`) render any error state at all, even though
+`LoadErrorView` exists for exactly this.
+
+This was not swept, because the split is real and only a human eye can draw it:
+
+- **Page-critical** — the thing the screen is *about*. Must throw, so React
+  Query retries and the screen can offer `LoadErrorView` + retry.
+- **Optional rail** — a supplementary shelf on a page that stands without it.
+  Soft-failing to `[]` is correct here; it just needs to be *deliberate* rather
+  than the accidental default it is now.
+
+Converting all 90 blind would turn every failed side-rail into a blown-up page.
+Do it per screen, starting with the detail routes, and make the soft-failing
+ones say so in a comment.
+
 ## Android deltas
 
 Android is the least-exercised platform here — nothing in this repo has been
