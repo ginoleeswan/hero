@@ -537,7 +537,10 @@ export default function SearchScreen() {
       <Stack.SearchBar
         ref={searchRef}
         placeholder="Character, team, or real name…"
-        placement="automatic"
+        // "stacked" pins the field under the header. "automatic" became the
+        // iOS 26 bottom-toolbar search, which floats the field over the list
+        // mid-screen and fights this screen's own top-anchored layout.
+        placement="stacked"
         autoCapitalize="none"
         hideWhenScrolling={false}
         barTintColor="rgba(245,235,220,0.12)"

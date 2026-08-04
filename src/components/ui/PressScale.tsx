@@ -14,6 +14,8 @@ interface PressScaleProps {
   children: React.ReactNode;
 }
 
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+
 export function PressScale({
   onPress,
   onLongPress,
@@ -37,8 +39,12 @@ export function PressScale({
     ],
   }));
 
+  // One node holds both the caller's style and the children. The old shape
+  // (style on the touchable, children in an inner view) silently dropped
+  // layout props — a caller's flexDirection/gap/alignItems never reached the
+  // children, so every row-styled consumer stacked vertically.
   return (
-    <TouchableOpacity
+    <AnimatedTouchable
       onPress={onPress}
       onLongPress={onLongPress}
       delayPressIn={delayPressIn}
@@ -50,9 +56,9 @@ export function PressScale({
       }}
       disabled={disabled}
       activeOpacity={1}
-      style={style}
+      style={[style, scaleStyle]}
     >
-      <Animated.View style={[{ flex: 1 }, scaleStyle]}>{children}</Animated.View>
-    </TouchableOpacity>
+      {children}
+    </AnimatedTouchable>
   );
 }
