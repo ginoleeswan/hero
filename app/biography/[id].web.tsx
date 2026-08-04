@@ -2,8 +2,7 @@ import { useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { getHeroByComicvineId } from '../../src/lib/db/heroes';
-import { useHeroRow } from '../../src/lib/query/heroQueries';
+import { useBiography, resolveBioLink } from '../../src/hooks/useBiography';
 import { COLORS, SURFACE, ORANGE_INK, PAPER_TEXT } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { heroImageSource } from '../../src/constants/heroImages';
@@ -278,34 +277,6 @@ function SidebarSkeleton() {
   );
 }
 
-function preprocessHtml(html: string): string {
-  return (
-    html
-      // Remove noscript blocks — they contain a duplicate real <img> that renders via innerHTML
-      .replace(/<noscript>[\s\S]*?<\/noscript>/gi, '')
-      // Swap lazy-load placeholder src with the real data-src
-      .replace(/\ssrc="data:image\/gif;base64,[^"]*"/gi, '')
-      .replace(/\sdata-src="/gi, ' src="')
-      .replace(/\sdata-srcset="/gi, ' srcset="')
-      // Strip hard-coded sizes — let browser pick the right srcset variant by display size
-      .replace(/\ssizes="[^"]*"/gi, '')
-  );
-}
-
-function extractHeadings(html: string): { processedHtml: string; toc: string[] } {
-  const toc: string[] = [];
-  let i = 0;
-  const processedHtml = html.replace(
-    /<h2([^>]*)>([\s\S]*?)<\/h2>/gi,
-    (_match, attrs: string, inner: string) => {
-      const text = inner.replace(/<[^>]+>/g, '').trim();
-      if (text) toc.push(text);
-      return `<h2${attrs} id="bio-s${i++}">${inner}</h2>`;
-    },
-  );
-  return { processedHtml, toc };
-}
-
 export default function WebBiographyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -319,18 +290,9 @@ export default function WebBiographyScreen() {
   // status bar, so it keeps a beige body (full-bleed, no navy gutters).
   useScreenChrome({ top: SURFACE.ink, canvas: isDesktop ? SURFACE.paper : SURFACE.ink });
 
-  // Shares the hero-row cache with the character screen (useHeroRow), so opening
-  // a hero's full biography after viewing the character is instant.
-  const hero = useHeroRow(id).data ?? null;
-  // Derive the rendered HTML + table of contents from the description (no effect).
-  // The React Compiler memoises this derivation automatically.
-  const { processedHtml, toc } = ((): { processedHtml: string; toc: string[] } => {
-    if (!hero?.description) return { processedHtml: '', toc: [] as string[] };
-    const { processedHtml: html, toc: headings } = extractHeadings(
-      preprocessHtml(hero.description),
-    );
-    return { processedHtml: html, toc: headings };
-  })();
+  // HTML cleanup, table flattening, heading extraction and link resolution all
+  // live in the shared hook, so this view and its native twin can't drift.
+  const { hero, processedHtml, toc, hasBiography } = useBiography(id);
 
   const heroImage = id ? heroImageSource(String(id), hero?.image_url, hero?.portrait_url) : null;
 
@@ -349,25 +311,13 @@ export default function WebBiographyScreen() {
         const anchor = (e.target as Element).closest('a');
         if (!anchor) return;
         const href = anchor.getAttribute('href') ?? '';
-
-        // Character link: /slug/4005-{cvId}/
-        const charMatch = href.match(/\/slug\/4005-(\d+)\//);
-        if (charMatch) {
-          e.preventDefault();
-          const found = await getHeroByComicvineId(charMatch[1]);
-          if (found) {
-            router.push(`/character/${found.id}` as never);
-          } else {
-            window.open(`https://comicvine.gamespot.com${href}`, '_blank', 'noopener');
-          }
-          return;
-        }
-
-        // Any other relative /slug/ link — open externally
-        if (href.startsWith('/slug/')) {
-          e.preventDefault();
-          window.open(`https://comicvine.gamespot.com${href}`, '_blank', 'noopener');
-        }
+        // Only intercept links the shared resolver claims; a plain external
+        // href keeps the browser's own default so middle-click/modifiers work.
+        if (!href.startsWith('/slug/')) return;
+        e.preventDefault();
+        const action = await resolveBioLink(href);
+        if (action.kind === 'hero') router.push(`/character/${action.heroId}` as never);
+        else if (action.kind === 'external') window.open(action.url, '_blank', 'noopener');
       };
 
       node.addEventListener('click', handleClick as unknown as EventListener);
@@ -476,7 +426,7 @@ export default function WebBiographyScreen() {
           {/* Main content */}
           <View style={styles.desktopContent}>
             {hero ? (
-              hero.description ? (
+              hasBiography ? (
                 <>
                   <style>{HTML_STYLES}</style>
                   <div ref={bioContentRef} dangerouslySetInnerHTML={{ __html: processedHtml }} />
@@ -493,7 +443,7 @@ export default function WebBiographyScreen() {
         <>
           <View style={styles.mobileBody}>
             {hero ? (
-              hero.description ? (
+              hasBiography ? (
                 <>
                   <style>{HTML_STYLES}</style>
                   <div ref={bioContentRef} dangerouslySetInnerHTML={{ __html: processedHtml }} />

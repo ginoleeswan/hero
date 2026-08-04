@@ -17,7 +17,7 @@ keep only UI state — sheets, lightbox, scroll, animations.
 view layer" rule. The data layer is genuinely shared, but each view carries
 thousands of lines of platform-specific presentation (native: worklet dials and
 a floating chip nav; web: a dot-rail, a desktop side rail, View Transitions).
-Any change to *what* the page shows must land in both files, and nothing warns
+Any change to _what_ the page shows must land in both files, and nothing warns
 you when they diverge. Prefer pushing new logic into the hook or into
 `src/components/` — do not grow the views further.
 
@@ -50,19 +50,19 @@ web. **Trap:** the native `presentSections` memo mirrors the render conditions
 by hand — add a section without updating it and its chip either never appears
 or scrolls to nothing.
 
-| Section (nav key) | Components | Data |
-| --- | --- | --- |
-| Hero header | portrait, favourite heart, share, TraitBand | `heroRow`, `narrative.tags` (`hero_tags`) |
-| Summary | `PullQuoteBio` | ComicVine `summary`/`description` |
-| Stats — "Power Profile" | native: worklet-driven SVG arc `StatDial`s; web: bars with an average tick. Total `/ 600`, "Stronger than N%" percentile chip | powerstats, `useHeroPercentile` |
-| Abilities | `SignaturePowerTiles` (`pickSignaturePowers`) + `AbilitiesSection` → `PowersDecoded` explainers | powers list, `narrative.powerExplainers` |
-| Trivia | `DidYouKnowDeck` | `hero_narrative_facts` via `useHeroNarrative` → `src/lib/db/heroFacts.ts` |
-| Dossier | collapsible label-value card (Profile / Appearance / Connections) | hero row fields |
-| Allies | three `RelatedHeroStrip`s — Enemies, Allies, Teams | `useRelatedHeroes` (`hero_relationships`); teammates dedupe against allies |
-| On Screen | `MovieStrip`(s), `PortrayedBySection`, `HeroLinksRow` | `useHeroTitles`, `useHeroPortrayals`, `useHeroLinks` |
-| In Print | first-appearance feature, `ComicCoverRail`, `GalleryStrip` | `useHeroIssues`, `hero_images` via `getHeroImages` |
-| Family | `FamilyCanvas` + `HouseLinks` | `useHeroFamily` — see `docs/architecture/family-trees-and-houses.md` |
-| Footer | "Contribute to this character" expanding menu | — |
+| Section (nav key)       | Components                                                                                                                    | Data                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Hero header             | portrait, favourite heart, share, TraitBand                                                                                   | `heroRow`, `narrative.tags` (`hero_tags`)                                  |
+| Summary                 | `PullQuoteBio`                                                                                                                | ComicVine `summary`/`description`                                          |
+| Stats — "Power Profile" | native: worklet-driven SVG arc `StatDial`s; web: bars with an average tick. Total `/ 600`, "Stronger than N%" percentile chip | powerstats, `useHeroPercentile`                                            |
+| Abilities               | `SignaturePowerTiles` (`pickSignaturePowers`) + `AbilitiesSection` → `PowersDecoded` explainers                               | powers list, `narrative.powerExplainers`                                   |
+| Trivia                  | `DidYouKnowDeck`                                                                                                              | `hero_narrative_facts` via `useHeroNarrative` → `src/lib/db/heroFacts.ts`  |
+| Dossier                 | collapsible label-value card (Profile / Appearance / Connections)                                                             | hero row fields                                                            |
+| Allies                  | three `RelatedHeroStrip`s — Enemies, Allies, Teams                                                                            | `useRelatedHeroes` (`hero_relationships`); teammates dedupe against allies |
+| On Screen               | `MovieStrip`(s), `PortrayedBySection`, `HeroLinksRow`                                                                         | `useHeroTitles`, `useHeroPortrayals`, `useHeroLinks`                       |
+| In Print                | first-appearance feature, `ComicCoverRail`, `GalleryStrip`                                                                    | `useHeroIssues`, `hero_images` via `getHeroImages`                         |
+| Family                  | `FamilyCanvas` + `HouseLinks`                                                                                                 | `useHeroFamily` — see `docs/architecture/family-trees-and-houses.md`       |
+| Footer                  | "Contribute to this character" expanding menu                                                                                 | —                                                                          |
 
 A sticky **Compare** CTA rides the bottom of the screen (`compareStrip`,
 native) and sits contextually on the Power Profile card (web), routing to
@@ -85,7 +85,7 @@ contexts here. The whole system is documented in
 ## Data flow gotchas
 
 - `planHeroLoad` distinguishes a true 404 (no DB row → poster) from a transient
-  failure (retryable). The DB is the *only* source of characters — never fall
+  failure (retryable). The DB is the _only_ source of characters — never fall
   through to a live SuperheroAPI fetch; it resolves merged-away ids and used to
   fabricate phantom pages.
 - The live ComicVine read-through is an **additive merge**: every null field
@@ -102,10 +102,30 @@ contexts here. The whole system is documented in
 ## Satellite pages
 
 **`/biography/[id]`** (`app/biography/[id].tsx` + `.web.tsx`) re-typesets the
-raw ComicVine biography HTML via `react-native-render-html` with editorial tag
-styles. `preprocessHtml` strips `<noscript>` blocks and base64 placeholder
-gifs and promotes `data-src`/`data-srcset` to real attributes, or images render
-blank.
+raw ComicVine biography HTML with editorial tag styles — `react-native-render-html`
+on native, a `<style>` + `dangerouslySetInnerHTML` block on web.
+
+Both views are thin over **`src/hooks/useBiography.ts`**, which owns every
+transform so the platforms can't drift:
+
+| Step              | Why                                                                                                                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `preprocessHtml`  | strips `<noscript>` blocks and base64 placeholder gifs, promotes `data-src`/`data-srcset` — or images render blank                                                                                 |
+| `flattenTables`   | `<table>` → `<ul>`; RNRH has no table support without the (uninstalled) plugin, and native used to bin tables via `ignoredDomTags`, silently losing ComicVine's power/appearance grids             |
+| `extractHeadings` | anchors each `<h2>` and returns the `toc` the desktop contents rail reads                                                                                                                          |
+| `splitLead`       | lifts the opening letter out so native can set a drop cap — web gets it from `::first-letter`, which RN has no equivalent for. Declines when the document opens with a tag, heading or punctuation |
+| `resolveBioLink`  | ComicVine `/slug/4005-{cvId}/` links resolve to an in-app character page; everything else is absolutised. Only the _acting_ (`Linking.openURL` vs `window.open`) stays in the views                |
+
+Native's identity stage mirrors the web header in four layers: a blurred
+portrait backdrop (`HeroImage blurRadius`, scaled past the frame so the blur's
+edges never show), a vertical scrim that guarantees the title's contrast over
+any portrait, a deep-ink top cap that fuses the stage into the status bar, and
+the orange seam at the beige boundary. The reading column closes on a colophon
+rather than stopping dead — `PageEndCap` is web-only by design (it exists for
+the iOS Safari toolbar zone) and correctly renders nothing on native.
+
+The drop cap is absolutely positioned with the lead paragraph padded around it:
+RN has no `float`, so the indent is paid by the whole paragraph.
 
 **`/social-web/[id]`** (`app/social-web/[id].tsx` + `.web.tsx`) — both
 platforms now render the SAME three.js constellation, `UniverseScene.dom.tsx`
@@ -124,7 +144,7 @@ the explorer. Edge copy comes from hand-written blurbs in
 `describeRelationship()` template (`src/lib/graph/relationshipReason.ts`) —
 shared rosters, then mutual-count, then honest silence. Roughly 500 famous
 pairs have been triaged across five migration batches (a large share
-deliberately *declined* — the template already says the true thing), against a
+deliberately _declined_ — the template already says the true thing), against a
 queue of ~3,000 fame-gated pairs and a far larger graph, so the templated
 fallback dominates everywhere off the A-list.
 
