@@ -3,14 +3,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
-    // No backgroundColor: a solid color suppresses the iOS 26 liquid-glass
-    // capsule entirely, leaving bare icons floating over the content. The
-    // system material adapts to the dark canvas on its own.
-    <NativeTabs
-      tintColor="#e8621a"
-      iconColor={{ default: '#666', selected: '#e8621a' }}
-      labelStyle={{ default: { color: '#666' }, selected: { color: '#e8621a' } }}
-    >
+    // tintColor ONLY. Any appearance customization — backgroundColor,
+    // iconColor, labelStyle — swaps in a custom UITabBarAppearance and
+    // suppresses the iOS 26 liquid-glass capsule, leaving bare icons floating
+    // over the content. The system material handles colors and the dark
+    // canvas on its own; tint is the one safe knob.
+    <NativeTabs tintColor="#e8621a">
       <NativeTabs.Trigger name="explore">
         <NativeTabs.Trigger.Icon
           src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="compass-outline" />}
