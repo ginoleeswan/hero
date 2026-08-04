@@ -23,6 +23,8 @@ import { COLORS, SURFACE, SEAM_COLOR } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { NotFoundView } from '../../src/components/NotFoundView';
 import { IssueSkeleton } from '../../src/components/skeletons/IssueSkeleton';
+import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
+import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import { PageEndCap } from '../../src/components/web/PageEndCap';
 
 // Wide editorial layout constants — the cover straddles the dark→paper seam.
@@ -347,6 +349,12 @@ export default function IssueScreen() {
 
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
+  // pre → bare beige page (a cached issue never blinks a skeleton); skeleton →
+  // placeholders; crossfade → the page renders and the skeleton dissolves off it.
+  // Called before the early returns so the phase is stable across every state.
+  const skeletonTop = isWeb ? 80 : insets.top + 60;
+  const phase = useSkeletonTransition(issue === undefined);
+
   // Network failure must NOT strand the user on an infinite spinner: after
   // react-query's retries give up, data stays undefined forever — surface a
   // retry instead.
@@ -378,7 +386,7 @@ export default function IssueScreen() {
     return (
       <View style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
-        <IssueSkeleton contentTop={isWeb ? 80 : insets.top + 60} />
+        {phase === 'skeleton' ? <IssueSkeleton contentTop={skeletonTop} /> : null}
       </View>
     );
   }
@@ -599,6 +607,12 @@ export default function IssueScreen() {
       >
         {narrowBody}
       </ScrollView>
+      {/* The page sits settled underneath; only this layer animates. */}
+      {phase === 'crossfade' ? (
+        <FadeOutSkeleton>
+          <IssueSkeleton contentTop={skeletonTop} />
+        </FadeOutSkeleton>
+      ) : null}
     </View>
   );
 }

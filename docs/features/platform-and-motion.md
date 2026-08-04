@@ -151,6 +151,33 @@ is the **native** one — `DUR` (fast/base/enter/exit/feature), `STAGGER`,
 `SHIMMER_MS` is the one skeleton tempo — `SkeletonProvider` and `ClashSkeleton`
 both read it so two skeletons never breathe at different rates.
 
+## The loading contract (native)
+
+Every native screen with a skeleton runs it through `useSkeletonTransition` +
+`FadeOutSkeleton`, not a bare mount. The four phases matter in this order:
+`pre` renders **nothing** for 150 ms, so a cached or fast load never blinks a
+skeleton; `skeleton` only appears once the load outlasts that window;
+`crossfade` renders the real content and dissolves the skeleton *on top of it*,
+so placeholders resolve in place; then `content`. A hard-mounted skeleton is a
+regression — it makes a fast screen look slower than it is.
+
+## Card → page: Apple's fluid zoom
+
+Native uses the real UIKit zoom transition (iOS 18+), not a JS approximation:
+`<Link.AppleZoom>` wraps the source card inside a `<Link>`, and
+`<Link.AppleZoomTarget>` marks the destination region (the character page's
+portrait). Both degrade to plain pass-throughs on Android, older iOS and web,
+so the standard push is the automatic fallback — no capability check needed.
+
+The catch is **coverage**: a card can only be a zoom source if it navigates
+through a `<Link>`. Cards that `router.push` imperatively slide instead, and
+the same hero opening two different ways from two screens is exactly the kind
+of incoherence this is meant to remove. Explore rows (`HomeHeroRow`) and the
+search grid (`PortraitCard`, via its optional `href`) are wired; other entry
+points still push imperatively. When adding one, pass an `href` rather than
+calling `router.push`, and keep the press handler for side effects only —
+Radix's `Slot` composes both handlers, so navigation and side effects coexist.
+
 ## Shared native primitives
 
 Reach for these before hand-rolling; each replaced a pattern that had drifted

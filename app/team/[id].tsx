@@ -24,13 +24,15 @@ import { HeroImage } from '../../src/components/HeroImage';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { TeamSkeleton } from '../../src/components/skeletons/TeamSkeleton';
+import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
+import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import { BrandLogoView } from '../../src/components/PublisherBadge';
 import { COLORS } from '../../src/constants/colors';
 import { brandForPublisher } from '../../src/constants/publishers';
 import { teamLogo } from '../../src/constants/teamBrands';
 import type { Hero } from '../../src/lib/db/heroes';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;
 const GAP = 8;
 const H_PAD = 16;
@@ -91,6 +93,11 @@ export default function TeamScreen() {
   const total = data?.pages[0]?.total ?? 0;
   const notFound = teamLoaded && team === null;
 
+  // The roster grid is pending (the stage header is already real). pre → nothing,
+  // so a cached roster never blinks a skeleton.
+  const gridLoading = isPending && !!team;
+  const gridPhase = useSkeletonTransition(gridLoading);
+
   const brand = brandForPublisher(team?.publisher);
   const tlogo = team ? teamLogo(team) : undefined;
   const LOGO_H = 44;
@@ -141,6 +148,18 @@ export default function TeamScreen() {
         )}
       </View>
       <View style={styles.sheetTop} />
+      {/* Roster crossfade. The cards are list items, so a zero-height anchor at
+          the stage's bottom edge — exactly where the first row starts — carries
+          the dissolving overlay. */}
+      {gridPhase === 'crossfade' ? (
+        <View style={styles.skelAnchor}>
+          <View style={styles.skelOverlay}>
+            <FadeOutSkeleton>
+              <TeamSkeleton />
+            </FadeOutSkeleton>
+          </View>
+        </View>
+      ) : null}
     </>
   );
 
@@ -287,8 +306,10 @@ export default function TeamScreen() {
           </TouchableOpacity>
         )}
         ListEmptyComponent={
-          isPending && team ? (
-            <TeamSkeleton />
+          gridLoading ? (
+            gridPhase === 'skeleton' ? (
+              <TeamSkeleton />
+            ) : null
           ) : notFound ? (
             <EmptyState
               icon="people-outline"
@@ -353,6 +374,10 @@ const styles = StyleSheet.create({
     marginTop: -16,
     height: 30,
   },
+  // Zero-height anchor + a viewport-tall overlay box, so the dissolving roster
+  // skeleton starts at the seam under the stage and covers the visible grid.
+  skelAnchor: { height: 0 },
+  skelOverlay: { position: 'absolute', top: 0, left: 0, right: 0, height: SCREEN_HEIGHT },
   row: { gap: GAP, marginBottom: GAP, paddingHorizontal: H_PAD },
   card: {
     width: CARD_WIDTH,

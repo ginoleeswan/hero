@@ -20,6 +20,8 @@ import { HallOfInfamy } from '../../src/components/home/HallOfInfamy';
 import { YesterdayStrip } from '../../src/components/versus/YesterdayStrip';
 import { TodaysDailies } from '../../src/components/game/TodaysDailies';
 import { VersusSkeleton } from '../../src/components/skeletons/VersusSkeleton';
+import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
+import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 
 export default function VersusScreen() {
   const router = useRouter();
@@ -35,6 +37,11 @@ export default function VersusScreen() {
     teamBattle,
     mostFeared,
   } = useVersusHub();
+
+  // Showdown block only — the stage's eyebrow and title are already real. pre →
+  // nothing, so a cached matchup never blinks a skeleton.
+  const showdownLoading = loading && !matchup;
+  const showdownPhase = useSkeletonTransition(showdownLoading);
 
   const openArena = (a: FighterArt, b: FighterArt) => {
     stashFighters(a, b);
@@ -78,24 +85,34 @@ export default function VersusScreen() {
           )}
           {matchup && hookText ? <Text style={styles.hook}>{hookText}</Text> : null}
 
-          {loading && !matchup ? (
-            <VersusSkeleton />
-          ) : matchup ? (
-            <>
-              <ShowdownCards matchup={matchup} onOpen={openArena} />
-              <Pressable
-                onPress={() => openArena(matchup.heroA, matchup.heroB)}
-                accessibilityRole="button"
-                accessibilityLabel="Join the debate"
-                style={styles.takesLink}
-              >
-                <Text style={styles.takesLinkText}>
-                  {takesCount} {takesCount === 1 ? 'take' : 'takes'} — join the debate
-                </Text>
-                <Ionicons name="chevron-forward" size={13} color={COLORS.goldAccent} />
-              </Pressable>
-            </>
-          ) : null}
+          {/* Wrapper so the dissolving skeleton overlays the showdown block only. */}
+          <View style={styles.showdown}>
+            {showdownLoading ? (
+              showdownPhase === 'skeleton' ? (
+                <VersusSkeleton />
+              ) : null
+            ) : matchup ? (
+              <>
+                <ShowdownCards matchup={matchup} onOpen={openArena} />
+                <Pressable
+                  onPress={() => openArena(matchup.heroA, matchup.heroB)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Join the debate"
+                  style={styles.takesLink}
+                >
+                  <Text style={styles.takesLinkText}>
+                    {takesCount} {takesCount === 1 ? 'take' : 'takes'} — join the debate
+                  </Text>
+                  <Ionicons name="chevron-forward" size={13} color={COLORS.goldAccent} />
+                </Pressable>
+              </>
+            ) : null}
+            {showdownPhase === 'crossfade' ? (
+              <FadeOutSkeleton>
+                <VersusSkeleton />
+              </FadeOutSkeleton>
+            ) : null}
+          </View>
 
           {yesterday ? <YesterdayStrip yesterday={yesterday} /> : null}
 
@@ -208,6 +225,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   titleWithHook: { marginBottom: 8 },
+  showdown: { alignSelf: 'stretch', alignItems: 'center' },
   hook: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13.5,

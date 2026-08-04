@@ -13,6 +13,8 @@ import { EventIndexList } from '../../src/components/event/EventIndexList';
 import { useEventIndex } from '../../src/hooks/useEventDossier';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { EventIndexSkeleton } from '../../src/components/skeletons/EventSkeleton';
+import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
+import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 
 // The root stack hides headers globally — `title` alone renders nothing, and
 // this page is reachable by deep link, so it needs a visible back affordance.
@@ -31,6 +33,8 @@ export default function EventIndexPage() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const { index, loading } = useEventIndex();
+  // pre → bare ink page, so a cached index never blinks a skeleton.
+  const phase = useSkeletonTransition(loading && !index);
 
   return (
     <View style={s.screen}>
@@ -38,7 +42,7 @@ export default function EventIndexPage() {
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
         {/* Bleed the ink stage under the status bar — the page opens on ink. */}
         <View style={{ height: insets.top, backgroundColor: COLORS.deepNavy }} />
-        {loading && !index && <EventIndexSkeleton />}
+        {loading && !index && phase === 'skeleton' && <EventIndexSkeleton />}
         {!loading && !index && (
           // Fetch failed or the index is empty — never leave a blank ink page.
           <EmptyState
@@ -48,12 +52,20 @@ export default function EventIndexPage() {
           />
         )}
         {index && (
-          <EventIndexList
-            index={index}
-            contentWidth={width}
-            viewportHeight={height}
-            onEventPress={(slug) => router.push(`/event/${encodeURIComponent(slug)}`)}
-          />
+          <View>
+            <EventIndexList
+              index={index}
+              contentWidth={width}
+              viewportHeight={height}
+              onEventPress={(slug) => router.push(`/event/${encodeURIComponent(slug)}`)}
+            />
+            {/* The list sits settled underneath; only this layer animates. */}
+            {phase === 'crossfade' ? (
+              <FadeOutSkeleton>
+                <EventIndexSkeleton />
+              </FadeOutSkeleton>
+            ) : null}
+          </View>
         )}
       </ScrollView>
     </View>

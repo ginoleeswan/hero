@@ -26,6 +26,8 @@ import { SquircleMask } from '../../src/components/ui/SquircleMask';
 import { PressScale } from '../../src/components/ui/PressScale';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
+import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
+import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter, usePathname } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -289,6 +291,9 @@ export default function ProfileScreen() {
     settled,
     refetch,
   } = useProfileData(user?.id);
+  // Collection grid: pre → the panel stays empty (a cached profile never blinks
+  // a skeleton); crossfade → the thumbs render and the skeleton dissolves off them.
+  const favouritesPhase = useSkeletonTransition(loading);
   const [refreshing, setRefreshing] = useState(false);
   const [showEditName, setShowEditName] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
@@ -790,45 +795,56 @@ export default function ProfileScreen() {
           count={!loading && favourites.length > 0 ? String(favourites.length) : undefined}
           style={styles.shellGutter}
         >
-          {loading ? (
-            <FavouritesSkeleton />
-          ) : favourites.length === 0 ? (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIconWrap}>
-                <Ionicons name="heart-outline" size={32} color={COLORS.orange} />
+          {/* Wrapper so the dissolving skeleton overlays the thumbs only, not
+              the section's title row. */}
+          <View>
+            {loading ? (
+              favouritesPhase === 'skeleton' ? (
+                <FavouritesSkeleton />
+              ) : null
+            ) : favourites.length === 0 ? (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIconWrap}>
+                  <Ionicons name="heart-outline" size={32} color={COLORS.orange} />
+                </View>
+                <Text style={styles.emptyTitle}>Nothing saved yet</Text>
+                <Text style={styles.emptyBody}>
+                  Open any hero and tap the heart to build your collection
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.push('/explore')}
+                  style={styles.browseBtn}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.browseBtnText}>Browse characters</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={styles.emptyTitle}>Nothing saved yet</Text>
-              <Text style={styles.emptyBody}>
-                Open any hero and tap the heart to build your collection
-              </Text>
-              <TouchableOpacity
-                onPress={() => router.push('/explore')}
-                style={styles.browseBtn}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.browseBtnText}>Browse characters</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.grid}>
-              {favourites.map((hero) => (
-                <FavouriteThumb
-                  key={hero.id}
-                  hero={hero}
-                  onPress={() => router.push(`/character/${hero.id}`)}
-                  onLongPress={() => handleUnfavourite(hero)}
-                />
-              ))}
-              <TouchableOpacity
-                style={styles.ghostTile}
-                onPress={() => router.push('/explore')}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="add" size={24} color={COLORS.orange} />
-                <Text style={styles.ghostText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+            ) : (
+              <View style={styles.grid}>
+                {favourites.map((hero) => (
+                  <FavouriteThumb
+                    key={hero.id}
+                    hero={hero}
+                    onPress={() => router.push(`/character/${hero.id}`)}
+                    onLongPress={() => handleUnfavourite(hero)}
+                  />
+                ))}
+                <TouchableOpacity
+                  style={styles.ghostTile}
+                  onPress={() => router.push('/explore')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="add" size={24} color={COLORS.orange} />
+                  <Text style={styles.ghostText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {favouritesPhase === 'crossfade' ? (
+              <FadeOutSkeleton>
+                <FavouritesSkeleton />
+              </FadeOutSkeleton>
+            ) : null}
+          </View>
         </SectionShell>
 
         {/* Badges */}

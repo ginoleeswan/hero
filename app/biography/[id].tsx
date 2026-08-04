@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RenderHTML, { type MixedStyleDeclaration } from 'react-native-render-html';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
+import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
+import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import { getHeroByComicvineId } from '../../src/lib/db/heroes';
 import { useHeroRow } from '../../src/lib/query/heroQueries';
 import { HeroImage } from '../../src/components/HeroImage';
@@ -124,6 +126,30 @@ export default function BiographyScreen() {
 
   const contentWidth = width - 40;
 
+  // The hero row is usually already cached from the character page, so pre →
+  // render nothing rather than blink placeholders; a real wait dissolves out.
+  const phase = useSkeletonTransition(!hero);
+  const nameSkeleton = (
+    <SkeletonProvider>
+      <Skeleton width="80%" height={26} borderRadius={6} style={{ marginVertical: 4 }} />
+    </SkeletonProvider>
+  );
+  const bodySkeleton = (
+    <SkeletonProvider>
+      <Skeleton width="100%" height={13} borderRadius={4} style={{ marginBottom: 10 }} />
+      <Skeleton width="95%" height={13} borderRadius={4} style={{ marginBottom: 10 }} />
+      <Skeleton width="88%" height={13} borderRadius={4} style={{ marginBottom: 10 }} />
+      <Skeleton width="92%" height={13} borderRadius={4} style={{ marginBottom: 28 }} />
+      <Skeleton width="38%" height={20} borderRadius={5} style={{ marginBottom: 16 }} />
+      <Skeleton width="100%" height={13} borderRadius={4} style={{ marginBottom: 10 }} />
+      <Skeleton width="90%" height={13} borderRadius={4} style={{ marginBottom: 10 }} />
+      <Skeleton width="75%" height={13} borderRadius={4} style={{ marginBottom: 28 }} />
+      <Skeleton width="100%" height={200} borderRadius={10} style={{ marginBottom: 24 }} />
+      <Skeleton width="96%" height={13} borderRadius={4} style={{ marginBottom: 10 }} />
+      <Skeleton width="84%" height={13} borderRadius={4} />
+    </SkeletonProvider>
+  );
+
   // Intercept ComicVine character links (/slug/4005-{cvId}/) → resolve to a hero
   // in our DB and navigate in-app; everything else opens in the browser.
   const renderersProps = useMemo(
@@ -191,14 +217,15 @@ export default function BiographyScreen() {
           <View style={styles.titleBlock}>
             <Text style={styles.eyebrow}>Biography</Text>
             {hero ? (
-              <Text style={styles.heroName} numberOfLines={3}>
-                {hero.name}
-              </Text>
-            ) : (
-              <SkeletonProvider>
-                <Skeleton width="80%" height={26} borderRadius={6} style={{ marginVertical: 4 }} />
-              </SkeletonProvider>
-            )}
+              <View>
+                <Text style={styles.heroName} numberOfLines={3}>
+                  {hero.name}
+                </Text>
+                {phase === 'crossfade' ? <FadeOutSkeleton>{nameSkeleton}</FadeOutSkeleton> : null}
+              </View>
+            ) : phase === 'skeleton' ? (
+              nameSkeleton
+            ) : null}
             {hero?.summary ? (
               <Text style={styles.deck} numberOfLines={4}>
                 {hero.summary}
@@ -210,41 +237,33 @@ export default function BiographyScreen() {
         {/* Body */}
         <View style={styles.body}>
           {hero ? (
-            html ? (
-              <RenderHTML
-                contentWidth={contentWidth}
-                source={{ html }}
-                baseStyle={BASE_STYLE}
-                tagsStyles={TAG_STYLES}
-                systemFonts={SYSTEM_FONTS}
-                ignoredDomTags={IGNORED_TAGS}
-                renderersProps={renderersProps}
-                enableExperimentalMarginCollapsing
-              />
-            ) : (
-              <EmptyState
-                icon="document-text-outline"
-                title="No biography yet"
-                body="We don’t have a written history for this character yet."
-                tone="light"
-                compact
-              />
-            )
-          ) : (
-            <SkeletonProvider>
-              <Skeleton width="100%" height={13} borderRadius={4} style={{ marginBottom: 10 }} />
-              <Skeleton width="95%" height={13} borderRadius={4} style={{ marginBottom: 10 }} />
-              <Skeleton width="88%" height={13} borderRadius={4} style={{ marginBottom: 10 }} />
-              <Skeleton width="92%" height={13} borderRadius={4} style={{ marginBottom: 28 }} />
-              <Skeleton width="38%" height={20} borderRadius={5} style={{ marginBottom: 16 }} />
-              <Skeleton width="100%" height={13} borderRadius={4} style={{ marginBottom: 10 }} />
-              <Skeleton width="90%" height={13} borderRadius={4} style={{ marginBottom: 10 }} />
-              <Skeleton width="75%" height={13} borderRadius={4} style={{ marginBottom: 28 }} />
-              <Skeleton width="100%" height={200} borderRadius={10} style={{ marginBottom: 24 }} />
-              <Skeleton width="96%" height={13} borderRadius={4} style={{ marginBottom: 10 }} />
-              <Skeleton width="84%" height={13} borderRadius={4} />
-            </SkeletonProvider>
-          )}
+            <View>
+              {html ? (
+                <RenderHTML
+                  contentWidth={contentWidth}
+                  source={{ html }}
+                  baseStyle={BASE_STYLE}
+                  tagsStyles={TAG_STYLES}
+                  systemFonts={SYSTEM_FONTS}
+                  ignoredDomTags={IGNORED_TAGS}
+                  renderersProps={renderersProps}
+                  enableExperimentalMarginCollapsing
+                />
+              ) : (
+                <EmptyState
+                  icon="document-text-outline"
+                  title="No biography yet"
+                  body="We don’t have a written history for this character yet."
+                  tone="light"
+                  compact
+                />
+              )}
+              {/* The prose sits settled underneath; only this layer animates. */}
+              {phase === 'crossfade' ? <FadeOutSkeleton>{bodySkeleton}</FadeOutSkeleton> : null}
+            </View>
+          ) : phase === 'skeleton' ? (
+            bodySkeleton
+          ) : null}
         </View>
       </ScrollView>
     </View>
