@@ -449,6 +449,8 @@ export default function WebSearchScreen() {
                   <Pressable
                     onPress={() => setInputQuery('')}
                     hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear search"
                     style={styles.clearBtn as object}
                   >
                     <Ionicons name="close-circle" size={20} color="rgba(245,235,220,0.5)" />
@@ -499,6 +501,8 @@ export default function WebSearchScreen() {
                   <Pressable
                     onPress={() => setInputQuery('')}
                     hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear search"
                     style={styles.clearBtn as object}
                   >
                     <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.5)" />

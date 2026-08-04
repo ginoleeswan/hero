@@ -142,6 +142,8 @@ function Arrow({ dir, onPress }: { dir: 'left' | 'right'; onPress: () => void })
   return (
     <Pressable
       onPress={onPress}
+      // 40pt arrow + 2pt of slop each side = the 44pt target floor.
+      hitSlop={2}
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           styles.arrow,

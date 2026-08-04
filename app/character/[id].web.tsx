@@ -2021,6 +2021,9 @@ export default function WebCharacterScreen() {
                 <View style={styles.mControls}>
                   <Pressable
                     onPress={goBack}
+                    hitSlop={GLASS_SLOP}
+                    accessibilityRole="button"
+                    accessibilityLabel="Back"
                     style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                       [styles.glassIconBtn, hovered && (styles.glassBtnHover as object)] as object
                     }
@@ -2031,6 +2034,11 @@ export default function WebCharacterScreen() {
                     <Pressable
                       onPress={toggleFavourite}
                       disabled={favLoading}
+                      hitSlop={GLASS_SLOP}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        favourited ? 'Remove from favourites' : 'Add to favourites'
+                      }
                       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                         [styles.glassIconBtn, hovered && (styles.glassBtnHover as object)] as object
                       }
@@ -3291,6 +3299,9 @@ const sk = StyleSheet.create({
   // Flat like the live Power Profile section (the inset card chrome is gone).
   mStatsCard: { paddingVertical: 8 },
 });
+
+// 38pt glass control + 3pt of slop each side = the 44pt target floor.
+const GLASS_SLOP = 3;
 
 const styles = StyleSheet.create({
   // Narrative additions

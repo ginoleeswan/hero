@@ -238,6 +238,8 @@ export default function SocialWebExplorer() {
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
           style={styles.back}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
         >
           <Ionicons name="arrow-back" size={20} color={INK_TEXT.primary} />
         </Pressable>

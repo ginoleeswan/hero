@@ -568,21 +568,45 @@ function FamilyStage({
           {/* ± buttons are pointer affordances — touch pinches instead. */}
           {canHover ? (
             <>
-              <Pressable style={styles.zoomBtn} onPress={zoomIn}>
+              <Pressable
+                style={styles.zoomBtn}
+                onPress={zoomIn}
+                hitSlop={ZOOM_SLOP}
+                accessibilityRole="button"
+                accessibilityLabel="Zoom in"
+              >
                 <Ionicons name="add" size={18} color={COLORS.black} />
               </Pressable>
-              <Pressable style={styles.zoomBtn} onPress={zoomOut}>
+              <Pressable
+                style={styles.zoomBtn}
+                onPress={zoomOut}
+                hitSlop={ZOOM_SLOP}
+                accessibilityRole="button"
+                accessibilityLabel="Zoom out"
+              >
                 <Ionicons name="remove" size={18} color={COLORS.black} />
               </Pressable>
             </>
           ) : null}
-          <Pressable style={styles.zoomBtn} onPress={recenter}>
+          <Pressable
+            style={styles.zoomBtn}
+            onPress={recenter}
+            hitSlop={ZOOM_SLOP}
+            accessibilityRole="button"
+            accessibilityLabel="Recentre the tree"
+          >
             <Ionicons name="locate-outline" size={16} color={COLORS.black} />
           </Pressable>
           {/* Compact already carries a named "Full chart" control above the
               stage; a second one here only sat on top of the nodes. */}
           {compact && !fullscreen ? null : (
-            <Pressable style={styles.zoomBtn} onPress={onToggleFullscreen}>
+            <Pressable
+              style={styles.zoomBtn}
+              onPress={onToggleFullscreen}
+              hitSlop={ZOOM_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel={fullscreen ? 'Exit full screen' : 'Full screen'}
+            >
               <Ionicons
                 name={fullscreen ? 'contract-outline' : 'expand-outline'}
                 size={16}
@@ -594,7 +618,13 @@ function FamilyStage({
 
         {fullscreen ? (
           <View style={styles.fsTopLeft}>
-            <Pressable style={styles.fsIconBtn} onPress={onClose}>
+            <Pressable
+              style={styles.fsIconBtn}
+              onPress={onClose}
+              hitSlop={FS_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel="Close the tree"
+            >
               <Ionicons name="close" size={20} color={COLORS.black} />
             </Pressable>
             {heroImage ? (
@@ -891,6 +921,11 @@ function AsideMemberNode({
     </View>
   );
 }
+
+// 32 + 6*2 = 44 and 38 + 3*2 = 44 — the target floor, bought with slop so the
+// controls stay small over the tree. Mirrors the native twin.
+const ZOOM_SLOP = 6;
+const FS_SLOP = 3;
 
 const styles = StyleSheet.create({
   card: {
