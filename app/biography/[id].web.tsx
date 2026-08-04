@@ -300,7 +300,7 @@ export default function WebBiographyScreen() {
 
   // HTML cleanup, table flattening, heading extraction and link resolution all
   // live in the shared hook, so this view and its native twin can't drift.
-  const { hero, processedHtml, toc, hasBiography } = useBiography(id);
+  const { hero, processedHtml, toc, hasBiography, failed, retry } = useBiography(id);
 
   // Mobile gets the docked reading pill; desktop already has the sticky rail
   // and the gutter to put it in, so a second contents affordance there would
@@ -339,6 +339,29 @@ export default function WebBiographyScreen() {
       return () => node.removeEventListener('click', handleClick as unknown as EventListener);
     },
     [router],
+  );
+
+  // One body for both layouts — they were byte-identical, which is how the
+  // desktop and mobile columns both ended up showing a skeleton forever on a
+  // failed fetch instead of an error.
+  const body = failed ? (
+    <View style={styles.failed as object}>
+      <Text style={styles.empty}>Couldn’t load this biography.</Text>
+      <Pressable onPress={retry} accessibilityRole="button" style={styles.retryBtn as object}>
+        <Text style={styles.retryText as object}>Try again</Text>
+      </Pressable>
+    </View>
+  ) : hero ? (
+    hasBiography ? (
+      <>
+        <style>{HTML_STYLES}</style>
+        <div ref={bioContentRef} dangerouslySetInnerHTML={{ __html: processedHtml }} />
+      </>
+    ) : (
+      <Text style={styles.empty}>No biography available.</Text>
+    )
+  ) : (
+    <BiographySkeleton />
   );
 
   return (
@@ -439,37 +462,11 @@ export default function WebBiographyScreen() {
           </View>
 
           {/* Main content */}
-          <View style={styles.desktopContent}>
-            {hero ? (
-              hasBiography ? (
-                <>
-                  <style>{HTML_STYLES}</style>
-                  <div ref={bioContentRef} dangerouslySetInnerHTML={{ __html: processedHtml }} />
-                </>
-              ) : (
-                <Text style={styles.empty}>No biography available.</Text>
-              )
-            ) : (
-              <BiographySkeleton />
-            )}
-          </View>
+          <View style={styles.desktopContent}>{body}</View>
         </View>
       ) : (
         <>
-          <View style={styles.mobileBody}>
-            {hero ? (
-              hasBiography ? (
-                <>
-                  <style>{HTML_STYLES}</style>
-                  <div ref={bioContentRef} dangerouslySetInnerHTML={{ __html: processedHtml }} />
-                </>
-              ) : (
-                <Text style={styles.empty}>No biography available.</Text>
-              )
-            ) : (
-              <BiographySkeleton />
-            )}
-          </View>
+          <View style={styles.mobileBody}>{body}</View>
           {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
           <PageEndCap />
           {showContents ? (
@@ -681,4 +678,13 @@ const styles = StyleSheet.create({
   },
 
   empty: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: PAPER_TEXT.faint },
+  failed: { alignItems: 'flex-start', gap: 14 },
+  retryBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: COLORS.orange,
+    cursor: 'pointer',
+  } as object,
+  retryText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: '#fff' },
 });

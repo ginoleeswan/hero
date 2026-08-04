@@ -144,7 +144,7 @@ export default function BiographyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { hero, lead, toc, hasBiography } = useBiography(id);
+  const { hero, lead, toc, hasBiography, failed, retry } = useBiography(id);
   const reduceMotion = useReducedMotion();
 
   const contentWidth = width - 40;
@@ -330,6 +330,17 @@ export default function BiographyScreen() {
         <Text style={styles.colophonText}>Biography sourced from ComicVine</Text>
       </View>
     </View>
+  ) : failed ? (
+    // The hero row itself failed. Saying "no biography yet" here would be a lie
+    // about the data rather than a report about the network.
+    <EmptyState
+      icon="cloud-offline-outline"
+      title="Couldn’t load this biography"
+      body="Check your connection and try again."
+      action={{ label: 'Try again', onPress: retry }}
+      tone="light"
+      compact
+    />
   ) : (
     <EmptyState
       icon="document-text-outline"
@@ -451,7 +462,7 @@ export default function BiographyScreen() {
 
             {/* Body */}
             <View style={styles.body}>
-              {hero ? (
+              {hero || failed ? (
                 <View>
                   {prose}
                   {/* The prose sits settled underneath; only this layer animates. */}

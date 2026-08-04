@@ -206,7 +206,6 @@ export default function WebTeamScreen() {
   // membership term that drives the roster query.
   const teamQuery = useTeam(id);
   const team = teamQuery.data ?? null;
-  const teamLoaded = teamQuery.isFetched;
   const [searchFocused, setSearchFocused] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [peek, setPeek] = useState<PeekHero | null>(null);
@@ -286,7 +285,10 @@ export default function WebTeamScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topMemberId]);
 
-  const notFound = teamLoaded && team === null;
+  // isSuccess, not isFetched: isFetched is true after a FAILURE too, so an
+  // outage used to render "Team not found".
+  const notFound = teamQuery.isSuccess && team === null;
+  const failed = teamQuery.isError;
   const contentPad = isDesktop ? 32 : 16;
   const gridStyle = {
     display: 'grid',
@@ -347,6 +349,22 @@ export default function WebTeamScreen() {
         <View style={[styles.notFoundStage, { paddingHorizontal: contentPad }] as object}>
           <Text style={styles.notFoundTitle as object}>Team not found</Text>
           <Text style={styles.notFoundSub as object}>This team doesn’t exist.</Text>
+        </View>
+      )}
+
+      {/* A failed fetch is not a missing team — offer the retry instead of
+          telling the reader the team does not exist. */}
+      {failed && (
+        <View style={[styles.notFoundStage, { paddingHorizontal: contentPad }] as object}>
+          <Text style={styles.notFoundTitle as object}>Couldn’t load this team</Text>
+          <Text style={styles.notFoundSub as object}>Check your connection and try again.</Text>
+          <Pressable
+            onPress={() => void teamQuery.refetch()}
+            accessibilityRole="button"
+            style={styles.retryBtn as object}
+          >
+            <Text style={styles.retryText as object}>Try again</Text>
+          </Pressable>
         </View>
       )}
 
@@ -679,4 +697,14 @@ const styles = StyleSheet.create({
     color: 'rgba(245,235,220,0.55)',
     marginTop: 6,
   } as object,
+  retryBtn: {
+    marginTop: 16,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: COLORS.orange,
+    cursor: 'pointer',
+  } as object,
+  retryText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: '#fff' },
 });

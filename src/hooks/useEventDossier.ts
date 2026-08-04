@@ -42,12 +42,16 @@ export interface UseEventDossier {
   loading: boolean;
   /** Resolved and definitely absent — an unknown, disabled or unapproved slug. */
   notFound: boolean;
+  /** The fetch failed. Distinct from `notFound`: the event may well exist. */
+  failed: boolean;
+  /** Re-run the fetch. Paired with `failed`. */
+  retry: () => void;
   windowLabel: string | null;
   windowDays: number | null;
 }
 
 export function useEventDossier(slug: string | undefined): UseEventDossier {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, isSuccess, refetch } = useQuery({
     queryKey: ['event-dossier', slug],
     queryFn: () => getEventDossier(slug as string),
     enabled: !!slug,
@@ -61,11 +65,17 @@ export function useEventDossier(slug: string | undefined): UseEventDossier {
     return {
       dossier,
       loading: isLoading,
-      notFound: !isLoading && !!slug && !dossier,
+      // Gated on isSuccess, not merely "finished with nothing". Before
+      // getEventDossier threw, a failed fetch also produced an empty result, so
+      // this was true for outages too and the screen's error branch could never
+      // render — every failure claimed the event had no page.
+      notFound: isSuccess && !!slug && !dossier,
+      failed: isError,
+      retry: () => void refetch(),
       windowLabel: dossier ? formatWindow(dossier.event.liveFrom, dossier.event.liveTo) : null,
       windowDays: dossier ? windowLengthDays(dossier.event.liveFrom, dossier.event.liveTo) : null,
     };
-  }, [data, isLoading, slug]);
+  }, [data, isLoading, isError, isSuccess, refetch, slug]);
 }
 
 /** Every event that has a page, newest first. */

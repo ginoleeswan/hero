@@ -335,7 +335,31 @@ screen renders an empty state that is lying. Only three native screens
 (`character`, `issue`, `title`) render any error state at all, even though
 `LoadErrorView` exists for exactly this.
 
-This was not swept, because the split is real and only a human eye can draw it:
+**Done so far** — the primary-subject fetch for each detail route now throws,
+and the screen splits failure from absence:
+
+| Fetch | Screen | What an outage used to say |
+| --- | --- | --- |
+| `getHeroById` | character, biography | "this character doesn't exist" / "No biography yet" |
+| `getTeamById` | team (native + web) | "This team doesn't exist" |
+| `getEventDossier` | event (native + web) | "No page for this event yet" |
+
+Three of those error branches already existed and were **unreachable**.
+`heroLoadPlan.ts` even documents the intent — *"a transient query failure is
+not a 404 — keep it distinct so the screen can offer a retry"* — but
+`getHeroById` never let `isError` become true, so the retry UI could not render.
+The event screen had the same dead branch, and the biography web twin showed a
+skeleton forever.
+
+Two gotchas that recur:
+
+- Gate not-found on **`isSuccess`**, never `isFetched` or `!isLoading`. Both are
+  true after a failure, which is precisely how "doesn't exist" got shown for an
+  outage.
+- A `null` return must mean exactly one thing. `getHeroById` and `getTeamById`
+  keep `null` for PGRST116 ("no rows") and throw for everything else.
+
+The rest was not swept, because the split is real and only a human eye can draw it:
 
 - **Page-critical** — the thing the screen is *about*. Must throw, so React
   Query retries and the screen can offer `LoadErrorView` + retry.

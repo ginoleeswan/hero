@@ -154,7 +154,8 @@ export async function resolveBioLink(href: string): Promise<BioLinkAction> {
  * viewing the character is instant.
  */
 export function useBiography(id: string | undefined) {
-  const hero = useHeroRow(id).data ?? null;
+  const heroQuery = useHeroRow(id);
+  const hero = heroQuery.data ?? null;
 
   const source = hero?.description ? flattenTables(preprocessHtml(hero.description)) : '';
   const { processedHtml, toc } = source
@@ -171,5 +172,12 @@ export function useBiography(id: string | undefined) {
     /** <h2> texts, in order, for a contents rail. */
     toc,
     hasBiography: !!processedHtml,
+    /**
+     * The hero row failed to load. Distinct from `!hasBiography`, which means
+     * the hero loaded and simply has no written history — the screens must not
+     * show "No biography yet" for an outage.
+     */
+    failed: heroQuery.isError,
+    retry: () => void heroQuery.refetch(),
   };
 }
