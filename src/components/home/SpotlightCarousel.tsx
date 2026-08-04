@@ -7,12 +7,13 @@ import * as Haptics from 'expo-haptics';
 import { SpotlightSlide } from './SpotlightSlide';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
+import { SPOTLIGHT } from './homeGeometry';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export function spotlightHeight(insetTop: number): number {
   // A tall billboard (Apple TV / Disney+) so the portrait reads big.
-  return insetTop + Math.round(SCREEN_HEIGHT * 0.5);
+  return insetTop + Math.round(SCREEN_HEIGHT * SPOTLIGHT.heightRatio);
 }
 
 export function SpotlightCarousel({
@@ -86,15 +87,20 @@ const styles = StyleSheet.create({
   wrap: { backgroundColor: COLORS.deepNavy },
   dots: {
     position: 'absolute',
-    bottom: 22,
+    bottom: SPOTLIGHT.dotsBottom,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 6,
+    gap: SPOTLIGHT.dotGap,
   },
-  dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(245,235,220,0.4)' },
-  dotActive: { width: 14, backgroundColor: COLORS.orange },
+  dot: {
+    width: SPOTLIGHT.dotSize,
+    height: SPOTLIGHT.dotSize,
+    borderRadius: 2.5,
+    backgroundColor: 'rgba(245,235,220,0.4)',
+  },
+  dotActive: { width: SPOTLIGHT.dotActiveWidth, backgroundColor: COLORS.orange },
   lip: {
     position: 'absolute',
     left: 0,

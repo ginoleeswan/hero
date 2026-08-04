@@ -34,6 +34,7 @@ import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
 import { SpotlightCarousel, spotlightHeight } from '../../src/components/home/SpotlightCarousel';
+import { SPOTLIGHT } from '../../src/components/home/homeGeometry';
 import { PaperSurface } from '../../src/components/home/PaperSurface';
 import { rowStyle } from '../../src/lib/home/rowStyle';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
@@ -115,8 +116,8 @@ const DARK_ROWS = new Set<FeedRow['type']>([
 ]);
 
 // The dark stage rides up into the spotlight's bottom fade so the glass chips
-// emerge from the portrait (no hard seam).
-const SPOTLIGHT_OVERLAP = 14;
+// emerge from the portrait (no hard seam). Shared so the skeleton matches.
+const SPOTLIGHT_OVERLAP = SPOTLIGHT.overlap;
 
 // On scroll-down the portrait lags (moves at ~half speed) so the content slides
 // UP over it, instead of the whole billboard scrolling away.

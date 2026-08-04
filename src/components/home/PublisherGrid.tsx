@@ -1,12 +1,12 @@
 // src/components/home/PublisherGrid.tsx
 import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { FEATURED_PUBLISHERS, type PublisherBrand } from '../../constants/publishers';
+import { PUBLISHER_GRID } from './homeGeometry';
 import { BrandLogoView } from '../PublisherBadge';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const H_PAD = 16;
-const GAP = 10;
-const TILE_W = (SCREEN_WIDTH - H_PAD * 2 - GAP) / 2;
+// Shared with HomeSkeleton so the placeholder tiles can't drift from these.
+const { hPad: H_PAD, gap: GAP, tileWidth: TILE_W } = PUBLISHER_GRID;
 // Logo height inside a card; width follows each mark's aspect ratio.
 // Mirrors the web PublisherPods so native and web read identically.
 const LOGO_H = 44;
@@ -55,14 +55,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: GAP,
     paddingHorizontal: H_PAD,
-    paddingTop: 12,
-    paddingBottom: 6,
+    paddingTop: PUBLISHER_GRID.paddingTop,
+    paddingBottom: PUBLISHER_GRID.paddingBottom,
   },
   // Clean translucent panel (matches the web desktop pods / engage cards).
   tile: {
     width: TILE_W,
-    minHeight: 84,
-    borderRadius: 16,
+    minHeight: PUBLISHER_GRID.tileMinHeight,
+    borderRadius: PUBLISHER_GRID.radius,
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',

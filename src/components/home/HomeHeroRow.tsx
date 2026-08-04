@@ -6,20 +6,20 @@ import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'expo-router';
 import { SPRING_PRESS } from '../../lib/nativeMotion';
+import { HERO_ROW } from './homeGeometry';
 import { HeroCard, HERO_CARD_RADIUS } from '../HeroCard';
 import { ThumbCard, type ThumbHero } from './ThumbCard';
 import { prefetchHeroRow } from '../../lib/query/heroQueries';
 import { COLORS } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const PORTRAIT_CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
+const PORTRAIT_CARD_WIDTH = HERO_ROW.cardWidth;
 // Match the character screen's hero image aspect — full width × SCREEN_HEIGHT*0.66
 // (see HERO_IMAGE_HEIGHT in app/character/[id].tsx). Keeping the card's aspect
 // equal to the detail image's means the Apple Zoom morph fills the card edge to
 // edge with no navy background peeking through mid-transition. Both are
 // screen-relative, so the ratio lines up on every device.
-const DETAIL_HERO_RATIO = (SCREEN_HEIGHT * 0.66) / SCREEN_WIDTH; // height ÷ width
-const PORTRAIT_CARD_HEIGHT = Math.round(PORTRAIT_CARD_WIDTH * DETAIL_HERO_RATIO);
+const PORTRAIT_CARD_HEIGHT = HERO_ROW.cardHeight;
 
 export type RowHero = ThumbHero;
 
@@ -150,15 +150,15 @@ export function HomeHeroRow({
 
   // Ranked rows use smaller "poster" cards so the big Top-10 numeral beside each
   // one reads, à la Apple TV. Otherwise: optional larger feature size, else default.
-  const featW = Math.round(PORTRAIT_CARD_WIDTH * 1.06);
-  const featH = Math.round(PORTRAIT_CARD_HEIGHT * 1.06);
+  const featW = Math.round(PORTRAIT_CARD_WIDTH * HERO_ROW.featureScale);
+  const featH = Math.round(PORTRAIT_CARD_HEIGHT * HERO_ROW.featureScale);
   const cardW = ranked
     ? Math.round(PORTRAIT_CARD_WIDTH * 0.72)
     : feature
       ? featW
       : PORTRAIT_CARD_WIDTH;
   const cardH = ranked
-    ? Math.round(cardW * DETAIL_HERO_RATIO)
+    ? Math.round(cardW * HERO_ROW.cardAspect)
     : feature
       ? featH
       : PORTRAIT_CARD_HEIGHT;
