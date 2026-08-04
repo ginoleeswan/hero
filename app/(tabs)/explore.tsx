@@ -26,6 +26,7 @@ import Animated, {
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, type Href } from 'expo-router';
+import { signalFirstPaint } from '../../src/lib/bootReveal';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
@@ -342,13 +343,18 @@ export default function HomeScreen() {
   const [cascadeWindow, setCascadeWindow] = useState(true);
   useEffect(() => {
     if (!initialLoaded) return;
-    const t = setTimeout(() => setCascadeWindow(false), 1600);
+    // Tell the boot stage the first real screen is ready — it holds its
+    // reveal for this, so the open lands on content, never on a skeleton.
+    signalFirstPaint();
+    const t = setTimeout(() => setCascadeWindow(false), 1900);
     return () => clearTimeout(t);
   }, [initialLoaded]);
   const cascadeFor = useCallback(
     (index: number) => {
       if (!cascadeWindow || index > 5) return undefined;
-      return FadeInDown.delay(80 + index * 90)
+      // Base delay ≈ when the boot stage is half-dissolved, so the rows are
+      // seen rising into place as the open completes — one continuous motion.
+      return FadeInDown.delay(220 + index * 90)
         .duration(480)
         .springify()
         .damping(18)

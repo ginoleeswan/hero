@@ -123,14 +123,21 @@ half-frame of skeleton.
   spanning the whole cold start (fonts → auth settle), so the boot animation
   never restarts.
 - `src/components/ui/BootStage.tsx` — the **native** boot surface
-  (`app/_layout.tsx`). Same single-mount cold-start rule, staged as three
-  acts: **trace** (the logo strokes in once — never a restarting loop, which
-  reads as a glitch when boot outlasts a cycle), **hold** (the filled mark
-  breathes over an ember halo), **reveal** (accent ring ripples out, the mark
-  blooms through, the stage dissolves while the app settles up from 96.5%).
-  Honors Reduce Motion (plain crossfade). The router mounts as its child only
-  once boot is done, so the reveal replaces the old hard loader→app cut.
-  `LogoLoader` remains the simple fallback (web, Suspense).
+  (`app/_layout.tsx`), one continuous piece from OS splash to feed: **still**
+  (first frame pixel-continuous with the native splash — same flat `#293C43`,
+  same filled 200px mask; never a trace-in, which erased and redrew the mark
+  the user was already looking at), **alive** (depth gradient + ember halo
+  fade in, the mark breathes), **open** (gated on the Explore feed's first
+  paint via `src/lib/bootReveal.ts`, capped at 1.4s — ring ripples, the mark
+  blooms and is gone by 55%, the stage dissolves over the fully-opaque app,
+  which scale-settles from 96.5%; the feed's row cascade lands as the stage
+  clears). Only the stage ever fades — double-fading stage + app reads as a
+  grey wash. Honors Reduce Motion (plain crossfade). `LogoLoader` remains the
+  simple fallback (web, Suspense).
+- Explore's entrance: the skeleton dissolves in place (exiting fade overlay)
+  and the first six feed rows cascade once (90ms stagger, soft spring), keyed
+  to the boot reveal via `signalFirstPaint()` — scroll-mounted rows never
+  replay it.
 - React Query conventions: `placeholderData` / `keepPreviousData` keep stale
   content on screen through refetches; `prefetchHeroRow`
   (`src/lib/query/heroQueries.ts`) fires on `onPressIn` so the detail page is
