@@ -295,6 +295,34 @@ history numeral), and hover/pressed/disabled state opacities.
 Ratios in the colour-token comments are computed, not estimated. Re-derive
 before changing a token.
 
+## Touch targets and control labels
+
+Two rules, both easy to violate silently because nothing renders differently
+when you do.
+
+**Every icon-only control needs an `accessibilityLabel`.** A `Pressable`
+containing nothing but an `Ionicons` announces as an unnamed button — the glyph
+name is not a label. 22 native controls were in that state: the family-tree and
+social-web canvas controls, close buttons, password reveals, clear-search
+affordances. Where the control is a toggle, the label carries the *state*
+("Show password" / "Hide password"), because the glyph swap is invisible to a
+screen reader.
+
+Note that **`aria-label` is a web-only prop** — React Native ignores it. In a
+shared (non-`.web`) file use `accessibilityLabel`, which works on native and is
+mapped to `aria-label` by react-native-web. `MovieStrip` had the web-only form
+in a shared file, so its arrows were unnamed on native.
+
+**44pt is the target floor.** The canvas controls are deliberately small so
+they don't cover the artwork they sit on — 32pt and 34pt and 38pt. The fix is
+`hitSlop`, not a bigger button: it buys the target back without moving a pixel.
+Each site names the arithmetic (`32 + 6*2 = 44`) so the slop is obviously tied
+to the size rather than an arbitrary number.
+
+Both are checkable mechanically — an icon-only `Pressable` with no label, and a
+styled `width`/`height` under 44 with no `hitSlop` — so a regression is easy to
+catch if this ever gets a lint rule.
+
 ## Failure and offline states
 
 Two separate problems. One is fixed; the other is measured but deliberately

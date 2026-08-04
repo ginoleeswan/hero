@@ -74,6 +74,8 @@ export function RelationConsole({
         {partner ? (
           <Pressable
             onPress={onSwap}
+            // 32pt control; slop lifts the target to the 44pt floor.
+            hitSlop={6}
             accessibilityRole="button"
             accessibilityLabel="Swap: root the tree on the compared member"
             style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>

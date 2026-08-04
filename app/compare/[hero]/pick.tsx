@@ -126,7 +126,12 @@ export default function PickOpponentScreen() {
             onChangeText={setQuery}
           />
           {query.length > 0 && (
-            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+            <Pressable
+              onPress={() => setQuery('')}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+            >
               <Ionicons name="close-circle" size={19} color="rgba(41,60,67,0.4)" />
             </Pressable>
           )}

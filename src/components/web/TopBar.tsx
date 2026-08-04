@@ -30,10 +30,30 @@ const VERSUS_PATH = '/versus';
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 // Active = filled glyph, inactive = outline — one consistent family, intentional state.
-const NAV: { key: string; path: string; icon: IoniconName; iconOutline: IoniconName }[] = [
-  { key: 'home', path: '/explore', icon: 'home', iconOutline: 'home-outline' },
-  { key: 'search', path: '/search', icon: 'search', iconOutline: 'search-outline' },
-  { key: 'versus', path: VERSUS_PATH, icon: 'git-compare', iconOutline: 'git-compare-outline' },
+// `label` is what a screen reader announces — the nav is icon-only, so without
+// it these read as their raw route keys ("home", "versus").
+const NAV: {
+  key: string;
+  label: string;
+  path: string;
+  icon: IoniconName;
+  iconOutline: IoniconName;
+}[] = [
+  { key: 'home', label: 'Explore', path: '/explore', icon: 'home', iconOutline: 'home-outline' },
+  {
+    key: 'search',
+    label: 'Search',
+    path: '/search',
+    icon: 'search',
+    iconOutline: 'search-outline',
+  },
+  {
+    key: 'versus',
+    label: 'Arena',
+    path: VERSUS_PATH,
+    icon: 'git-compare',
+    iconOutline: 'git-compare-outline',
+  },
 ];
 
 // Transparent floating top bar with a top-down scrim. Logo left, nav icons
@@ -250,7 +270,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
     return (
       <Pressable
         key={it.key}
-        aria-label={it.key}
+        aria-label={it.label}
         onPress={() => (it.key === 'search' ? openSearch() : go(it.path))}
         style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
           [c.item, active && (c.itemActive as object), !active && hovered && hoverStyle] as object

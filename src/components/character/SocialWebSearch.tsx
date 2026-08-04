@@ -160,6 +160,7 @@ export function SocialWebSearch({
       <Pressable
         onPress={() => setOpen(true)}
         style={styles.toggle}
+        hitSlop={TOGGLE_SLOP}
         accessibilityLabel="Find a character in this universe"
       >
         <Ionicons name="search" size={16} color={INK_TEXT.muted} />
@@ -169,7 +170,12 @@ export function SocialWebSearch({
 
   return (
     <View style={styles.anchor} ref={rootRef as never}>
-      <Pressable onPress={close} style={styles.toggle} accessibilityLabel="Close search">
+      <Pressable
+        onPress={close}
+        style={styles.toggle}
+        hitSlop={TOGGLE_SLOP}
+        accessibilityLabel="Close search"
+      >
         <Ionicons name="close" size={16} color={INK_TEXT.primary} />
       </Pressable>
 
@@ -294,6 +300,10 @@ export function SocialWebSearch({
     </View>
   );
 }
+
+// 34pt toggle + 5pt of slop each side = the 44pt target floor. Slop rather
+// than a bigger button: the control floats over the constellation.
+const TOGGLE_SLOP = 5;
 
 const styles = StyleSheet.create({
   // The panel hangs off the toggle, so the toggle keeps its place in the header

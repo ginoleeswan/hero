@@ -373,14 +373,18 @@ function WebShelf({
       {hovered && items.length > 4 ? (
         <>
           <Pressable
-            aria-label="Scroll left"
+            accessibilityRole="button"
+            accessibilityLabel="Scroll left"
+            hitSlop={4}
             style={[webStyles.arrow, webStyles.arrowLeft] as object}
             onPress={() => nudge(-1)}
           >
             <Ionicons name="chevron-back" size={20} color={COLORS.navy} />
           </Pressable>
           <Pressable
-            aria-label="Scroll right"
+            accessibilityRole="button"
+            accessibilityLabel="Scroll right"
+            hitSlop={4}
             style={[webStyles.arrow, webStyles.arrowRight] as object}
             onPress={() => nudge(1)}
           >

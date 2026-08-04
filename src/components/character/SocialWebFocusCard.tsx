@@ -283,7 +283,13 @@ export function SocialWebFocusCard({
               it over the open canvas above the band left it reading as a stray
               mark belonging to nothing. Top-aligned, so it sits on the same
               line as the name it dismisses. */}
-          <Pressable onPress={onClose} style={styles.bandClose} hitSlop={10}>
+          <Pressable
+            onPress={onClose}
+            style={styles.bandClose}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
             <Ionicons name="close" size={17} color={INK_TEXT.muted} />
           </Pressable>
         </View>
@@ -387,7 +393,13 @@ export function SocialWebFocusCard({
           ) : null}
         </View>
 
-        <Pressable onPress={onClose} style={styles.close} hitSlop={10}>
+        <Pressable
+          onPress={onClose}
+          style={styles.close}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+        >
           <Ionicons name="close" size={16} color={INK_TEXT.muted} />
         </Pressable>
       </View>

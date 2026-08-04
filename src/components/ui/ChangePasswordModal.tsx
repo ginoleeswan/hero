@@ -70,7 +70,12 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
     >
       <View style={styles.header}>
         <Text style={styles.title}>Change Password</Text>
-        <Pressable onPress={handleClose} hitSlop={12}>
+        <Pressable
+          onPress={handleClose}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+        >
           <Ionicons name="close" size={22} color={COLORS.navy} />
         </Pressable>
       </View>
@@ -92,10 +97,15 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
           autoComplete="password"
           returnKeyType="next"
           onSubmitEditing={() => nextRef.current?.focus()}
-          placeholderTextColor="rgba(41,60,67,0.3)"
+          placeholderTextColor={PAPER_TEXT.placeholder}
           placeholder="••••••••"
         />
-        <Pressable onPress={() => setShowCurrent((v) => !v)} style={styles.eye}>
+        <Pressable
+          onPress={() => setShowCurrent((v) => !v)}
+          style={styles.eye}
+          accessibilityRole="button"
+          accessibilityLabel={showCurrent ? 'Hide current password' : 'Show current password'}
+        >
           <Ionicons
             name={showCurrent ? 'eye-off-outline' : 'eye-outline'}
             size={18}
@@ -115,10 +125,15 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
           autoComplete="new-password"
           returnKeyType="next"
           onSubmitEditing={() => confirmRef.current?.focus()}
-          placeholderTextColor="rgba(41,60,67,0.3)"
+          placeholderTextColor={PAPER_TEXT.placeholder}
           placeholder="••••••••"
         />
-        <Pressable onPress={() => setShowNext((v) => !v)} style={styles.eye}>
+        <Pressable
+          onPress={() => setShowNext((v) => !v)}
+          style={styles.eye}
+          accessibilityRole="button"
+          accessibilityLabel={showNext ? 'Hide new password' : 'Show new password'}
+        >
           <Ionicons
             name={showNext ? 'eye-off-outline' : 'eye-outline'}
             size={18}
@@ -136,7 +151,7 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
         secureTextEntry
         returnKeyType="done"
         onSubmitEditing={handleSubmit}
-        placeholderTextColor="rgba(41,60,67,0.3)"
+        placeholderTextColor={PAPER_TEXT.placeholder}
         placeholder="••••••••"
       />
 

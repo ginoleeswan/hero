@@ -25,6 +25,10 @@ export function GalleryStrip({ images, onPress }: Props) {
           testID="gallery-card"
           onPress={() => onPress(i)}
           activeOpacity={0.85}
+          accessibilityRole="imagebutton"
+          // The strip is a row of identical image cards, so the position is the
+          // only thing that distinguishes them to a screen reader.
+          accessibilityLabel={`Gallery image ${i + 1} of ${images.length}`}
         >
           <View style={styles.card}>
             {img.url ? (

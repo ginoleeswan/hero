@@ -72,7 +72,12 @@ export function FilterRail({
           autoCorrect={false}
         />
         {filters.search.length > 0 && (
-          <Pressable onPress={() => setFilter('search', '')} style={s.clearX as object}>
+          <Pressable
+            onPress={() => setFilter('search', '')}
+            style={s.clearX as object}
+            accessibilityRole="button"
+            accessibilityLabel="Clear search"
+          >
             <Ionicons name="close-circle" size={15} color="rgba(245,235,220,0.4)" />
           </Pressable>
         )}
