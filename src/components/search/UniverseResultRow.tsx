@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   text: { flex: 1, flexDirection: 'column' },
-  name: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.beige },
+  name: { fontFamily: 'Flame-Regular', fontSize: 17, lineHeight: 21, color: COLORS.beige },
   kicker: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
@@ -70,5 +70,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
-  fallback: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.navy },
+  fallback: { fontFamily: 'Flame-Regular', fontSize: 15, lineHeight: 19, color: COLORS.navy },
 });

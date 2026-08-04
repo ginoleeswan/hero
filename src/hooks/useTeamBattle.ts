@@ -17,6 +17,9 @@ import { recordTeamBattleCompletionIfDaily } from '../lib/db/dailies';
 
 export interface UseTeamBattle {
   loading: boolean;
+  /** Fetch failed, or the battle id resolved to no known pair — the screen
+   *  must show a way out instead of skeleting forever. */
+  failed: boolean;
   sideA: TeamSide | null;
   sideB: TeamSide | null;
   result: TeamBattleResult | null;
@@ -130,6 +133,7 @@ export function useTeamBattle(battleId?: string): UseTeamBattle {
 
   return {
     loading: battleQ.isPending,
+    failed: battleQ.isError || (battleQ.isSuccess && battleQ.data === null),
     sideA: b?.sideA ?? null,
     sideB: b?.sideB ?? null,
     result,

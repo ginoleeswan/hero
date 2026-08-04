@@ -19,7 +19,7 @@ export default function SupportScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <ScrollView contentContainerStyle={styles.column}>
+      <ScrollView contentContainerStyle={[styles.column, { paddingBottom: insets.bottom + 32 }]}>
         <View style={styles.titleRow}>
           <Pressable
             onPress={() => router.back()}
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   column: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 48,
+    paddingBottom: 32,
   },
   titleRow: {
     flexDirection: 'row',

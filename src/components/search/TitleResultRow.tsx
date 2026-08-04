@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245,235,220,0.08)',
   },
   text: { flex: 1, flexDirection: 'column' },
-  title: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.beige },
+  title: { fontFamily: 'Flame-Regular', fontSize: 17, lineHeight: 21, color: COLORS.beige },
   meta: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,

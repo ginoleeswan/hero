@@ -21,7 +21,7 @@ import {
 import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 import { useAuth } from '../src/hooks/useAuth';
 import { usePresenceHeartbeat } from '../src/hooks/usePresenceHeartbeat';
-import { LogoLoader } from '../src/components/ui/LogoLoader';
+import { BootStage } from '../src/components/ui/BootStage';
 import AnalyticsProvider from '../src/components/Analytics';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../src/lib/query/queryClient';
@@ -152,12 +152,18 @@ function AuthGate({ fontsReady }: { fontsReady: boolean }) {
     }
   }, [user, loading, segments, router, returnTo]);
 
-  // Single boot gate: one LogoLoader spans the whole cold start (fonts + auth)
-  // so the logo animation runs continuously instead of restarting at the
+  // Single boot gate: one BootStage spans the whole cold start (fonts + auth)
+  // so the logo choreography runs continuously instead of restarting at the
   // fonts→auth handoff. (During fonts the native splash is still up over it.)
-  if (!fontsReady || loading || !settled) return <LogoLoader />;
+  // The router mounts only once boot resolves; BootStage then plays its
+  // opening reveal over it instead of hard-cutting from loader to app.
+  const booting = !fontsReady || loading || !settled;
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <BootStage booting={booting}>
+      {booting ? null : <Stack screenOptions={{ headerShown: false }} />}
+    </BootStage>
+  );
 }
 
 export default function RootLayout() {

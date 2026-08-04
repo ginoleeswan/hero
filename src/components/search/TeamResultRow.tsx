@@ -57,9 +57,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(231,115,51,0.35)',
   },
   tileLogo: { backgroundColor: COLORS.navy, borderColor: 'rgba(245,235,220,0.16)' },
-  monogram: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.orange },
+  monogram: { fontFamily: 'Flame-Regular', fontSize: 16, lineHeight: 20, color: COLORS.orange },
   text: { flex: 1, flexDirection: 'column' },
-  name: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.beige },
+  name: { fontFamily: 'Flame-Regular', fontSize: 17, lineHeight: 21, color: COLORS.beige },
   meta: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,

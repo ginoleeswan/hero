@@ -18,6 +18,19 @@ import { StageSwitch, type StageView } from '../../src/components/family/StageSw
 import { useHouse } from '../../src/hooks/useHouse';
 import { HouseSkeleton } from '../../src/components/skeletons/HouseSkeleton';
 
+// The root stack hides headers globally, so `title` alone renders nothing —
+// without headerShown there is no back affordance on this screen at all.
+// Transparent + minimal back over the navy banner, matching the arena screens.
+const headerOptions = {
+  headerShown: true,
+  headerTitle: '',
+  headerTransparent: true,
+  headerStyle: { backgroundColor: 'transparent' },
+  headerShadowVisible: false,
+  headerTintColor: COLORS.beige,
+  headerBackButtonDisplayMode: 'minimal',
+} as const;
+
 export default function HousePage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -72,7 +85,7 @@ export default function HousePage() {
   if (isLoading) {
     return (
       <>
-        <Stack.Screen options={{ title: chrome?.name ?? 'House' }} />
+        <Stack.Screen options={{ ...headerOptions, title: chrome?.name ?? 'House' }} />
         <HouseSkeleton chrome={chrome} stageHeight={stageHeight} />
       </>
     );
@@ -80,6 +93,7 @@ export default function HousePage() {
   if (error || !house) {
     return (
       <View style={styles.centre}>
+        <Stack.Screen options={{ ...headerOptions, headerTintColor: COLORS.navy }} />
         <Text style={styles.notFound}>No such house</Text>
         <Text style={styles.muted}>
           {error ? error.message : 'Nothing in the catalogue answers to that name.'}
@@ -94,7 +108,7 @@ export default function HousePage() {
 
   return (
     <View style={styles.root}>
-      <Stack.Screen options={{ title: house.name }} />
+      <Stack.Screen options={{ ...headerOptions, title: house.name }} />
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}

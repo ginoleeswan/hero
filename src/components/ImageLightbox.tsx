@@ -5,15 +5,13 @@ import {
   TouchableOpacity,
   Text,
   FlatList,
-  Dimensions,
   StyleSheet,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface Props {
   images: { url: string; caption?: string | null }[];
@@ -24,6 +22,9 @@ interface Props {
 
 export function ImageLightbox({ images, initialIndex, onClose, onReport }: Props) {
   const insets = useSafeAreaInsets();
+  // Live window size (not a module-scope Dimensions snapshot): paging offsets
+  // must track rotation or every slide lands half-scrolled in landscape.
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const listRef = useRef<FlatList>(null);
   const indexRef = useRef(initialIndex);
 
@@ -74,8 +75,8 @@ export function ImageLightbox({ images, initialIndex, onClose, onReport }: Props
           showsHorizontalScrollIndicator={false}
           initialScrollIndex={initialIndex}
           getItemLayout={(_, index) => ({
-            length: SCREEN_WIDTH,
-            offset: SCREEN_WIDTH * index,
+            length: screenWidth,
+            offset: screenWidth * index,
             index,
           })}
           onViewableItemsChanged={({ viewableItems }) => {
@@ -83,10 +84,10 @@ export function ImageLightbox({ images, initialIndex, onClose, onReport }: Props
           }}
           viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
           renderItem={({ item }) => (
-            <View style={styles.slide}>
+            <View style={[styles.slide, { width: screenWidth, height: screenHeight }]}>
               <Image
                 source={{ uri: item.url }}
-                style={styles.image}
+                style={{ width: screenWidth, height: screenHeight * 0.85 }}
                 contentFit="contain"
                 cachePolicy="memory-disk"
               />
@@ -125,12 +126,9 @@ export function ImageLightbox({ images, initialIndex, onClose, onReport }: Props
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   slide: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  image: { width: SCREEN_WIDTH, height: SCREEN_HEIGHT * 0.85 },
   caption: {
     position: 'absolute',
     bottom: 48,

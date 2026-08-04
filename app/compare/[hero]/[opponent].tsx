@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Share,
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
   Dimensions,
 } from 'react-native';
@@ -180,74 +181,85 @@ export default function NativeCompareScreen() {
       />
       <StatusBar style="light" />
 
-      <ScrollView
+      {/* The takes composer lives at the bottom of this scroll — without the
+          KAV the iOS keyboard covers the input and Post button, and without
+          persistTaps the first tap on Post only dismisses the keyboard. */}
+      <KeyboardAvoidingView
         style={styles.body}
-        contentContainerStyle={styles.bodyContent}
-        bounces={false}
-        showsVerticalScrollIndicator={false}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={[styles.navyTop, { paddingTop: headerHeight }]}>
-          <View style={styles.clashCard}>
-            <ClashPortraits
-              imageA={imageA}
-              imageB={imageB}
-              nameA={nameA}
-              nameB={nameB}
-              winner={overallWinner ?? 'neutral'}
-              width={CARD_WIDTH}
-              height={CARD_HEIGHT}
-              onSwapA={() =>
-                router.push(`/compare/${opponent}/pick?name=${encodeURIComponent(nameB)}`)
-              }
-              onSwapB={() => router.push(`/compare/${hero}/pick?name=${encodeURIComponent(nameA)}`)}
-              onViewProfileA={() => router.push(`/character/${hero}`)}
-              onViewProfileB={() => router.push(`/character/${opponent}`)}
-            />
-          </View>
-
-          <MatchupBadge badge={badge} style={styles.matchupBadge} />
-
-          <View style={styles.verdictBlock}>
-            <VerdictReveal verdict={verdict} />
-            <View style={styles.communityWrap}>
-              <CommunityVotes tally={tally} pickedId={pickedId} heroAId={hero} tone="dark" />
+        <ScrollView
+          style={styles.body}
+          contentContainerStyle={styles.bodyContent}
+          bounces={false}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[styles.navyTop, { paddingTop: headerHeight }]}>
+            <View style={styles.clashCard}>
+              <ClashPortraits
+                imageA={imageA}
+                imageB={imageB}
+                nameA={nameA}
+                nameB={nameB}
+                winner={overallWinner ?? 'neutral'}
+                width={CARD_WIDTH}
+                height={CARD_HEIGHT}
+                onSwapA={() =>
+                  router.push(`/compare/${opponent}/pick?name=${encodeURIComponent(nameB)}`)
+                }
+                onSwapB={() =>
+                  router.push(`/compare/${hero}/pick?name=${encodeURIComponent(nameA)}`)
+                }
+                onViewProfileA={() => router.push(`/character/${hero}`)}
+                onViewProfileB={() => router.push(`/character/${opponent}`)}
+              />
             </View>
-            <TouchableOpacity
-              onPress={handleShare}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Share matchup"
-              style={styles.shareRow}
-            >
-              <Ionicons name="share-outline" size={14} color="rgba(245,235,220,0.7)" />
-              <Text style={styles.shareRowText}>Share result</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
 
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
-          <View style={styles.battleWrap}>
-            {ready && result ? (
-              result.stats.map((stat, i) => (
-                <StatBattleRow key={stat.key} stat={stat} animateIn animationDelay={i * 70} />
-              ))
-            ) : (
-              <View style={styles.statsLoading}>
-                <ActivityIndicator color={COLORS.orange} />
+            <MatchupBadge badge={badge} style={styles.matchupBadge} />
+
+            <View style={styles.verdictBlock}>
+              <VerdictReveal verdict={verdict} />
+              <View style={styles.communityWrap}>
+                <CommunityVotes tally={tally} pickedId={pickedId} heroAId={hero} tone="dark" />
+              </View>
+              <TouchableOpacity
+                onPress={handleShare}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Share matchup"
+                style={styles.shareRow}
+              >
+                <Ionicons name="share-outline" size={14} color="rgba(245,235,220,0.7)" />
+                <Text style={styles.shareRowText}>Share result</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
+            <View style={styles.battleWrap}>
+              {ready && result ? (
+                result.stats.map((stat, i) => (
+                  <StatBattleRow key={stat.key} stat={stat} animateIn animationDelay={i * 70} />
+                ))
+              ) : (
+                <View style={styles.statsLoading}>
+                  <ActivityIndicator color={COLORS.orange} />
+                </View>
+              )}
+            </View>
+
+            {ready && (
+              <View style={styles.takesWrap}>
+                <TakesSection
+                  heroA={{ id: hero, name: nameA }}
+                  heroB={{ id: opponent, name: nameB }}
+                />
               </View>
             )}
           </View>
-
-          {ready && (
-            <View style={styles.takesWrap}>
-              <TakesSection
-                heroA={{ id: hero, name: nameA }}
-                heroB={{ id: opponent, name: nameB }}
-              />
-            </View>
-          )}
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

@@ -56,6 +56,7 @@ import {
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
+import { SocialWebPortal } from '../../src/components/character/SocialWebPortal';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
@@ -1367,6 +1368,17 @@ export default function CharacterScreen() {
                   </>
                 ) : null}
               </View>
+
+              {/* The character's universe — constellation preview that taps
+                  through to the /social-web explorer. Web has had this doorway
+                  (SocialWebPreview) since launch; native was missing it. */}
+              <SocialWebPortal
+                heroId={id}
+                accent={theme.accent}
+                onExplore={() =>
+                  router.push(`/social-web/${id}` as Parameters<typeof router.push>[0])
+                }
+              />
 
               {/* On Screen — full-bleed movie strip */}
               <View onLayout={registerAnchor('screen')} style={styles.bleedSection}>

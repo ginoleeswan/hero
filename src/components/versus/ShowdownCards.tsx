@@ -179,6 +179,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Flame-Regular',
     fontSize: 18,
+    lineHeight: 22,
     color: COLORS.beige,
   },
   pickTag: {

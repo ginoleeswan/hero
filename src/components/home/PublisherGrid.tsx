@@ -75,6 +75,7 @@ const styles = StyleSheet.create({
   wordmark: {
     fontFamily: 'Flame-Regular',
     fontSize: 26,
+    lineHeight: 32,
     letterSpacing: 0.5,
   },
 });

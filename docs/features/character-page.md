@@ -111,7 +111,12 @@ blank.
 force-directed relationship graph from the `get_hero_neighborhood` RPC
 (`src/lib/db/heroes/neighborhood.ts`, layout in `src/lib/graph/forceLayout.ts`)
 via `SocialWebCanvas` / `SocialWebGraph` / `SocialWebFocusCard` /
-`SocialWebSearch`. Edge copy comes from hand-written blurbs in
+`SocialWebSearch`. The character page's doorway in is a constellation preview
+below the relationship shelves — `SocialWebPreview`
+(`src/components/web/character/`, web: CSS-gradient portal) and its native
+sibling `SocialWebPortal` (`src/components/character/`, LinearGradient portal);
+both render the shared `SocialWebGraph` at `nodeScale 0.8` and tap through to
+the explorer. Edge copy comes from hand-written blurbs in
 `hero_relationship_blurbs` where one exists, else the
 `describeRelationship()` template (`src/lib/graph/relationshipReason.ts`) —
 shared rosters, then mutual-count, then honest silence. Roughly 500 famous
