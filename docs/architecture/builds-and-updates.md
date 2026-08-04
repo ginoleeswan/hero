@@ -164,6 +164,19 @@ Supabase URL and `sensitive` for the keys, mirroring `production`.
   eas-update.yml not found on the default branch`, and no Run-workflow button
   appears. Once it's on `main`, dispatching it against *any* ref works as
   described above. Until then, `yarn update:dev` is the only way to publish.
+- **Don't let the EAS builder pick its own yarn.** The `eas-build-pre-install`
+  script in `package.json` used to be `corepack enable && yarn set version 4`,
+  and `set version 4` means *latest 4.x*. The day Yarn 4.18.0 shipped, every
+  build started dying in **Install dependencies** with `YN0028: The lockfile
+  would have been modified by this install, which is explicitly forbidden` — a
+  green repo breaking on an upstream release, with no commit to blame. The diff
+  it printed was only builtin-patch hashes (`resolve@patch:…&hash=c3c19d` →
+  `&hash=9bd1a5`), which is the tell: those are derived from the Yarn version,
+  so a hash-only lockfile diff means the wrong Yarn is running, not a stale
+  lockfile. The hook is now just `corepack enable`; corepack reads
+  `packageManager: "yarn@4.15.0"` and provisions exactly that, matching
+  `.yarnrc.yml`'s tracked `yarnPath`. Never reintroduce a floating `set version`
+  — pin bumps belong in `packageManager` with a regenerated lockfile.
 - **Updates are published iOS-only, and that's load-bearing.** `android/` is a
   committed prebuild (custom icon, splash, env-var `applicationId`), which makes
   this a *bare* project for Android — and bare projects can't use

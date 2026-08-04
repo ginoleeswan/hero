@@ -24,7 +24,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,json}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json}\"",
     "prepare": "git config core.hooksPath .githooks || true",
-    "eas-build-pre-install": "corepack enable && yarn set version 4"
+    "eas-build-pre-install": "corepack enable"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",
