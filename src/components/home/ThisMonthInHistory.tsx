@@ -145,6 +145,8 @@ const s = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.4,
     shadowRadius: 14,
+    // Android ignores shadow* entirely; elevation is the equivalent knob.
+    elevation: 6,
     shadowOffset: { width: 0, height: 8 },
   },
   featureBody: { flex: 1, minWidth: 0 },

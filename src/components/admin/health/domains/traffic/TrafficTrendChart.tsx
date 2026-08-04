@@ -228,6 +228,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 12,
+    elevation: 5,
     shadowOffset: { width: 0, height: 4 },
   },
   tipDay: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#fff', marginBottom: 2 },

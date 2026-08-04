@@ -1142,14 +1142,13 @@ const styles = StyleSheet.create({
     boxShadow: '0 2px 8px rgba(41,60,67,0.22)',
   } as object,
   nodeName: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     lineHeight: 14,
     color: COLORS.black,
-    fontWeight: '700',
     textAlign: 'center',
   },
-  nodeNameCollateral: { color: '#6b6355', fontWeight: '400' } as object,
+  nodeNameCollateral: { color: '#6b6355', fontFamily: 'Nunito_400Regular' } as object,
   deadText: { color: '#8d8375' } as object,
   dagger: { color: '#b0a189' },
   linkNode: {
@@ -1171,10 +1170,9 @@ const styles = StyleSheet.create({
   avatarInitial: { fontFamily: 'Flame-Regular', fontSize: 12, color: 'white' },
   linkMeta: { minWidth: 0, flex: 1 },
   linkName: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     color: COLORS.black,
-    fontWeight: '700',
   },
   roleText: {
     fontFamily: 'Nunito_700Bold',
@@ -1208,10 +1206,9 @@ const styles = StyleSheet.create({
   metaPadLeft: { paddingLeft: 5 },
   heroAnchorNoImg: { paddingLeft: 16 },
   plainName: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     color: COLORS.black,
-    fontWeight: '700',
   },
   dead: { opacity: 0.55 },
 

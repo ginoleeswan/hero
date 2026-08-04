@@ -295,6 +295,25 @@ history numeral), and hover/pressed/disabled state opacities.
 Ratios in the colour-token comments are computed, not estimated. Re-derive
 before changing a token.
 
+## Android deltas
+
+Android is the least-exercised platform here — nothing in this repo has been
+run on a device. What a static audit found and what was done about it:
+
+| Thing | State |
+| --- | --- |
+| Shadows | `shadow*` props do nothing on Android; `elevation` is the knob. 30 blocks pair them. The 3 that were neutral drop shadows and missing `elevation` now have it. |
+| Coloured glows | 6 blocks use `shadowColor` as a **glow** (orange/gold, zero offset). Left iOS-only and commented as such: `elevation` would substitute a grey box shadow for a colour bloom, which reads worse than no glow, and the elements carry their own colour anyway. |
+| `fontWeight` on custom faces | Only `Flame-Regular`, `Flame-Bold`, `FlameSans-Regular` and `Righteous` are registered. `FlameSans-Regular` + `fontWeight: '700'` had no bold face to resolve to, so the platforms diverged — Android synthesises a fake bold, iOS does not. The 6 family-module sites now use `Nunito_700Bold`, a real registered face, which is also what CLAUDE.md prescribes for UI text. |
+| Modals | `statusBarTranslucent` + `navigationBarTranslucent` are set on `Sheet`, without which a modal stops at the system bars — an undimmed band top and bottom, and no way to reach the real bottom edge. |
+| `expo-blur` | The Explore frost has no `experimentalBlurMethod`, so Android renders a flat translucent overlay rather than a live blur. Left alone: the frost is a dark scrim, a flat version of it is a graceful degradation, and the experimental method carries a real perf cost on a platform that can't be measured from here. |
+| `borderCurve: 'continuous'` | iOS-only, silently ignored elsewhere. Harmless. |
+
+Unverified and worth checking first on a real device: `includeFontPadding`
+(Android adds font padding on top of `lineHeight`, and the Flame 1.22x rule was
+tuned on iOS — only 5 styles opt out today), and `expo-image` `blurRadius`
+parity, which the biography stage leans on.
+
 ## The iOS 26 scroll-edge scrim
 
 Every native screen that **has a header** gets a `UIScrollEdgeEffect` over its

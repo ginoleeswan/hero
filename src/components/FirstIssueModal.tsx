@@ -249,6 +249,10 @@ const styles = StyleSheet.create({
     width: 152,
     height: 220,
     borderRadius: 10,
+    // GLOW, not a drop shadow — deliberately iOS-only. `elevation` would give
+    // Android a grey box shadow instead of a coloured bloom, which reads worse
+    // than no glow at all; Android has no glow primitive and the element still
+    // carries its own colour without it.
     shadowColor: COLORS.orange,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.45,
@@ -296,6 +300,10 @@ const styles = StyleSheet.create({
     width: 166,
     height: 240,
     borderRadius: 8,
+    // GLOW, not a drop shadow — deliberately iOS-only. `elevation` would give
+    // Android a grey box shadow instead of a coloured bloom, which reads worse
+    // than no glow at all; Android has no glow primitive and the element still
+    // carries its own colour without it.
     shadowColor: COLORS.orange,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.5,

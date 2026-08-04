@@ -69,6 +69,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.35,
     shadowRadius: 10,
+    elevation: 5,
     shadowOffset: { width: 0, height: 5 },
   },
   track: { width: '100%', height: 26, borderRadius: 13, overflow: 'hidden' },
@@ -97,6 +98,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: COLORS.goldAccent,
     opacity: 0.9,
+    // GLOW, not a drop shadow — deliberately iOS-only. `elevation` would give
+    // Android a grey box shadow instead of a coloured bloom, which reads worse
+    // than no glow at all; Android has no glow primitive and the element still
+    // carries its own colour without it.
     shadowColor: COLORS.goldAccent,
     shadowOpacity: 1,
     shadowRadius: 11,

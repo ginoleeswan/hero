@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   rowActive: { backgroundColor: 'rgba(41,60,67,0.06)' } as object,
   rowActiveDark: { backgroundColor: 'rgba(245,235,220,0.08)' } as object,
   meta: { flex: 1, minWidth: 0 },
-  name: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.black, fontWeight: '700' },
+  name: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
   nameDark: { color: COLORS.beige },
   sub: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: '#8d8375', marginTop: 1 },
   subDark: { color: INK_TEXT.faint },
