@@ -188,6 +188,7 @@ into a dozen variants.
 | `src/components/ui/PressScale.tsx` | any tappable **card/row/tile** | bare `Pressable` with no feedback; hand-rolled press springs. Forwards a11y + testID props, so adopting it never costs a label. |
 | `src/components/ui/EmptyState.tsx` | "nothing here" surfaces | plain grey text. `tone` picks the canvas (dark stage / beige paper); `compact` for inline sections. |
 | `src/components/ui/SectionHeader.tsx` | section eyebrow + title (+ "See all") | eleven different eyebrow sizes and letter-spacings outside `home/`. |
+| `src/components/ui/Sheet.tsx` | any bottom sheet | `ReportSheet`/`ContributeSheet`/`StatsSheet` each hand-rolled the same Modal + backdrop + grabber + safe-area foot — three backdrop alphas, two grabber colours, and only one remembering to lift above the keyboard. `tone` picks paper/ink and carries the grabber and scrim with it; `avoidKeyboard` opts into the `KeyboardAvoidingView` (it changes layout even with no keyboard, so input-less sheets stay out). |
 | `src/lib/nativeMotion.ts` | every duration, easing, spring | ~25 ad-hoc `withTiming` durations and 6 spring configs. |
 | `src/constants/tokens.ts` | radii, spacing, tracking, `SCREEN_PAD` | 30 distinct radii, 27 letter-spacings, 8 screen gutters. |
 

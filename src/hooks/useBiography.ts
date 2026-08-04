@@ -74,6 +74,14 @@ function extractHeadings(html: string): { processedHtml: string; toc: string[] }
   return { processedHtml, toc };
 }
 
+/**
+ * Below this a contents affordance is noise — the reader can just scroll. Lives
+ * here rather than on the pill because BOTH screens gate on it before the pill
+ * exists: native reserves scroll padding for it, web decides whether to attach
+ * the IntersectionObserver.
+ */
+export const MIN_SECTIONS_FOR_CONTENTS = 3;
+
 export interface BiographyLead {
   /** The opening letter, set as the drop cap. */
   cap: string;

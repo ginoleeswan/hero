@@ -1,17 +1,33 @@
-import { useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Linking, useWindowDimensions } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Linking, useWindowDimensions } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  runOnJS,
+  useAnimatedRef,
+  useAnimatedScrollHandler,
+  useReducedMotion,
+  useSharedValue,
+} from 'react-native-reanimated';
 import RenderHTML, { type MixedStyleDeclaration } from 'react-native-render-html';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
-import { useBiography, resolveBioLink } from '../../src/hooks/useBiography';
+import {
+  useBiography,
+  resolveBioLink,
+  MIN_SECTIONS_FOR_CONTENTS,
+} from '../../src/hooks/useBiography';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, PAPER_TEXT, INK_TEXT, ORANGE_INK, SEAM_COLOR } from '../../src/constants/colors';
 import { EmptyState } from '../../src/components/ui/EmptyState';
+import { BiographyContents } from '../../src/components/biography/BiographyContents';
+import {
+  BIOGRAPHY_RENDERERS,
+  SectionAnchorProvider,
+} from '../../src/components/biography/SectionAnchor';
 
 const ORANGE_FAINT = 'rgba(231,115,51,0.3)';
 const ORANGE_RULE = 'rgba(231,115,51,0.45)';
@@ -112,14 +128,123 @@ const SYSTEM_FONTS = ['FlameSans-Regular', 'Flame-Regular'];
 // still gets a stage with presence instead of collapsing onto its portrait.
 const STAGE_MIN_H = 210;
 
+// The "read line" — how far down the viewport a heading has to travel before it
+// counts as the section you're in. Roughly a third of a phone screen: high
+// enough that a heading scrolling into view flips the pill as it settles, not
+// the instant its first pixel appears.
+const READ_LINE = 220;
+
+// Jumps land the heading just below the transparent header rather than flush
+// against it, so the section title has air above it.
+const JUMP_CLEARANCE = 84;
+
 export default function BiographyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { hero, lead, hasBiography } = useBiography(id);
+  const { hero, lead, toc, hasBiography } = useBiography(id);
+  const reduceMotion = useReducedMotion();
 
   const contentWidth = width - 40;
+
+  // ── Reading position ────────────────────────────────────────────────────
+  // Only `activeIndex` and the two quantised values ever cross to JS: the
+  // scroll handler runs on the UI thread and gates every runOnJS behind an
+  // actual change, so a full read of a long biography costs a few dozen
+  // renders rather than one per frame.
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  const contentRef = useRef<View | null>(null);
+  const offsets = useRef<Record<number, number>>({});
+  const offsetsSV = useSharedValue<number[]>([]);
+  const lastY = useSharedValue(0);
+  const hiddenSV = useSharedValue(0);
+  const activeSV = useSharedValue(-1);
+  const progressSV = useSharedValue(-1);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [pillHidden, setPillHidden] = useState(false);
+  const [contentsOpen, setContentsOpen] = useState(false);
+
+  // Republish the measured offsets in heading order. Images above a heading
+  // load async and shift everything below them, so this runs on every measure
+  // and again on content-size change rather than once at mount.
+  const publishOffsets = useCallback(() => {
+    const next: number[] = [];
+    for (let i = 0; i < toc.length; i++) {
+      const y = offsets.current[i];
+      // A heading not yet measured must not read as offset 0, or every section
+      // above it would look "current" the moment the page opens.
+      next.push(y ?? Number.POSITIVE_INFINITY);
+    }
+    offsetsSV.value = next;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shared values are stable refs
+  }, [toc.length]);
+
+  const anchorDeps = useMemo(
+    () => ({ contentRef, offsets, onMeasured: publishOffsets }),
+    [publishOffsets],
+  );
+
+  // Single JS-side commit point. Both values are gated here as well as on the
+  // UI thread, so a repeated runOnJS can never turn into a repeated render.
+  const commit = useCallback((idx: number, pct: number) => {
+    setActiveIndex((prev) => (prev === idx ? prev : idx));
+    setProgress((prev) => (prev === pct ? prev : pct));
+  }, []);
+
+  const onScroll = useAnimatedScrollHandler(
+    {
+      onScroll: (e) => {
+        const y = e.contentOffset.y;
+        const span = e.contentSize.height - e.layoutMeasurement.height;
+        // Quantised to whole percent — the hairline cannot show finer than
+        // that, and it caps the crossings at 100 for an entire document.
+        const pct = span > 0 ? Math.min(100, Math.max(0, Math.round((y / span) * 100))) : 0;
+
+        // Active section = the last heading whose top has passed the read line.
+        // Unmeasured headings sit at Infinity, so they never claim to be current.
+        const arr = offsetsSV.value;
+        let idx = 0;
+        for (let i = 0; i < arr.length; i++) {
+          if (y + READ_LINE >= arr[i]) idx = i;
+        }
+        if (idx !== activeSV.value || pct !== progressSV.value) {
+          activeSV.value = idx;
+          progressSV.value = pct;
+          runOnJS(commit)(idx, pct);
+        }
+
+        // Step out of the way going down, return on any upward move. The floor
+        // keeps the pill present while the reader is still in the stage.
+        const down = y > lastY.value + 4;
+        const up = y < lastY.value - 4;
+        if (down && hiddenSV.value === 0 && y > 220) {
+          hiddenSV.value = 1;
+          runOnJS(setPillHidden)(true);
+        } else if (up && hiddenSV.value === 1) {
+          hiddenSV.value = 0;
+          runOnJS(setPillHidden)(false);
+        }
+        lastY.value = y;
+      },
+    },
+    [commit],
+  );
+
+  // A contents affordance below three sections is noise; the reader can just
+  // scroll. Same threshold the component enforces, hoisted so the scroll
+  // padding can reserve the pill's room only when there'll be a pill.
+  const showContents = hasBiography && toc.length >= MIN_SECTIONS_FOR_CONTENTS;
+
+  const jumpTo = useCallback(
+    (index: number) => {
+      const y = offsets.current[index];
+      if (y == null) return;
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - JUMP_CLEARANCE), animated: !reduceMotion });
+    },
+    [scrollRef, reduceMotion],
+  );
 
   // The hero row is usually already cached from the character page, so pre →
   // render nothing rather than blink placeholders; a real wait dissolves out.
@@ -193,6 +318,7 @@ export default function BiographyScreen() {
           baseStyle={BASE_STYLE}
           tagsStyles={TAG_STYLES}
           systemFonts={SYSTEM_FONTS}
+          renderers={BIOGRAPHY_RENDERERS}
           renderersProps={renderersProps}
           enableExperimentalMarginCollapsing
         />
@@ -214,115 +340,145 @@ export default function BiographyScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      {/* Transparent native header — content flows under it (the identity stage
+    <SectionAnchorProvider value={anchorDeps}>
+      <View style={styles.container}>
+        {/* Transparent native header — content flows under it (the identity stage
           fills behind the bar + status bar). Mirrors the character screen's
           header exactly; note we never set headerBackground, since on
           native-stack that forces a translucent backdrop that reads as a
           gradient over dark content. */}
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerTransparent: true,
-          headerShadowVisible: false,
-          // Chevron only — hides the previous route name ("character/[id]").
-          headerBackButtonDisplayMode: 'minimal',
-          headerStyle: { backgroundColor: 'transparent' },
-          // Orange reads on both the dark stage (top) and the beige body (scrolled).
-          headerTintColor: COLORS.orange,
-          headerTitle: '',
-        }}
-      />
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 48 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Identity stage — the native counterpart of the web page's cinematic
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            headerTransparent: true,
+            headerShadowVisible: false,
+            // Chevron only — hides the previous route name ("character/[id]").
+            headerBackButtonDisplayMode: 'minimal',
+            headerStyle: { backgroundColor: 'transparent' },
+            // Orange reads on both the dark stage (top) and the beige body (scrolled).
+            headerTintColor: COLORS.orange,
+            headerTitle: '',
+          }}
+        />
+        <Animated.ScrollView
+          ref={scrollRef}
+          style={styles.scroll}
+          // Room for the docked pill so it never covers the colophon.
+          contentContainerStyle={{ paddingBottom: insets.bottom + (showContents ? 104 : 48) }}
+          showsVerticalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          // Images load in above headings and shift every offset below them, so
+          // re-measure whenever the document's height changes.
+          onContentSizeChange={publishOffsets}
+        >
+          <View ref={contentRef} collapsable={false}>
+            {/* Identity stage — the native counterpart of the web page's cinematic
             header. Four layers, back to front: a heavily blurred portrait for
             atmosphere, a vertical scrim that guarantees the title's contrast, a
             deep-ink cap that fuses the top into the status bar, and the seam. */}
-        <View style={[styles.stage, { paddingTop: insets.top + 52 }]}>
-          {hero ? (
-            <HeroImage
-              id={String(id ?? '')}
-              name={hero.name}
-              imageUrl={hero.image_url}
-              portraitUrl={hero.portrait_url}
-              style={styles.backdrop}
-              contentFit="cover"
-              contentPosition="top"
-              blurRadius={38}
-              recyclingKey={id}
-            />
-          ) : null}
-          {/* Guarantees the title block's contrast whatever the portrait is. */}
-          <LinearGradient
-            colors={['rgba(11,24,32,0.55)', 'rgba(11,24,32,0.34)', 'rgba(11,24,32,0.9)']}
-            locations={[0, 0.42, 1]}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
-          />
-          {/* Deep-ink cap: solid through the status-bar zone so the stage's top
+            <View style={[styles.stage, { paddingTop: insets.top + 52 }]}>
+              {hero ? (
+                <HeroImage
+                  id={String(id ?? '')}
+                  name={hero.name}
+                  imageUrl={hero.image_url}
+                  portraitUrl={hero.portrait_url}
+                  style={styles.backdrop}
+                  contentFit="cover"
+                  contentPosition="top"
+                  blurRadius={38}
+                  recyclingKey={id}
+                />
+              ) : null}
+              {/* Guarantees the title block's contrast whatever the portrait is. */}
+              <LinearGradient
+                colors={['rgba(11,24,32,0.55)', 'rgba(11,24,32,0.34)', 'rgba(11,24,32,0.9)']}
+                locations={[0, 0.42, 1]}
+                style={StyleSheet.absoluteFill}
+                pointerEvents="none"
+              />
+              {/* Deep-ink cap: solid through the status-bar zone so the stage's top
               is the SAME pixel value as the chrome, then easing off so the
               portrait blooms in below the floating chevron rather than being
               sliced by it. */}
-          <LinearGradient
-            colors={[COLORS.deepNavy, COLORS.deepNavy, 'rgba(11,24,32,0)']}
-            locations={[0, 0.45, 1]}
-            style={[styles.topCap, { height: insets.top + 96 }]}
-            pointerEvents="none"
-          />
+              <LinearGradient
+                colors={[COLORS.deepNavy, COLORS.deepNavy, 'rgba(11,24,32,0)']}
+                locations={[0, 0.45, 1]}
+                style={[styles.topCap, { height: insets.top + 96 }]}
+                pointerEvents="none"
+              />
 
-          <View style={styles.stageInner}>
-            <HeroImage
-              id={String(id ?? '')}
-              name={hero?.name ?? ''}
-              imageUrl={hero?.image_url}
-              portraitUrl={hero?.portrait_url}
-              style={styles.portrait}
-              contentFit="cover"
-              contentPosition="top"
-              recyclingKey={id}
-            />
-            <View style={styles.titleBlock}>
-              <Text style={styles.eyebrow}>Biography</Text>
+              <View style={styles.stageInner}>
+                <HeroImage
+                  id={String(id ?? '')}
+                  name={hero?.name ?? ''}
+                  imageUrl={hero?.image_url}
+                  portraitUrl={hero?.portrait_url}
+                  style={styles.portrait}
+                  contentFit="cover"
+                  contentPosition="top"
+                  recyclingKey={id}
+                />
+                <View style={styles.titleBlock}>
+                  <Text style={styles.eyebrow}>Biography</Text>
+                  {hero ? (
+                    <View>
+                      <Text style={styles.heroName} numberOfLines={3}>
+                        {hero.name}
+                      </Text>
+                      {phase === 'crossfade' ? (
+                        <FadeOutSkeleton>{nameSkeleton}</FadeOutSkeleton>
+                      ) : null}
+                    </View>
+                  ) : phase === 'skeleton' ? (
+                    nameSkeleton
+                  ) : null}
+                  {hero?.summary ? (
+                    <Text style={styles.deck} numberOfLines={3}>
+                      {hero.summary}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+
+              {/* The seam — the house hairline where a dark band meets beige. */}
+              <View style={styles.seam} pointerEvents="none" />
+            </View>
+
+            {/* Body */}
+            <View style={styles.body}>
               {hero ? (
                 <View>
-                  <Text style={styles.heroName} numberOfLines={3}>
-                    {hero.name}
-                  </Text>
-                  {phase === 'crossfade' ? <FadeOutSkeleton>{nameSkeleton}</FadeOutSkeleton> : null}
+                  {prose}
+                  {/* The prose sits settled underneath; only this layer animates. */}
+                  {phase === 'crossfade' ? <FadeOutSkeleton>{bodySkeleton}</FadeOutSkeleton> : null}
                 </View>
               ) : phase === 'skeleton' ? (
-                nameSkeleton
-              ) : null}
-              {hero?.summary ? (
-                <Text style={styles.deck} numberOfLines={3}>
-                  {hero.summary}
-                </Text>
+                bodySkeleton
               ) : null}
             </View>
           </View>
+        </Animated.ScrollView>
 
-          {/* The seam — the house hairline where a dark band meets beige. */}
-          <View style={styles.seam} pointerEvents="none" />
-        </View>
-
-        {/* Body */}
-        <View style={styles.body}>
-          {hero ? (
-            <View>
-              {prose}
-              {/* The prose sits settled underneath; only this layer animates. */}
-              {phase === 'crossfade' ? <FadeOutSkeleton>{bodySkeleton}</FadeOutSkeleton> : null}
-            </View>
-          ) : phase === 'skeleton' ? (
-            bodySkeleton
-          ) : null}
-        </View>
-      </ScrollView>
-    </View>
+        {showContents ? (
+          <View
+            style={[styles.contentsDock, { bottom: insets.bottom + 14 }]}
+            pointerEvents="box-none"
+          >
+            <BiographyContents
+              toc={toc}
+              activeIndex={activeIndex}
+              progress={progress / 100}
+              hidden={pillHidden && !contentsOpen}
+              open={contentsOpen}
+              onOpenChange={setContentsOpen}
+              onJump={jumpTo}
+            />
+          </View>
+        ) : null}
+      </View>
+    </SectionAnchorProvider>
   );
 }
 
@@ -394,6 +550,10 @@ const styles = StyleSheet.create({
 
   // ── Body ──
   body: { paddingHorizontal: 20, paddingTop: 26 },
+
+  // box-none so only the pill itself takes touches — the prose stays scrollable
+  // through the dock's full-width band.
+  contentsDock: { position: 'absolute', left: 0, right: 0 },
 
   // The drop cap sits in the paragraph's top-left corner; the lead paragraph
   // indents its first lines around it. Flame's ink runs tall, so the cap is

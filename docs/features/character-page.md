@@ -127,6 +127,46 @@ the iOS Safari toolbar zone) and correctly renders nothing on native.
 The drop cap is absolutely positioned with the lead paragraph padded around it:
 RN has no `float`, so the indent is paid by the whole paragraph.
 
+### The contents pill
+
+Desktop keeps its sticky numbered sidebar. Mobile — both platforms — gets
+`src/components/biography/BiographyContents.tsx` instead: a pill docked at the
+bottom showing `n of m`, the current section name and a progress hairline,
+which opens into an ink `Sheet` listing every section. It hides on scroll-down,
+returns on scroll-up, and doesn't render below `MIN_SECTIONS_FOR_CONTENTS` (3)
+— which lives in `useBiography` because both screens gate on it *before* the
+pill exists. The chevron points **up**, and rotates down in the sheet header, so
+one glyph both opens and dismisses; a `›` would promise navigation to a page.
+
+The component is platform-neutral. The two things that genuinely differ are
+injected by the screens:
+
+| | Active section | Progress + hide | Jump |
+| --- | --- | --- | --- |
+| Web | `IntersectionObserver` on the `bio-s{n}` ids, `-45%` root margin | passive `scroll` listener | `scrollIntoView` |
+| Native | `measureLayout` per heading → offsets compared in a Reanimated worklet | same worklet | `scrollTo` |
+
+Native's half is the awkward one — RNRH exposes no node positions, so
+`SectionAnchor.tsx` supplies a custom `h2` renderer that wraps each heading and
+measures it against the scroll content. Three things that bit:
+
+- The renderer is a **module constant** reading deps from context. Built inside
+  the screen's render it gets a new identity per state update, and RNRH remounts
+  the subtree when a renderer's identity changes — re-measuring the whole
+  document on every update the pill itself causes.
+- `onLayout` reports `y` relative to the heading's immediate parent, deep in the
+  transient render tree. It's only the trigger; `measureLayout` does the work.
+- Unmeasured headings publish as `Infinity`, never `0`. At `0` every section
+  reads as current the moment the page opens — and images loading in above a
+  heading shift it later anyway, hence re-measuring on `onContentSizeChange`.
+
+Only `activeIndex` and a whole-percent `progress` cross to JS, both gated on
+actual change, so a full read costs a few dozen renders rather than one a frame.
+
+Web's `scroll-margin-top` on `h2` must clear `TOPBAR_HEIGHT` — it was 32px
+against a 64px fixed bar, so every desktop contents jump landed the heading
+half-buried under the nav.
+
 **`/social-web/[id]`** (`app/social-web/[id].tsx` + `.web.tsx`) — both
 platforms now render the SAME three.js constellation, `UniverseScene.dom.tsx`
 (a `'use dom'` component: an iframe on web, a WebView on native), fed by the

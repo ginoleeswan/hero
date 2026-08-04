@@ -4,21 +4,12 @@
 // edit). Opened from the character page's contribute menu (context='page') and
 // the image lightbox (context='image').
 import { useEffect, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';
+import { Sheet } from '../ui/Sheet';
 import {
   REPORT_REASONS,
   resolveReportTarget,
@@ -54,7 +45,6 @@ export function ReportSheet({
   user,
   onRequestSignIn,
 }: ReportSheetProps) {
-  const insets = useSafeAreaInsets();
   const [reason, setReason] = useState<string | null>(null);
   const [detail, setDetail] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -112,121 +102,81 @@ export function ReportSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={s.backdrop} onPress={onClose}>
-        {/* Lift the sheet above the keyboard (iOS; Android resizes the window
-            itself) and keep the CTA clear of the home indicator. */}
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <Pressable
-            style={[s.sheet, { paddingBottom: Math.max(insets.bottom, 8) + 20 }]}
-            onPress={(e) => e.stopPropagation?.()}
-          >
-            <View style={s.grabber} />
-
-            {!user ? (
-              <View style={s.body}>
-                <Text style={s.kicker}>{heroName}</Text>
-                <Text style={s.prompt}>Report a problem</Text>
-                <Text style={s.guideline}>
-                  Sign in to report - it helps us keep pages accurate.
-                </Text>
-                <Pressable onPress={onRequestSignIn} style={[s.btn, s.btnPrimary]}>
-                  <Text style={s.btnPrimaryText}>Sign in to report</Text>
-                </Pressable>
-              </View>
-            ) : done ? (
-              <View style={s.body}>
-                <View style={s.doneIcon}>
-                  <Ionicons name="checkmark" size={28} color="#fff" />
-                </View>
-                <Text style={s.doneTitle}>Reported</Text>
-                <Text style={s.doneSub}>Thanks for flagging this.</Text>
-                <Text style={s.doneMeta}>We’ll take a look shortly.</Text>
-                <Pressable onPress={onClose} style={[s.btn, s.btnPrimary]}>
-                  <Text style={s.btnPrimaryText}>Done</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View style={s.body}>
-                <Text style={s.kicker}>{heroName}</Text>
-                <Text style={s.prompt}>Report a problem</Text>
-                <Text style={s.guideline}>What’s wrong here?</Text>
-
-                {thumb ? (
-                  <Image source={{ uri: thumb }} style={s.thumb} contentFit="cover" />
-                ) : null}
-
-                <View style={s.reasons}>
-                  {reasons.map((r) => {
-                    const on = reason === r.code;
-                    return (
-                      <Pressable
-                        key={r.code}
-                        onPress={() => setReason(r.code)}
-                        style={[s.reasonRow, on && s.reasonRowOn]}
-                      >
-                        <Ionicons
-                          name={on ? 'radio-button-on' : 'radio-button-off'}
-                          size={18}
-                          color={on ? COLORS.orange : COLORS.grey}
-                        />
-                        <Text style={[s.reasonText, on && s.reasonTextOn]}>{r.label}</Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-
-                <TextInput
-                  value={detail}
-                  onChangeText={setDetail}
-                  placeholder={
-                    reason === 'other' ? "Tell us what's wrong" : 'Add details (optional)'
-                  }
-                  placeholderTextColor={COLORS.grey}
-                  multiline
-                  maxLength={1000}
-                  style={[s.input, s.inputMultiline]}
-                />
-                {!!error && <Text style={s.error}>{error}</Text>}
-                <Pressable
-                  onPress={submit}
-                  disabled={submitting}
-                  style={[s.btn, s.btnPrimary, submitting && s.btnDisabled]}
-                >
-                  <Text style={s.btnPrimaryText}>
-                    {submitting ? 'Sending...' : 'Submit report'}
-                  </Text>
-                </Pressable>
-                <Text style={s.reviewNote}>Reports are reviewed by a moderator.</Text>
-              </View>
-            )}
+    <Sheet visible={visible} onClose={onClose} avoidKeyboard label="Report a problem">
+      {!user ? (
+        <View style={s.body}>
+          <Text style={s.kicker}>{heroName}</Text>
+          <Text style={s.prompt}>Report a problem</Text>
+          <Text style={s.guideline}>Sign in to report - it helps us keep pages accurate.</Text>
+          <Pressable onPress={onRequestSignIn} style={[s.btn, s.btnPrimary]}>
+            <Text style={s.btnPrimaryText}>Sign in to report</Text>
           </Pressable>
-        </KeyboardAvoidingView>
-      </Pressable>
-    </Modal>
+        </View>
+      ) : done ? (
+        <View style={s.body}>
+          <View style={s.doneIcon}>
+            <Ionicons name="checkmark" size={28} color="#fff" />
+          </View>
+          <Text style={s.doneTitle}>Reported</Text>
+          <Text style={s.doneSub}>Thanks for flagging this.</Text>
+          <Text style={s.doneMeta}>We’ll take a look shortly.</Text>
+          <Pressable onPress={onClose} style={[s.btn, s.btnPrimary]}>
+            <Text style={s.btnPrimaryText}>Done</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={s.body}>
+          <Text style={s.kicker}>{heroName}</Text>
+          <Text style={s.prompt}>Report a problem</Text>
+          <Text style={s.guideline}>What’s wrong here?</Text>
+
+          {thumb ? <Image source={{ uri: thumb }} style={s.thumb} contentFit="cover" /> : null}
+
+          <View style={s.reasons}>
+            {reasons.map((r) => {
+              const on = reason === r.code;
+              return (
+                <Pressable
+                  key={r.code}
+                  onPress={() => setReason(r.code)}
+                  style={[s.reasonRow, on && s.reasonRowOn]}
+                >
+                  <Ionicons
+                    name={on ? 'radio-button-on' : 'radio-button-off'}
+                    size={18}
+                    color={on ? COLORS.orange : COLORS.grey}
+                  />
+                  <Text style={[s.reasonText, on && s.reasonTextOn]}>{r.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <TextInput
+            value={detail}
+            onChangeText={setDetail}
+            placeholder={reason === 'other' ? "Tell us what's wrong" : 'Add details (optional)'}
+            placeholderTextColor={COLORS.grey}
+            multiline
+            maxLength={1000}
+            style={[s.input, s.inputMultiline]}
+          />
+          {!!error && <Text style={s.error}>{error}</Text>}
+          <Pressable
+            onPress={submit}
+            disabled={submitting}
+            style={[s.btn, s.btnPrimary, submitting && s.btnDisabled]}
+          >
+            <Text style={s.btnPrimaryText}>{submitting ? 'Sending...' : 'Submit report'}</Text>
+          </Pressable>
+          <Text style={s.reviewNote}>Reports are reviewed by a moderator.</Text>
+        </View>
+      )}
+    </Sheet>
   );
 }
 
 const s = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(11,24,32,0.55)', justifyContent: 'flex-end' },
-  sheet: {
-    width: '100%',
-    maxWidth: 520,
-    alignSelf: 'center',
-    backgroundColor: COLORS.beige,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    borderCurve: 'continuous',
-  },
-  grabber: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(41,60,67,0.25)',
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 6,
-  },
   body: { paddingHorizontal: 22, paddingTop: 10 },
   kicker: {
     fontFamily: 'Nunito_700Bold',
