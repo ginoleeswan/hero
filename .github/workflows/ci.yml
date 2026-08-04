@@ -82,6 +82,20 @@ jobs:
       # file that no longer exists — the doc names itself for updating.
       - run: node scripts/docs/check-doc-links.mjs
 
+  ui-invariants:
+    name: UI Invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      # Pure-node, no install needed. Four rules that are invisible when broken:
+      # text contrast below 4.5:1, icon-only controls with no accessible name,
+      # tap targets under 44pt with no hitSlop, and aria-label used as the only
+      # name in a file that can render on native.
+      - run: node scripts/ui/check-ui-invariants.mjs
+
   docs-freshness:
     name: Docs Freshness (informational)
     if: github.event_name == 'pull_request'

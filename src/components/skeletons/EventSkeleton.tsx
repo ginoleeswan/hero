@@ -89,7 +89,12 @@ export function EventDossierSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  stage: { backgroundColor: SURFACE.ink, paddingHorizontal: PAD, paddingTop: 28, paddingBottom: 28 },
+  stage: {
+    backgroundColor: SURFACE.ink,
+    paddingHorizontal: PAD,
+    paddingTop: 28,
+    paddingBottom: 28,
+  },
   eyebrow: { marginBottom: 12 },
   method: { marginTop: 10 },
   line: { marginTop: 10 },
