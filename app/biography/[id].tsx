@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Linking, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Linking, useWindowDimensions } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,6 +21,7 @@ import {
   MIN_SECTIONS_FOR_CONTENTS,
 } from '../../src/hooks/useBiography';
 import { HeroImage } from '../../src/components/HeroImage';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, PAPER_TEXT, INK_TEXT, ORANGE_INK, SEAM_COLOR } from '../../src/constants/colors';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { BiographyContents } from '../../src/components/biography/BiographyContents';
@@ -347,19 +348,21 @@ export default function BiographyScreen() {
           header exactly; note we never set headerBackground, since on
           native-stack that forces a translucent backdrop that reads as a
           gradient over dark content. */}
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            headerTransparent: true,
-            headerShadowVisible: false,
-            // Chevron only — hides the previous route name ("character/[id]").
-            headerBackButtonDisplayMode: 'minimal',
-            headerStyle: { backgroundColor: 'transparent' },
-            // Orange reads on both the dark stage (top) and the beige body (scrolled).
-            headerTintColor: COLORS.orange,
-            headerTitle: '',
-          }}
-        />
+        {/* No native header. iOS 26 gives every screen with a header a
+            UIScrollEdgeEffect over its content ScrollView — a light blur band
+            under the header items, on by default (`automatic`). Over this
+            page's flat deep-ink stage it read as a grey scrim across the
+            status bar, and it is redundant: the stage already paints solid
+            deep-ink up through the status bar, which is the exact job the
+            effect is doing.
+            `scrollEdgeEffects: { top: 'hidden' }` would be the surgical fix,
+            but it is not reachable through expo-router's Stack options — only
+            via react-native-screens' raw <Screen> or its gamma
+            <ScrollViewMarker>, and the latter is a Fabric native component
+            that would render an empty view on any build that predates it. No
+            header means no header-anchored effect, and the stage was designed
+            around a floating control anyway. */}
+        <Stack.Screen options={{ headerShown: false }} />
         <Animated.ScrollView
           ref={scrollRef}
           style={styles.scroll}
@@ -461,6 +464,23 @@ export default function BiographyScreen() {
           </View>
         </Animated.ScrollView>
 
+        {/* Floating back control. Replaces the native chevron; stays legible
+            on both canvases because it carries its own ink disc rather than
+            relying on the surface behind it. */}
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          style={({ pressed }) => [
+            styles.back,
+            { top: insets.top + 6 },
+            pressed && styles.backPressed,
+          ]}
+        >
+          <Ionicons name="chevron-back" size={22} color={COLORS.beige} />
+        </Pressable>
+
         {showContents ? (
           <View
             style={[styles.contentsDock, { bottom: insets.bottom + 14 }]}
@@ -554,6 +574,20 @@ const styles = StyleSheet.create({
   // box-none so only the pill itself takes touches — the prose stays scrollable
   // through the dock's full-width band.
   contentsDock: { position: 'absolute', left: 0, right: 0 },
+
+  back: {
+    position: 'absolute',
+    left: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(11,24,32,0.55)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(245,235,220,0.22)',
+  },
+  backPressed: { opacity: 0.7 },
 
   // The drop cap sits in the paragraph's top-left corner; the lead paragraph
   // indents its first lines around it. Flame's ink runs tall, so the cap is

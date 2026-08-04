@@ -163,6 +163,21 @@ measures it against the scroll content. Three things that bit:
 Only `activeIndex` and a whole-percent `progress` cross to JS, both gated on
 actual change, so a full read costs a few dozen renders rather than one a frame.
 
+The biography screen runs **`headerShown: false`** with its own floating back
+control, and that is load-bearing rather than cosmetic. iOS 26 gives every
+screen that has a header a `UIScrollEdgeEffect` over its content ScrollView —
+a light blur band under the header items, on by default (`automatic`). Over
+this page's flat deep-ink stage it read as a grey scrim across the status bar,
+and it duplicates what the stage's own top cap already does. The surgical fix,
+`scrollEdgeEffects: { top: 'hidden' }`, is **not reachable through
+expo-router's Stack options** — only react-native-screens' raw `<Screen>` or
+its gamma `<ScrollViewMarker>`, and the latter is a Fabric native component
+that renders an empty view on any build predating it, so it is not OTA-safe.
+No header means no header-anchored effect.
+
+Any other native screen that pairs a transparent header with a dark full-bleed
+top will hit the same thing on iOS 26+.
+
 Web's `scroll-margin-top` on `h2` must clear `TOPBAR_HEIGHT` — it was 32px
 against a 64px fixed bar, so every desktop contents jump landed the heading
 half-buried under the nav.
