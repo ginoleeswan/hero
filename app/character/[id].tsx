@@ -54,7 +54,7 @@ import {
   type EditableFieldDef,
 } from '../../src/lib/db/contributions';
 import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS, ORANGE_INK, PAPER_TEXT } from '../../src/constants/colors';
+import { COLORS, ACCENT_INK, ORANGE_INK, PAPER_TEXT } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { SocialWebPortal } from '../../src/components/character/SocialWebPortal';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
@@ -258,22 +258,25 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
   );
 }
 
+// Chip text uses ACCENT_INK, not the fill hue: the wash sits at 12-18% over
+// beige, so the label is effectively text on paper and the fill colours fail
+// there (green 2.45:1, blue 2.65:1, gold 3.08:1). The `bg` washes stay as-is.
 const ALIGNMENT_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  good: { label: 'Hero', bg: 'rgba(39,174,96,0.15)', color: COLORS.green },
-  bad: { label: 'Villain', bg: 'rgba(231,76,60,0.15)', color: COLORS.red },
-  neutral: { label: 'Neutral', bg: 'rgba(100,100,100,0.12)', color: COLORS.grey },
+  good: { label: 'Hero', bg: 'rgba(39,174,96,0.15)', color: ACCENT_INK.green },
+  bad: { label: 'Villain', bg: 'rgba(231,76,60,0.15)', color: ACCENT_INK.red },
+  neutral: { label: 'Neutral', bg: 'rgba(100,100,100,0.12)', color: PAPER_TEXT.faint },
 };
 
 const ORIGIN_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  mutant: { label: 'Mutant', bg: 'rgba(139,92,246,0.15)', color: COLORS.purple },
-  alien: { label: 'Alien', bg: 'rgba(21,161,171,0.15)', color: COLORS.blue },
-  human: { label: 'Human', bg: 'rgba(162,161,155,0.15)', color: COLORS.grey },
-  'god/eternal': { label: 'Eternal', bg: 'rgba(249,178,34,0.18)', color: COLORS.gold },
-  radiation: { label: 'Radiation', bg: 'rgba(231,115,51,0.15)', color: COLORS.orange },
-  cyborg: { label: 'Cyborg', bg: 'rgba(45,45,45,0.12)', color: COLORS.black },
-  robot: { label: 'Robot', bg: 'rgba(45,45,45,0.12)', color: COLORS.black },
-  training: { label: 'Training', bg: 'rgba(80,35,20,0.12)', color: COLORS.brown },
-  inhuman: { label: 'Inhuman', bg: 'rgba(21,161,171,0.15)', color: COLORS.blue },
+  mutant: { label: 'Mutant', bg: 'rgba(139,92,246,0.15)', color: ACCENT_INK.purple },
+  alien: { label: 'Alien', bg: 'rgba(21,161,171,0.15)', color: ACCENT_INK.blue },
+  human: { label: 'Human', bg: 'rgba(162,161,155,0.15)', color: PAPER_TEXT.faint },
+  'god/eternal': { label: 'Eternal', bg: 'rgba(249,178,34,0.18)', color: ACCENT_INK.gold },
+  radiation: { label: 'Radiation', bg: 'rgba(231,115,51,0.15)', color: ACCENT_INK.orange },
+  cyborg: { label: 'Cyborg', bg: 'rgba(45,45,45,0.12)', color: ACCENT_INK.black },
+  robot: { label: 'Robot', bg: 'rgba(45,45,45,0.12)', color: ACCENT_INK.black },
+  training: { label: 'Training', bg: 'rgba(80,35,20,0.12)', color: ACCENT_INK.brown },
+  inhuman: { label: 'Inhuman', bg: 'rgba(21,161,171,0.15)', color: ACCENT_INK.blue },
 };
 
 interface TaxoChip {
@@ -1945,7 +1948,7 @@ const styles = StyleSheet.create({
   contributeBtnText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 14,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 0.2,
   },
   contributeMenu: {
@@ -2074,7 +2077,7 @@ const styles = StyleSheet.create({
   dossierGroupLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     marginBottom: 10,
@@ -2129,8 +2132,7 @@ const styles = StyleSheet.create({
   statTotal: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12,
-    color: COLORS.navy,
-    opacity: 0.45,
+    color: PAPER_TEXT.faint,
     letterSpacing: 0.3,
   },
   statPercentileBadge: {
@@ -2155,8 +2157,7 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontFamily: 'Flame-Regular',
     fontSize: 14,
-    color: COLORS.navy,
-    opacity: 0.6,
+    color: PAPER_TEXT.faint,
     textTransform: 'capitalize',
   },
   infoValue: {
@@ -2277,7 +2278,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-    color: COLORS.orange,
+    color: ORANGE_INK,
   },
   // Floating section quick-nav — transparent bar under the header; the chips
   // themselves carry the only fill, so the page reads continuously behind it.

@@ -8,7 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, ORANGE_INK } from '../../constants/colors';
 import type { TitleReview } from '../../lib/tmdb/extras';
 
 function ReviewCard({ review }: { review: TitleReview }) {
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     paddingHorizontal: 20,
@@ -101,7 +101,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: { fontFamily: 'Flame-Regular', fontSize: 13, color: '#fff' },
-  author: { fontFamily: 'Flame-Regular', fontSize: 14, lineHeight: 18, color: COLORS.navy, flex: 1, minWidth: 0 },
+  author: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 14,
+    lineHeight: 18,
+    color: COLORS.navy,
+    flex: 1,
+    minWidth: 0,
+  },
   ratingPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -111,7 +118,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  ratingText: { fontFamily: 'Flame-Regular', fontSize: 12, color: COLORS.orange },
+  ratingText: { fontFamily: 'Flame-Regular', fontSize: 12, color: ORANGE_INK },
   body: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13.5,
@@ -121,7 +128,7 @@ const styles = StyleSheet.create({
   readMore: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12.5,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 0.2,
   },
 });

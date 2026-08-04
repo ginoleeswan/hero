@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import { View, Text, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 
 /**
  * A grounding surface for a profile section. Sections used to float as bare
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   count: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginLeft: 10,
   },
   headerRight: { marginLeft: 'auto' },

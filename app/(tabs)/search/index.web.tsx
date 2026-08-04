@@ -16,7 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getSearchIdleHeroes, type HeroSearchResult } from '../../../src/lib/db/heroes';
 import { HeroImage } from '../../../src/components/HeroImage';
-import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../../src/constants/colors';
+import { COLORS, SURFACE, SURFACE_GRADIENT, INK_TEXT } from '../../../src/constants/colors';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { useSearch } from '../../../src/contexts/SearchContext';
 import { useAuth } from '../../../src/hooks/useAuth';
@@ -438,7 +438,7 @@ export default function WebSearchScreen() {
                 <TextInput
                   style={styles.desktopInput as object}
                   placeholder="Search characters, teams & universes…"
-                  placeholderTextColor="rgba(245,235,220,0.4)"
+                  placeholderTextColor={INK_TEXT.placeholder}
                   value={inputQuery}
                   onChangeText={setInputQuery}
                   autoFocus={!urlQ}
@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
   charCount: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: 'rgba(245,235,220,0.4)',
+    color: INK_TEXT.faint,
     letterSpacing: 0.2,
   } as object,
 
@@ -841,7 +841,7 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     // Quiet warm-beige caps on the dark ground — present but never competing with
     // the art.
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     letterSpacing: 0.9,
     textTransform: 'uppercase',
     // No marginBottom: every section that uses this label owns the label→content
@@ -897,7 +897,7 @@ const styles = StyleSheet.create({
   moreHint: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
     textAlign: 'center',
     paddingTop: 24,
   } as object,

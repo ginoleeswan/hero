@@ -10,7 +10,7 @@ import { View, Text, Pressable, TextInput, Modal, ScrollView, StyleSheet } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../../constants/colors';
+import { COLORS, HOUSE_INK } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import { nodeDates } from '../../lib/family/lifespan';
 import type { RosterMember } from './HouseRoster';
@@ -193,6 +193,6 @@ const styles = StyleSheet.create({
   rowHover: { backgroundColor: '#efe4d0' } as object,
   name: { fontFamily: 'FlameSans-Regular', fontSize: 14.5, color: COLORS.black, flexShrink: 1 },
   reign: { flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 'auto' } as object,
-  reignText: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 0.4, color: '#a99b84' },
+  reignText: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 0.4, color: HOUSE_INK },
   empty: { fontFamily: 'FlameSans-Regular', fontSize: 13.5, color: '#8d8375', padding: 12 },
 });

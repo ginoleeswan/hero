@@ -19,7 +19,7 @@ import { HeroImage } from '../../src/components/HeroImage';
 import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import { ComicCoverRail } from '../../src/components/home/ComicCoverRail';
 import { brandForPublisher } from '../../src/constants/publishers';
-import { COLORS, SURFACE, SEAM_COLOR } from '../../src/constants/colors';
+import { COLORS, SURFACE, SEAM_COLOR, PAPER_TEXT } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { NotFoundView } from '../../src/components/NotFoundView';
 import { IssueSkeleton } from '../../src/components/skeletons/IssueSkeleton';
@@ -688,7 +688,7 @@ const w = StyleSheet.create({
   fallback: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     letterSpacing: 0.3,
   },
   // Featuring, flowing under the synopsis (beside the cover) — not stranded below.
@@ -833,7 +833,7 @@ const cr = StyleSheet.create({
   role: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     width: 58,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -851,7 +851,7 @@ const cr = StyleSheet.create({
   itemLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9.5,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },

@@ -14,7 +14,7 @@ import { useCachedAdminFlag } from '../src/hooks/useCachedAdminFlag';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
 import { providerMeta } from '../src/lib/profile/provider';
 import { openKofi } from '../src/lib/support/kofi';
-import { COLORS, SURFACE } from '../src/constants/colors';
+import { COLORS, SURFACE, PAPER_TEXT } from '../src/constants/colors';
 import { Toast, useToast } from '../src/components/ui/Toast';
 import { useScreenChrome } from '../src/hooks/useScreenChrome';
 import { StageHeader } from '../src/components/StageHeader';
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     lineHeight: 19,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 8,
   },
 
@@ -372,17 +372,17 @@ const styles = StyleSheet.create({
   value: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     maxWidth: 240,
   },
   rowIndicator: { width: 34, marginRight: 0 },
   notifText: { flex: 1, gap: 1 },
-  notifSub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey },
+  notifSub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: PAPER_TEXT.faint },
 
   disclaimer: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: 'rgba(29,45,51,0.4)',
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     paddingHorizontal: 12,
     marginTop: 8,

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, INK_TEXT } from '../../../constants/colors';
 import { useSearch } from '../../../contexts/SearchContext';
 import { useAuth } from '../../../hooks/useAuth';
 import { useSearchHistory } from '../../../hooks/useSearchHistory';
@@ -382,14 +382,14 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   } as object,
   sectionCount: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
-    color: 'rgba(245,235,220,0.35)',
+    color: INK_TEXT.faint,
     letterSpacing: 0.2,
   } as object,
   empty: { paddingVertical: 28, paddingHorizontal: 16, alignItems: 'center' } as object,

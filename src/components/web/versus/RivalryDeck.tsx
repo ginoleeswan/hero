@@ -3,7 +3,7 @@
 // tapping one opens that matchup in the arena. A 5-up grid on desktop, a
 // horizontal swipe rail on mobile.
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, INK_TEXT } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import type { Rivalry } from '../../../lib/db/heroes';
 import type { FighterArt } from '../../../lib/compareHandoff';
@@ -98,7 +98,7 @@ export function RivalryDeck({
 const c = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginBottom: 14 },
   heading: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
-  sub: { fontFamily: 'Nunito_400Regular', fontSize: 12.5, color: 'rgba(245,235,220,0.45)' },
+  sub: { fontFamily: 'Nunito_400Regular', fontSize: 12.5, color: INK_TEXT.faint },
 
   grid: {
     display: 'grid',

@@ -48,6 +48,8 @@ import {
   SURFACE_GRADIENT,
   SEAM_COLOR,
   CONTENT_MAX_WIDTH,
+  INK_TEXT,
+  PAPER_TEXT,
 } from '../../src/constants/colors';
 import { HouseCard } from '../../src/components/family/HouseIndex';
 import { useUniverseHouses } from '../../src/hooks/useHouseList';
@@ -649,7 +651,7 @@ export default function WebCategoryScreen() {
                   <TextInput
                     style={styles.searchInput as object}
                     placeholder={`Search ${title}…`}
-                    placeholderTextColor="rgba(245,235,220,0.4)"
+                    placeholderTextColor={INK_TEXT.placeholder}
                     value={filters.search}
                     onChangeText={(t) => setFilter('search', t)}
                     onFocus={() => setSearchFocused(true)}
@@ -1130,7 +1132,7 @@ const styles = StyleSheet.create({
 
   // ── Empty state ──────────────────────────────────────────────────────────────
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingVertical: 80 },
-  empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
+  empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: PAPER_TEXT.faint },
   emptyClear: {
     flexDirection: 'row',
     alignItems: 'center',

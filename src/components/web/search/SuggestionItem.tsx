@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, INK_TEXT } from '../../../constants/colors';
 import { HeroFace } from '../../HeroFace';
 import type { HeroSearchResult } from '../../../lib/db/heroes';
 import { RoleBadge } from './RoleBadge';
@@ -148,6 +148,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
   },
 });

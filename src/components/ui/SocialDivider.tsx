@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 
 interface Props {
   label?: string;
@@ -29,8 +29,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: COLORS.grey,
-    opacity: 0.6,
+    color: PAPER_TEXT.faint,
     marginHorizontal: 12,
   },
 });

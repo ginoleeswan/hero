@@ -13,7 +13,13 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { loginHref } from '../../src/lib/loginRedirect';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { PageEndCap } from '../../src/components/web/PageEndCap';
-import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';
+import {
+  COLORS,
+  SURFACE,
+  SURFACE_GRADIENT,
+  INK_TEXT,
+  PAPER_TEXT,
+} from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -129,7 +135,7 @@ export default function WebSignupScreen() {
       <TextInput
         style={[styles.input, emailFocused && styles.inputFocused] as object}
         placeholder="you@example.com"
-        placeholderTextColor="rgba(41,60,67,0.3)"
+        placeholderTextColor={PAPER_TEXT.placeholder}
         value={email}
         onChangeText={setEmail}
         onFocus={() => setEmailFocused(true)}
@@ -148,7 +154,7 @@ export default function WebSignupScreen() {
           ref={passwordRef}
           style={styles.passwordInput as object}
           placeholder="••••••••"
-          placeholderTextColor="rgba(41,60,67,0.3)"
+          placeholderTextColor={PAPER_TEXT.placeholder}
           value={password}
           onChangeText={setPassword}
           onFocus={() => setPasswordFocused(true)}
@@ -392,7 +398,7 @@ const styles = StyleSheet.create({
   brandSub: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     lineHeight: 22,
     marginBottom: 24,
   },
@@ -434,11 +440,10 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: COLORS.navy,
+    color: PAPER_TEXT.faint,
     marginBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    opacity: 0.55,
   },
   input: {
     backgroundColor: 'white',
@@ -511,7 +516,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 11.5,
     lineHeight: 17,
-    color: 'rgba(41,60,67,0.45)',
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     marginBottom: 14,
   } as object,
@@ -524,7 +529,7 @@ const styles = StyleSheet.create({
   switchText: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
   },
   switchLink: {
     fontFamily: 'Nunito_700Bold',
@@ -559,7 +564,7 @@ const styles = StyleSheet.create({
   pendingBody: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 15,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     lineHeight: 23,
     marginBottom: 8,
@@ -571,7 +576,7 @@ const styles = StyleSheet.create({
   pendingHint: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: 'rgba(41,60,67,0.45)',
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     marginBottom: 32,
   },
@@ -598,7 +603,7 @@ const styles = StyleSheet.create({
   pendingBackText: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textDecorationLine: 'underline',
   },
 });

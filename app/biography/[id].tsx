@@ -10,7 +10,7 @@ import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import { getHeroByComicvineId } from '../../src/lib/db/heroes';
 import { useHeroRow } from '../../src/lib/query/heroQueries';
 import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, PAPER_TEXT } from '../../src/constants/colors';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 
 // ComicVine biography HTML ships with lazy-load placeholders and <noscript>
@@ -64,8 +64,7 @@ const TAG_STYLES: Record<string, MixedStyleDeclaration> = {
   h4: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: COLORS.navy,
-    opacity: 0.5,
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
     marginTop: 16,
@@ -99,8 +98,7 @@ const TAG_STYLES: Record<string, MixedStyleDeclaration> = {
   figcaption: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: COLORS.navy,
-    opacity: 0.55,
+    color: PAPER_TEXT.faint,
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 5,

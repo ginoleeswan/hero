@@ -18,7 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLORS, PAPER_TEXT } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';
 import {
   submitContribution,
   adminEditHero,
@@ -273,7 +273,7 @@ const s = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: COLORS.orange,
+    color: ORANGE_INK,
     marginBottom: 4,
   },
   prompt: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.navy, lineHeight: 30 },
@@ -303,7 +303,7 @@ const s = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 3,
   },
   currentValue: {
@@ -320,7 +320,7 @@ const s = StyleSheet.create({
   reviewNote: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     marginTop: 12,
   },

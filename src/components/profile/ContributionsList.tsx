@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';
 import {
   describeContribution,
   parsePgArrayLiteral,
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 10,
   },
   row: {
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   what: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     flex: 1,
   },
   status: {
@@ -170,6 +170,6 @@ const styles = StyleSheet.create({
   toggleText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
-    color: COLORS.orange,
+    color: ORANGE_INK,
   },
 });

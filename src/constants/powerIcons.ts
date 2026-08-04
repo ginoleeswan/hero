@@ -21,14 +21,19 @@ export const POWER_CATEGORY_ORDER: PowerCategory[] = [
   'other',
 ];
 
+// `color` is the group's TEXT colour as well as its marker dot (AbilitiesSection
+// and the web powers panel both paint the label with it), and both sit on the
+// beige powers card — so these are inks, not fills. mental/energy/mystic/other
+// were the fill hues and measured 2.65 / 2.58 / 3.27 / 3.54:1; each is darkened
+// to clear 4.5:1 while holding its hue. Ratios are against COLORS.beige.
 export const POWER_CATEGORY_META: Record<PowerCategory, { label: string; color: string }> = {
-  physical: { label: 'Physical', color: '#B5302B' },
-  combat: { label: 'Combat & Skill', color: '#7A4A1E' },
-  mental: { label: 'Mental', color: '#15A1AB' },
-  energy: { label: 'Energy', color: '#E77333' },
-  tech: { label: 'Tech', color: '#7c3aed' },
-  mystic: { label: 'Mystic', color: '#A77A12' },
-  other: { label: 'Other', color: '#7E7C74' },
+  physical: { label: 'Physical', color: '#B5302B' }, // 5.20:1
+  combat: { label: 'Combat & Skill', color: '#7A4A1E' }, // 6.30:1
+  mental: { label: 'Mental', color: '#0C757C' }, // 4.62:1
+  energy: { label: 'Energy', color: '#A84718' }, // 4.97:1
+  tech: { label: 'Tech', color: '#7c3aed' }, // 4.83:1
+  mystic: { label: 'Mystic', color: '#87630F' }, // 4.66:1
+  other: { label: 'Other', color: '#6B6963' }, // 4.65:1
 };
 
 /**

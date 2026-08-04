@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../../constants/colors';
 import type { PublisherCounts } from '../../../lib/db/heroes';
 
 interface UniverseBreakdownProps {
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   donutCaption: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 8,
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginTop: 2,
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   legendPct: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
     width: 36,
     textAlign: 'right',
   },

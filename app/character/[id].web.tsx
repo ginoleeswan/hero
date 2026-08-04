@@ -28,7 +28,14 @@ import {
 } from '../../src/lib/db/contributions';
 import { heroImageSource, heroGridImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS, SURFACE } from '../../src/constants/colors';
+import {
+  COLORS,
+  ACCENT_INK,
+  SURFACE,
+  INK_TEXT,
+  PAPER_TEXT,
+  ORANGE_INK,
+} from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { MOTION, prefersReducedMotion } from '../../src/lib/motion';
 import {
@@ -344,7 +351,7 @@ const s2 = StyleSheet.create({
   editRowValue: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: 'rgba(41,60,67,0.7)',
+    color: PAPER_TEXT.faint,
   } as object,
   editRowAdd: {
     fontFamily: 'Nunito_700Bold',
@@ -3424,7 +3431,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     letterSpacing: 2.5,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.4)',
+    color: INK_TEXT.faint,
     marginBottom: 14,
   } as object,
   statPods: { flexDirection: 'row', gap: 10 },
@@ -3444,7 +3451,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
   } as object,
   stageEyebrow: {
     fontFamily: 'Nunito_700Bold',
@@ -3505,12 +3512,12 @@ const styles = StyleSheet.create({
     fontSize: 8,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
   },
   stageCredit: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
     textAlign: 'right',
   },
   stageAccent: {
@@ -3685,7 +3692,7 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
   },
   tabLabelActive: {
     color: COLORS.beige,
@@ -3720,7 +3727,7 @@ const styles = StyleSheet.create({
   compareBtnText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 0.2,
   },
   powerScorePill: {
@@ -3742,8 +3749,7 @@ const styles = StyleSheet.create({
   aiBadgeText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 9,
-    color: COLORS.navy,
-    opacity: 0.5,
+    color: PAPER_TEXT.faint,
     letterSpacing: 0.5,
     textTransform: 'uppercase' as const,
   },
@@ -3784,13 +3790,13 @@ const styles = StyleSheet.create({
   medianLegendText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
     letterSpacing: 0.3,
   },
   cardTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 10,
@@ -3996,7 +4002,7 @@ const styles = StyleSheet.create({
   dossierGroupLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     marginBottom: 10,
@@ -4033,7 +4039,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
     paddingHorizontal: 20,
     marginBottom: 10,
   } as object,
@@ -4073,8 +4079,7 @@ const styles = StyleSheet.create({
   abilityGroupCount: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: COLORS.navy,
-    opacity: 0.35,
+    color: PAPER_TEXT.faint,
   },
   abilityItems: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 18, rowGap: 13 },
   abilityItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -4113,7 +4118,7 @@ const styles = StyleSheet.create({
   powerTagMoreText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
   },
   showLess: {
     alignSelf: 'flex-start',
@@ -4123,7 +4128,7 @@ const styles = StyleSheet.create({
   showLessText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textDecorationLine: 'underline',
   },
 
@@ -4146,7 +4151,7 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     flexShrink: 0,
     marginRight: 8,
   },
@@ -4174,7 +4179,7 @@ const styles = StyleSheet.create({
   factLabel: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 8.5,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
@@ -4194,7 +4199,7 @@ const styles = StyleSheet.create({
   chipGroupLabel: {
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase' as const,
     letterSpacing: 1.2,
     marginBottom: 8,
@@ -4244,7 +4249,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   chipTextEnemy: { fontFamily: 'FlameSans-Regular', fontSize: 11, color: COLORS.red },
-  chipTextAlly: { fontFamily: 'FlameSans-Regular', fontSize: 11, color: COLORS.green },
+  chipTextAlly: { fontFamily: 'FlameSans-Regular', fontSize: 11, color: ACCENT_INK.green },
 
   // First Appearance — desktop card (distinct tinted background)
   firstAppearanceDesktopCard: {
@@ -4262,7 +4267,7 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
     marginBottom: 4,
   },
-  firstIssueYear: { fontFamily: 'FlameSans-Regular', fontSize: 12, color: COLORS.grey },
+  firstIssueYear: { fontFamily: 'FlameSans-Regular', fontSize: 12, color: PAPER_TEXT.faint },
 
   // First Appearance — desktop horizontal card
   firstAppearanceRow: { flexDirection: 'row', gap: 20, alignItems: 'center' },
@@ -4270,8 +4275,7 @@ const styles = StyleSheet.create({
   firstAppearanceLabel: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 10,
-    color: COLORS.navy,
-    opacity: 0.45,
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase' as const,
     letterSpacing: 1.4,
     marginBottom: 14,
@@ -4293,8 +4297,7 @@ const styles = StyleSheet.create({
   firstAppearanceName: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
-    color: COLORS.navy,
-    opacity: 0.7,
+    color: PAPER_TEXT.faint,
     lineHeight: 20,
   },
 
@@ -4307,8 +4310,7 @@ const styles = StyleSheet.create({
   inPrintSince: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12,
-    color: COLORS.navy,
-    opacity: 0.5,
+    color: PAPER_TEXT.faint,
   },
   inPrintBody: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 
@@ -4325,7 +4327,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.6,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
   },
 
   // Cover gallery — the run that followed the debut
@@ -4333,8 +4335,7 @@ const styles = StyleSheet.create({
   inPrintGalleryLabel: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 10,
-    color: COLORS.navy,
-    opacity: 0.45,
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase' as const,
     letterSpacing: 1.2,
     paddingLeft: 20,

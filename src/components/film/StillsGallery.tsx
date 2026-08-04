@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Image } from 'expo-image';
-import { COLORS } from '../../constants/colors';
+import { COLORS, ORANGE_INK } from '../../constants/colors';
 import { ImageLightbox } from '../ImageLightbox';
 
 /**
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     paddingHorizontal: 20,

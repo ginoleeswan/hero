@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Panel } from '../Panel';
 import { EmptyState } from '../ui';
 import { SkRows } from '../skeletons';
-import { COLORS } from '../../../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../../../constants/colors';
 import {
   listSocialPosts,
   listPostResults,
@@ -489,7 +489,7 @@ export function SocialInsightsDomain() {
 const styles = StyleSheet.create({
   syncRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   platNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  syncMsg: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.navy, opacity: 0.7 },
+  syncMsg: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: PAPER_TEXT.faint },
   wrap: { gap: 12, width: '100%' },
   syncBtn: {
     flexDirection: 'row',

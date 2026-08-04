@@ -15,7 +15,7 @@ import { useEffect, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../constants/colors';
 import { useAuth } from '../hooks/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { promoForDay } from '../lib/sponsor/houseAds';
@@ -104,10 +104,10 @@ const styles = StyleSheet.create({
     fontSize: 9.5,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
   },
   title: { fontFamily: 'Nunito_800ExtraBold', fontSize: 14.5, color: COLORS.navy },
-  sub: { fontFamily: 'Nunito_400Regular', fontSize: 12.5, color: COLORS.grey, lineHeight: 17 },
+  sub: { fontFamily: 'Nunito_400Regular', fontSize: 12.5, color: PAPER_TEXT.faint, lineHeight: 17 },
   cta: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  ctaText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.orange },
+  ctaText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: ORANGE_INK },
 });

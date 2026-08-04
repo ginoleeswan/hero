@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, PAPER_TEXT } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 import { useMatchupTakes } from '../../hooks/useMatchupTakes';
@@ -465,5 +465,5 @@ const s = StyleSheet.create({
     gap: 4,
     paddingVertical: 10,
   },
-  signInText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
+  signInText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: ORANGE_INK },
 });

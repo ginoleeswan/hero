@@ -1,5 +1,5 @@
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import type { EraBucket, EraHero } from '../../../lib/db/heroes';
 
@@ -114,7 +114,7 @@ const t = StyleSheet.create({
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
@@ -169,7 +169,7 @@ const t = StyleSheet.create({
   eraYears: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -198,7 +198,7 @@ const t = StyleSheet.create({
   cardYear: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
     marginTop: 1,
   },
 });

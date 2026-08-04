@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, PAPER_TEXT } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';
 
 const isWeb = Platform.OS === 'web';
 
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     marginTop: 2,
   },
   progressRing: {
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  progressPct: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
+  progressPct: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: ORANGE_INK },
   track: {
     height: 6,
     borderRadius: 3,

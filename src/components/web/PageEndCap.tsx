@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroLogo } from './HeroLogo';
 
 /**
@@ -104,7 +104,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   } as object,
   linkItem: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  dot: { color: 'rgba(245,235,220,0.3)', fontSize: 13 } as object,
+  dot: { color: INK_TEXT.faint, fontSize: 13 } as object,
   linkWrap: { transition: 'opacity 150ms ease' } as object,
   linkWrapHover: { opacity: 0.8 } as object,
   link: {
@@ -116,6 +116,6 @@ const s = StyleSheet.create({
   meta: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: 'rgba(245,235,220,0.35)',
+    color: INK_TEXT.faint,
   } as object,
 });

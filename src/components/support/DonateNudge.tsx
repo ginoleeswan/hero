@@ -1,5 +1,5 @@
 import { Modal, Text, Pressable, StyleSheet } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 
 export function DonateNudge({
   visible,
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
     lineHeight: 20,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     marginBottom: 18,
   },
@@ -76,5 +76,5 @@ const styles = StyleSheet.create({
   primaryPressed: { opacity: 0.9 },
   primaryText: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#fff', letterSpacing: 0.3 },
   later: { paddingVertical: 12, marginTop: 4 },
-  laterText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.grey },
+  laterText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: PAPER_TEXT.faint },
 });

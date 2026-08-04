@@ -2,7 +2,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { COLORS, SURFACE } from '../src/constants/colors';
+import { COLORS, SURFACE, PAPER_TEXT } from '../src/constants/colors';
 import { useScreenChrome } from '../src/hooks/useScreenChrome';
 import { StageHeader } from '../src/components/StageHeader';
 import { SectionShell } from '../src/components/profile/SectionShell';
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     paddingTop: 26,
     paddingBottom: 48,
   } as object,
-  body: { fontFamily: 'Nunito_400Regular', fontSize: 14, lineHeight: 21, color: COLORS.grey },
+  body: { fontFamily: 'Nunito_400Regular', fontSize: 14, lineHeight: 21, color: PAPER_TEXT.faint },
   tierRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   tier: {
     flex: 1,
@@ -95,8 +95,13 @@ const styles = StyleSheet.create({
   tierHover: { backgroundColor: '#fdece0', borderColor: COLORS.orange } as object,
   tierEmoji: { fontSize: 22 },
   tierLabel: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
-  tierAmount: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey },
-  note: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, marginBottom: 16 },
+  tierAmount: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: PAPER_TEXT.faint },
+  note: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: PAPER_TEXT.faint,
+    marginBottom: 16,
+  },
   primary: {
     flexDirection: 'row',
     alignItems: 'center',

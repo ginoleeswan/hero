@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, INK_TEXT, PAPER_TEXT } from '../../../constants/colors';
 import { BrandLogoView } from '../../PublisherBadge';
 import { brandForPublisher } from '../../../constants/publishers';
 import { teamLogo } from '../../../constants/teamBrands';
@@ -115,9 +115,9 @@ const styles = StyleSheet.create({
   meta: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   } as object,
-  metaLight: { color: 'rgba(29,45,51,0.5)' } as object,
+  metaLight: { color: PAPER_TEXT.faint } as object,
 });

@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Defs, Pattern, Circle, Rect, G } from 'react-native-svg';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { COLORS } from '../../constants/colors';
+import { COLORS, ORANGE_INK, HOUSE_INK } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import { hasRealArt } from '../../constants/heroImages';
 import { PlaceholderHead } from './PlaceholderHead';
@@ -913,7 +913,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
   },
@@ -1003,7 +1003,7 @@ const styles = StyleSheet.create({
     // Sentence case, no tracking: a generation name is a phrase, not a system
     // label, and uppercase + letterspacing is what made it too wide to fit.
     fontSize: 10.5,
-    color: '#a99b84',
+    color: HOUSE_INK,
   },
 
   zoomButtons: {
@@ -1085,7 +1085,7 @@ const styles = StyleSheet.create({
     fontSize: 7,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: '#8a7e68',
+    color: HOUSE_INK,
   },
 
   // No card: the roundel and the name sit straight on the canvas.
@@ -1179,7 +1179,7 @@ const styles = StyleSheet.create({
   roleText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
-    color: '#a99b84',
+    color: HOUSE_INK,
     textTransform: 'capitalize',
   },
   chevron: { color: '#cdbfa6', fontSize: 14 },
@@ -1220,7 +1220,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 1.6,
     textTransform: 'uppercase',
-    color: '#a99b84',
+    color: HOUSE_INK,
     marginBottom: 9,
     marginTop: 16,
     textAlign: 'center',

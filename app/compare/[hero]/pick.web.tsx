@@ -20,7 +20,7 @@ import { VsAnchor, type AnchorPreview } from '../../../src/components/compare/Vs
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { stashFighters, getFighterArt, type FighterArt } from '../../../src/lib/compareHandoff';
 import { withViewTransition } from '../../../src/lib/viewTransition';
-import { COLORS, SURFACE } from '../../../src/constants/colors';
+import { COLORS, SURFACE, INK_TEXT, PAPER_TEXT } from '../../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 import { useScreenChrome } from '../../../src/hooks/useScreenChrome';
 
@@ -290,7 +290,7 @@ export default function WebPickOpponentScreen() {
                 ref={inputRef}
                 style={styles.input as object}
                 placeholder="Search any hero or villain…"
-                placeholderTextColor="rgba(41,60,67,0.38)"
+                placeholderTextColor={PAPER_TEXT.placeholder}
                 value={query}
                 onChangeText={setQuery}
               />
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     color: COLORS.beige,
     textAlign: 'center',
   },
-  matchupVs: { color: 'rgba(245,235,220,0.5)', fontSize: 14 },
+  matchupVs: { color: INK_TEXT.faint, fontSize: 14 },
 
   // ── Beige sheet (rounded, overlapping the stage like the arena) ──
   sheet: {
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1.4,
     marginBottom: 12,
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     fontStyle: 'italic',
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
     marginBottom: 12,
   },
 });

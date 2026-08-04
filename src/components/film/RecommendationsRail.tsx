@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';
 import type { TitleRecommendation } from '../../lib/db/titles';
 
 const CARD_W = 116;
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     paddingHorizontal: 20,
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   year: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: -2,
   },
 });

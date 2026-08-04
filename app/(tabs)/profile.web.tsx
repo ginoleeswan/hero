@@ -42,7 +42,7 @@ import { MyTakes } from '../../src/components/profile/MyTakes';
 import { TasteMixBar } from '../../src/components/profile/TasteMixBar';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
-import { COLORS, SURFACE, SEAM_COLOR } from '../../src/constants/colors';
+import { COLORS, SURFACE, SEAM_COLOR, PAPER_TEXT, ORANGE_INK } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import Svg, { Path } from 'react-native-svg';
@@ -218,7 +218,7 @@ const guest = StyleSheet.create({
   body: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 15,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     lineHeight: 23,
     marginBottom: 32,
@@ -1430,7 +1430,7 @@ const mob = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
-    color: COLORS.orange,
+    color: ORANGE_INK,
   } as object,
   tierProg: { alignSelf: 'stretch', alignItems: 'center', marginTop: 14 },
   tierProgTrack: {
@@ -1446,7 +1446,7 @@ const mob = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: 5,
   } as object,
   nameEditRow: {
@@ -1471,7 +1471,7 @@ const mob = StyleSheet.create({
   nameCharCount: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.35)',
+    color: PAPER_TEXT.faint,
     alignSelf: 'stretch',
     textAlign: 'right',
     marginTop: 2,
@@ -1480,13 +1480,13 @@ const mob = StyleSheet.create({
   email: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 2,
   },
   memberSince: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 16,
   },
   shareUniverseBtn: {
@@ -1533,7 +1533,7 @@ const mob = StyleSheet.create({
     fontSize: 9.5,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 3,
   } as object,
   tasteFacetValue: {
@@ -1547,7 +1547,7 @@ const mob = StyleSheet.create({
     fontSize: 10.5,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 9,
   } as object,
   tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -1563,7 +1563,7 @@ const mob = StyleSheet.create({
   tasteFootnote: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: 12,
   },
 
@@ -1581,7 +1581,12 @@ const mob = StyleSheet.create({
     paddingVertical: 10,
   },
   contribHero: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.navy },
-  contribWhat: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, marginTop: 1 },
+  contribWhat: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: PAPER_TEXT.faint,
+    marginTop: 1,
+  },
   statusPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   statusText: {
     fontFamily: 'Nunito_700Bold',
@@ -1619,13 +1624,13 @@ const mob = StyleSheet.create({
     color: COLORS.navy,
     textAlign: 'center',
   } as object,
-  badgeLabelLocked: { color: COLORS.grey } as object,
+  badgeLabelLocked: { color: PAPER_TEXT.faint } as object,
   badgeSub: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
   } as object,
   badgeBarTrack: {
     width: '100%',
@@ -1658,7 +1663,7 @@ const mob = StyleSheet.create({
   sectionCount: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     backgroundColor: '#e8ddd0',
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -1674,7 +1679,7 @@ const mob = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
   },
-  ghostText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
+  ghostText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: ORANGE_INK },
   thumb: { overflow: 'hidden' },
   center: { paddingVertical: 32, alignItems: 'center' },
   emptyState: { alignItems: 'center', paddingVertical: 36, paddingHorizontal: 24 },
@@ -1696,7 +1701,7 @@ const mob = StyleSheet.create({
   emptyBody: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     lineHeight: 19,
     marginBottom: 20,
@@ -1755,13 +1760,13 @@ const mob = StyleSheet.create({
   accountValue: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
   },
 
   disclaimer: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 10,
-    color: 'rgba(29,45,51,0.35)',
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     paddingHorizontal: 24,
     paddingTop: 8,
@@ -1955,7 +1960,7 @@ const desk = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
-    color: COLORS.orange,
+    color: ORANGE_INK,
   } as object,
   tierProg: { alignSelf: 'stretch', alignItems: 'center', marginTop: 14 },
   tierProgTrack: {
@@ -1971,7 +1976,7 @@ const desk = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: 5,
   } as object,
   nameEditRow: {
@@ -1996,7 +2001,7 @@ const desk = StyleSheet.create({
   nameCharCount: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.35)',
+    color: PAPER_TEXT.faint,
     alignSelf: 'stretch',
     textAlign: 'right',
     marginTop: 2,
@@ -2005,14 +2010,14 @@ const desk = StyleSheet.create({
   email: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 2,
     textAlign: 'center',
   } as object,
   memberSince: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 14,
     textAlign: 'center',
   } as object,
@@ -2080,13 +2085,13 @@ const desk = StyleSheet.create({
   accountValue: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     maxWidth: 140,
   },
   disclaimer: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 10,
-    color: 'rgba(29,45,51,0.35)',
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     paddingHorizontal: 8,
     paddingTop: 14,
@@ -2114,7 +2119,7 @@ const desk = StyleSheet.create({
     transition: 'background-color 160ms ease, border-color 160ms ease',
   } as object,
   ghostTileHover: { backgroundColor: '#fff5ee', borderColor: COLORS.orange } as object,
-  ghostText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
+  ghostText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: ORANGE_INK },
   battleBlock: { marginBottom: 28, gap: 14 },
   // Your Universe
   tasteReadout: { flexDirection: 'row', gap: 10, marginBottom: 18 },
@@ -2132,7 +2137,7 @@ const desk = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 4,
   } as object,
   tasteFacetValue: {
@@ -2146,7 +2151,7 @@ const desk = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 10,
   } as object,
   tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -2162,7 +2167,7 @@ const desk = StyleSheet.create({
   tasteFootnote: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: 16,
   },
   // Badges
@@ -2180,7 +2185,12 @@ const desk = StyleSheet.create({
     paddingVertical: 11,
   },
   contribHero: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.navy },
-  contribWhat: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey, marginTop: 1 },
+  contribWhat: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: PAPER_TEXT.faint,
+    marginTop: 1,
+  },
   statusPill: { borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
   statusText: {
     fontFamily: 'Nunito_700Bold',
@@ -2224,13 +2234,13 @@ const desk = StyleSheet.create({
     color: COLORS.navy,
     textAlign: 'center',
   } as object,
-  badgeLabelLocked: { color: COLORS.grey } as object,
+  badgeLabelLocked: { color: PAPER_TEXT.faint } as object,
   badgeSub: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
   } as object,
   badgeBarTrack: {
     width: '100%',
@@ -2268,7 +2278,7 @@ const desk = StyleSheet.create({
   sectionCount: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     backgroundColor: '#e8ddd0',
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -2301,7 +2311,7 @@ const desk = StyleSheet.create({
   emptyBody: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 20,

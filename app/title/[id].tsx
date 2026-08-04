@@ -19,7 +19,7 @@ import {
   useRecommendedTitles,
   useCollectionTitles,
 } from '../../src/lib/query/titleQueries';
-import { COLORS, SURFACE } from '../../src/constants/colors';
+import { COLORS, SURFACE, PAPER_TEXT, ORANGE_INK } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { NotFoundView } from '../../src/components/NotFoundView';
 import { TitleSkeleton, TitleBodySkeleton } from '../../src/components/skeletons/TitleSkeleton';
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 8,
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 10,
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     flexShrink: 0,
     marginRight: 8,
   },
@@ -624,7 +624,7 @@ const styles = StyleSheet.create({
   tmdbLinkText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 0.2,
   },
 });

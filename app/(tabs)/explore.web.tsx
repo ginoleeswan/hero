@@ -12,8 +12,10 @@ import {
   ELEVATION,
   INK_TEXT,
   EYEBROW,
+  EYEBROW_ON_PAPER,
   HOVER_TRANSITION,
   pageGutter,
+  PAPER_TEXT,
 } from '../../src/constants/colors';
 import { useAuth } from '../../src/hooks/useAuth';
 import { brandForPublisher } from '../../src/constants/publishers';
@@ -1135,7 +1137,7 @@ const pss = StyleSheet.create({
     color: COLORS.beige,
     letterSpacing: 1,
   } as object,
-  plateNoTotal: { color: 'rgba(245,235,220,0.45)' } as object,
+  plateNoTotal: { color: INK_TEXT.faint } as object,
   rail: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 } as object,
   railHit: { flex: 1, paddingVertical: 9, cursor: 'pointer' } as object,
   // A hairline rule, not a loading bar: 2px at 14% until it's the live one.
@@ -1395,7 +1397,7 @@ const row = StyleSheet.create({
     minHeight: 38,
   },
   headerText: { gap: 2, justifyContent: 'center' },
-  label: { ...EYEBROW } as object,
+  label: { ...EYEBROW_ON_PAPER } as object,
   title: { fontFamily: 'Flame-Regular', fontSize: 36, color: COLORS.navy, lineHeight: 38 },
   titleRow: {
     flexDirection: 'row',
@@ -1493,7 +1495,7 @@ const fi = StyleSheet.create({
   // pushed the document sideways. Basis sets the preference, minWidth:0 lets it
   // shrink the rest of the way.
   copy: { flex: 1, flexBasis: 300, minWidth: 0 },
-  label: { ...EYEBROW, marginBottom: 6 } as object,
+  label: { ...EYEBROW_ON_PAPER, marginBottom: 6 } as object,
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 36,
@@ -1505,7 +1507,7 @@ const fi = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
     lineHeight: 21,
-    color: 'rgba(41,60,67,0.65)',
+    color: PAPER_TEXT.faint,
     maxWidth: 520,
     marginBottom: 22,
   } as object,
@@ -1929,7 +1931,7 @@ const styles = StyleSheet.create({
   // "Greatest Rivalries" up over the sponsor card.
   browseHead: { paddingBottom: 30, marginTop: 24 } as object,
   browseKicker: {
-    ...EYEBROW,
+    ...EYEBROW_ON_PAPER,
     letterSpacing: 2.5,
     marginBottom: 4,
   } as object,
@@ -1946,7 +1948,7 @@ const styles = StyleSheet.create({
   browseSubtitle: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: 'rgba(41,60,67,0.6)',
+    color: PAPER_TEXT.faint,
     lineHeight: 19,
     marginTop: 6,
     maxWidth: 560,

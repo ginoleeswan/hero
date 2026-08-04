@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { HeroAvatar } from '../HeroAvatar';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';
 import { matchCharacterToHero } from '../../lib/db/titles';
 import type { HeroTitleCastMember } from '../../lib/db/titles';
 import type { RelatedHeroCard } from '../../lib/db/heroes';
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     paddingHorizontal: 20,
@@ -193,11 +193,11 @@ const styles = StyleSheet.create({
   character: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 10,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     lineHeight: 13,
   },
   characterLinked: {
-    color: COLORS.orange,
+    color: ORANGE_INK,
   },
 });

@@ -1,6 +1,6 @@
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { COLORS, EYEBROW, pageGutter } from '../../../constants/colors';
+import { COLORS, EYEBROW, pageGutter, INK_TEXT } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import { HeroAvatar } from '../../HeroAvatar';
 import type { DebutIssue, DebutCharacter } from '../../../lib/db/anniversaries';
@@ -301,7 +301,7 @@ const s = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     marginBottom: 12,
     position: 'relative',
     zIndex: 1,

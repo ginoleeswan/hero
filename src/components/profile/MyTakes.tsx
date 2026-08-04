@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';
 import type { BattleRecord } from '../../lib/db/matchupVotes';
 import type { MyTake } from '../../lib/db/takes';
 
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginBottom: 4,
   },
   recordValue: {
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   empty: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
   },
   row: {
     flexDirection: 'row',
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   pair: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     marginBottom: 2,
   },
   body: {
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   agree: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     marginTop: 4,
   },
   deleteBtn: {

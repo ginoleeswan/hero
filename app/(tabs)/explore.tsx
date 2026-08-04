@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   seeAllText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 0.5,
   },
   // The dark stage overlaps the spotlight's fade; zIndex keeps the glass chips

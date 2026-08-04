@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { Image } from 'expo-image';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';
 import type { WatchKind, WatchProvider } from '../../lib/db/titles';
 
 const GROUPS: { kind: WatchKind; label: string }[] = [
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
   },
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   groupLabel: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 10.5,
-    color: COLORS.grey,
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },

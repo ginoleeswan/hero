@@ -8,7 +8,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../../constants/colors';
+import { COLORS, HOUSE_INK } from '../../constants/colors';
 import { HouseCrest } from './HouseCrest';
 import type { HouseSearchResult } from '../../lib/db/houses';
 
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: '#a99b84',
+    color: HOUSE_INK,
     marginTop: 3,
   },
 });

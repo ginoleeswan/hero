@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Defs, Pattern, Circle, Rect, G } from 'react-native-svg';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { COLORS } from '../../constants/colors';
+import { COLORS, HOUSE_INK } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';
 import { hasRealArt } from '../../constants/heroImages';
 import { PlaceholderHead } from './PlaceholderHead';
@@ -821,7 +821,7 @@ const styles = StyleSheet.create({
     fontSize: 8.5,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: '#a99b84',
+    color: HOUSE_INK,
   },
 
   zoomButtons: {
@@ -896,7 +896,7 @@ const styles = StyleSheet.create({
     fontSize: 7,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: '#8a7e68',
+    color: HOUSE_INK,
   },
 
   // No card: the flat head and its nameplate sit straight on the canvas.
@@ -986,7 +986,7 @@ const styles = StyleSheet.create({
   roleText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
-    color: '#a99b84',
+    color: HOUSE_INK,
     textTransform: 'capitalize',
   },
   powerBadge: {
@@ -1028,7 +1028,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 1.6,
     textTransform: 'uppercase',
-    color: '#a99b84',
+    color: HOUSE_INK,
     marginBottom: 9,
     marginTop: 16,
     textAlign: 'center',

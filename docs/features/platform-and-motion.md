@@ -253,6 +253,46 @@ Restating the CLAUDE.md rule because it bites constantly: **any clamped Flame
 text (`numberOfLines` set) needs `lineHeight ≥ 1.22× fontSize`**, or descenders
 clip — on web, RNW turns the clamp into `overflow: hidden`.
 
+## Text colour and contrast
+
+Every text colour resolves through a ramp in `src/constants/colors.ts`. There
+is one per canvas, and picking the right one is the whole rule — the palette's
+`COLORS.*` entries are **fill** colours, tuned to be seen, not read.
+
+| Canvas | Ramp | Use |
+| --- | --- | --- |
+| Deep ink | `INK_TEXT` | `.primary` / `.muted` / `.faint` / `.placeholder` |
+| Beige paper | `PAPER_TEXT` | same four roles |
+| Orange as text on paper | `ORANGE_INK` | eyebrows, links, CTAs on beige/white |
+| Any accent as text on paper | `ACCENT_INK` | taxonomy chips, category labels |
+| Gold as text on ink | `GOLD_INK` | arena eyebrows, verdict labels |
+| Houses/family module | `HOUSE_INK` | that domain's warmer parchment ink |
+| Section eyebrow | `EYEBROW` / `EYEBROW_ON_PAPER` | pick by canvas |
+
+Why this exists: for a long time only `INK_TEXT` was written down, so every
+muted label on beige invented its own alpha and **all of them failed** 4.5:1.
+The asymmetry is the trap — beige needs only 0.6α on ink to pass (6.13:1),
+while navy needs ~0.73α on beige, so an alpha copied from a dark screen to a
+light one silently halves its contrast. `COLORS.orange` is 5.92:1 on ink and
+2.58:1 on paper; `COLORS.grey` is 6.95:1 on ink and 2.20:1 on paper. Same
+token, opposite verdicts.
+
+Three things that are easy to miss:
+
+- **`opacity` on a text style composites exactly like alpha.** `color:
+  COLORS.navy` with `opacity: 0.55` is 2.95:1, not 9.77:1. Set the colour from
+  the ramp; don't dim it.
+- **Placeholders are text** (WCAG 1.4.3) and hold the same floor.
+- **Empty-slot glyphs** (the compare/arena `?` and `+`) are the only cue a slot
+  is unfilled, so they're content, not ornament.
+
+Genuinely exempt, and deliberately left faint: the colossal ghost watermarks
+behind content (Explore's backdrop name, the footer wordmark, the 210px
+history numeral), and hover/pressed/disabled state opacities.
+
+Ratios in the colour-token comments are computed, not estimated. Re-derive
+before changing a token.
+
 ## History
 
 Design docs under `docs/superpowers/` (historical; statuses may be stale):

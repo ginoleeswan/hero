@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../src/constants/colors';
+import { COLORS, PAPER_TEXT } from '../src/constants/colors';
 import { SectionShell } from '../src/components/profile/SectionShell';
 import { openKofi } from '../src/lib/support/kofi';
 
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   },
   backPressed: { backgroundColor: 'rgba(41,60,67,0.06)' },
   title: { fontFamily: 'Flame-Regular', fontSize: 30, lineHeight: 37, color: COLORS.navy },
-  body: { fontFamily: 'Nunito_400Regular', fontSize: 14, lineHeight: 21, color: COLORS.grey },
+  body: { fontFamily: 'Nunito_400Regular', fontSize: 14, lineHeight: 21, color: PAPER_TEXT.faint },
   tierRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   tier: {
     flex: 1,
@@ -108,8 +108,13 @@ const styles = StyleSheet.create({
   tierPressed: { backgroundColor: '#fdece0', borderColor: COLORS.orange },
   tierEmoji: { fontSize: 22 },
   tierLabel: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
-  tierAmount: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey },
-  note: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, marginBottom: 16 },
+  tierAmount: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: PAPER_TEXT.faint },
+  note: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: PAPER_TEXT.faint,
+    marginBottom: 16,
+  },
   primary: {
     flexDirection: 'row',
     alignItems: 'center',

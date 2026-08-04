@@ -1,6 +1,6 @@
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, ORANGE_INK } from '../../../constants/colors';
 import type { FirstAppearanceCover } from '../../../lib/db/heroes';
 
 interface CoverGalleryProps {
@@ -84,7 +84,7 @@ const g = StyleSheet.create({
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
-    color: COLORS.orange,
+    color: ORANGE_INK,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },

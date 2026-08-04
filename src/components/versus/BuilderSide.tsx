@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  plus: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(255,255,255,0.4)' },
+  plus: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(255,255,255,0.6)' },
   rm: {
     position: 'absolute',
     top: 1,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, INK_TEXT } from '../../../constants/colors';
 import type { CategorySlug } from '../../../lib/db/heroes';
 import { getTagVocab } from '../../../lib/db/heroFacts';
 import {
@@ -353,7 +353,7 @@ const s = StyleSheet.create({
     fontSize: 10.5,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.42)',
+    color: INK_TEXT.faint,
   } as object,
 
   // Segmented Sort control
@@ -383,7 +383,7 @@ const s = StyleSheet.create({
   segText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12.5,
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     letterSpacing: 0.2,
   } as object,
   segTextActive: { fontFamily: 'Nunito_900Black', color: COLORS.navy } as object,
@@ -425,6 +425,6 @@ const s = StyleSheet.create({
     letterSpacing: 0.2,
   } as object,
   chipTextActive: { color: COLORS.beige } as object,
-  count: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.36)' } as object,
+  count: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: INK_TEXT.faint } as object,
   countActive: { color: 'rgba(255,206,170,0.95)' } as object,
 });
