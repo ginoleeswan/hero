@@ -1,5 +1,5 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
@@ -24,9 +24,11 @@ export default function TabLayout() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="versus">
+        {/* Vector like every other tab — mixing an image-source icon (the old
+            swords.png) with vector glyphs trips RNScreens' "icon and
+            selectedIcon must be same type" invariant and red-screens on boot. */}
         <NativeTabs.Trigger.Icon
-          src={require('../../assets/swords.png')}
-          renderingMode="template"
+          src={<NativeTabs.Trigger.VectorIcon family={MaterialCommunityIcons} name="sword-cross" />}
         />
         <NativeTabs.Trigger.Label>Arena</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
