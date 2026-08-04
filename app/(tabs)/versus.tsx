@@ -49,7 +49,10 @@ export default function VersusScreen() {
   const canSurprise = iconicPool.length >= 2;
 
   return (
-    <View style={styles.root}>
+    // collapsable={false}: iOS only pairs the ScrollView with the native tab
+    // bar when it can find it through the wrapper — a collapsed View breaks the
+    // pairing and with it the bar's edge appearance (Expo native-tabs docs).
+    <View style={styles.root} collapsable={false}>
       <StatusBar style="light" />
       <ScrollView
         style={styles.scroll}

@@ -498,7 +498,9 @@ export default function HomeScreen() {
   );
 
   return (
-    <View style={styles.root}>
+    // collapsable={false}: keep the wrapper in the native tree so iOS can pair
+    // the feed's scroll view with the tab bar (Expo native-tabs docs).
+    <View style={styles.root} collapsable={false}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       {/* Two-tone bounce: the deep-navy root shows on the top rubber-band (matching
           the spotlight), this beige fill shows on the bottom one (matching the
