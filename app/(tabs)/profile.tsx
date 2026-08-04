@@ -147,7 +147,7 @@ function GuestProfileScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} collapsable={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
@@ -536,7 +536,7 @@ export default function ProfileScreen() {
   if (!user) return <GuestProfileScreen />;
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} collapsable={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}

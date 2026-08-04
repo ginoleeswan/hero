@@ -39,6 +39,14 @@ import { COLORS } from '../../constants/colors';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
+// The Svg is RENDERED at 2× its resting display size and scaled DOWN by
+// transform. react-native-svg rasterizes at layout size, so scaling a 120px
+// raster up through the 1.5× bloom reads soft/low-res — rendering at 240 and
+// never exceeding scale 1 keeps the mark crisp through the whole choreography.
+const SVG_SIZE = 240;
+const LOGO_DISPLAY = 120;
+const BASE_SCALE = LOGO_DISPLAY / SVG_SIZE;
+
 const TRACE_MS = 1500; // one stroke pass; fill blooms over its tail
 const BREATHE_MS = 2600; // full in-out breath — slow enough to read as calm
 const REVEAL_MS = 640;
@@ -99,6 +107,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     transform: [
       {
         scale:
+          BASE_SCALE * // downscale from the 2× raster — never magnify
           (1 + breathe.value * 0.012) * // barely-there breath
           interpolate(exit.value, [0, 1], [1, 1.5]), // bloom through the viewer
       },
@@ -170,7 +179,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
             <Animated.View style={[styles.ring, ringStyle]} />
 
             <Animated.View style={logoStyle}>
-              <Svg width={120} height={120} viewBox="0 0 1024 1024">
+              <Svg width={SVG_SIZE} height={SVG_SIZE} viewBox="0 0 1024 1024">
                 <AnimatedPath
                   d={LOGO_PATH}
                   // @ts-expect-error pathLength is a valid SVG attribute but missing from AnimatedPath types

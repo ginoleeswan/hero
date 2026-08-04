@@ -8,6 +8,8 @@ import {
   useSegments,
   useGlobalSearchParams,
   type ErrorBoundaryProps,
+  ThemeProvider,
+  DarkTheme,
 } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -115,6 +117,21 @@ const eb = StyleSheet.create({
   btnText: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#fff' },
 });
 
+// Dark navigation theme — required for correct iOS 26 chrome (Expo native-tabs
+// docs): without it the liquid-glass tab bar and headers resolve against the
+// LIGHT default theme, flashing white and rendering the bar's material in the
+// wrong tone over our dark canvas. Screens all paint their own backgrounds, so
+// this only governs system chrome and transition fill.
+const APP_DARK_THEME = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: COLORS.orange,
+    background: COLORS.deepNavy,
+    card: COLORS.deepNavy,
+  },
+};
+
 // Drives the presence heartbeat app-wide (no-op when logged out). Rendered as a
 // sibling of the router so it lives for the whole session without re-mounting.
 function PresenceHeartbeat() {
@@ -161,7 +178,11 @@ function AuthGate({ fontsReady }: { fontsReady: boolean }) {
 
   return (
     <BootStage booting={booting}>
-      {booting ? null : <Stack screenOptions={{ headerShown: false }} />}
+      {booting ? null : (
+        <ThemeProvider value={APP_DARK_THEME}>
+          <Stack screenOptions={{ headerShown: false }} />
+        </ThemeProvider>
+      )}
     </BootStage>
   );
 }
