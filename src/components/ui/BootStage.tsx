@@ -96,6 +96,13 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     // Stroke traces over the first 70% of the act; ink blooms over its tail so
     // the fill arrives while the last stroke segment is still landing.
     strokeDashoffset: 100 * (1 - Math.min(trace.value / 0.7, 1)),
+    // The stroke is a drawing guide, not part of the resting mark: once the
+    // fill lands it fades away completely (and dies instantly on exit).
+    // Leaving it up put a jagged dashed outline around the silhouette —
+    // the "torn edge" look — whenever fill and partial stroke coexisted.
+    strokeOpacity:
+      interpolate(trace.value, [0.75, 1], [1, 0], Extrapolation.CLAMP) *
+      (1 - Math.min(exit.value * 6, 1)),
     fillOpacity: Math.max(
       interpolate(trace.value, [0.55, 1], [0, 1], Extrapolation.CLAMP),
       // The reveal completes the mark instantly, wherever the trace was.
@@ -104,6 +111,9 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   }));
 
   const logoStyle = useAnimatedStyle(() => ({
+    // The mark blooms AND fades out early (gone by exit 0.55) — it must never
+    // float over readable app content while the stage dissolves behind it.
+    opacity: interpolate(exit.value, [0, 0.2, 0.55], [1, 1, 0], Extrapolation.CLAMP),
     transform: [
       {
         scale:
@@ -132,24 +142,21 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   }));
 
   const stageStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(exit.value, [0, 0.4, 1], [1, 1, 0]),
+    opacity: interpolate(exit.value, [0, 0.3, 1], [1, 1, 0]),
   }));
 
-  // The app settles from a touch smaller + dimmer to at-rest as the stage
-  // dissolves — the push-through that makes the open feel physical.
+  // The app underneath is ALWAYS fully opaque — only the stage fades. Fading
+  // both at once averaged two translucent layers into a muddy grey wash with
+  // the logo hovering over half-visible content. A single dissolving surface
+  // over solid content is what reads as a clean open; the app only performs a
+  // scale settle (96.5% → 100%) for the push-through feel.
   const appStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(exit.value, [0, 0.35, 1], [0, 1, 1]),
     transform: [{ scale: interpolate(exit.value, [0, 1], [0.965, 1]) }],
-  }));
-  const appReduced = useAnimatedStyle(() => ({
-    opacity: interpolate(exit.value, [0, 1], [0, 1]),
   }));
 
   return (
     <View style={styles.root}>
-      <Animated.View
-        style={[styles.app, revealDone ? styles.appAtRest : reduceMotion ? appReduced : appStyle]}
-      >
+      <Animated.View style={[styles.app, revealDone || reduceMotion ? styles.appAtRest : appStyle]}>
         {children}
       </Animated.View>
 
