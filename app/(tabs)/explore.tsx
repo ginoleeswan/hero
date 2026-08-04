@@ -2,7 +2,7 @@
 // the daily battle and editorial "Beyond the Page" features (rivalries, most
 // feared, era timeline, first-appearance covers). Brought to parity with the web
 // explore so native shows the full catalogue's depth, not a thin slice.
-import { useState, useCallback, useMemo, type ComponentType } from 'react';
+import { useState, useCallback, useEffect, useMemo, type ComponentType } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import Animated, {
   FadeIn,
+  FadeInDown,
+  FadeOut,
   useSharedValue,
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -332,6 +334,29 @@ export default function HomeScreen() {
   // The first beige row carries the seam (rounded lip + top-light).
   const firstBeigeIndex = useMemo(() => rows.findIndex((r) => !DARK_ROWS.has(r.type)), [rows]);
 
+  // Entrance choreography: the first screenful of rows cascades in (each a
+  // beat after the last) exactly once, when the feed first lands. Rows mounted
+  // later — by scrolling or refetches — appear plain; a stagger there would
+  // read as lag, not polish. The window closes on a timer so a slow later
+  // batch can't replay it.
+  const [cascadeWindow, setCascadeWindow] = useState(true);
+  useEffect(() => {
+    if (!initialLoaded) return;
+    const t = setTimeout(() => setCascadeWindow(false), 1600);
+    return () => clearTimeout(t);
+  }, [initialLoaded]);
+  const cascadeFor = useCallback(
+    (index: number) => {
+      if (!cascadeWindow || index > 5) return undefined;
+      return FadeInDown.delay(80 + index * 90)
+        .duration(480)
+        .springify()
+        .damping(18)
+        .stiffness(160);
+    },
+    [cascadeWindow],
+  );
+
   const renderRow = useCallback<ListRenderItem<FeedRow>>(
     ({ item, index }) => {
       const content = (() => {
@@ -475,8 +500,13 @@ export default function HomeScreen() {
       if (content == null) return null;
       // Dark stage rows render straight on the deep-navy scroll surface; beige
       // Library rows sit on the printed-paper surface (the first one seams it).
-      if (DARK_ROWS.has(item.type)) return content;
-      return <PaperSurface lip={index === firstBeigeIndex}>{content}</PaperSurface>;
+      const surfaced = DARK_ROWS.has(item.type) ? (
+        content
+      ) : (
+        <PaperSurface lip={index === firstBeigeIndex}>{content}</PaperSurface>
+      );
+      const entering = cascadeFor(index);
+      return entering ? <Animated.View entering={entering}>{surfaced}</Animated.View> : surfaced;
     },
     [
       insets.top,
@@ -494,6 +524,7 @@ export default function HomeScreen() {
       firstBeigeIndex,
       spotlightParallax,
       spotlightBlur,
+      cascadeFor,
     ],
   );
 
@@ -507,11 +538,9 @@ export default function HomeScreen() {
           beige tail). Both sit behind the transparent FeedList; the opaque content
           hides the seam — only the over-scroll gaps reveal them. */}
       <View style={styles.bottomFill} pointerEvents="none" />
-      {!initialLoaded ? (
-        <HomeSkeleton insets={insets} />
-      ) : (
+      {initialLoaded && (
         <FeedList
-          entering={FadeIn.duration(280)}
+          entering={FadeIn.duration(220)}
           style={styles.scroll}
           data={rows}
           keyExtractor={keyExtractor}
@@ -534,6 +563,18 @@ export default function HomeScreen() {
           windowSize={5}
           removeClippedSubviews={false}
         />
+      )}
+      {/* The skeleton dissolves IN PLACE over the incoming feed (exiting fade
+          on unmount) instead of hard-swapping — placeholders resolve into
+          content, matching the anti-flash loading language everywhere else. */}
+      {!initialLoaded && (
+        <Animated.View
+          style={StyleSheet.absoluteFill}
+          exiting={FadeOut.duration(320)}
+          pointerEvents="none"
+        >
+          <HomeSkeleton insets={insets} />
+        </Animated.View>
       )}
     </View>
   );
