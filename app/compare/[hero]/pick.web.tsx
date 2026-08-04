@@ -295,7 +295,12 @@ export default function WebPickOpponentScreen() {
                 onChangeText={setQuery}
               />
               {query.length > 0 && (
-                <Pressable onPress={() => setQuery('')}>
+                <Pressable
+                  onPress={() => setQuery('')}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear search"
+                >
                   <Ionicons name="close-circle" size={18} color="rgba(41,60,67,0.4)" />
                 </Pressable>
               )}

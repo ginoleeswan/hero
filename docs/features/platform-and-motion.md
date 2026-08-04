@@ -34,11 +34,11 @@ splitting: `app/title/[id].tsx` and `app/issue/[id].tsx`.
 **The drift trap:** nothing warns you when a pair's bodies diverge, and several
 web halves have drifted far past "thin":
 
-| Screen | Native | Web |
-| --- | --- | --- |
+| Screen                   | Native       | Web              |
+| ------------------------ | ------------ | ---------------- |
 | `app/character/[id].tsx` | ~2,300 lines | **~4,300 lines** |
-| `app/(tabs)/profile.tsx` | ~1,500 lines | ~2,300 lines |
-| `app/(tabs)/explore.tsx` | ~600 lines | ~2,000 lines |
+| `app/(tabs)/profile.tsx` | ~1,500 lines | ~2,300 lines     |
+| `app/(tabs)/explore.tsx` | ~600 lines   | ~2,000 lines     |
 
 When you change behaviour on one side, grep the other side for the same
 feature before calling it done. New shared logic goes in the hook, not in
@@ -51,14 +51,14 @@ not from your React tree. The rule that fell out of much pain: **the document
 canvas is always ink**. Light screens paint their own paper body on their root
 container; the document behind it stays dark.
 
-| Piece | Path | Job |
-| --- | --- | --- |
-| Build-time paint | `app/+html.tsx` | `html, body { background-color: #0b1820 }` so the very first paint is navy, plus the 16px input floor |
-| Screen declaration | `src/hooks/useScreenChrome.ts` | one call declares `top` + `canvas` together so they can't drift |
-| Document background | `src/hooks/useWebCanvas.ts` | implementation; `useWebCanvas` is an alias of `useWebDocumentScroll` (`src/hooks/useWebDocumentScroll.ts` re-exports it) |
-| Top chrome | `src/contexts/WebChromeContext.tsx` | `WebChromeProvider` + `AdaptiveStatusBarCover` — a fixed `env(safe-area-inset-top)` strip portaled into `document.body`, cross-fading with the theme colour as pages change from dark-topped to light-topped |
-| Nav | `src/components/web/TopBar.tsx` | floating nav, locks to the declared `top` colour |
-| Page bottom | `src/components/web/PageEndCap.tsx` | closes light pages back into the ink canvas |
+| Piece               | Path                                | Job                                                                                                                                                                                                          |
+| ------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Build-time paint    | `app/+html.tsx`                     | `html, body { background-color: #0b1820 }` so the very first paint is navy, plus the 16px input floor                                                                                                        |
+| Screen declaration  | `src/hooks/useScreenChrome.ts`      | one call declares `top` + `canvas` together so they can't drift                                                                                                                                              |
+| Document background | `src/hooks/useWebCanvas.ts`         | implementation; `useWebCanvas` is an alias of `useWebDocumentScroll` (`src/hooks/useWebDocumentScroll.ts` re-exports it)                                                                                     |
+| Top chrome          | `src/contexts/WebChromeContext.tsx` | `WebChromeProvider` + `AdaptiveStatusBarCover` — a fixed `env(safe-area-inset-top)` strip portaled into `document.body`, cross-fading with the theme colour as pages change from dark-topped to light-topped |
+| Nav                 | `src/components/web/TopBar.tsx`     | floating nav, locks to the declared `top` colour                                                                                                                                                             |
+| Page bottom         | `src/components/web/PageEndCap.tsx` | closes light pages back into the ink canvas                                                                                                                                                                  |
 
 Wired in `app/_layout.web.tsx`, which also owns **scroll reset per route**
 (`window.scrollTo` on `usePathname` change).
@@ -96,11 +96,11 @@ render settled immediately under reduced motion.
 gracefully** where unsupported (Firefox, older Safari, native) — callers get
 `null` back and navigation just happens. Named pairs:
 
-| Name | Morph |
-| --- | --- |
+| Name                               | Morph                                                                                                                                                                        |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `vt-hero-portrait` (`VT_PORTRAIT`) | card art → character-page portrait, via `src/hooks/useHeroMorph.ts` (which also hands the detail page a `MorphArt` payload so the portrait paints before its query resolves) |
-| `vt-fighter-a` / `vt-fighter-b` | compare flow, `app/compare/[hero]/pick.web.tsx` + `[opponent].web.tsx` |
-| `vt-topbar` | the nav itself stays pinned through transitions |
+| `vt-fighter-a` / `vt-fighter-b`    | compare flow, `app/compare/[hero]/pick.web.tsx` + `[opponent].web.tsx`                                                                                                       |
+| `vt-topbar`                        | the nav itself stays pinned through transitions                                                                                                                              |
 
 On native, the character page uses expo-router's `Link.AppleZoomTarget` zoom
 instead (`app/character/[id].tsx`).
@@ -128,7 +128,8 @@ half-frame of skeleton.
   same filled 200px mask; never a trace-in, which erased and redrew the mark
   the user was already looking at), **alive** (depth gradient + ember halo
   fade in, the mark breathes), **open** (gated on the Explore feed's first
-  paint via `src/lib/bootReveal.ts`, capped at 1.4s — ring ripples, the mark
+  paint via `useSignalFirstPaint` from `src/components/ui/BootStage.tsx`,
+  capped at 1.4s — ring ripples, the mark
   blooms and is gone by 55%, the stage dissolves over the fully-opaque app,
   which scale-settles from 96.5%; the feed's row cascade lands as the stage
   clears). Only the stage ever fades — double-fading stage + app reads as a
@@ -157,7 +158,7 @@ Every native screen with a skeleton runs it through `useSkeletonTransition` +
 `FadeOutSkeleton`, not a bare mount. The four phases matter in this order:
 `pre` renders **nothing** for 150 ms, so a cached or fast load never blinks a
 skeleton; `skeleton` only appears once the load outlasts that window;
-`crossfade` renders the real content and dissolves the skeleton *on top of it*,
+`crossfade` renders the real content and dissolves the skeleton _on top of it_,
 so placeholders resolve in place; then `content`. A hard-mounted skeleton is a
 regression — it makes a fast screen look slower than it is.
 
@@ -183,15 +184,15 @@ Radix's `Slot` composes both handlers, so navigation and side effects coexist.
 Reach for these before hand-rolling; each replaced a pattern that had drifted
 into a dozen variants.
 
-| Primitive | Use for | Replaces |
-| --- | --- | --- |
-| `src/components/ui/PressScale.tsx` | any tappable **card/row/tile** | bare `Pressable` with no feedback; hand-rolled press springs. Forwards a11y + testID props, so adopting it never costs a label. |
-| `src/components/ui/EmptyState.tsx` | "nothing here" surfaces | plain grey text. `tone` picks the canvas (dark stage / beige paper); `compact` for inline sections. |
-| `src/components/ui/SectionHeader.tsx` | section eyebrow + title (+ "See all") | eleven different eyebrow sizes and letter-spacings outside `home/`. |
-| `src/components/ui/Sheet.tsx` | any bottom sheet | `ReportSheet`/`ContributeSheet`/`StatsSheet` each hand-rolled the same Modal + backdrop + grabber + safe-area foot — three backdrop alphas, two grabber colours, and only one remembering to lift above the keyboard. `tone` picks paper/ink and carries the grabber and scrim with it; `avoidKeyboard` opts into the `KeyboardAvoidingView` (it changes layout even with no keyboard, so input-less sheets stay out). |
-| `src/components/ui/FloatingBackButton.tsx` | back chevron on a screen with no native header | see the iOS 26 scroll-edge note below. |
-| `src/lib/nativeMotion.ts` | every duration, easing, spring | ~25 ad-hoc `withTiming` durations and 6 spring configs. |
-| `src/constants/tokens.ts` | radii, spacing, tracking, `SCREEN_PAD` | 30 distinct radii, 27 letter-spacings, 8 screen gutters. |
+| Primitive                                  | Use for                                        | Replaces                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------ | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/components/ui/PressScale.tsx`         | any tappable **card/row/tile**                 | bare `Pressable` with no feedback; hand-rolled press springs. Forwards a11y + testID props, so adopting it never costs a label.                                                                                                                                                                                                                                                                                        |
+| `src/components/ui/EmptyState.tsx`         | "nothing here" surfaces                        | plain grey text. `tone` picks the canvas (dark stage / beige paper); `compact` for inline sections.                                                                                                                                                                                                                                                                                                                    |
+| `src/components/ui/SectionHeader.tsx`      | section eyebrow + title (+ "See all")          | eleven different eyebrow sizes and letter-spacings outside `home/`.                                                                                                                                                                                                                                                                                                                                                    |
+| `src/components/ui/Sheet.tsx`              | any bottom sheet                               | `ReportSheet`/`ContributeSheet`/`StatsSheet` each hand-rolled the same Modal + backdrop + grabber + safe-area foot — three backdrop alphas, two grabber colours, and only one remembering to lift above the keyboard. `tone` picks paper/ink and carries the grabber and scrim with it; `avoidKeyboard` opts into the `KeyboardAvoidingView` (it changes layout even with no keyboard, so input-less sheets stay out). |
+| `src/components/ui/FloatingBackButton.tsx` | back chevron on a screen with no native header | see the iOS 26 scroll-edge note below.                                                                                                                                                                                                                                                                                                                                                                                 |
+| `src/lib/nativeMotion.ts`                  | every duration, easing, spring                 | ~25 ad-hoc `withTiming` durations and 6 spring configs.                                                                                                                                                                                                                                                                                                                                                                |
+| `src/constants/tokens.ts`                  | radii, spacing, tracking, `SCREEN_PAD`         | 30 distinct radii, 27 letter-spacings, 8 screen gutters.                                                                                                                                                                                                                                                                                                                                                               |
 
 `tokens.ts` is **descriptive, not a migration**: every step is a value the
 codebase already favours, and ~700 existing radius call sites were left alone
@@ -234,15 +235,15 @@ don't reintroduce them:
 
 ## Delight inventory
 
-| Thing | Where | Convention |
-| --- | --- | --- |
-| Haptics | ~19 files | `impactAsync(Light)` on card open, `selectionAsync` on chips/filters, `Medium` on votes and reveals (`app/(tabs)/versus.tsx`, `src/components/home/TodaysMatchup.tsx`) |
-| Squircles | `src/components/ui/SquircleMask.tsx` | `cornerRadius` defaults to 26, `cornerSmoothing: 1`; simpler surfaces use `borderCurve: 'continuous'` (~55 files) |
-| Long-press peek | `src/components/compare/HeroPeek.tsx` | `onLongPress` on grid cards (category, team pages) |
-| Texture | `src/components/home/PaperSurface.tsx`, `src/components/ui/DotGrid.tsx`, `CardTexture.tsx` | paper grain on light surfaces |
-| Not-found / load-error | `src/components/NotFoundView.tsx` | wanted-poster styling; `LoadErrorView` (same file) for "it exists but the fetch failed" |
-| Crash surface | `ErrorBoundary` in `app/_layout.tsx` / `_layout.web.tsx` | branded; reports to `client_errors` (`src/lib/db/clientErrors.ts`) on web, Sentry (`src/lib/sentry.ts`) on native |
-| Sound | nowhere | deliberate — no audio dependency exists |
+| Thing                  | Where                                                                                      | Convention                                                                                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Haptics                | ~19 files                                                                                  | `impactAsync(Light)` on card open, `selectionAsync` on chips/filters, `Medium` on votes and reveals (`app/(tabs)/versus.tsx`, `src/components/home/TodaysMatchup.tsx`) |
+| Squircles              | `src/components/ui/SquircleMask.tsx`                                                       | `cornerRadius` defaults to 26, `cornerSmoothing: 1`; simpler surfaces use `borderCurve: 'continuous'` (~55 files)                                                      |
+| Long-press peek        | `src/components/compare/HeroPeek.tsx`                                                      | `onLongPress` on grid cards (category, team pages)                                                                                                                     |
+| Texture                | `src/components/home/PaperSurface.tsx`, `src/components/ui/DotGrid.tsx`, `CardTexture.tsx` | paper grain on light surfaces                                                                                                                                          |
+| Not-found / load-error | `src/components/NotFoundView.tsx`                                                          | wanted-poster styling; `LoadErrorView` (same file) for "it exists but the fetch failed"                                                                                |
+| Crash surface          | `ErrorBoundary` in `app/_layout.tsx` / `_layout.web.tsx`                                   | branded; reports to `client_errors` (`src/lib/db/clientErrors.ts`) on web, Sentry (`src/lib/sentry.ts`) on native                                                      |
+| Sound                  | nowhere                                                                                    | deliberate — no audio dependency exists                                                                                                                                |
 
 ## Fonts
 
@@ -261,15 +262,15 @@ Every text colour resolves through a ramp in `src/constants/colors.ts`. There
 is one per canvas, and picking the right one is the whole rule — the palette's
 `COLORS.*` entries are **fill** colours, tuned to be seen, not read.
 
-| Canvas | Ramp | Use |
-| --- | --- | --- |
-| Deep ink | `INK_TEXT` | `.primary` / `.muted` / `.faint` / `.placeholder` |
-| Beige paper | `PAPER_TEXT` | same four roles |
-| Orange as text on paper | `ORANGE_INK` | eyebrows, links, CTAs on beige/white |
-| Any accent as text on paper | `ACCENT_INK` | taxonomy chips, category labels |
-| Gold as text on ink | `GOLD_INK` | arena eyebrows, verdict labels |
-| Houses/family module | `HOUSE_INK` | that domain's warmer parchment ink |
-| Section eyebrow | `EYEBROW` / `EYEBROW_ON_PAPER` | pick by canvas |
+| Canvas                      | Ramp                           | Use                                               |
+| --------------------------- | ------------------------------ | ------------------------------------------------- |
+| Deep ink                    | `INK_TEXT`                     | `.primary` / `.muted` / `.faint` / `.placeholder` |
+| Beige paper                 | `PAPER_TEXT`                   | same four roles                                   |
+| Orange as text on paper     | `ORANGE_INK`                   | eyebrows, links, CTAs on beige/white              |
+| Any accent as text on paper | `ACCENT_INK`                   | taxonomy chips, category labels                   |
+| Gold as text on ink         | `GOLD_INK`                     | arena eyebrows, verdict labels                    |
+| Houses/family module        | `HOUSE_INK`                    | that domain's warmer parchment ink                |
+| Section eyebrow             | `EYEBROW` / `EYEBROW_ON_PAPER` | pick by canvas                                    |
 
 Why this exists: for a long time only `INK_TEXT` was written down, so every
 muted label on beige invented its own alpha and **all of them failed** 4.5:1.
@@ -282,7 +283,7 @@ token, opposite verdicts.
 Three things that are easy to miss:
 
 - **`opacity` on a text style composites exactly like alpha.** `color:
-  COLORS.navy` with `opacity: 0.55` is 2.95:1, not 9.77:1. Set the colour from
+COLORS.navy` with `opacity: 0.55` is 2.95:1, not 9.77:1. Set the colour from
   the ramp; don't dim it.
 - **Placeholders are text** (WCAG 1.4.3) and hold the same floor.
 - **Empty-slot glyphs** (the compare/arena `?` and `+`) are the only cue a slot
@@ -295,6 +296,31 @@ history numeral), and hover/pressed/disabled state opacities.
 Ratios in the colour-token comments are computed, not estimated. Re-derive
 before changing a token.
 
+## `yarn check:ui` — the invariants CI enforces
+
+`scripts/ui/check-ui-invariants.mjs` (gated in CI, same shape as
+`check-doc-links.mjs`) fails the build on four rules. Every one was a real
+shipped bug, and none of them changes how anything renders when broken — which
+is exactly why they kept coming back:
+
+| Rule              | Catches                                                             |
+| ----------------- | ------------------------------------------------------------------- |
+| `contrast`        | a text colour under 4.5:1, alpha and `opacity` composited           |
+| `unnamed-control` | a `Pressable` wrapping only an icon, with no accessible name        |
+| `small-target`    | a styled control under 44pt with no `hitSlop`                       |
+| `web-only-prop`   | `aria-label` as the _only_ name in a file that can render on native |
+
+Two things worth knowing before you touch it:
+
+- **A style cannot declare its surface.** The contrast rule infers the canvas
+  from the ink's own lightness, which is right in every case but one: a dark-ish
+  accent painted on a dark scrim over artwork. Those live in `ALLOW` with the
+  measured ratio. If you add an entry, measure it and say so — an exception
+  without a reason is just a silenced check.
+- **"Shared" is not just the file extension.** A file renders on native unless
+  it is a `.web.tsx` pair half, a `.dom.tsx` component, or under
+  `src/components/web/`.
+
 ## Touch targets and control labels
 
 Two rules, both easy to violate silently because nothing renders differently
@@ -304,7 +330,7 @@ when you do.
 containing nothing but an `Ionicons` announces as an unnamed button — the glyph
 name is not a label. 22 native controls were in that state: the family-tree and
 social-web canvas controls, close buttons, password reveals, clear-search
-affordances. Where the control is a toggle, the label carries the *state*
+affordances. Where the control is a toggle, the label carries the _state_
 ("Show password" / "Hide password"), because the glyph swap is invisible to a
 screen reader.
 
@@ -319,9 +345,7 @@ they don't cover the artwork they sit on — 32pt and 34pt and 38pt. The fix is
 Each site names the arithmetic (`32 + 6*2 = 44`) so the slop is obviously tied
 to the size rather than an arbitrary number.
 
-Both are checkable mechanically — an icon-only `Pressable` with no label, and a
-styled `width`/`height` under 44 with no `hitSlop` — so a regression is easy to
-catch if this ever gets a lint rule.
+Both are checkable mechanically, and **`yarn check:ui` now does** — see below.
 
 ## Failure and offline states
 
@@ -357,7 +381,7 @@ auto-refetches on reconnect. Fixing it properly needs NetInfo or
 return `[]` / `null`.** The other 65 throw.
 
 Where a screen's own data does that, a network failure is indistinguishable
-from a genuinely empty result: React Query sees a *successful* empty response,
+from a genuinely empty result: React Query sees a _successful_ empty response,
 so `retry` never fires, the 5-minute `staleTime` caches the emptiness, and the
 screen renders an empty state that is lying. Only three native screens
 (`character`, `issue`, `title`) render any error state at all, even though
@@ -366,18 +390,18 @@ screen renders an empty state that is lying. Only three native screens
 **Done so far** — the primary-subject fetch for each detail route now throws,
 and the screen splits failure from absence:
 
-| Fetch | Screen | What an outage used to say |
-| --- | --- | --- |
-| `getHeroById` | character, biography | "this character doesn't exist" / "No biography yet" |
-| `getTeamById` | team (native + web) | "This team doesn't exist" |
-| `getEventDossier` | event (native + web) | "No page for this event yet" |
-| `useHouse` (already threw) | house (native + web) | "No such house", with the raw `Error.message` as the only tell |
-| `getCategoryPage` (already threw) | category | "No characters found — try a different search, or clear a filter" |
-| `getHeroNeighborhood` | social-web (native + web) | an empty universe, then a nebula loader that never resolves |
+| Fetch                             | Screen                    | What an outage used to say                                        |
+| --------------------------------- | ------------------------- | ----------------------------------------------------------------- |
+| `getHeroById`                     | character, biography      | "this character doesn't exist" / "No biography yet"               |
+| `getTeamById`                     | team (native + web)       | "This team doesn't exist"                                         |
+| `getEventDossier`                 | event (native + web)      | "No page for this event yet"                                      |
+| `useHouse` (already threw)        | house (native + web)      | "No such house", with the raw `Error.message` as the only tell    |
+| `getCategoryPage` (already threw) | category                  | "No characters found — try a different search, or clear a filter" |
+| `getHeroNeighborhood`             | social-web (native + web) | an empty universe, then a nebula loader that never resolves       |
 
 Three of those error branches already existed and were **unreachable**.
-`heroLoadPlan.ts` even documents the intent — *"a transient query failure is
-not a 404 — keep it distinct so the screen can offer a retry"* — but
+`heroLoadPlan.ts` even documents the intent — _"a transient query failure is
+not a 404 — keep it distinct so the screen can offer a retry"_ — but
 `getHeroById` never let `isError` become true, so the retry UI could not render.
 The event screen had the same dead branch, and the biography web twin showed a
 skeleton forever.
@@ -393,7 +417,7 @@ Two gotchas that recur:
 Two of those fetches **already threw** — the screens simply never read
 `isError`, which is its own lesson: making the data layer honest is only half
 the job. `getHeroNeighborhood` is the reverse case, and shows why the
-page-critical/optional-rail split has to be made per *consumer*, not per
+page-critical/optional-rail split has to be made per _consumer_, not per
 function: the social-web explorer **is** that data, while the character page's
 portal preview is an optional rail reading the same call. Throwing serves both
 — the explorer can retry, and the portal already hides itself when data is
@@ -401,10 +425,10 @@ missing.
 
 The rest was not swept, because the split is real and only a human eye can draw it:
 
-- **Page-critical** — the thing the screen is *about*. Must throw, so React
+- **Page-critical** — the thing the screen is _about_. Must throw, so React
   Query retries and the screen can offer `LoadErrorView` + retry.
 - **Optional rail** — a supplementary shelf on a page that stands without it.
-  Soft-failing to `[]` is correct here; it just needs to be *deliberate* rather
+  Soft-failing to `[]` is correct here; it just needs to be _deliberate_ rather
   than the accidental default it is now.
 
 Converting all 90 blind would turn every failed side-rail into a blown-up page.
@@ -416,14 +440,14 @@ ones say so in a comment.
 Android is the least-exercised platform here — nothing in this repo has been
 run on a device. What a static audit found and what was done about it:
 
-| Thing | State |
-| --- | --- |
-| Shadows | `shadow*` props do nothing on Android; `elevation` is the knob. 30 blocks pair them. The 3 that were neutral drop shadows and missing `elevation` now have it. |
-| Coloured glows | 6 blocks use `shadowColor` as a **glow** (orange/gold, zero offset). Left iOS-only and commented as such: `elevation` would substitute a grey box shadow for a colour bloom, which reads worse than no glow, and the elements carry their own colour anyway. |
+| Thing                        | State                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shadows                      | `shadow*` props do nothing on Android; `elevation` is the knob. 30 blocks pair them. The 3 that were neutral drop shadows and missing `elevation` now have it.                                                                                                                                                                                                                |
+| Coloured glows               | 6 blocks use `shadowColor` as a **glow** (orange/gold, zero offset). Left iOS-only and commented as such: `elevation` would substitute a grey box shadow for a colour bloom, which reads worse than no glow, and the elements carry their own colour anyway.                                                                                                                  |
 | `fontWeight` on custom faces | Only `Flame-Regular`, `Flame-Bold`, `FlameSans-Regular` and `Righteous` are registered. `FlameSans-Regular` + `fontWeight: '700'` had no bold face to resolve to, so the platforms diverged — Android synthesises a fake bold, iOS does not. The 6 family-module sites now use `Nunito_700Bold`, a real registered face, which is also what CLAUDE.md prescribes for UI text. |
-| Modals | `statusBarTranslucent` + `navigationBarTranslucent` are set on `Sheet`, without which a modal stops at the system bars — an undimmed band top and bottom, and no way to reach the real bottom edge. |
-| `expo-blur` | The Explore frost has no `experimentalBlurMethod`, so Android renders a flat translucent overlay rather than a live blur. Left alone: the frost is a dark scrim, a flat version of it is a graceful degradation, and the experimental method carries a real perf cost on a platform that can't be measured from here. |
-| `borderCurve: 'continuous'` | iOS-only, silently ignored elsewhere. Harmless. |
+| Modals                       | `statusBarTranslucent` + `navigationBarTranslucent` are set on `Sheet`, without which a modal stops at the system bars — an undimmed band top and bottom, and no way to reach the real bottom edge.                                                                                                                                                                           |
+| `expo-blur`                  | The Explore frost has no `experimentalBlurMethod`, so Android renders a flat translucent overlay rather than a live blur. Left alone: the frost is a dark scrim, a flat version of it is a graceful degradation, and the experimental method carries a real perf cost on a platform that can't be measured from here.                                                         |
+| `borderCurve: 'continuous'`  | iOS-only, silently ignored elsewhere. Harmless.                                                                                                                                                                                                                                                                                                                               |
 
 Unverified and worth checking first on a real device: `includeFontPadding`
 (Android adds font padding on top of `lineHeight`, and the Flame 1.22x rule was
@@ -448,17 +472,17 @@ have a header: `headerShown: false` plus `FloatingBackButton`.
 
 Audit of the native screens that show a header:
 
-| Screen | Header carries | Top surface | Verdict |
-| --- | --- | --- | --- |
-| `biography/[id]` | chevron only | flat deep-ink | **fixed** — no header |
-| `compare/[hero]/pick` | chevron only | flat navy | affected; safe to convert |
-| `event/[slug]` | chevron only | flat deep-ink | affected; safe to convert |
-| `event/index` | chevron only | flat deep-ink | affected; safe to convert |
-| `house/[slug]` | chevron only | beige | unaffected — a light scrim on paper is invisible |
-| `character/[id]` | + `headerRight` | dark stage | affected, but the header has real content |
-| `compare/[hero]/[opponent]` | + `headerRight` | dark | affected, but the header has real content |
-| `category/[slug]` | `Stack.SearchBar` | dark | **must keep the header** — the search field lives in it, and a search bar is exactly what the effect is designed to serve |
-| `team/[id]` | `Stack.SearchBar` | dark | same |
+| Screen                      | Header carries    | Top surface   | Verdict                                                                                                                   |
+| --------------------------- | ----------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `biography/[id]`            | chevron only      | flat deep-ink | **fixed** — no header                                                                                                     |
+| `compare/[hero]/pick`       | chevron only      | flat navy     | affected; safe to convert                                                                                                 |
+| `event/[slug]`              | chevron only      | flat deep-ink | affected; safe to convert                                                                                                 |
+| `event/index`               | chevron only      | flat deep-ink | affected; safe to convert                                                                                                 |
+| `house/[slug]`              | chevron only      | beige         | unaffected — a light scrim on paper is invisible                                                                          |
+| `character/[id]`            | + `headerRight`   | dark stage    | affected, but the header has real content                                                                                 |
+| `compare/[hero]/[opponent]` | + `headerRight`   | dark          | affected, but the header has real content                                                                                 |
+| `category/[slug]`           | `Stack.SearchBar` | dark          | **must keep the header** — the search field lives in it, and a search bar is exactly what the effect is designed to serve |
+| `team/[id]`                 | `Stack.SearchBar` | dark          | same                                                                                                                      |
 
 ## History
 

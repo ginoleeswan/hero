@@ -182,7 +182,12 @@ export default function BattleBuilderWeb() {
           onChangeText={setQuery}
         />
         {query.length > 0 ? (
-          <Pressable onPress={() => setQuery('')} hitSlop={8}>
+          <Pressable
+            onPress={() => setQuery('')}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Clear search"
+          >
             <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.4)" />
           </Pressable>
         ) : null}
@@ -474,6 +479,8 @@ function Flank({
               <Pressable
                 key={hero.id}
                 onPress={() => onRemove(hero.id)}
+                // The chip can render as small as 34pt; slop holds the target.
+                hitSlop={5}
                 style={[fs.chip, { width: chipSize, height: chipSize, borderColor: tint }]}
               >
                 {uri ? (
