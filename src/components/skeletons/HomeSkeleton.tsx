@@ -13,6 +13,7 @@
 // Geometry constants are copied from the real components (cited inline). If
 // one of those changes, change it here in the same PR.
 import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { COLORS } from '../../constants/colors';
@@ -48,19 +49,41 @@ function SpotlightSkeleton({ insetTop }: { insetTop: number }) {
   const height = insetTop + Math.round(SCREEN_HEIGHT * 0.5);
   return (
     <View style={{ height }}>
-      <Skeleton width="100%" height={height} borderRadius={0} color={ON_DARK_SOFT} />
+      {/* A flat block over half the screen reads as a void. The real slide is a
+          full-bleed portrait under a bottom scrim, so the placeholder is a
+          gradient with the same weight distribution — light at the crown where
+          the face sits, sinking into the stage where the scrim takes over. */}
+      <LinearGradient
+        colors={['rgba(245,235,220,0.10)', 'rgba(245,235,220,0.05)', 'rgba(11,24,32,0)']}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      {/* Placeholders on the stage stay in the stage's own tone. At the default
+          (light beige) fill these read as solid blocks pasted over the dark. */}
       <View style={styles.spotlightMeta}>
-        <Skeleton width={Math.round(SCREEN_WIDTH * 0.52)} height={34} borderRadius={8} />
+        <Skeleton
+          width={Math.round(SCREEN_WIDTH * 0.52)}
+          height={34}
+          borderRadius={8}
+          color={ON_DARK}
+        />
         <Skeleton
           width={Math.round(SCREEN_WIDTH * 0.28)}
           height={12}
           borderRadius={4}
+          color={ON_DARK_SOFT}
           style={styles.spotlightSub}
         />
       </View>
       <View style={styles.spotlightDots}>
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} width={i === 0 ? 14 : 5} height={5} borderRadius={2.5} />
+          <Skeleton
+            key={i}
+            width={i === 0 ? 14 : 5}
+            height={5}
+            borderRadius={2.5}
+            color={i === 0 ? ON_DARK : ON_DARK_SOFT}
+          />
         ))}
       </View>
     </View>

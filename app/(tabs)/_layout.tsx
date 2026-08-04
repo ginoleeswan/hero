@@ -18,15 +18,14 @@ export default function TabLayout() {
     //   color, and with tintColor alone the selected state goes 'template'
     //   while normal goes 'original' — RNScreens throws "icon and
     //   selectedIcon must be same type" and red-screens on boot.
-    // • The three immersive tabs carry disableAutomaticContentInsets. Adding
-    //   collapsable={false} let iOS finally pair each screen's scroll view
-    //   with the bar — which also made RNScreens force
-    //   contentInsetAdjustmentBehavior to `automatic`, overriding the screens'
-    //   own `never` and insetting their content below the status bar. That is
-    //   the band of flat colour that appeared above the spotlight / arena
-    //   stage / profile header. These screens are full-bleed by design and
-    //   pad for the safe area themselves. SEARCH deliberately keeps automatic
-    //   insets: it has a real native header + Stack.SearchBar to sit under.
+    // • The three immersive tabs carry disableAutomaticContentInsets, and
+    //   their roots deliberately do NOT set collapsable={false}. Pairing a
+    //   screen's scroll view with the bar hands content insets to RNScreens,
+    //   which insets the list below the status bar and exposes a band of the
+    //   root's colour above these full-bleed screens. The bar does not need
+    //   the pairing — both its appearances are pinned above. SEARCH is the
+    //   exception and keeps automatic insets: it has a real native header and
+    //   Stack.SearchBar for its content to sit under.
     <NativeTabs
       tintColor="#e8621a"
       blurEffect="systemChromeMaterialDark"

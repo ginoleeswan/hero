@@ -153,11 +153,7 @@ function GuestProfileScreen() {
   return (
     // Entrance parity with Explore — three of four tabs used to snap in
     // while Explore rose into place, which read as two different apps.
-    <Animated.View
-      style={styles.container}
-      collapsable={false}
-      entering={FadeIn.duration(DUR.base)}
-    >
+    <Animated.View style={styles.container} entering={FadeIn.duration(DUR.base)}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
@@ -551,11 +547,7 @@ export default function ProfileScreen() {
   return (
     // Entrance parity with Explore — three of four tabs used to snap in
     // while Explore rose into place, which read as two different apps.
-    <Animated.View
-      style={styles.container}
-      collapsable={false}
-      entering={FadeIn.duration(DUR.base)}
-    >
+    <Animated.View style={styles.container} entering={FadeIn.duration(DUR.base)}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}

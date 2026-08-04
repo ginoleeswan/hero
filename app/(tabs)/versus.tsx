@@ -57,10 +57,13 @@ export default function VersusScreen() {
   const canSurprise = iconicPool.length >= 2;
 
   return (
-    // collapsable={false}: iOS only pairs the ScrollView with the native tab
-    // bar when it can find it through the wrapper — a collapsed View breaks the
-    // pairing and with it the bar's edge appearance (Expo native-tabs docs).
-    <View style={styles.root} collapsable={false}>
+    // NO collapsable={false} here, deliberately. Adding it let iOS pair this
+    // screen's scroll view with the tab bar, and pairing hands content insets
+    // to RNScreens — which insets the list below the status bar and exposes a
+    // band of the root's colour above this full-bleed billboard. The tab bar
+    // no longer needs the pairing: both its appearances are pinned explicitly
+    // in _layout.tsx (disableTransparentOnScrollEdge + blurEffect).
+    <View style={styles.root}>
       <StatusBar style="light" />
       <ScrollView
         style={styles.scroll}
