@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 import { getPowerIcon } from '../../constants/powerIcons';
 import type { PowerExplainer } from '../../lib/db/heroFacts';
 
@@ -90,6 +90,6 @@ const styles = StyleSheet.create({
     fontFamily: 'FlameSans-Regular',
     fontSize: 12.5,
     lineHeight: 18,
-    color: 'rgba(41,60,67,0.72)',
+    color: PAPER_TEXT.faint,
   },
 });

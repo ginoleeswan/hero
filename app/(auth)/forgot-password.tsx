@@ -14,7 +14,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/hooks/useAuth';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, INK_TEXT } from '../../src/constants/colors';
 import { AnimatedInput } from '../../src/components/ui/AnimatedInput';
 
 export default function ForgotPasswordScreen() {
@@ -151,7 +151,7 @@ export default function ForgotPasswordScreen() {
                     <TextInput
                       style={[styles.input, emailFocused && styles.inputFocused]}
                       placeholder="you@example.com"
-                      placeholderTextColor="rgba(245,235,220,0.3)"
+                      placeholderTextColor={INK_TEXT.placeholder}
                       value={email}
                       onChangeText={setEmail}
                       onFocus={() => setEmailFocused(true)}
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   hint: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: 'rgba(245,235,220,0.35)',
+    color: INK_TEXT.faint,
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 28,
@@ -333,6 +333,6 @@ const styles = StyleSheet.create({
   resendCooldown: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: 'rgba(245,235,220,0.4)',
+    color: INK_TEXT.faint,
   },
 });

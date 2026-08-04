@@ -7,7 +7,7 @@ import { HeroImage } from '../HeroImage';
 import { HeroAvatar } from '../HeroAvatar';
 import { PressScale } from '../ui/PressScale';
 import { SectionHeader } from '../ui/SectionHeader';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 
 // Rank tint — top 3 get progressively warmer orange (podium), rest stay dim.
@@ -176,6 +176,6 @@ const s = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.4)',
+    color: PAPER_TEXT.faint,
   },
 });

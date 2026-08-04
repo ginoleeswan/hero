@@ -5,7 +5,7 @@
 // platforms read as one design; both share useMatchupVote.
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 import { statSplit, statLead } from '../../lib/home/matchupVote';
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
   },
   linkRow: { alignSelf: 'center', marginTop: 8 },
   linkPressed: { opacity: 0.7 },

@@ -3,7 +3,7 @@
 // what the community thinks. Voting happens BEFORE the arena (on the matchup
 // cards), never here — so this only displays the tally, it never casts one.
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, INK_TEXT } from '../../constants/colors';
 import { statSplit } from '../../lib/home/matchupVote';
 import type { MatchupTally } from '../../lib/db/matchupVotes';
 
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
   },
   eyebrowDark: { color: COLORS.goldAccent },
   empty: {
@@ -66,9 +66,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
     textAlign: 'center',
-    color: 'rgba(41,60,67,0.4)',
+    color: PAPER_TEXT.faint,
   },
-  emptyDark: { color: 'rgba(245,235,220,0.4)' },
+  emptyDark: { color: INK_TEXT.faint },
   barTrack: {
     flexDirection: 'row',
     width: '100%',
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
   },
-  captionDark: { color: 'rgba(245,235,220,0.5)' },
+  captionDark: { color: INK_TEXT.faint },
 });

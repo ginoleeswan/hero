@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { OpponentCard } from '../compare/OpponentCard';
+import { PAPER_TEXT } from '../../constants/colors';
 
 interface Item {
   id: string;
@@ -57,6 +58,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: 'rgba(245,235,220,0.75)',
   },
-  labelLight: { color: 'rgba(41,60,67,0.7)' },
+  labelLight: { color: PAPER_TEXT.faint },
   row: { flexDirection: 'row', gap: 10, paddingVertical: 1, paddingRight: 8 },
 });

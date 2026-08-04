@@ -5,7 +5,7 @@
 // as one design.
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
 import type { Rivalry } from '../../lib/db/heroes';
 import type { FighterArt } from '../../lib/compareHandoff';
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   sub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12.5,
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
     marginTop: 2,
   },
   row: { gap: 12, paddingHorizontal: 16, paddingBottom: 4 },

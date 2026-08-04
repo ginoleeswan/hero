@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useHeroRow } from '../../lib/query/heroQueries';
 import { HeroImage } from '../HeroImage';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   identity: { flex: 1, justifyContent: 'center', gap: 6 },
   name: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.navy, lineHeight: 30 },
-  realName: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: 'rgba(41,60,67,0.6)' },
+  realName: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: PAPER_TEXT.faint },
   chips: { flexDirection: 'row', gap: 7, marginTop: 4, flexWrap: 'wrap' },
   chip: {
     paddingHorizontal: 10,
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   chipText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10.5,
-    color: 'rgba(41,60,67,0.7)',
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     width: 96,
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },

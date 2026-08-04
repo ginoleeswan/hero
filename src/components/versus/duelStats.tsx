@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { RosterHero } from '../../lib/teamBattle';
 import { FACTION_A as TINT_A, FACTION_B as TINT_B } from './factionColors';
+import { INK_TEXT } from '../../constants/colors';
 
 export const STATS: [string, keyof RosterHero][] = [
   ['INT', 'intelligence'],
@@ -164,8 +165,8 @@ const styles = StyleSheet.create({
   },
   cName: { flex: 1, fontFamily: 'Flame-Regular', fontSize: 15, lineHeight: 19 },
   tally: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  tallyN: { fontFamily: 'Flame-Regular', fontSize: 18, color: 'rgba(245,235,220,0.5)' },
-  tallyDash: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.35)' },
+  tallyN: { fontFamily: 'Flame-Regular', fontSize: 18, color: INK_TEXT.faint },
+  tallyDash: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: INK_TEXT.faint },
   right: { textAlign: 'right' },
   rule: {
     alignSelf: 'stretch',

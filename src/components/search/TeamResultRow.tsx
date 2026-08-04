@@ -5,7 +5,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PressScale } from '../ui/PressScale';
 import { BrandLogoView } from '../PublisherBadge';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import { teamLogo } from '../../constants/teamBrands';
 import type { TeamSearchResult } from '../../lib/db/teams';
 
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   meta: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
     marginTop: 1,

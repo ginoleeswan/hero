@@ -4,7 +4,7 @@
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { OpponentCard } from '../compare/OpponentCard';
 import type { PeekHero } from '../compare/HeroPeek';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 
 const H_PAD = 16;
 const RAIL_W = 116;
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1.4,
     marginBottom: 11,
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 12.5,
     fontStyle: 'italic',
-    color: 'rgba(41,60,67,0.55)',
+    color: PAPER_TEXT.faint,
     marginBottom: 11,
   },
 });

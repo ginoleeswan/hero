@@ -12,7 +12,7 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 
 const isWeb = Platform.OS === 'web';
 
@@ -111,7 +111,7 @@ export function EditDisplayNameModal({ visible, currentName, onClose, onSubmit }
               maxLength={40}
               returnKeyType="done"
               onSubmitEditing={handleSubmit}
-              placeholderTextColor="rgba(41,60,67,0.3)"
+              placeholderTextColor={PAPER_TEXT.placeholder}
               placeholder="Your name"
             />
           </View>
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   charCount: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.35)',
+    color: PAPER_TEXT.faint,
     textAlign: 'right',
     marginBottom: 20,
   },

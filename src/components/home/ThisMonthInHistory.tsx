@@ -7,7 +7,7 @@
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { PressScale } from '../ui/PressScale';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import type { DebutIssue, DebutCharacter } from '../../lib/db/anniversaries';
 
 const MONTH = new Date().toLocaleString('en-US', { month: 'long' });
@@ -189,7 +189,7 @@ const s = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.4)',
+    color: INK_TEXT.faint,
     marginBottom: 10,
   },
   vaultRow: { flexDirection: 'row', gap: 10, paddingRight: 4 },

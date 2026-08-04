@@ -16,7 +16,7 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SEAM_COLOR, SURFACE } from '../../constants/colors';
+import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import { EventCurve } from './EventCurve';
 import type { EventDossier as Dossier, EventTrailer } from '../../lib/db/events.dossier';
@@ -385,7 +385,7 @@ const s = StyleSheet.create({
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
     lineHeight: 21,
-    color: 'rgba(245,235,220,0.54)',
+    color: INK_TEXT.faint,
     maxWidth: 520,
     marginTop: 8,
   },
@@ -403,7 +403,7 @@ const s = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.6,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.42)',
+    color: INK_TEXT.faint,
   },
   seam: { height: 1, backgroundColor: SEAM_COLOR },
 
@@ -420,7 +420,7 @@ const s = StyleSheet.create({
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
     lineHeight: 19,
-    color: 'rgba(11,24,32,0.5)',
+    color: PAPER_TEXT.muted,
     marginTop: 2,
   },
   sectionBody: { marginTop: 18, gap: 20 },
@@ -459,7 +459,7 @@ const s = StyleSheet.create({
   posterMeta: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11.5,
-    color: 'rgba(11,24,32,0.5)',
+    color: PAPER_TEXT.muted,
   },
 
   faceGrid: { flexDirection: 'row', flexWrap: 'wrap' },
@@ -480,7 +480,7 @@ const s = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 11.5,
     lineHeight: 15,
-    color: 'rgba(11,24,32,0.55)',
+    color: PAPER_TEXT.muted,
   },
 
   covers: { flexDirection: 'row', flexWrap: 'wrap' },

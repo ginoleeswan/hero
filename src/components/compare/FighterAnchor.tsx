@@ -1,7 +1,7 @@
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../HeroImage';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, INK_TEXT } from '../../constants/colors';
 
 export interface AnchorFighter {
   id: string;
@@ -158,8 +158,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     cursor: 'pointer',
   } as object,
-  q: { fontFamily: 'Flame-Regular', fontSize: 42, color: 'rgba(41,60,67,0.3)' },
-  qStage: { color: 'rgba(245,235,220,0.4)' } as object,
+  q: { fontFamily: 'Flame-Regular', fontSize: 42, color: PAPER_TEXT.faint },
+  qStage: { color: INK_TEXT.faint } as object,
   name: {
     fontFamily: 'Flame-Regular',
     fontSize: 17,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.4)',
+    color: PAPER_TEXT.faint,
   } as object,
-  placeholderStage: { color: 'rgba(245,235,220,0.45)' } as object,
+  placeholderStage: { color: INK_TEXT.faint } as object,
 });

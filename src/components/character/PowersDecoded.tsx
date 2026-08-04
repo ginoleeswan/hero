@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 import { getPowerIcon, POWER_CATEGORY_META } from '../../constants/powerIcons';
 import type { PowerExplainer } from '../../lib/db/heroFacts';
 
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.4)',
+    color: PAPER_TEXT.faint,
   },
   list: { gap: 10 },
   card: {

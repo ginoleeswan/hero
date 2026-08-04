@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, useWindowDimensions, Platform } from
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
-import { COLORS, SURFACE_GRADIENT } from '../../constants/colors';
+import { COLORS, SURFACE_GRADIENT, INK_TEXT, GOLD_INK } from '../../constants/colors';
 import type { TeamSide, TeamBattleResult, RosterHero } from '../../lib/teamBattle';
 import { HeroBattleCard } from './HeroBattleCard';
 import { MobileDuel } from './MobileDuel';
@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
   crestMeta: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginTop: 2,
@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
     letterSpacing: 2.4,
-    color: 'rgba(206,155,51,0.7)',
+    color: GOLD_INK,
     textTransform: 'uppercase',
     marginBottom: 4,
   },

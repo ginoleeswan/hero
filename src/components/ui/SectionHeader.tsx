@@ -12,7 +12,7 @@
 import { View, Text, StyleSheet, Pressable, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT } from '../../constants/colors';
 import { TRACKING } from '../../constants/tokens';
 
 // The rail gutter, NOT SCREEN_PAD. A section header lines up with the cards in
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     color: 'rgba(245,235,220,0.6)',
     marginTop: 2,
   },
-  subLight: { color: 'rgba(41,60,67,0.6)' },
+  subLight: { color: PAPER_TEXT.faint },
   action: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 },
   actionPressed: { opacity: 0.6 },
   actionText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(245,235,220,0.7)' },

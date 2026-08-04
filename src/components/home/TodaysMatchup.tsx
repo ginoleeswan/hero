@@ -8,7 +8,7 @@ import { useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { HeroImage } from '../HeroImage';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import { statSplit, statLead, type MatchupSide } from '../../lib/home/matchupVote';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 import type { TodaysMatchup as Matchup } from '../../lib/matchup';
@@ -297,7 +297,7 @@ const m = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
   },
   verdict: {
     fontFamily: 'Nunito_400Regular',

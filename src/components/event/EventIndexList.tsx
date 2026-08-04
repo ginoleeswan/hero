@@ -7,7 +7,7 @@
 // a set of measurements rather than a menu — the shape of the spike IS the
 // difference between one event and another.
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { COLORS, SEAM_COLOR, SURFACE } from '../../constants/colors';
+import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { EventCurve } from './EventCurve';
 import { formatWindow } from '../../hooks/useEventDossier';
 import type { EventIndex } from '../../lib/db/events.dossier';
@@ -157,7 +157,7 @@ const s = StyleSheet.create({
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
     lineHeight: 21,
-    color: 'rgba(245,235,220,0.54)',
+    color: INK_TEXT.faint,
     maxWidth: 520,
     marginTop: 10,
   },
@@ -167,7 +167,7 @@ const s = StyleSheet.create({
     fontFamily: 'FlameSans-Regular',
     fontSize: 15,
     lineHeight: 23,
-    color: 'rgba(11,24,32,0.6)',
+    color: PAPER_TEXT.muted,
     maxWidth: 460,
   },
   row: {
@@ -191,13 +191,13 @@ const s = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1.3,
     textTransform: 'uppercase',
-    color: 'rgba(11,24,32,0.55)',
+    color: PAPER_TEXT.muted,
   },
   rowCurve: { marginTop: 10, marginBottom: 10 },
   rowStat: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: 'rgba(11,24,32,0.6)',
+    color: PAPER_TEXT.muted,
   },
   rowStatNum: { fontFamily: 'Nunito_700Bold' },
 
@@ -215,7 +215,7 @@ const s = StyleSheet.create({
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
     lineHeight: 19,
-    color: 'rgba(11,24,32,0.48)',
+    color: PAPER_TEXT.muted,
     marginTop: 2,
     maxWidth: 460,
   },
@@ -230,6 +230,6 @@ const s = StyleSheet.create({
   chipText: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12.5,
-    color: 'rgba(11,24,32,0.6)',
+    color: PAPER_TEXT.muted,
   },
 });

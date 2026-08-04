@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS, PAPER_TEXT, INK_TEXT } from '../../constants/colors';
 import type { PublisherFilter, AlignmentFilter } from '../../lib/db/heroes/types';
 
 interface Props {
@@ -87,9 +87,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
   },
-  groupLabelDark: { color: 'rgba(245,235,220,0.5)' },
+  groupLabelDark: { color: INK_TEXT.faint },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 14,
@@ -104,6 +104,6 @@ const styles = StyleSheet.create({
   chipOffDark: { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(245,235,220,0.28)' },
   chipText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, letterSpacing: 0.3 },
   chipTextOn: { color: '#1a130a' },
-  chipTextOff: { color: 'rgba(41,60,67,0.7)' },
+  chipTextOff: { color: PAPER_TEXT.faint },
   chipTextOffDark: { color: 'rgba(245,235,220,0.78)' },
 });

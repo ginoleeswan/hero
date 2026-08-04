@@ -54,7 +54,7 @@ import {
   type EditableFieldDef,
 } from '../../src/lib/db/contributions';
 import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, ORANGE_INK, PAPER_TEXT } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { SocialWebPortal } from '../../src/components/character/SocialWebPortal';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
@@ -2069,8 +2069,8 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     maxWidth: '60%',
   },
-  editRowValue: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: 'rgba(41,60,67,0.7)' },
-  editRowAdd: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.orange },
+  editRowValue: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: PAPER_TEXT.faint },
+  editRowAdd: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: ORANGE_INK },
   dossierGroupLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
@@ -2241,7 +2241,7 @@ const styles = StyleSheet.create({
   debutCtaText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: COLORS.orange,
+    color: ORANGE_INK,
   },
   // In Print — consolidated header (debut "Since" + title) and gallery label.
   inPrintHeader: {

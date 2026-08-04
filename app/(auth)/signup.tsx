@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useAuth } from '../../src/hooks/useAuth';
 import { loginHref } from '../../src/lib/loginRedirect';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, PAPER_TEXT } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { DotGrid } from '../../src/components/ui/DotGrid';
 import { AnimatedInput } from '../../src/components/ui/AnimatedInput';
@@ -191,7 +191,7 @@ export default function SignupScreen() {
                   <TextInput
                     style={[styles.input, emailFocused && styles.inputFocused]}
                     placeholder="you@example.com"
-                    placeholderTextColor="rgba(41,60,67,0.3)"
+                    placeholderTextColor={PAPER_TEXT.placeholder}
                     value={email}
                     onChangeText={setEmail}
                     onFocus={() => setEmailFocused(true)}
@@ -213,7 +213,7 @@ export default function SignupScreen() {
                       ref={passwordRef}
                       style={styles.passwordInput}
                       placeholder="••••••••"
-                      placeholderTextColor="rgba(41,60,67,0.3)"
+                      placeholderTextColor={PAPER_TEXT.placeholder}
                       value={password}
                       onChangeText={setPassword}
                       onFocus={() => setPasswordFocused(true)}
@@ -235,7 +235,7 @@ export default function SignupScreen() {
                       <Ionicons
                         name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                         size={20}
-                        color="rgba(41,60,67,0.4)"
+                        color={PAPER_TEXT.faint}
                       />
                     </Pressable>
                   </View>
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   pendingHint: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: 'rgba(41,60,67,0.45)',
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     marginBottom: 28,
   },
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 11.5,
     lineHeight: 17,
-    color: 'rgba(41,60,67,0.45)',
+    color: PAPER_TEXT.faint,
     textAlign: 'center',
     marginBottom: 14,
   },

@@ -22,7 +22,7 @@ import { VsAnchor } from '../../../src/components/compare/VsAnchor';
 import { AccentRail } from '../../../src/components/search/AccentRail';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { stashFighters } from '../../../src/lib/compareHandoff';
-import { COLORS } from '../../../src/constants/colors';
+import { COLORS, PAPER_TEXT } from '../../../src/constants/colors';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -121,7 +121,7 @@ export default function PickOpponentScreen() {
             ref={inputRef}
             style={styles.input}
             placeholder="Search any hero or villain…"
-            placeholderTextColor="rgba(41,60,67,0.38)"
+            placeholderTextColor={PAPER_TEXT.placeholder}
             value={query}
             onChangeText={setQuery}
           />
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.5)',
+    color: PAPER_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1.4,
     marginBottom: 11,

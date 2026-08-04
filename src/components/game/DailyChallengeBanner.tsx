@@ -4,7 +4,7 @@
 import { View, Text, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import { useDailyStreak } from '../../hooks/useDailyStreak';
 
 export function DailyChallengeBanner({
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
   streakText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
-  dot: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(245,235,220,0.4)' },
+  dot: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: INK_TEXT.faint },
   sub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,

@@ -3,7 +3,7 @@
 // card. Shared shape (YesterdayDebateStrip) comes from useVersusHub; the web
 // arena renders the sibling in components/web/versus.
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { COLORS, INK_TEXT } from '../../constants/colors';
 import { statSplit } from '../../lib/home/matchupVote';
 import type { YesterdayDebateStrip } from '../../hooks/useVersusHub';
 
@@ -49,7 +49,7 @@ const s = StyleSheet.create({
     textAlign: 'center',
   },
   won: { fontFamily: 'Nunito_700Bold', color: COLORS.green },
-  lost: { fontFamily: 'Nunito_700Bold', color: 'rgba(245,235,220,0.5)' },
+  lost: { fontFamily: 'Nunito_700Bold', color: INK_TEXT.faint },
   quote: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12.5,

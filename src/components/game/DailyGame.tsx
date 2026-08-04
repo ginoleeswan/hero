@@ -23,7 +23,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SURFACE } from '../../constants/colors';
+import { COLORS, SURFACE, INK_TEXT } from '../../constants/colors';
 import { useScreenChrome } from '../../hooks/useScreenChrome';
 import { MysteryPortrait } from './MysteryPortrait';
 import { ClueSticker } from './ClueSticker';
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
   remaining: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
   },
   optionText: { flexShrink: 1, fontFamily: 'Nunito_700Bold', fontSize: 15, color: COLORS.beige },
   optionTextEliminated: {
-    color: 'rgba(245,235,220,0.4)',
+    color: INK_TEXT.faint,
     textDecorationLine: 'line-through',
   },
 
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   tomorrow: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: 'rgba(245,235,220,0.5)',
+    color: INK_TEXT.faint,
     textAlign: 'center',
     marginTop: 14,
   },

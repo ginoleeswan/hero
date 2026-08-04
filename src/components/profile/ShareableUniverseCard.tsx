@@ -6,7 +6,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SHARE_CARD } from '../../constants/colors';
+import { COLORS, SHARE_CARD, INK_TEXT } from '../../constants/colors';
 import { MythiqueMark } from '../ui/MythiqueMark';
 import { CardTexture } from '../ui/CardTexture';
 
@@ -170,7 +170,7 @@ const s = StyleSheet.create({
   },
   tileImg: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' } as object,
   tileFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#243842' },
-  tileInitial: { fontFamily: 'Flame-Regular', fontSize: 140, color: 'rgba(245,235,220,0.5)' },
+  tileInitial: { fontFamily: 'Flame-Regular', fontSize: 140, color: INK_TEXT.faint },
   tileScrim: {
     position: 'absolute',
     left: 0,
@@ -210,7 +210,7 @@ const s = StyleSheet.create({
     letterSpacing: 3,
     textTransform: 'uppercase',
     textAlign: 'center',
-    color: 'rgba(245,235,220,0.4)',
+    color: INK_TEXT.faint,
     marginTop: 8,
   },
 });

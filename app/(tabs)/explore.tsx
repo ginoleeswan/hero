@@ -31,7 +31,7 @@ import { useRouter, useFocusEffect, type Href } from 'expo-router';
 import { useSignalFirstPaint } from '../../src/components/ui/BootStage';
 import { DUR, STAGGER, SPRING_SETTLE } from '../../src/lib/nativeMotion';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, ORANGE_INK } from '../../src/constants/colors';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
 import { SpotlightCarousel, spotlightHeight } from '../../src/components/home/SpotlightCarousel';
 import { SPOTLIGHT } from '../../src/components/home/homeGeometry';
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f0e2d0',
   },
-  supportText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.orange },
+  supportText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: ORANGE_INK },
   // Beige behind the bottom half — revealed on the bottom over-scroll bounce so
   // it never flashes the deep-navy root under the beige tail.
   bottomFill: {
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 2.5,
     textTransform: 'uppercase',
-    color: COLORS.orange,
+    color: ORANGE_INK,
     marginBottom: 3,
   },
   browseTitle: { fontFamily: 'Flame-Regular', fontSize: 30, color: COLORS.navy, lineHeight: 32 },
