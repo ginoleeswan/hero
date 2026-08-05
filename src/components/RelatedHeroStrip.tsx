@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, HOVER_TRANSITION, PAPER_TEXT } from '../constants/colors';
 import { HeroImage } from './HeroImage';
 import type { RelatedHeroCard } from '../lib/db/heroes';
+import { isPresentableFact } from '../lib/characterFacts';
 
 const CARD_W = 104;
 const CARD_H = 140;
@@ -67,7 +68,9 @@ export function RelatedHeroStrip({
   const seenNames = new Set<string>();
   for (const raw of names) {
     const name = raw.trim();
-    if (!name || name === '-' || name === 'null') continue;
+    // Was a two-value check, so a related-hero entry of "Unknown" or "None"
+    // became a card asking the reader to click through to nothing.
+    if (!isPresentableFact(name)) continue;
     const hero = heroMap.get(name);
     if (hero) {
       if (!seen.has(hero.id)) {

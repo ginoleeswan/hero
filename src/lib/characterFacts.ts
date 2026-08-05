@@ -22,6 +22,10 @@
 export const JUNK_FACT_VALUES = new Set([
   '-',
   'null',
+  // A stringified `undefined` that reached the column through some earlier
+  // pipeline. Contributed by the daily game's own sentinel list when these were
+  // consolidated.
+  'undefined',
   'none',
   'n/a',
   'unknown',

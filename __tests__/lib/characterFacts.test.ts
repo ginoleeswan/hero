@@ -52,3 +52,28 @@ describe('cleanFact', () => {
     expect(cleanFact(null)).toBeNull();
   });
 });
+
+// The four modules below each carried their own copy of the placeholder list,
+// and they had fallen out of step — missingFields.ts still claimed in a comment
+// to match the character screen while knowing only half its sentinels, so a
+// field the reader saw hidden was never offered for contribution. These assert
+// the shared definition actually reaches them.
+describe('every consumer agrees on what counts as blank', () => {
+  it('inline-edit "is this field missing?" matches the character screen', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { isBlankValue } = require('../../src/lib/contribute/missingFields');
+    for (const junk of ['Unknown', 'None', 'N/A', '-', 'null', '  ']) {
+      expect(isBlankValue(junk)).toBe(true);
+    }
+    expect(isBlankValue('Gotham City')).toBe(false);
+  });
+
+  it('the daily game hides the same placeholders', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { isBlank } = require('../../src/lib/game/reveal');
+    for (const junk of ['Unknown', 'None', 'undefined', '–']) {
+      expect(isBlank(junk)).toBe(true);
+    }
+    expect(isBlank('Metropolis')).toBe(false);
+  });
+});

@@ -1,8 +1,10 @@
 // src/lib/family/parseRelatives.ts
 import type { ParsedRelative } from './types';
 import { classifyRole } from './classifyRole';
+import { isPresentableFact } from '../characterFacts';
 
-const JUNK = new Set(['', '-', 'null', 'n/a', 'none', 'unknown']);
+// Was a local copy of the placeholder list; shares the definition now.
+const isJunk = (v: string) => !isPresentableFact(v);
 
 /** Split on top-level commas/semicolons, ignoring delimiters inside parentheses. */
 function splitTopLevel(raw: string): string[] {
@@ -39,7 +41,7 @@ export function parseRelatives(raw: string | null | undefined): ParsedRelative[]
   let position = 0;
   for (const entry of splitTopLevel(raw)) {
     const trimmed = entry.trim();
-    if (JUNK.has(trimmed.toLowerCase())) continue;
+    if (isJunk(trimmed)) continue;
 
     const open = trimmed.indexOf('(');
     let name = trimmed;
@@ -64,7 +66,7 @@ export function parseRelatives(raw: string | null | undefined): ParsedRelative[]
       }
     }
 
-    if (name === '' || JUNK.has(name.toLowerCase())) continue;
+    if (isJunk(name)) continue;
     result.push({ name, alias, role, position: position++ });
   }
   return result;

@@ -69,6 +69,15 @@ the whole tree before assuming the pair was the extent of it** — the fix that
 only unified the two files would have left the character page as the one screen
 saying something different.
 
+The placeholder list had spread the same way: four copies, in
+`contribute/missingFields.ts`, `family/parseRelatives.ts`, `game/reveal.ts` and
+`RelatedHeroStrip.tsx`. `missingFields.ts` was the instructive one — its comment
+claimed to use "the same sentinels the character screen treats as empty" while
+knowing only half of them, so a field the reader saw hidden was never offered
+for contribution. A comment asserting two things agree is not a mechanism for
+making them agree. All four now call `isPresentableFact`, and
+`__tests__/lib/characterFacts.test.ts` asserts the consumers still match.
+
 The lesson generalises: **when de-duplicating a pair, start with the constants
 and pure helpers, not the JSX.** They are where drift actually hurts (it changes
 what the app says), they are safe to extract without touching either layout, and

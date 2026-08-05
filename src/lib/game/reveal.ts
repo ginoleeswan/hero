@@ -20,17 +20,21 @@ export interface RevealHero {
 }
 
 import { alignmentLabel as taxoAlignment } from '../characterTaxonomy';
+import { isPresentableFact } from '../characterFacts';
 
 export interface Clue {
   label: string;
   value: string;
 }
 
-const SENTINELS = new Set(['', '-', '–', 'null', 'none', 'n/a', 'unknown', 'undefined']);
-
-/** True for values that are effectively blank (missing data dressed up as text). */
+/**
+ * True for values that are effectively blank (missing data dressed up as text).
+ * The list lives in src/lib/characterFacts.ts — this file's own copy was the
+ * richest of the four that existed, and contributed 'undefined' to the shared
+ * one when they were merged.
+ */
 export function isBlank(v: string | null | undefined): boolean {
-  return v == null || SENTINELS.has(v.trim().toLowerCase());
+  return !isPresentableFact(v);
 }
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
