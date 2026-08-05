@@ -19,6 +19,8 @@ export interface RevealHero {
   powers: string[];
 }
 
+import { alignmentLabel as taxoAlignment } from '../characterTaxonomy';
+
 export interface Clue {
   label: string;
   value: string;
@@ -47,13 +49,20 @@ export function decadeOf(firstAppearance: string | null | undefined): string | n
   return `${Math.floor(year / 10) * 10}s`;
 }
 
-/** Player-facing alignment label. */
+/**
+ * Player-facing alignment label. Words come from src/lib/characterTaxonomy.ts —
+ * this file used to spell it "Anti-hero" while every other surface wrote
+ * "Anti-Hero", so the same character was described two ways between the daily
+ * puzzle and its own character page.
+ */
 export function alignmentLabel(a: string | null | undefined): string | null {
   if (isBlank(a)) return null;
   const v = (a as string).trim().toLowerCase();
-  if (v === 'good') return 'Hero';
-  if (v === 'bad' || v === 'evil') return 'Villain';
-  if (v === 'neutral') return 'Anti-hero';
+  // 'evil' is a legacy synonym that only shows up in this dataset.
+  const shared = taxoAlignment(v === 'evil' ? 'bad' : v);
+  if (shared) return shared;
+  // Anything unrecognised still gets shown, capitalised — a clue is better than
+  // a blank.
   return cap(v);
 }
 

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT, SURFACE } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
 import { deriveCharacterTheme, accentButtonColors } from '../../lib/accent';
+import { alignmentLabel as taxoAlignment } from '../../lib/characterTaxonomy';
 import { describeRelationship } from '../../lib/graph/relationshipReason';
 import { matchupVerdict } from '../../lib/graph/statEdge';
 import { UniverseVote } from './UniverseVote';
@@ -24,12 +25,19 @@ const KIND_COLOR: Record<string, string> = {
   family: COLORS.purple,
 };
 
+// Colour stays local (it keys off this card's palette); the word comes from
+// src/lib/characterTaxonomy.ts so every surface agrees.
+const ALIGNMENT_COLOR: Record<string, string> = {
+  good: COLORS.blue,
+  bad: COLORS.red,
+  neutral: COLORS.orange,
+};
+
 function alignmentLabel(a: string | null): { label: string; color: string } | null {
-  const v = (a ?? '').toLowerCase();
-  if (v === 'good') return { label: 'Hero', color: COLORS.blue };
-  if (v === 'bad') return { label: 'Villain', color: COLORS.red };
-  if (v === 'neutral') return { label: 'Anti-Hero', color: COLORS.orange };
-  return null;
+  const v = (a ?? '').toLowerCase().trim();
+  const label = taxoAlignment(v);
+  if (!label) return null;
+  return { label, color: ALIGNMENT_COLOR[v] };
 }
 
 /**

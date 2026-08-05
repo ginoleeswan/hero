@@ -58,6 +58,17 @@ own junk-value set and its own label map. They now live in
 `src/lib/characterFacts.ts` and `src/lib/characterTaxonomy.ts`, tested, so the
 next divergence has to be deliberate.
 
+**And the pair was not the whole story.** Sweeping for the same literals turned
+up the alignment chip re-implemented on five further surfaces — the spotlight
+slide, the search role badge, the social-web focus card, the explore feed and
+the daily-game reveal — with the daily game spelling it "Anti-hero" and
+`HeroPeek` falling through to the raw database value, so a neutral character's
+chip read a lowercase `neutral` beside properly cased ones. All seven now read
+from `ALIGNMENT_LABELS`. **When you find a duplicated constant in a pair, grep
+the whole tree before assuming the pair was the extent of it** — the fix that
+only unified the two files would have left the character page as the one screen
+saying something different.
+
 The lesson generalises: **when de-duplicating a pair, start with the constants
 and pure helpers, not the JSX.** They are where drift actually hurts (it changes
 what the app says), they are safe to extract without touching either layout, and

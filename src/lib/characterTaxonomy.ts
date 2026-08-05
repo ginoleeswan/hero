@@ -17,16 +17,22 @@
 /**
  * Alignment chip wording.
  *
- * 'neutral' resolves to "Neutral" rather than web's old "Anti-Hero": the
- * alignment field covers genuinely unaligned characters — cosmic entities,
- * forces of nature — for whom "Anti-Hero" is a claim the data doesn't support.
- * If the product voice wants the punchier word, this is the one line to change,
- * and it now changes both platforms at once.
+ * 'neutral' resolves to **"Anti-Hero"**. This was briefly "Neutral" on the
+ * grounds that the alignment field covers genuinely unaligned characters —
+ * cosmic entities, forces of nature — for whom "Anti-Hero" overclaims. That
+ * reasoning still holds in the abstract, but it lost to the evidence: the
+ * spotlight slide, the search role badge, the social-web focus card and the
+ * explore feed all already said "Anti-Hero". Picking the purer word would have
+ * made the character page the one screen out of five that disagreed, which is
+ * worse than a slightly generous label applied consistently.
+ *
+ * If the product voice ever does want "Neutral", this is now the single line
+ * that changes it everywhere.
  */
 export const ALIGNMENT_LABELS: Record<string, string> = {
   good: 'Hero',
   bad: 'Villain',
-  neutral: 'Neutral',
+  neutral: 'Anti-Hero',
 };
 
 /** Origin chip wording. */

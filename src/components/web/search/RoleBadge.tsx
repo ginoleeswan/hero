@@ -1,4 +1,6 @@
 import { Text, StyleSheet } from 'react-native';
+// Colours are this badge's own; the words are shared so every surface agrees.
+import { ALIGNMENT_LABELS } from '../../../lib/characterTaxonomy';
 
 interface RoleBadgeProps {
   alignment?: string | null;
@@ -20,15 +22,15 @@ export function RoleBadge({ alignment }: RoleBadgeProps) {
   if (isHero) {
     badgeStyle = styles.heroBadge;
     textColor = '#10B981';
-    label = 'Hero';
+    label = ALIGNMENT_LABELS.good;
   } else if (isVillain) {
     badgeStyle = styles.villainBadge;
     textColor = '#EF4444';
-    label = 'Villain';
+    label = ALIGNMENT_LABELS.bad;
   } else {
     badgeStyle = styles.antiHeroBadge;
     textColor = '#FB923C';
-    label = 'Anti-Hero';
+    label = ALIGNMENT_LABELS.neutral;
   }
 
   return (

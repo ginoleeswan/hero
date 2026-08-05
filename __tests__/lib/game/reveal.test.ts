@@ -51,7 +51,11 @@ describe('isBlank / alignmentLabel', () => {
   it('maps alignment to a player-facing label', () => {
     expect(alignmentLabel('good')).toBe('Hero');
     expect(alignmentLabel('bad')).toBe('Villain');
-    expect(alignmentLabel('neutral')).toBe('Anti-hero');
+    // Was 'Anti-hero' here and 'Anti-Hero' everywhere else in the app; the
+    // wording now comes from src/lib/characterTaxonomy.ts.
+    expect(alignmentLabel('neutral')).toBe('Anti-Hero');
+    // Legacy synonym kept when the labels were centralised.
+    expect(alignmentLabel('evil')).toBe('Villain');
     expect(alignmentLabel('-')).toBeNull();
   });
 });

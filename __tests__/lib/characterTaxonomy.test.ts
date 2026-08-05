@@ -14,11 +14,13 @@ describe('alignmentLabel', () => {
     expect(alignmentLabel('bad')).toBe('Villain');
   });
 
-  it('calls neutral "Neutral" on every platform', () => {
-    // Web used to say "Anti-Hero" here while native said "Neutral" — 919
-    // characters reading differently depending on the device. "Neutral" is the
-    // one that is never a claim the data can't support.
-    expect(alignmentLabel('neutral')).toBe('Neutral');
+  it('calls neutral "Anti-Hero" everywhere', () => {
+    // Native's character page used to say "Neutral" while web's said
+    // "Anti-Hero" — 919 characters reading differently by device. "Anti-Hero"
+    // won because four other surfaces (spotlight slide, search role badge,
+    // social-web focus card, explore feed) already said it; the purer word
+    // would have left the character page as the only screen disagreeing.
+    expect(alignmentLabel('neutral')).toBe('Anti-Hero');
   });
 
   it('is forgiving about case and padding', () => {

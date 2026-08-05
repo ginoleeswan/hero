@@ -11,6 +11,7 @@ import Animated, {
 import { useHeroRow } from '../../lib/query/heroQueries';
 import { HeroImage } from '../HeroImage';
 import { COLORS, PAPER_TEXT } from '../../constants/colors';
+import { alignmentLabel } from '../../lib/characterTaxonomy';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -144,11 +145,12 @@ export function HeroPeek({
                   <Text style={styles.chipText}>{publisher}</Text>
                 </View>
               )}
-              {!!alignment && (
+              {/* The fallback used to render `alignment` raw, so a neutral
+                  character's chip read a lowercase "neutral" next to properly
+                  cased "Hero"/"Villain" ones. */}
+              {!!alignmentLabel(alignment) && (
                 <View style={[styles.chip, alignment === 'bad' && styles.chipBad]}>
-                  <Text style={styles.chipText}>
-                    {alignment === 'good' ? 'Hero' : alignment === 'bad' ? 'Villain' : alignment}
-                  </Text>
+                  <Text style={styles.chipText}>{alignmentLabel(alignment)}</Text>
                 </View>
               )}
             </View>

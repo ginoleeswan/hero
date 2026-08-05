@@ -29,6 +29,8 @@ import { type Hero } from '../../src/lib/db/heroes';
 import { loginHref } from '../../src/lib/loginRedirect';
 import { RightNowBand } from '../../src/components/web/home/RightNowBand';
 import { useExploreData } from '../../src/lib/query/exploreQueries';
+// Alignment wording is shared — five surfaces render this chip.
+import { alignmentLabel } from '../../src/lib/characterTaxonomy';
 import { prefersReducedMotion } from '../../src/lib/motion';
 import type { FavouriteHero } from '../../src/types';
 import { RankingCard } from '../../src/components/web/home/RankingCard';
@@ -221,16 +223,6 @@ function glowColor(hex: string | undefined, alpha: number): string {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r},${g},${b},${alpha})`;
-}
-
-// Map the raw alignment value (good/bad/neutral) to a display label.
-function alignmentLabel(alignment?: string | null): string | null {
-  if (!alignment) return null;
-  const a = alignment.toLowerCase();
-  if (a === 'good') return 'Hero';
-  if (a === 'bad') return 'Villain';
-  if (a === 'neutral') return 'Anti-Hero';
-  return null;
 }
 
 // A single power-stat chip: icon + label header, bold value, and a magnitude

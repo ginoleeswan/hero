@@ -16,8 +16,11 @@ import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 import { SPOTLIGHT } from './homeGeometry';
+import { ALIGNMENT_LABELS } from '../../lib/characterTaxonomy';
 
-const ALIGN_LABEL: Record<string, string> = { good: 'Hero', bad: 'Villain', neutral: 'Anti-Hero' };
+// Wording lives in src/lib/characterTaxonomy.ts — five surfaces render this
+// same chip and they had drifted.
+const ALIGN_LABEL = ALIGNMENT_LABELS;
 
 export function SpotlightSlide({
   hero,
