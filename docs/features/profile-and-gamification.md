@@ -29,6 +29,27 @@ tier, milestone detection) on the `settled` flag, not `loading`; `loading`
 flips false on the first snapshot but `settled` is the "every source resolved"
 signal, so reading before it risks acting on a partial picture.
 
+That snapshot is a **single React Query key** (`queryKeys.profileData(userId)`)
+whose `queryFn` does the `Promise.allSettled` internally. Splitting the five
+sources into five queries would be the obvious refactor and would reintroduce
+exactly the layout stagger the snapshot exists to prevent — don't. Keeping one
+key preserves the reveal while gaining caching, retry, request dedup and
+offline pausing. A rejected source still degrades to its empty default, so one
+dead endpoint can't blank the profile.
+
+Two consequences of the move worth knowing:
+
+- **`setFavourites` / `setTakes` write to the cache, not to local state.** They
+  keep their `Dispatch<SetStateAction<…>>` shape so the views are unchanged, but
+  an optimistic un-favourite now survives the screen unmounting — under the old
+  `useState` version, switching tabs and back silently resurrected a hero the
+  user had just removed.
+- **`refetch` goes through `queryClient.refetchQueries`, not `query.refetch`.**
+  The query object is a new reference every render, so a `refetch` closed over
+  it would be too — and both views put it in a `useFocusEffect` dependency
+  array, where an unstable identity means refetching on every render instead of
+  every focus.
+
 | Source | Fetcher | Backing |
 | --- | --- | --- |
 | Favourites | `getUserFavouriteHeroes` — `src/lib/db/favourites.ts` | `user_favourites` |

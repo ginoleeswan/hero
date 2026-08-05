@@ -34,6 +34,10 @@ export const queryKeys = {
   // future object-shaped profile query can't collide with it (that shape clash
   // once bounced the admin out of catalog-health).
   isAdmin: (userId: string) => ['profile', userId, 'isAdmin'] as const,
+  /** The whole profile snapshot (favourites + battle + contributions + taste +
+   *  takes) under ONE key — the sections are fetched together and applied
+   *  together on purpose. See useProfileData. */
+  profileData: (userId: string) => ['profile', userId, 'data'] as const,
   team: (id: string) => ['teams', 'detail', id] as const,
   issue: (id: string) => ['comics', 'issue', id] as const,
   newComics: (limit: number) => ['comics', 'new', limit] as const,
