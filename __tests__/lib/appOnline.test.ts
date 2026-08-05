@@ -94,4 +94,21 @@ describe('startAppOnlineTracking', () => {
     spy.mockRestore();
     Object.defineProperty(Platform, 'OS', { value: original, configurable: true });
   });
+
+  it('degrades quietly when the binary predates the NetInfo module', () => {
+    // This file ships over the air; the native module does not. An update can
+    // land on an older build with the same runtimeVersion, and throwing there
+    // would take the app down on launch — much worse than no offline detection.
+    jest.resetModules();
+    jest.doMock('@react-native-community/netinfo', () => {
+      throw new Error('Native module RNCNetInfo not found');
+    });
+    const spy = jest.spyOn(onlineManager, 'setEventListener');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { startAppOnlineTracking: reloaded } = require('../../src/lib/query/appOnline');
+    expect(() => reloaded()()).not.toThrow();
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+    jest.dontMock('@react-native-community/netinfo');
+  });
 });

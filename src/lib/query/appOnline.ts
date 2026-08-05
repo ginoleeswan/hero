@@ -22,6 +22,11 @@
 import { Platform } from 'react-native';
 import { onlineManager } from '@tanstack/react-query';
 
+interface NetInfoState {
+  isConnected: boolean | null;
+  isInternetReachable: boolean | null;
+}
+
 /**
  * Returns an unsubscribe. Web is left alone — the browser's own online/offline
  * events are exactly what React Query expects there, and replacing them with
@@ -30,9 +35,22 @@ import { onlineManager } from '@tanstack/react-query';
 export function startAppOnlineTracking(): () => void {
   if (Platform.OS === 'web') return () => {};
 
-  // Required lazily so the web bundle never reaches for the native module.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const NetInfo = require('@react-native-community/netinfo').default;
+  // Required lazily so the web bundle never reaches for the native module —
+  // and inside a try, because this file ships over the air while the module it
+  // needs does not. An update carrying this code can legitimately land on an
+  // older binary that predates the NetInfo build (same runtimeVersion, same
+  // channel, so expo-updates considers them compatible). Throwing there would
+  // take the whole app down on launch, which is far worse than the problem this
+  // file exists to solve. Degrade to React Query's old always-online default
+  // instead: queries just try, exactly as before.
+  let NetInfo: { addEventListener: (cb: (s: NetInfoState) => void) => () => void };
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    NetInfo = require('@react-native-community/netinfo').default;
+    if (!NetInfo?.addEventListener) return () => {};
+  } catch {
+    return () => {};
+  }
 
   // `setEventListener` returns void — the manager keeps the cleanup the setup
   // function hands back, but never gives it to us. So hold the NetInfo
@@ -41,17 +59,15 @@ export function startAppOnlineTracking(): () => void {
   let unsubscribeNetInfo: (() => void) | undefined;
 
   onlineManager.setEventListener((setOnline) => {
-    unsubscribeNetInfo = NetInfo.addEventListener(
-      (state: { isConnected: boolean | null; isInternetReachable: boolean | null }) => {
-        // `isInternetReachable` is the honest signal — it distinguishes "joined a
-        // wifi network" from "that wifi actually routes anywhere", which is the
-        // captive-portal / hotel-wifi case. It is null while NetInfo is still
-        // determining reachability, and treating that null as offline would
-        // wrongly pause every query during the first moments after launch, so it
-        // falls back to `isConnected`.
-        setOnline(state.isInternetReachable ?? state.isConnected ?? true);
-      },
-    );
+    unsubscribeNetInfo = NetInfo.addEventListener((state: NetInfoState) => {
+      // `isInternetReachable` is the honest signal — it distinguishes "joined a
+      // wifi network" from "that wifi actually routes anywhere", which is the
+      // captive-portal / hotel-wifi case. It is null while NetInfo is still
+      // determining reachability, and treating that null as offline would
+      // wrongly pause every query during the first moments after launch, so it
+      // falls back to `isConnected`.
+      setOnline(state.isInternetReachable ?? state.isConnected ?? true);
+    });
     return () => unsubscribeNetInfo?.();
   });
 

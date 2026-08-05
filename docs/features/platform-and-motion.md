@@ -409,8 +409,15 @@ the moment signal returns. Two decisions worth keeping:
   first moments after launch. Better to try and fail than refuse to try.
 
 Unlike `appFocus.ts`, **this could not ship over the air** — NetInfo is a native
-module, so a binary without it crashes on the import. It landed with the EAS
-build that includes it.
+module. It landed with the EAS build that includes it.
+
+That asymmetry is a trap worth naming: `appOnline.ts` itself *does* ship over
+the air, and an update carrying it can land on an older binary that predates the
+NetInfo build — same `runtimeVersion`, same channel, so expo-updates considers
+them compatible. So the `require` sits inside a `try` and returns a no-op on
+failure, degrading to React Query's old always-online default rather than taking
+the app down on launch. **Any future native module reached from OTA-shipped code
+needs the same treatment.**
 
 `useIsOffline` (`src/hooks/useIsOffline.ts`) reads the *onlineManager*, not
 NetInfo, so the UI can never disagree with what the data layer is actually
