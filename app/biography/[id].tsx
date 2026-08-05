@@ -36,6 +36,7 @@ import {
   BIOGRAPHY_RENDERERS,
   SectionAnchorProvider,
 } from '../../src/components/biography/SectionAnchor';
+import { makeBiographyImageRenderer } from '../../src/components/biography/BiographyImage';
 
 const ORANGE_FAINT = 'rgba(231,115,51,0.3)';
 const ORANGE_RULE = 'rgba(231,115,51,0.45)';
@@ -309,6 +310,13 @@ export default function BiographyScreen() {
 
   // Link resolution is shared (useBiography); only the *acting* differs by
   // platform, so this is the whole platform-specific half.
+  // The <img> renderer needs the prose column width, so it is built per width
+  // rather than declared as a module constant like the others.
+  const renderers = useMemo(
+    () => ({ ...BIOGRAPHY_RENDERERS, img: makeBiographyImageRenderer(contentWidth) }),
+    [contentWidth],
+  );
+
   const renderersProps = useMemo(
     () => ({
       a: {
@@ -371,7 +379,7 @@ export default function BiographyScreen() {
             baseStyle={BASE_STYLE}
             tagsStyles={TAG_STYLES}
             systemFonts={SYSTEM_FONTS}
-            renderers={BIOGRAPHY_RENDERERS}
+            renderers={renderers}
             renderersProps={renderersProps}
             enableExperimentalMarginCollapsing
           />

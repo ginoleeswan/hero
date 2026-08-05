@@ -20,6 +20,20 @@ them collide with a gesture.
 Everything eventually mounts; this is **not** windowing. The contents rail jumps
 to measured offsets, and a section that never mounted has none.
 
+Images are the other half. ComicVine's markup carries **no width or height** —
+only a `srcset` descriptor — so the default `img` renderer had to fetch each
+image to measure it before it could lay out. On a document with ~240 of them
+that is a continuous stream of reflows under the reader's thumb, which is what
+"choppy" actually was. `BiographyImage` reserves a fixed box up front and shows
+a `Skeleton` inside it until the image fades in, so the page height is final the
+moment it mounts and nothing below an image ever moves.
+
+The box is a guess (`contentFit="contain"` letterboxes rather than crops) and it
+is deliberately **not** resized once the real dimensions are known — a
+correction after paint is precisely the reflow this exists to remove. The
+`srcset` width is used only to avoid upscaling a small image past its own
+resolution.
+
 Two things to keep in mind if you touch it:
 
 - Margins only collapse **within** one `RenderHTML` instance, so each chunk
