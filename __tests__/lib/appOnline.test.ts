@@ -2,7 +2,7 @@
 // branch here fails silently. Reading the wrong NetInfo field pauses queries on
 // a working connection; treating `null` as offline pauses every query during
 // the first moments after launch, before reachability has been determined.
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import { onlineManager } from '@tanstack/react-query';
 import { startAppOnlineTracking } from '../../src/lib/query/appOnline';
 
@@ -40,6 +40,9 @@ describe('startAppOnlineTracking', () => {
   beforeEach(() => {
     mockNetHandler = undefined;
     mockUnsubscribe.mockClear();
+    // The code now checks for the native module before requiring the JS
+    // package, so the happy path needs one to be present.
+    NativeModules.RNCNetInfo = {} as never;
   });
 
   afterEach(() => {
@@ -95,19 +98,29 @@ describe('startAppOnlineTracking', () => {
     Object.defineProperty(Platform, 'OS', { value: original, configurable: true });
   });
 
-  it('degrades quietly when the binary predates the NetInfo module', () => {
-    // This file ships over the air; the native module does not. An update can
-    // land on an older build with the same runtimeVersion, and throwing there
-    // would take the app down on launch — much worse than no offline detection.
+  it('never touches the JS package when the native module is missing', () => {
+    // The bug this replaced: a try/catch around the require was not enough.
+    // NetInfo throws from module scope, and Metro reports a module-init failure
+    // to LogBox even when the caller swallows the rethrow — so the app kept
+    // working and the user still got a full-screen red error on a binary that
+    // predated the NetInfo build. The only quiet failure is not importing it.
+    delete (NativeModules as Record<string, unknown>).RNCNetInfo;
     jest.resetModules();
+
+    let required = false;
     jest.doMock('@react-native-community/netinfo', () => {
-      throw new Error('Native module RNCNetInfo not found');
+      required = true;
+      throw new Error('@react-native-community/netinfo: NativeModule.RNCNetInfo is null.');
     });
+
     const spy = jest.spyOn(onlineManager, 'setEventListener');
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { startAppOnlineTracking: reloaded } = require('../../src/lib/query/appOnline');
+
     expect(() => reloaded()()).not.toThrow();
+    expect(required).toBe(false);
     expect(spy).not.toHaveBeenCalled();
+
     spy.mockRestore();
     jest.dontMock('@react-native-community/netinfo');
   });

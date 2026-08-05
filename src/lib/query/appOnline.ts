@@ -19,7 +19,7 @@
 // NetInfo is a native module, so unlike `appFocus.ts` this cannot ship over the
 // air: a binary without it will crash on the import. It landed together with
 // the EAS build that includes it.
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import { onlineManager } from '@tanstack/react-query';
 
 interface NetInfoState {
@@ -35,14 +35,27 @@ interface NetInfoState {
 export function startAppOnlineTracking(): () => void {
   if (Platform.OS === 'web') return () => {};
 
-  // Required lazily so the web bundle never reaches for the native module —
-  // and inside a try, because this file ships over the air while the module it
-  // needs does not. An update carrying this code can legitimately land on an
-  // older binary that predates the NetInfo build (same runtimeVersion, same
-  // channel, so expo-updates considers them compatible). Throwing there would
-  // take the whole app down on launch, which is far worse than the problem this
-  // file exists to solve. Degrade to React Query's old always-online default
-  // instead: queries just try, exactly as before.
+  // Look for the NATIVE module before touching the JS package.
+  //
+  // This file ships over the air; the native module does not. An update
+  // carrying it can land on an older binary that predates the NetInfo build —
+  // same runtimeVersion, same channel, so expo-updates considers them
+  // compatible and delivers it.
+  //
+  // A try/catch around the require is NOT enough, which cost a red screen to
+  // learn. NetInfo throws from module scope (`internal/nativeInterface.ts`,
+  // `if (!RNCNetInfo) throw`), and Metro reports a module-initialisation
+  // failure to LogBox regardless of whether the caller swallows the rethrow.
+  // The error is caught, the app keeps working — and the user still stares at
+  // a full-screen error. Not importing it at all is the only quiet failure.
+  //
+  // The check mirrors NetInfo's own resolution in `internal/nativeModule.ts`:
+  // RN ≥ 0.77 dropped `global.__turboModuleProxy` and reads `NativeModules`
+  // directly, but the legacy path is honoured so this doesn't misfire if the
+  // proxy is ever set again.
+  const turboModulesLegacy = (globalThis as { __turboModuleProxy?: unknown }).__turboModuleProxy;
+  if (turboModulesLegacy == null && !NativeModules.RNCNetInfo) return () => {};
+
   let NetInfo: { addEventListener: (cb: (s: NetInfoState) => void) => () => void };
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports

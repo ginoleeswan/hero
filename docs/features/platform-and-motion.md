@@ -434,10 +434,19 @@ module. It landed with the EAS build that includes it.
 That asymmetry is a trap worth naming: `appOnline.ts` itself *does* ship over
 the air, and an update carrying it can land on an older binary that predates the
 NetInfo build — same `runtimeVersion`, same channel, so expo-updates considers
-them compatible. So the `require` sits inside a `try` and returns a no-op on
-failure, degrading to React Query's old always-online default rather than taking
-the app down on launch. **Any future native module reached from OTA-shipped code
-needs the same treatment.**
+them compatible and delivers it.
+
+**A `try`/`catch` around the `require` is not enough**, which this cost a red
+screen to learn. NetInfo throws from module scope
+(`internal/nativeInterface.ts`: `if (!RNCNetInfo) throw`), and Metro reports a
+module-initialisation failure to LogBox *regardless of whether the caller
+swallows the rethrow*. The error is caught, the app keeps running — and the user
+still stares at a full-screen error. Not importing it at all is the only quiet
+failure, so the code checks `NativeModules.RNCNetInfo` first, mirroring
+NetInfo's own resolution in `internal/nativeModule.ts`.
+
+**Any native module reached from OTA-shipped code needs a native-side presence
+check, not an exception handler.**
 
 `useIsOffline` (`src/hooks/useIsOffline.ts`) reads the *onlineManager*, not
 NetInfo, so the UI can never disagree with what the data layer is actually
