@@ -28,6 +28,8 @@ import AnalyticsProvider from '../src/components/Analytics';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../src/lib/query/queryClient';
 import { startAppFocusTracking } from '../src/lib/query/appFocus';
+import { startAppOnlineTracking } from '../src/lib/query/appOnline';
+import { OfflineBanner } from '../src/components/ui/OfflineBanner';
 import { postAuthTarget } from '../src/lib/loginRedirect';
 import { COLORS, INK_TEXT } from '../src/constants/colors';
 import { initSentry, captureException } from '../src/lib/sentry';
@@ -148,6 +150,14 @@ function QueryFocusBridge() {
   return null;
 }
 
+// The connectivity half of the same idea: without it React Query assumes it is
+// permanently online, so a phone that loses signal spends the timeout plus two
+// retries on every query before admitting anything is wrong.
+function QueryOnlineBridge() {
+  useEffect(() => startAppOnlineTracking(), []);
+  return null;
+}
+
 function AuthGate({ fontsReady }: { fontsReady: boolean }) {
   const { user, loading } = useAuth();
   const segments = useSegments();
@@ -226,7 +236,9 @@ export default function RootLayout() {
         <AnalyticsProvider />
         <PresenceHeartbeat />
         <QueryFocusBridge />
+        <QueryOnlineBridge />
         <AuthGate fontsReady={fontsReady} />
+        <OfflineBanner />
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

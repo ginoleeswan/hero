@@ -32,6 +32,10 @@ import { postAuthTarget } from '../src/lib/loginRedirect';
 import AnalyticsProvider from '../src/components/Analytics';
 import { recordClientError, installGlobalErrorCapture } from '../src/lib/db/clientErrors';
 import { initSentry } from '../src/lib/sentry';
+// No online bridge here: on web React Query's own navigator.onLine/online-offline
+// wiring already feeds the onlineManager, so the banner has a correct signal to
+// read without NetInfo (which must stay out of the web bundle entirely).
+import { OfflineBanner } from '../src/components/ui/OfflineBanner';
 
 // Start crash reporting as early as possible (module scope, before any render).
 // No-op without EXPO_PUBLIC_SENTRY_DSN.
@@ -262,6 +266,7 @@ export default function WebRootLayout() {
         <CommandAlertsProvider>
           <WebAuthGate fontsReady={fontsReady} />
         </CommandAlertsProvider>
+        <OfflineBanner />
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

@@ -349,7 +349,7 @@ Both are checkable mechanically, and **`yarn check:ui` now does** — see below.
 
 ## Failure and offline states
 
-Two separate problems. One is fixed; the other is measured but deliberately
+Three separate problems. Two are fixed; the third is measured but deliberately
 not swept.
 
 ### Focus revalidation (fixed)
@@ -368,12 +368,37 @@ gated by the 5-minute `staleTime`, so returning quickly still costs nothing.
 state, and treating it as focused would mean peeking at the switcher never
 produces a false→true edge, so no refetch would ever fire.
 
-### Connectivity (blocked)
+### Connectivity (fixed)
 
-`onlineManager` has no RN wiring either, so React Query assumes it is always
-online. That is the safer default — queries still try — but nothing
-auto-refetches on reconnect. Fixing it properly needs NetInfo or
-`expo-network`, both native modules, so it is blocked on a rebuild.
+`onlineManager` had no RN wiring either, so React Query assumed it was always
+online. That sounds like the safe default — queries still try — but it is worse
+than it looks: on a phone with no signal, requests don't fail fast, they hang
+until the OS times them out and then retry twice (`retry: 2`), so the user
+watches a spinner for tens of seconds and is told nothing. Nothing refetched on
+reconnect either, because the library never learned it had gone.
+
+`src/lib/query/appOnline.ts` wires `onlineManager` to
+`@react-native-community/netinfo`. Queries now pause while offline and resume
+the moment signal returns. Two decisions worth keeping:
+
+- **`isInternetReachable` beats `isConnected`.** The former distinguishes
+  "joined a wifi network" from "that wifi routes somewhere", which is the
+  captive-portal case where every request otherwise hangs.
+- **`null` reachability means online, not offline.** NetInfo reports `null`
+  until it has probed; treating that as offline would pause every query for the
+  first moments after launch. Better to try and fail than refuse to try.
+
+Unlike `appFocus.ts`, **this could not ship over the air** — NetInfo is a native
+module, so a binary without it crashes on the import. It landed with the EAS
+build that includes it.
+
+`useIsOffline` (`src/hooks/useIsOffline.ts`) reads the *onlineManager*, not
+NetInfo, so the UI can never disagree with what the data layer is actually
+doing — and the native module stays out of the web bundle, where the browser's
+own online/offline events feed the manager instead. `OfflineBanner` renders from
+it in both root layouts. It is a persistent pill, not a Toast: offline is a
+state the user sits in, not an event that just happened. It offers no advice,
+because there is none to give — the data layer recovers on its own.
 
 ### Errors that look like empty data (measured, not swept)
 

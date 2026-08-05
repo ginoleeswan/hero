@@ -3835,6 +3835,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-community/netinfo@npm:12.0.1":
+  version: 12.0.1
+  resolution: "@react-native-community/netinfo@npm:12.0.1"
+  peerDependencies:
+    react: "*"
+    react-native: ">=0.59"
+  checksum: 10c0/66c5fab04ef3ffe9b1f2e3578e7d3052a8c3ae327d94fa41f7d95ec4db3de4dd4017bf486013f031cb1aa12909002492474f259ea6212471f730cca39239dd35
+  languageName: node
+  linkType: hard
+
 "@react-native-google-signin/google-signin@npm:^16.1.2":
   version: 16.1.2
   resolution: "@react-native-google-signin/google-signin@npm:16.1.2"
@@ -11600,6 +11610,7 @@ __metadata:
     "@expo/vector-icons": "npm:^15.1.1"
     "@react-native-async-storage/async-storage": "npm:2.2.0"
     "@react-native-community/cli": "npm:^20.1.3"
+    "@react-native-community/netinfo": "npm:12.0.1"
     "@react-native-google-signin/google-signin": "npm:^16.1.2"
     "@react-native-masked-view/masked-view": "npm:^0.3.2"
     "@react-native/jest-preset": "npm:^0.85.3"
