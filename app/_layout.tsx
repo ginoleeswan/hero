@@ -30,6 +30,9 @@ import { queryClient } from '../src/lib/query/queryClient';
 import { startAppFocusTracking } from '../src/lib/query/appFocus';
 import { startAppOnlineTracking } from '../src/lib/query/appOnline';
 import { OfflineBanner } from '../src/components/ui/OfflineBanner';
+// Native only — there is no such thing as an OTA update on web, where a reload
+// is just a reload. Deliberately absent from _layout.web.tsx.
+import { UpdateReadyPill } from '../src/components/ui/UpdateReadyPill';
 import { postAuthTarget } from '../src/lib/loginRedirect';
 import { COLORS, INK_TEXT } from '../src/constants/colors';
 import { initSentry, captureException } from '../src/lib/sentry';
@@ -239,6 +242,7 @@ export default function RootLayout() {
         <QueryOnlineBridge />
         <AuthGate fontsReady={fontsReady} />
         <OfflineBanner />
+        <UpdateReadyPill />
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

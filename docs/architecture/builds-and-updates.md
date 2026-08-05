@@ -66,6 +66,34 @@ against it.
 signed out, or every published update is runtime-incompatible — toggle
 **Compatible only** off to tell the last case apart from the first two.
 
+## How an update actually reaches a running app
+
+The launcher route above is the manual one. For a build that follows a channel,
+delivery is automatic — but not as immediate as people expect, which is why
+`src/hooks/useOtaUpdate.ts` exists.
+
+Out of the box, expo-updates checks **once, at launch**, downloads in the
+background, and applies what it downloaded on the **next** launch. So an update
+published while someone has the app open reaches them two cold starts later,
+with nothing on screen to say so. Before this hook, nothing in the app called
+any expo-updates API at all.
+
+The hook adds the two missing halves:
+
+- **Re-check on foreground**, throttled to once a minute — otherwise a session
+  that stays alive for days never learns about anything published after it
+  started, and an unthrottled version would hit the manifest endpoint every time
+  the user flicked back from Messages.
+- **Offer the restart instead of taking it.** `UpdateReadyPill` shows "New
+  version — restart" and waits. The expo-updates docs example calls
+  `reloadAsync()` the moment `isUpdatePending` flips; doing that restarts the
+  app under whatever the user was in the middle of, which reads as a crash.
+
+`Updates.isEnabled` is false in Expo Go and when running off a dev server, so
+the prompt can't appear in either — it only means something in an installed
+build. There's no web equivalent, so the pill is mounted in `app/_layout.tsx`
+only and deliberately absent from `_layout.web.tsx`.
+
 ## Setup this needs (one time)
 
 The CI lane is inert until these repository secrets exist. It self-skips with a
