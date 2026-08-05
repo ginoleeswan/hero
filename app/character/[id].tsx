@@ -56,6 +56,8 @@ import {
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, ACCENT_INK, ORANGE_INK, PAPER_TEXT } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
+import { isPresentableFact } from '../../src/lib/characterFacts';
+import { ALIGNMENT_LABELS, ORIGIN_LABELS } from '../../src/lib/characterTaxonomy';
 import { SocialWebPortal } from '../../src/components/character/SocialWebPortal';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
 import { Skeleton } from '../../src/components/ui/Skeleton';
@@ -100,8 +102,10 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// Shared "is this a real value" guard — DB rows carry '-' / 'null' / '' sentinels.
-const valid = (v?: string | null) => !!v && v !== '-' && v !== 'null' && v.trim() !== '';
+// "Is this a real value?" lives in src/lib/characterFacts.ts so this half and
+// the web half can't drift again — they already had, and native was showing
+// literal "Unknown" / "No alter egos found." text that web hid.
+const valid = isPresentableFact;
 
 // "Created by" sits left of the alignment chips. Two names fill one line and a
 // third wraps to a comfortable second (the identity block reserves room for it),
@@ -249,7 +253,7 @@ function SectionHeader({ title, action }: { title: string; action?: React.ReactN
 }
 
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
-  if (!value || value === '-' || value === 'null' || value === '') return null;
+  if (!isPresentableFact(value)) return null;
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}:</Text>
@@ -261,23 +265,37 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
 // Chip text uses ACCENT_INK, not the fill hue: the wash sits at 12-18% over
 // beige, so the label is effectively text on paper and the fill colours fail
 // there (green 2.45:1, blue 2.65:1, gold 3.08:1). The `bg` washes stay as-is.
+// Wording comes from src/lib/characterTaxonomy.ts so it can't drift from web
+// again; only the washes are local, because they resolve against this surface.
 const ALIGNMENT_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  good: { label: 'Hero', bg: 'rgba(39,174,96,0.15)', color: ACCENT_INK.green },
-  bad: { label: 'Villain', bg: 'rgba(231,76,60,0.15)', color: ACCENT_INK.red },
-  neutral: { label: 'Neutral', bg: 'rgba(100,100,100,0.12)', color: PAPER_TEXT.faint },
+  good: { label: ALIGNMENT_LABELS.good, bg: 'rgba(39,174,96,0.15)', color: ACCENT_INK.green },
+  bad: { label: ALIGNMENT_LABELS.bad, bg: 'rgba(231,76,60,0.15)', color: ACCENT_INK.red },
+  neutral: {
+    label: ALIGNMENT_LABELS.neutral,
+    bg: 'rgba(100,100,100,0.12)',
+    color: PAPER_TEXT.faint,
+  },
 };
 
-const ORIGIN_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  mutant: { label: 'Mutant', bg: 'rgba(139,92,246,0.15)', color: ACCENT_INK.purple },
-  alien: { label: 'Alien', bg: 'rgba(21,161,171,0.15)', color: ACCENT_INK.blue },
-  human: { label: 'Human', bg: 'rgba(162,161,155,0.15)', color: PAPER_TEXT.faint },
-  'god/eternal': { label: 'Eternal', bg: 'rgba(249,178,34,0.18)', color: ACCENT_INK.gold },
-  radiation: { label: 'Radiation', bg: 'rgba(231,115,51,0.15)', color: ACCENT_INK.orange },
-  cyborg: { label: 'Cyborg', bg: 'rgba(45,45,45,0.12)', color: ACCENT_INK.black },
-  robot: { label: 'Robot', bg: 'rgba(45,45,45,0.12)', color: ACCENT_INK.black },
-  training: { label: 'Training', bg: 'rgba(80,35,20,0.12)', color: ACCENT_INK.brown },
-  inhuman: { label: 'Inhuman', bg: 'rgba(21,161,171,0.15)', color: ACCENT_INK.blue },
+const ORIGIN_WASH: Record<string, { bg: string; color: string }> = {
+  mutant: { bg: 'rgba(139,92,246,0.15)', color: ACCENT_INK.purple },
+  alien: { bg: 'rgba(21,161,171,0.15)', color: ACCENT_INK.blue },
+  human: { bg: 'rgba(162,161,155,0.15)', color: PAPER_TEXT.faint },
+  'god/eternal': { bg: 'rgba(249,178,34,0.18)', color: ACCENT_INK.gold },
+  radiation: { bg: 'rgba(231,115,51,0.15)', color: ACCENT_INK.orange },
+  cyborg: { bg: 'rgba(45,45,45,0.12)', color: ACCENT_INK.black },
+  robot: { bg: 'rgba(45,45,45,0.12)', color: ACCENT_INK.black },
+  training: { bg: 'rgba(80,35,20,0.12)', color: ACCENT_INK.brown },
+  inhuman: { bg: 'rgba(21,161,171,0.15)', color: ACCENT_INK.blue },
 };
+
+const ORIGIN_CONFIG: Record<string, { label: string; bg: string; color: string }> =
+  Object.fromEntries(
+    Object.entries(ORIGIN_WASH).map(([key, wash]) => [
+      key,
+      { label: ORIGIN_LABELS[key] ?? key, ...wash },
+    ]),
+  );
 
 interface TaxoChip {
   key: string;
@@ -306,10 +324,10 @@ function AffiliationChips({ value }: { value: string | null | undefined }) {
   const router = useRouter();
   // Hooks must run unconditionally, so derive chips first (empty when blank) and
   // resolve team ids before any early return.
-  const chips = (value && value !== '-' && value !== 'null' ? value : '')
+  const chips = (isPresentableFact(value) ? (value as string) : '')
     .split(/[,;]/)
     .map((s) => s.trim())
-    .filter((s) => s && s !== '-' && s !== 'null' && s !== 'none');
+    .filter(isPresentableFact);
   const resolveTeamId = useHeroTeams(chips);
   if (chips.length === 0) return null;
   const visible = expanded ? chips : chips.slice(0, 8);
@@ -1029,7 +1047,7 @@ export default function CharacterScreen() {
                   const taxoChips = resolveTaxoChips(alignment, origin);
                   const hasBadges = taxoChips.length > 0;
                   const fullName = data.stats.biography['full-name'];
-                  const hasAlias = !!fullName && fullName !== '-' && fullName !== 'null';
+                  const hasAlias = isPresentableFact(fullName);
                   const hasCreators = !!data.details.creators?.length;
                   return (
                     <>

@@ -44,6 +44,26 @@ When you change behaviour on one side, grep the other side for the same
 feature before calling it done. New shared logic goes in the hook, not in
 whichever file you happened to have open.
 
+**This is not hypothetical — the character pair had silently drifted in three
+user-visible ways**, each found only by reading the two files side by side:
+
+| Behaviour | Native said | Web said | Reach |
+| --- | --- | --- | --- |
+| Placeholder filtering | kept `Unknown` / `None` / `No alter egos found.` | hid them | 426 + 236 + 164 rows |
+| `alignment: neutral` | "Neutral" | "Anti-Hero" | 919 characters |
+| `origin: training` | "Training" | "Trained" | — |
+
+All three were *duplicated constants*, not duplicated markup: each file had its
+own junk-value set and its own label map. They now live in
+`src/lib/characterFacts.ts` and `src/lib/characterTaxonomy.ts`, tested, so the
+next divergence has to be deliberate.
+
+The lesson generalises: **when de-duplicating a pair, start with the constants
+and pure helpers, not the JSX.** They are where drift actually hurts (it changes
+what the app says), they are safe to extract without touching either layout, and
+they are testable. The markup can stay forked — it is genuinely platform-specific
+— as long as the meaning behind it is not.
+
 ## Web chrome: the constant-ink system
 
 iOS Safari tints its status bar and toolbar from the **document background**,

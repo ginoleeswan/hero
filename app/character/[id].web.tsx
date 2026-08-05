@@ -37,6 +37,11 @@ import {
   ORANGE_INK,
 } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
+import { isPresentableFact, cleanFact } from '../../src/lib/characterFacts';
+import {
+  alignmentLabel as taxoAlignment,
+  originLabel as taxoOrigin,
+} from '../../src/lib/characterTaxonomy';
 import { MOTION, prefersReducedMotion } from '../../src/lib/motion';
 import {
   VT_PORTRAIT,
@@ -88,7 +93,8 @@ const STAT_CONFIG = [
   { key: 'combat', label: 'Combat', color: COLORS.brown },
 ];
 
-const JUNK_VALUES = new Set(['-', 'null', 'none', 'no alter egos found.', 'n/a', 'unknown']);
+// Was a local Set; moved to src/lib/characterFacts.ts when the native half
+// turned out to be filtering a narrower list and leaking placeholders.
 
 // Catalog median per stat (heroes with non-zero stats, 2026-07-02) — the faint
 // tick on each Power Profile bar that makes "94 intelligence" mean something.
@@ -127,7 +133,7 @@ const RAIL_SECTIONS: RailSection[] = [
 
 // Map the raw alignment value to a display label (mirrors the Explore stage).
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
-  if (!value || value === '' || JUNK_VALUES.has(value.toLowerCase().trim())) return null;
+  if (!isPresentableFact(value)) return null;
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -157,7 +163,7 @@ function MobileDossier({
   const [editing, setEditing] = useState(false);
   const { biography: bio, appearance: app, work, connections } = stats;
 
-  const valid = (v?: string | null) => !!v && v !== '' && !JUNK_VALUES.has(v.toLowerCase().trim());
+  const valid = isPresentableFact;
   const aliases = bio.aliases.filter(valid);
   const heightStr = app.height.filter(valid).join(' / ');
   const weightStr = app.weight.filter(valid).join(' / ');
@@ -463,14 +469,6 @@ type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 // A value that's blank or only separators (e.g. "/" when height fields are empty)
 // counts as missing — keeps the Quick Facts grid free of empty tiles.
-function cleanFact(value: string | null | undefined): string | null {
-  if (!value) return null;
-  const v = value.trim();
-  if (v === '' || JUNK_VALUES.has(v.toLowerCase())) return null;
-  if (/^[\s/–-]*$/.test(v)) return null;
-  return v;
-}
-
 function genderIcon(value: string | null | undefined): IoniconName {
   const v = (value ?? '').toLowerCase();
   if (v.includes('female')) return 'female-outline';
@@ -746,7 +744,7 @@ export default function WebCharacterScreen() {
         : (data?.stats.connections['group-affiliation'] ?? '')
             .split(/[,;]/)
             .map((s) => s.trim())
-            .filter((s) => s.length > 0 && !JUNK_VALUES.has(s.toLowerCase())),
+            .filter(isPresentableFact),
     ),
   );
   // Affiliations that match a real team become doorways into /team/[id].
@@ -848,9 +846,7 @@ export default function WebCharacterScreen() {
     // Profile
     full_name: stats.biography['full-name'],
     alter_egos: stats.biography['alter-egos'],
-    aliases: (stats.biography.aliases ?? [])
-      .filter((a) => a && !JUNK_VALUES.has(a.toLowerCase().trim()))
-      .join('\n'),
+    aliases: (stats.biography.aliases ?? []).filter(isPresentableFact).join('\n'),
     place_of_birth: stats.biography['place-of-birth'],
     first_appearance: stats.biography['first-appearance'],
     origin: details.origin,
@@ -888,28 +884,10 @@ export default function WebCharacterScreen() {
     return COLORS.orange;
   })();
 
-  const alignmentLabel = (() => {
-    const a = (stats.biography.alignment ?? '').toLowerCase();
-    if (a === 'good') return 'Hero';
-    if (a === 'bad') return 'Villain';
-    if (a === 'neutral') return 'Anti-Hero';
-    return null;
-  })();
-
-  const ORIGIN_LABELS: Record<string, string> = {
-    mutant: 'Mutant',
-    alien: 'Alien',
-    human: 'Human',
-    'god/eternal': 'Eternal',
-    radiation: 'Radiation',
-    cyborg: 'Cyborg',
-    robot: 'Robot',
-    inhuman: 'Inhuman',
-    training: 'Trained',
-  };
-  const originLabel = details.origin
-    ? (ORIGIN_LABELS[details.origin.toLowerCase().trim()] ?? null)
-    : null;
+  // Wording now comes from src/lib/characterTaxonomy.ts — this half said
+  // "Anti-Hero" where native said "Neutral" for the same 919 characters.
+  const alignmentLabel = taxoAlignment(stats.biography.alignment);
+  const originLabel = taxoOrigin(details.origin);
 
   const statValues = STAT_CONFIG.map(({ key }) =>
     parseInt((stats.powerstats as Record<string, string>)[key] ?? '0', 10),
