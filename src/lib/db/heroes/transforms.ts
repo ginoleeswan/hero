@@ -2,9 +2,9 @@ import { supabase } from '../../supabase';
 import type { CharacterData, MovieAppearance, StatsSource } from '../../../types';
 import { rowToMember, type FamilyRow } from '../../family/rowToMember';
 import type { FamilyMember } from '../../family/types';
-import type { Hero } from './types';
+import type { HeroRow } from './types';
 
-export function heroRowToCharacterData(hero: Hero): CharacterData {
+export function heroRowToCharacterData(hero: HeroRow): CharacterData {
   const stat = (v: number | null) => String(v ?? 0);
   return {
     stats: {
@@ -55,7 +55,9 @@ export function heroRowToCharacterData(hero: Hero): CharacterData {
       firstIssueData:
         (hero.first_issue_data as unknown as import('../../../types').FirstIssue | null) ?? null,
       powers: hero.powers ?? null,
-      description: hero.description ?? null,
+      // Placeholder rows from list caches predate the computed field, so an
+      // absent flag reads as 'no biography' until the real row lands.
+      hasBiography: hero.has_description ?? false,
       origin: hero.origin ?? null,
       issueCount: hero.issue_count ?? null,
       creators: hero.creators ?? null,

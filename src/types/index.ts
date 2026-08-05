@@ -80,7 +80,10 @@ export interface HeroDetails {
   firstIssueId: string | null;
   firstIssueData: FirstIssue | null;
   powers: string[] | null;
-  description: string | null;
+  /** Whether a long-form biography exists, NOT the biography itself. The HTML
+   *  reaches 417 KB on Spider-Man and is fetched only by /biography/[id]; every
+   *  other surface just needs to know whether to offer the link. */
+  hasBiography: boolean;
   origin: string | null;
   issueCount: number | null;
   creators: string[] | null;

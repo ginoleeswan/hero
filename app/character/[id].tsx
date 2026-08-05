@@ -796,7 +796,7 @@ export default function CharacterScreen() {
   const presentSections = useMemo<{ key: string; label: string }[]>(() => {
     if (!data) return [];
     const s: { key: string; label: string }[] = [];
-    if (comicVineLoading || data.details.summary || data.details.description)
+    if (comicVineLoading || data.details.summary || data.details.hasBiography)
       s.push({ key: 'summary', label: 'Summary' });
     s.push({ key: 'stats', label: 'Stats' });
     if (comicVineLoading || data.details.powers?.length)
@@ -1151,12 +1151,12 @@ export default function CharacterScreen() {
                       <Skeleton width="65%" height={12} borderRadius={5} />
                     </View>
                   </SkeletonProvider>
-                ) : data.details.summary || data.details.description ? (
+                ) : data.details.summary || data.details.hasBiography ? (
                   <View style={styles.summaryBlock}>
                     <PullQuoteBio
                       summary={data.details.summary ?? ''}
                       accent={theme.accent}
-                      hasBiography={!!data.details.description}
+                      hasBiography={data.details.hasBiography}
                       onReadMore={() => router.push(`/biography/${id}`)}
                       onEdit={() =>
                         setEditTarget({

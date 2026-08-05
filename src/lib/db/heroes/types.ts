@@ -1,6 +1,28 @@
 import type { Tables } from '../../../types/database.generated';
 
 export type Hero = Tables<'heroes'>;
+
+/**
+ * What a hero-row fetch actually returns: every column except the biography
+ * HTML, plus the `has_description` computed field that replaced it.
+ *
+ * Typed separately from `Hero` on purpose. Claiming `description` on a row that
+ * doesn't carry it is exactly the kind of lie that typechecks and then fails at
+ * runtime — `hero.description` would read `undefined`, every biography would
+ * look absent, and nothing would complain. See `src/lib/db/heroes/columns.ts`
+ * for why the column is left out, and `getHeroBiography` for how the screen
+ * that needs it gets it.
+ */
+export type HeroRow = Omit<Hero, 'description'> & {
+  /**
+   * Optional because React Query serves list-cache rows as placeholder data
+   * while the real row loads (`findCachedHero`), and those were selected by
+   * browse queries that never asked for the computed field. Consumers default
+   * it to false — a biography link that appears a moment late is fine; a crash
+   * on a placeholder is not.
+   */
+  has_description?: boolean;
+};
 export type HeroCategory = 'popular' | 'villain' | 'xmen';
 export type PublisherFilter = 'All' | 'Marvel' | 'DC' | 'Other';
 export type AlignmentFilter = 'All' | 'Heroes' | 'Villains' | 'Anti';

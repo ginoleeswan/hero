@@ -1,4 +1,4 @@
-import { getIconicHeroes, getHeroById, type Hero } from './db/heroes';
+import { getIconicHeroes, getHeroById, type Hero, type HeroRow } from './db/heroes';
 import { getCachedVerdict } from './db/verdicts';
 import { compareStats } from './compare';
 import { generateVerdict } from './api';
@@ -35,18 +35,18 @@ function dailySeed(d = new Date()): number {
 
 const STAT_KEYS = ['intelligence', 'strength', 'speed', 'durability', 'power', 'combat'] as const;
 
-function statsString(h: Hero): Record<string, string> {
+function statsString(h: HeroRow): Record<string, string> {
   const o: Record<string, string> = {};
   for (const k of STAT_KEYS) o[k] = String((h[k] as number | null) ?? 0);
   return o;
 }
-function statsNumber(h: Hero): Record<string, number> {
+function statsNumber(h: HeroRow): Record<string, number> {
   const o: Record<string, number> = {};
   for (const k of STAT_KEYS) o[k] = (h[k] as number | null) ?? 0;
   return o;
 }
 
-const toMatchupHero = (h: Hero): MatchupHero => ({
+const toMatchupHero = (h: HeroRow): MatchupHero => ({
   id: h.id,
   name: h.name,
   image_url: h.image_url,
@@ -57,7 +57,7 @@ const toMatchupHero = (h: Hero): MatchupHero => ({
   speed: h.speed,
 });
 
-async function buildMatchup(a: Hero, b: Hero): Promise<TodaysMatchup> {
+async function buildMatchup(a: HeroRow, b: HeroRow): Promise<TodaysMatchup> {
   const cmp = compareStats(a.name, statsString(a), b.name, statsString(b));
 
   let verdict = await getCachedVerdict(a.id, b.id);
@@ -89,15 +89,16 @@ async function buildMatchup(a: Hero, b: Hero): Promise<TodaysMatchup> {
  * all (e.g. a deleted hero) — the caller falls back to the seeded pick.
  */
 async function resolveDebatePair(
-  pool: Hero[],
+  pool: HeroRow[],
   dd: { heroAId: string; heroBId: string },
-): Promise<[Hero, Hero] | null> {
+): Promise<[HeroRow, HeroRow] | null> {
   const byId = new Map(pool.map((h) => [h.id, h]));
 
-  // Off-pool heroes are fetched with getHeroById (full `select *` rows) so a
-  // curated pair outside the top-24 auto pool still carries its real stats —
-  // the picker's whole point is pairs the pool wouldn't have chosen.
-  const resolve = async (id: string): Promise<Hero | null> =>
+  // Off-pool heroes are fetched with getHeroById so a curated pair outside the
+  // top-24 auto pool still carries its real stats — the picker's whole point is
+  // pairs the pool wouldn't have chosen. (Those rows omit the biography HTML;
+  // nothing here reads it.)
+  const resolve = async (id: string): Promise<HeroRow | null> =>
     byId.get(id) ?? (await getHeroById(id));
   const [a, b] = await Promise.all([resolve(dd.heroAId), resolve(dd.heroBId)]);
 
@@ -125,7 +126,7 @@ export async function getTodaysMatchup(): Promise<TodaysMatchup | null> {
  * server row (or an unresolvable pair), this falls through unchanged to the
  * deterministic per-day seed over the pool.
  */
-export async function getTodaysMatchupFromPool(pool: Hero[]): Promise<TodaysMatchup | null> {
+export async function getTodaysMatchupFromPool(pool: HeroRow[]): Promise<TodaysMatchup | null> {
   const dd = await getDailyDebate(todayIso());
   if (dd) {
     const pair = await resolveDebatePair(pool, dd);

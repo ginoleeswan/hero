@@ -1,5 +1,12 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Linking, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Linking,
+  InteractionManager,
+  useWindowDimensions,
+} from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -139,12 +146,19 @@ const READ_LINE = 220;
 // against it, so the section title has air above it.
 const JUMP_CLEARANCE = 84;
 
+// How much of the document mounts on the first frame. Two sections is enough to
+// fill a phone screen and give the reader something to start on; the rest
+// arrives in idle batches. Batches are small on purpose — the point is that no
+// single commit is ever large enough to drop frames.
+const FIRST_PAINT_SECTIONS = 2;
+const SECTIONS_PER_BATCH = 2;
+
 export default function BiographyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { hero, lead, toc, hasBiography, failed, retry } = useBiography(id);
+  const { hero, lead, toc, sections, hasBiography, failed, retry } = useBiography(id);
   const reduceMotion = useReducedMotion();
 
   const contentWidth = width - 40;
@@ -166,6 +180,28 @@ export default function BiographyScreen() {
   const [progress, setProgress] = useState(0);
   const [pillHidden, setPillHidden] = useState(false);
   const [contentsOpen, setContentsOpen] = useState(false);
+
+  // ── Progressive mount ───────────────────────────────────────────────────
+  // How much of the document is on screen. Everything eventually mounts —
+  // this is deliberately not windowing, because the contents rail jumps to
+  // measured offsets and a section that never mounted has none. It only moves
+  // the cost off the first frame and spreads the rest across idle time.
+  const [mountedSections, setMountedSections] = useState(FIRST_PAINT_SECTIONS);
+
+  // A different hero (or the row arriving) restarts the staging.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting on a new document is the point
+    setMountedSections(FIRST_PAINT_SECTIONS);
+  }, [sections]);
+
+  useEffect(() => {
+    if (mountedSections >= sections.length) return;
+    // runAfterInteractions, so a batch never lands mid-scroll or mid-transition.
+    const task = InteractionManager.runAfterInteractions(() => {
+      setMountedSections((n) => Math.min(sections.length, n + SECTIONS_PER_BATCH));
+    });
+    return () => task.cancel();
+  }, [mountedSections, sections.length]);
 
   // Republish the measured offsets in heading order. Images above a heading
   // load async and shift everything below them, so this runs on every measure
@@ -312,18 +348,35 @@ export default function BiographyScreen() {
           />
         </View>
       ) : null}
-      {lead.body ? (
-        <RenderHTML
-          contentWidth={contentWidth}
-          source={{ html: lead.body }}
-          baseStyle={BASE_STYLE}
-          tagsStyles={TAG_STYLES}
-          systemFonts={SYSTEM_FONTS}
-          renderers={BIOGRAPHY_RENDERERS}
-          renderersProps={renderersProps}
-          enableExperimentalMarginCollapsing
-        />
-      ) : null}
+      {/* One RenderHTML per section, mounted a couple at a time. Rendering the
+          whole body in a single instance is what made a big biography stall on
+          open: RNRH parses, builds a render tree and mounts every node in one
+          synchronous commit, and the longest documents belong to the most-opened
+          characters (Batman is 398 KB with ~242 images). Splitting the mount
+          also staggers the image requests, which used to fire all at once. */}
+      {sections.slice(0, mountedSections).map((html, i) => (
+        <View
+          key={i}
+          // Vertical margins only collapse within one RenderHTML instance, so
+          // splitting the document would otherwise add the paragraph's bottom
+          // margin to the following heading's top margin and open up a visible
+          // extra gap before every section. Every chunk after the first begins
+          // with an <h2>, so pulling back by exactly that paragraph margin
+          // restores the original spacing.
+          style={i > 0 ? styles.sectionChunk : undefined}
+        >
+          <RenderHTML
+            contentWidth={contentWidth}
+            source={{ html }}
+            baseStyle={BASE_STYLE}
+            tagsStyles={TAG_STYLES}
+            systemFonts={SYSTEM_FONTS}
+            renderers={BIOGRAPHY_RENDERERS}
+            renderersProps={renderersProps}
+            enableExperimentalMarginCollapsing
+          />
+        </View>
+      ))}
       <View style={styles.colophon}>
         <View style={styles.colophonRule} />
         <Text style={styles.colophonMark}>❖</Text>
@@ -575,6 +628,10 @@ const styles = StyleSheet.create({
   // indents its first lines around it. Flame's ink runs tall, so the cap is
   // nudged up to sit on the lead's first baseline rather than above it.
   leadBlock: { position: 'relative' },
+  // Derived from the paragraph margin rather than typed as a number, so the two
+  // can't drift apart: this cancels exactly the margin that no longer collapses
+  // now that each section is its own RenderHTML root.
+  sectionChunk: { marginTop: -(TAG_STYLES.p.marginBottom as number) },
   dropCap: {
     position: 'absolute',
     left: 0,

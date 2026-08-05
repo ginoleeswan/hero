@@ -474,15 +474,24 @@ describe('heroRowToCharacterData — powers mapping', () => {
 // ─── heroRowToCharacterData — v2 comicvine fields ────────────────────────────
 
 describe('heroRowToCharacterData — v2 comicvine fields', () => {
-  it('maps description to details.description', () => {
-    const hero: HeroRow = { ...baseHero, description: 'A bitten spider gave him powers.' };
-    const result = heroRowToCharacterData(hero);
-    expect(result.details.description).toBe('A bitten spider gave him powers.');
+  it('reports that a biography exists without carrying it', () => {
+    // The row no longer contains the HTML at all — only the has_description
+    // computed field. Fetching 398 KB of Batman to render a link was the point
+    // of splitting them.
+    const result = heroRowToCharacterData({ ...baseHero, has_description: true });
+    expect(result.details.hasBiography).toBe(true);
   });
 
-  it('maps null description to null', () => {
-    const result = heroRowToCharacterData({ ...baseHero, description: null });
-    expect(result.details.description).toBeNull();
+  it('reports no biography when the flag is false', () => {
+    const result = heroRowToCharacterData({ ...baseHero, has_description: false });
+    expect(result.details.hasBiography).toBe(false);
+  });
+
+  it('treats a placeholder row with no flag as having no biography', () => {
+    // List-cache rows are served as placeholder data and were selected without
+    // the computed field. A late-appearing link beats a crash.
+    const { has_description: _omitted, ...withoutFlag } = { ...baseHero, has_description: true };
+    expect(heroRowToCharacterData(withoutFlag).details.hasBiography).toBe(false);
   });
 
   it('maps origin to details.origin', () => {
@@ -529,7 +538,7 @@ describe('heroRowToCharacterData — v2 comicvine fields', () => {
 
   it('maps all null v2 fields to null', () => {
     const result = heroRowToCharacterData(baseHero);
-    expect(result.details.description).toBeNull();
+    expect(result.details.hasBiography).toBe(false);
     expect(result.details.origin).toBeNull();
     expect(result.details.issueCount).toBeNull();
     expect(result.details.creators).toBeNull();

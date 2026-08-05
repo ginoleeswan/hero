@@ -236,7 +236,8 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
                   firstIssueId: details.firstIssueId ?? p.firstIssueId,
                   firstIssueData: details.firstIssueData ?? p.firstIssueData,
                   powers: details.powers ?? p.powers,
-                  description: details.description ?? p.description,
+                  // Either source knowing about a biography is enough.
+                  hasBiography: details.hasBiography || p.hasBiography,
                   origin: details.origin ?? p.origin,
                   issueCount: details.issueCount ?? p.issueCount,
                   creators: details.creators ?? p.creators,

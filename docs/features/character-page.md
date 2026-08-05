@@ -6,6 +6,62 @@
 > anatomy below lets you jump straight to the part you need instead of reading
 > four thousand lines to find it.
 
+
+## Progressive mount on `/biography/[id]`
+
+Native renders the document a couple of `<h2>` sections at a time
+(`splitSections` in `src/hooks/useBiography.ts`, `FIRST_PAINT_SECTIONS` /
+`SECTIONS_PER_BATCH` in the screen). Rendering it whole is what made a big
+biography stall on open: `react-native-render-html` parses, builds a render tree
+and mounts every node in one synchronous commit — thousands of views and ~240
+image requests for Batman. Batches land via `InteractionManager`, so none of
+them collide with a gesture.
+
+Everything eventually mounts; this is **not** windowing. The contents rail jumps
+to measured offsets, and a section that never mounted has none.
+
+Two things to keep in mind if you touch it:
+
+- Margins only collapse **within** one `RenderHTML` instance, so each chunk
+  after the first pulls back by the paragraph's bottom margin
+  (`styles.sectionChunk`, derived from `TAG_STYLES.p` so the two can't drift).
+  Without it every heading gains 14px of unintended air.
+- `splitSections` is a pure re-slice — the chunks rejoin to the original, and a
+  test asserts it. A `<h2>` nested inside another element would leave unbalanced
+  tags in a chunk, which htmlparser2 auto-closes rather than failing on.
+
+## The biography payload
+
+`heroes.description` is ComicVine's long-form prose and it is **not fetched by
+this screen**. The distribution is extreme — median 1.2 KB, p95 23 KB, and the
+worst are the most-visited characters: Spider-Man 417 KB with ~240 `<img>`
+tags, Batman 398 KB, 45 MB across the catalogue.
+
+The character page never rendered a character of it; it only asked "does one
+exist?" to decide whether to offer the link. So:
+
+- `getHeroById` selects `HERO_ROW_SELECT` (`src/lib/db/heroes/columns.ts`) —
+  every column except `description`, plus a `has_description` computed field
+  (a SQL function, so no storage and no table rewrite). Measured against the
+  live API, Spider-Man's row went from **447,000 bytes to 22,070**.
+- `HeroDetails.description` became `HeroDetails.hasBiography: boolean`.
+- `getHeroBiography` / `useHeroBiographyHtml` fetch the HTML, and only
+  `/biography/[id]` calls them.
+- Row fetches are typed `HeroRow`, not `Hero` — `Omit<Hero,'description'>`.
+  Keeping the `Hero` type would have typechecked while `hero.description` read
+  `undefined` at runtime and every biography silently looked absent.
+
+**Trap:** PostgREST has no "all columns except" syntax, so `HERO_ROW_COLUMNS`
+lists 83 names by hand. A column added by a later migration would exist in the
+database and in the generated types, typecheck everywhere, and never arrive.
+`__tests__/lib/heroColumns.test.ts` parses `database.generated.ts` and fails if
+the two disagree — add the new column there and the test goes green.
+
+One deliberate loss: the web character page used the biography as an SEO
+description fallback, so 543 heroes with a biography but no summary now take the
+generic line. Crawlers are unaffected — `api/bot-page.ts` does its own query and
+still reads `description`.
+
 ## Mental model (read this first)
 
 One hook, two thick views. `src/hooks/useHeroDetail.ts` owns every fetch and

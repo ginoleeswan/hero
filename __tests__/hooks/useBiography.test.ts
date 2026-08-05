@@ -1,7 +1,12 @@
 // Parsing tests for the shared biography brain. The two screens are thin views
 // over this, so the HTML transforms are the part worth pinning: they run on
 // arbitrary ComicVine markup and used to be duplicated per platform.
-import { splitLead, flattenTables, resolveBioLink } from '../../src/hooks/useBiography';
+import {
+  splitLead,
+  flattenTables,
+  resolveBioLink,
+  splitSections,
+} from '../../src/hooks/useBiography';
 
 jest.mock('../../src/lib/db/heroes', () => ({
   getHeroByComicvineId: jest.fn(),
@@ -130,5 +135,46 @@ describe('resolveBioLink', () => {
 
   it('ignores anchors and anything else', async () => {
     await expect(resolveBioLink('#origin')).resolves.toEqual({ kind: 'ignore' });
+  });
+});
+
+describe('splitSections', () => {
+  const H = (n: string) => `<h2 id="bio-s${n}">Section ${n}</h2>`;
+
+  it('cuts one chunk per heading', () => {
+    const html = `${H('0')}<p>a</p>${H('1')}<p>b</p>${H('2')}<p>c</p>`;
+    const out = splitSections(html);
+    expect(out).toHaveLength(3);
+    expect(out[0]).toBe(`${H('0')}<p>a</p>`);
+    expect(out[2]).toBe(`${H('2')}<p>c</p>`);
+  });
+
+  it('keeps prose before the first heading as its own chunk', () => {
+    // Otherwise the opening paragraphs of a document that starts with prose
+    // would be silently dropped from the render.
+    const out = splitSections(`<p>intro</p>${H('0')}<p>a</p>`);
+    expect(out).toHaveLength(2);
+    expect(out[0]).toBe('<p>intro</p>');
+    expect(out[1]).toBe(`${H('0')}<p>a</p>`);
+  });
+
+  it('returns the whole document when it has no headings', () => {
+    expect(splitSections('<p>just prose</p>')).toEqual(['<p>just prose</p>']);
+  });
+
+  it('returns nothing for an empty document', () => {
+    expect(splitSections('')).toEqual([]);
+  });
+
+  it('loses no content — the chunks rejoin to the original', () => {
+    // The whole point is a pure re-slicing. Anything else would mean the
+    // progressive mount silently changes what the reader sees.
+    const html = `<p>intro</p>${H('0')}<p>a</p><img src="x.jpg">${H('1')}<ul><li>b</li></ul>`;
+    expect(splitSections(html).join('')).toBe(html);
+  });
+
+  it('handles headings with attributes and mixed case', () => {
+    const html = `<H2 class="x">One</H2><p>a</p><h2>Two</h2><p>b</p>`;
+    expect(splitSections(html)).toHaveLength(2);
   });
 });

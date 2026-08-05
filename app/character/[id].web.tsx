@@ -825,10 +825,14 @@ export default function WebCharacterScreen() {
   // Per-page SEO: title from name + publisher, description from the bio (HTML
   // stripped + truncated), OG image from the hero's portrait.
   const seoPublisher = stats.biography.publisher || 'Character';
+  // The biography HTML used to be the second choice here. It is no longer
+  // fetched by this screen — it reached 398 KB on Batman and was being pulled
+  // to every character page — so a hero with no summary now takes the generic
+  // line (543 of them). No SEO cost: crawlers are served by api/bot-page.ts,
+  // which does its own query and still reads `description`. This tag is only
+  // ever seen by a real browser.
   const seoRaw =
-    details.summary ||
-    details.description ||
-    `${stats.name} — powers, stats, first appearance and more on Mythique.`;
+    details.summary || `${stats.name} — powers, stats, first appearance and more on Mythique.`;
   const seoDesc =
     seoRaw
       .replace(/<[^>]*>/g, ' ')
@@ -1349,12 +1353,12 @@ export default function WebCharacterScreen() {
                       />
                       <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
                     </View>
-                  ) : details.summary || details.description ? (
+                  ) : details.summary || details.hasBiography ? (
                     <Reveal instant={arrivedViaMorph}>
                       <PullQuoteBio
                         summary={details.summary ?? ''}
                         accent={theme.accent}
-                        hasBiography={!!details.description}
+                        hasBiography={details.hasBiography}
                         onReadMore={() => router.push(`/biography/${id}`)}
                         onEdit={() =>
                           setEditTarget({ field: SUMMARY_FIELD, current: details.summary ?? null })
@@ -2200,13 +2204,13 @@ export default function WebCharacterScreen() {
                     />
                     <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
                   </View>
-                ) : details.summary || details.description ? (
+                ) : details.summary || details.hasBiography ? (
                   <View style={styles.mBlock}>
                     <PullQuoteBio
                       flat
                       summary={details.summary ?? ''}
                       accent={theme.accent}
-                      hasBiography={!!details.description}
+                      hasBiography={details.hasBiography}
                       onReadMore={() => router.push(`/biography/${id}`)}
                       onEdit={() =>
                         setEditTarget({ field: SUMMARY_FIELD, current: details.summary ?? null })

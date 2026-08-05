@@ -1,5 +1,6 @@
 import { supabase } from '../../supabase';
-import type { Hero, HeroSearchResult, PublisherFilter, AlignmentFilter } from './types';
+import type { Hero, HeroRow, HeroSearchResult, PublisherFilter, AlignmentFilter } from './types';
+import { HERO_ROW_SELECT } from './columns';
 
 const norm = (s: string) => s.toLowerCase().replace(/[\s\-_.]/g, '');
 
@@ -42,8 +43,15 @@ export async function getHeroByComicvineId(cvId: string): Promise<Hero | null> {
   return data ?? null;
 }
 
-export async function getHeroById(id: string): Promise<Hero | null> {
-  const { data, error } = await supabase.from('heroes').select('*').eq('id', id).single();
+export async function getHeroById(id: string): Promise<HeroRow | null> {
+  // HERO_ROW_SELECT, not '*': '*' dragged the whole biography HTML along —
+  // 398 KB on Batman — to every screen that shows a hero, none of which render
+  // it. See src/lib/db/heroes/columns.ts.
+  const { data, error } = await supabase
+    .from('heroes')
+    .select(HERO_ROW_SELECT)
+    .eq('id', id)
+    .single();
   // PGRST116 = "no rows found". That is the ONLY error that means null — the id
   // genuinely is not in the catalog.
   //
@@ -55,7 +63,20 @@ export async function getHeroById(id: string): Promise<Hero | null> {
   if (error && error.code !== 'PGRST116') {
     throw new Error(`[getHeroById] ${error.message}`);
   }
-  return data ?? null;
+  return (data as unknown as HeroRow) ?? null;
+}
+
+/**
+ * The biography HTML on its own — the one payload deliberately kept out of
+ * `getHeroById`. Only /biography/[id] asks for this, so the 45 MB of ComicVine
+ * prose in the catalogue never travels to a screen that wouldn't show it.
+ */
+export async function getHeroBiography(id: string): Promise<string | null> {
+  const { data, error } = await supabase.from('heroes').select('description').eq('id', id).single();
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(`[getHeroBiography] ${error.message}`);
+  }
+  return data?.description ?? null;
 }
 
 /**

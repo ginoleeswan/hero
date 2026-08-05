@@ -11,6 +11,7 @@ import {
   getFranchisePage,
   getTeamPage,
   getHeroById,
+  getHeroBiography,
   heroRowToCharacterData,
   getHeroesByNames,
   getRelatedHeroes,
@@ -202,6 +203,23 @@ export function useFeaturedHero(slug: CategorySlug | null, publisher: CategoryPu
 
 /** The hero row for the detail screen. Placeholder = the row already cached in
  *  a category list, so name + portrait paint instantly on navigation. */
+/**
+ * The biography HTML, fetched on its own and only by the screen that renders
+ * it. Deliberately NOT part of `useHeroRow`: the document reaches 417 KB, and
+ * every other surface only needs the `has_description` flag that comes with the
+ * row. Its own cache key means opening a biography twice costs one fetch.
+ */
+export function useHeroBiographyHtml(id: string | undefined) {
+  return useQuery({
+    queryKey: id ? queryKeys.heroBiography(id) : ['heroes', 'biography', 'disabled'],
+    enabled: !!id,
+    queryFn: () => getHeroBiography(id!),
+    // The prose is effectively immutable; re-reading a hero shouldn't refetch
+    // hundreds of kilobytes.
+    staleTime: 1000 * 60 * 60,
+  });
+}
+
 export function useHeroRow(id: string | undefined) {
   const client = useQueryClient();
   return useQuery({
