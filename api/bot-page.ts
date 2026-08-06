@@ -148,8 +148,25 @@ const HUB_LIMIT = 100;
 // can't import that module, so keep the two in sync when categories change.
 // Values are raw PostgREST filter expressions; URLSearchParams percent-encodes
 // them (parens, quotes, `*` wildcards, spaces all decode correctly server-side).
-type CatQuery = { select: string; params: Array<[string, string]>; order: string };
-const TAG_SELECT = 'id,name,hero_tags!inner(tag)';
+type CatQuery = {
+  select: string;
+  params: Array<[string, string]>;
+  order: string;
+  /**
+   * A hub defined by a hero_tags tag rather than a heroes column. Resolved to
+   * ids BEFORE the heroes query — never embedded as `hero_tags!inner(tag)`.
+   *
+   * The embedded form is correct PostgREST and catastrophic here: the planner
+   * drives it off `heroes` instead of `hero_tags_tag_idx`, and because these
+   * tags are thin (anime 29, horror-icon 15) it never fills `limit=100` and so
+   * walks the whole fame/issue index to the end. Against the anon key — which
+   * is what this bundle uses — that hits the 3s statement_timeout and returns
+   * HTTP 500, which fetchHubHeroes fail-softs to [], which renders a noindex
+   * 404. All six tag hubs were serving Googlebot a 404. Same fix as the app's
+   * category grid (src/lib/db/heroes/categories.ts → heroIdsForTags).
+   */
+  tag?: string;
+};
 const CATEGORY_QUERY: Record<string, CatQuery> = {
   popular: {
     select: 'id,name',
@@ -215,36 +232,58 @@ const CATEGORY_QUERY: Record<string, CatQuery> = {
     order: 'issue_count.desc.nullslast',
   },
   anime: {
-    select: TAG_SELECT,
-    params: [['hero_tags.tag', 'eq.anime']],
+    select: 'id,name',
+    params: [],
+    tag: 'anime',
     order: 'issue_count.desc.nullslast',
   },
   'video-games': {
-    select: TAG_SELECT,
-    params: [['hero_tags.tag', 'eq.video-game']],
+    select: 'id,name',
+    params: [],
+    tag: 'video-game',
     order: 'issue_count.desc.nullslast',
   },
   horror: {
-    select: TAG_SELECT,
-    params: [['hero_tags.tag', 'eq.horror-icon']],
+    select: 'id,name',
+    params: [],
+    tag: 'horror-icon',
     order: 'issue_count.desc.nullslast',
   },
   magic: {
-    select: TAG_SELECT,
-    params: [['hero_tags.tag', 'eq.magic-user']],
+    select: 'id,name',
+    params: [],
+    tag: 'magic-user',
     order: 'fame_score.desc.nullslast',
   },
   aliens: {
-    select: TAG_SELECT,
-    params: [['hero_tags.tag', 'eq.alien']],
+    select: 'id,name',
+    params: [],
+    tag: 'alien',
     order: 'fame_score.desc.nullslast',
   },
   mythology: {
-    select: TAG_SELECT,
-    params: [['hero_tags.tag', 'eq.mythological']],
+    select: 'id,name',
+    params: [],
+    tag: 'mythological',
     order: 'fame_score.desc.nullslast',
   },
 };
+
+/** Every hero carrying a tag. The junction table is small and `tag` is indexed,
+ *  so this is a cheap indexed lookup — the whole point of not letting the
+ *  planner reach it through `heroes`. Ids are short numeric SuperheroAPI keys,
+ *  so even the widest tag (~200) makes a compact `in.(…)` list. */
+async function heroIdsForTag(tag: string): Promise<string[]> {
+  const sp = new URLSearchParams();
+  sp.set('select', 'hero_id');
+  sp.set('tag', `eq.${tag}`);
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/hero_tags?${sp.toString()}`, {
+    headers: { apikey: SUPABASE_KEY },
+  });
+  if (!r.ok) return [];
+  const rows = (await r.json()) as { hero_id?: string }[];
+  return rows.map((row) => row.hero_id).filter((id): id is string => !!id);
+}
 
 /** Fetch the top HUB_LIMIT heroes for a hub query, id+name only. Fail-soft to
  *  [] so a hub with no results (or a transient error) becomes a noindex 404
@@ -254,6 +293,11 @@ async function fetchHubHeroes(spec: CatQuery): Promise<RelatedLite[]> {
     const sp = new URLSearchParams();
     sp.set('select', spec.select);
     for (const [k, v] of spec.params) sp.append(k, v);
+    if (spec.tag) {
+      const ids = await heroIdsForTag(spec.tag);
+      if (!ids.length) return [];
+      sp.append('id', `in.(${ids.join(',')})`);
+    }
     sp.set('order', spec.order);
     sp.set('limit', String(HUB_LIMIT));
     const r = await fetch(`${SUPABASE_URL}/rest/v1/heroes?${sp.toString()}`, {
