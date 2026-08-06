@@ -186,6 +186,53 @@ embedded join survived it, and all three are now on `heroIdsForTags` too:
   serving Googlebot a 404. Its `CatQuery` now carries a `tag` field that is
   resolved to ids before the heroes request.
 
+## Publisher predicates: keep the statistics fresh, not the index list long
+
+`dark-horse` was the other slow category, and it looked like the same bug. It
+was not. The tell: `anime` failed **every** attempt, while `dark-horse` failed
+the first two and then served in 0.5s — a warm/cold curve, not a broken plan.
+
+`/category/dark-horse` filters `publisher ILIKE '%dark horse%'`. The trigram
+index for that has existed since `20260715105637`, which measured it at 5.2ms.
+By August the same query was timing out at 3s. Nothing about the index had
+changed; the **statistics** had drifted.
+
+`publisher` has 260 distinct values and the default statistics target keeps an
+MCV list of only 68. Outside that list the planner guesses, and its guess for
+`'%dark horse%'` was loose enough that walking `heroes_fame_score_idx` looked
+like it would fill `LIMIT 48` early. It does not — only 754 of 50,529 rows
+match, so it filtered 11,202 rows and burned 10,665 buffers before the anon
+`statement_timeout` killed it.
+
+`20260806154827_heroes_publisher_stats_freshness.sql` raises the target to 500
+(MCV 68 → 144, `n_distinct` 204 → 259 against an actual 260) and analyzes
+`heroes` at 2% drift instead of 10%, because the enrichment drains move more
+than 5,000 rows in a batch and the last autoanalyze had been four days stale.
+Row estimates are now exact — 754/754 on dark-horse, 3/3 on Dynamite.
+
+Measured as anon, warm, after:
+
+| Predicate | Rows | Plan | Time |
+| --- | --- | --- | --- |
+| `%dark horse%` | 754 | bitmap · `heroes_publisher_trgm` | 6.9ms |
+| `%dynamite%` | 3 | bitmap · `heroes_publisher_trgm` | 13ms |
+| `%image%` | 3421 | index scan · `heroes_fame_score_idx` | 16.7ms |
+
+Note that `%image%` still takes the fame-index walk. With accurate statistics
+that is the *right* choice — 3421 matches means the limit fills after ~3.6k
+rows, so the scan is bounded. The failure mode is never the plan shape itself,
+it is choosing a walk whose early exit never arrives.
+
+**Two rules fall out of this.** A `%pattern%` predicate is only as good as the
+planner's selectivity estimate, so a column that gets filtered by pattern needs
+a statistics target that covers its distinct values. And a timeout that comes
+and goes with cache warmth is a *costing* problem; one that fails every single
+time is a *shape* problem. They do not have the same fix.
+
+Beware measuring this from a dev container: a trivial single-row fetch against
+the REST endpoint costs ~0.44s of pure network from here, so anything under
+about a second is noise, not query time.
+
 ## History
 
 Historical specs and plans (status lines in them may be stale):
