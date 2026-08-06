@@ -1,4 +1,5 @@
 import { supabase } from '../../supabase';
+import { heroIdsForTags } from './categories';
 import type { Hero } from './types';
 
 // Minimal column sets for home page queries — cards only need image + name.
@@ -230,12 +231,20 @@ export async function getFranchiseIcons(limit = 20): Promise<Hero[]> {
 }
 
 /** Themed franchise row by media tag (anime / video-game / horror-icon /
- *  screen-icon / toy-cartoon), ranked by popularity within the theme. */
+ *  screen-icon / toy-cartoon), ranked by popularity within the theme.
+ *
+ *  Resolves the tag to ids first rather than embedding `hero_tags!inner(tag)`.
+ *  A row like this is the WORST case for the embedded join: the thinnest tags
+ *  (horror-icon has 15 heroes) hold fewer rows than the limit, so the planner
+ *  walks the entire fame index to the end trying to fill 20 and hits the 3s anon
+ *  statement timeout instead of returning. See heroIdsForTags in categories.ts. */
 export async function getHeroesByMediaTag(tag: string, limit = 20): Promise<Hero[]> {
+  const ids = await heroIdsForTags([tag]);
+  if (!ids.length) return [];
   const { data, error } = await supabase
     .from('heroes')
-    .select(`${HOME_ROW}, hero_tags!inner(tag)`)
-    .eq('hero_tags.tag', tag)
+    .select(HOME_ROW)
+    .in('id', ids)
     .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);

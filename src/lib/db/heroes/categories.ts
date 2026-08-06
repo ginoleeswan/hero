@@ -239,19 +239,20 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
     case 'aliens':
     case 'mythology': {
       const tag = CATEGORY_MEDIA_TAG[slug]!;
+      // Ids first, never an embedded join — see heroIdsForTags for the timeout
+      // that pattern caused on the paged path.
+      const ids = await heroIdsForTags([tag]);
+      if (!ids.length) return [];
       // Origin tags (magic/aliens/myth) run heavily to screen-and-game
       // characters with no issue count at all, so rank those by fame; the media
       // trio keeps its comics-first issue_count order.
       const orderCol = CATEGORY_MEDIA_TAG_ORDER[slug] ?? 'issue_count';
-      return fetchAllPages(
-        () =>
-          supabase
-            .from('heroes')
-            .select('*, hero_tags!inner(tag)')
-            .eq('hero_tags.tag', tag)
-            .order(orderCol, { ascending: false, nullsFirst: false }) as unknown as ReturnType<
-            Parameters<typeof fetchAllPages>[0]
-          >,
+      return fetchAllPages(() =>
+        supabase
+          .from('heroes')
+          .select('*')
+          .in('id', ids)
+          .order(orderCol, { ascending: false, nullsFirst: false }),
       );
     }
   }
@@ -284,7 +285,7 @@ const CATEGORY_LIST_COLUMNS =
  * If a tag ever grows into the thousands this should become an RPC — the same
  * move `category_facet_counts` and `get_browse_covers` already made.
  */
-async function heroIdsForTags(tagList: string[]): Promise<string[]> {
+export async function heroIdsForTags(tagList: string[]): Promise<string[]> {
   const { data, error } = await supabase
     .from('hero_tags')
     .select('hero_id, tag')

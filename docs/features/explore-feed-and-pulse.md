@@ -172,6 +172,20 @@ reason.
 **The general rule: a PostgREST filter on an embedded resource is a planner
 trap on a large table.** Resolve the ids, or write an RPC.
 
+That first fix only covered the paged grid. Three more copies of the same
+embedded join survived it, and all three are now on `heroIdsForTags` too:
+
+- `getAllHeroesBySlug` (categories.ts) — the whole-category fetch.
+- `getHeroesByMediaTag` (feed.ts) — the worst shape of the lot. A themed row
+  asks for 20 heroes, but horror-icon only has 15, so the limit can never be
+  filled and the planner walks the fame index to the very end every time.
+- `api/bot-page.ts` — the six tag-backed crawler hubs (`/category/anime`,
+  video-games, horror, magic, aliens, mythology). This bundle uses the **anon**
+  key, so it hit the same 3s timeout; `fetchHubHeroes` fail-softs a failure to
+  `[]`, and an empty hub renders as a **noindex 404**. Those six hub pages were
+  serving Googlebot a 404. Its `CatQuery` now carries a `tag` field that is
+  resolved to ids before the heroes request.
+
 ## History
 
 Historical specs and plans (status lines in them may be stale):

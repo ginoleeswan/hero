@@ -1,4 +1,4 @@
-import { getCategoryPage } from '../../../src/lib/db/heroes';
+import { getAllHeroesBySlug, getCategoryPage, getHeroesByMediaTag } from '../../../src/lib/db/heroes';
 import { DEFAULT_FILTERS } from '../../../src/lib/db/categoryFilters';
 
 // Tag filtering used to be an embedded inner join (`t0:hero_tags!inner(tag)`
@@ -24,6 +24,9 @@ jest.mock('../../../src/lib/supabase', () => {
     heroesChain[m] = jest.fn().mockReturnValue(heroesChain);
   });
   heroesChain.range = jest.fn().mockImplementation(() => Promise.resolve(mockHeroesResult));
+  // getHeroesByMediaTag awaits straight off `.limit()`; getAllHeroesBySlug pages
+  // with `.range()`, so both links have to be thenable.
+  heroesChain.limit = jest.fn().mockImplementation(() => Promise.resolve(mockHeroesResult));
 
   // hero_tags is awaited directly off `.in(...)`, so that link is the thenable.
   const tagsChain: Record<string, unknown> = {};
@@ -112,6 +115,34 @@ describe('getCategoryPage tag filter', () => {
       page: 0,
     });
     expect(res).toEqual({ heroes: [], total: 0 });
+    expect(heroes.range).not.toHaveBeenCalled();
+  });
+
+  // The paged grid was fixed first; these two kept their own copy of the
+  // embedded join for another release. getHeroesByMediaTag is the worse of the
+  // pair — a thin tag (horror-icon: 15) can never fill its limit of 20, so the
+  // planner walks the fame index to the very end before giving up.
+  it('resolves ids first in getAllHeroesBySlug, never embedding hero_tags', async () => {
+    mockTagRows = [{ hero_id: 'q', tag: 'alien' }];
+    await getAllHeroesBySlug('aliens');
+    expect(tags.in).toHaveBeenCalledWith('tag', ['alien']);
+    expect(heroes.in).toHaveBeenCalledWith('id', ['q']);
+    expect((heroes.select as jest.Mock).mock.calls[0][0]).not.toContain('hero_tags');
+  });
+
+  it('resolves ids first in getHeroesByMediaTag, never embedding hero_tags', async () => {
+    mockTagRows = [{ hero_id: 'r', tag: 'horror-icon' }];
+    await getHeroesByMediaTag('horror-icon');
+    expect(tags.in).toHaveBeenCalledWith('tag', ['horror-icon']);
+    expect(heroes.in).toHaveBeenCalledWith('id', ['r']);
+    expect((heroes.select as jest.Mock).mock.calls[0][0]).not.toContain('hero_tags');
+  });
+
+  it('never queries heroes for a tag nobody carries', async () => {
+    mockTagRows = [];
+    expect(await getHeroesByMediaTag('nobody-has-this')).toEqual([]);
+    expect(await getAllHeroesBySlug('anime')).toEqual([]);
+    expect(heroes.limit).not.toHaveBeenCalled();
     expect(heroes.range).not.toHaveBeenCalled();
   });
 
