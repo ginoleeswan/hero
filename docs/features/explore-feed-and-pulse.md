@@ -135,6 +135,43 @@ an index at `/event` (`get_event_index`), both platform-paired.
   (`get_trending_for_user`, `src/lib/db/trending.ts`), recently viewed
   (`useRecentlyViewed` over `user_view_history`, `src/lib/db/viewHistory.ts`).
 
+## Category pages: never filter on an embedded resource
+
+`/category/[slug]` shares `getCategoryPage` with the universe, franchise and
+team browse grids (`src/lib/db/heroes/categories.ts`). Tag-backed slugs — anime,
+video-games, horror, magic, aliens, mythology — used to reach their tag through
+a PostgREST embedded inner join:
+
+```ts
+.select('…, t0:hero_tags!inner(tag)').eq('t0.tag', 'anime')
+```
+
+Correct SQL, and it returned **HTTP 500 `canceling statement due to statement
+timeout`** on the live anon endpoint, every single attempt. With React Query's
+`retry: 2` that is three ~3.6s timeouts before the screen gives up — about
+twelve seconds of skeleton, ending in the empty state.
+
+The tell is which categories broke: **anime (29 heroes) and horror-icon (15)**,
+while video-game (129), mythological (67), alien (203) and magic-user (206) were
+all fine. The two that failed are the two with **fewer heroes than one page**
+(30). A filter on an embedded resource lets the planner drive off `heroes` —
+50k rows, a 238MB heap — instead of off `hero_tags_tag_idx`, and a page that can
+never be filled has no early exit. The same query written as plain SQL, or as
+`exists (…)`, plans fine at 11–42ms, so this is PostgREST's generated form
+specifically.
+
+Tags now resolve to ids first (`heroIdsForTags`), then the heroes query is a
+plain `.in('id', …)` — every existing facet, sort and pagination path unchanged.
+Measured after: 0.4–1.2s, HTTP 206, all six categories.
+
+The junction table is small (~8k rows; largest tag ~206, a 5KB id list). If a
+tag ever grows into the thousands this should become an RPC — the move
+`category_facet_counts` and `get_browse_covers` already made for the same
+reason.
+
+**The general rule: a PostgREST filter on an embedded resource is a planner
+trap on a large table.** Resolve the ids, or write an RPC.
+
 ## History
 
 Historical specs and plans (status lines in them may be stale):
