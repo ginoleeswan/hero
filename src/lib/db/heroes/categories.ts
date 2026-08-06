@@ -263,17 +263,48 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
 const CATEGORY_LIST_COLUMNS =
   'id, name, image_url, image_md_url, portrait_url, portrait_blurhash, publisher, issue_count';
 
-// Select columns plus one ALIASED inner-join per tag (t0, t1, …). Each tag must
-// be its own join: a single `hero_tags!inner(tag)` embed filtered by two
-// `.eq('hero_tags.tag', …)` requires ONE junction row to equal both tags —
-// impossible — so the inner join keeps zero rows and the grid comes back empty
-// (worse: on large tables the planner times out). Independent aliased joins give
-// the correct "has ALL of these tags" semantics. See applyListFacets.
-function tagJoinSelect(tagList: string[]): string {
-  if (!tagList.length) return CATEGORY_LIST_COLUMNS;
-  const joins = tagList.map((_, i) => `t${i}:hero_tags!inner(tag)`).join(', ');
-  return `${CATEGORY_LIST_COLUMNS}, ${joins}`;
+/**
+ * Resolve tags → hero ids, with "has ALL of these tags" semantics.
+ *
+ * This replaces what used to be an embedded inner join (`t0:hero_tags!inner(tag)`
+ * plus `.eq('t0.tag', …)`). That join was correct SQL and catastrophic in
+ * practice: PostgREST turns a filter on an EMBEDDED resource into a plan that
+ * drives off `heroes` — 50k rows, a 238MB heap — instead of off
+ * `hero_tags_tag_idx`. Measured against the live anon endpoint, the anime
+ * category returned HTTP 500 `canceling statement due to statement timeout`
+ * on every single attempt (~3.6s to the 3s cap). With React Query's `retry: 2`
+ * that is three timeouts before the screen gives up — the "very very long to
+ * load" the user saw. The same shape as SQL, driven off the tag index, is 42ms.
+ *
+ * Resolving ids first keeps the heroes query a plain indexed lookup and leaves
+ * every existing facet, sort and pagination path untouched.
+ *
+ * The junction table is small (~8k rows total; the largest single tag is ~200),
+ * so both the fetch and the resulting `in.(…)` list stay well inside URL limits.
+ * If a tag ever grows into the thousands this should become an RPC — the same
+ * move `category_facet_counts` and `get_browse_covers` already made.
+ */
+async function heroIdsForTags(tagList: string[]): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('hero_tags')
+    .select('hero_id, tag')
+    .in('tag', tagList);
+  if (error) throw new Error(`[heroIdsForTags] ${error.message}`);
+
+  const seen = new Map<string, Set<string>>();
+  for (const row of (data ?? []) as { hero_id: string; tag: string }[]) {
+    const tags = seen.get(row.hero_id) ?? new Set<string>();
+    tags.add(row.tag);
+    seen.set(row.hero_id, tags);
+  }
+  // Every requested tag must be present — the AND semantics the aliased joins
+  // used to provide.
+  const need = new Set(tagList).size;
+  return [...seen.entries()].filter(([, tags]) => tags.size === need).map(([id]) => id);
 }
+
+/** Empty page, for when a tag filter matches nothing — no round trip needed. */
+const EMPTY_PAGE = { heroes: [] as Hero[], total: 0 };
 
 // A user's raw search text becomes an `.or()` filter value; PostgREST parses `,`
 // as its OR-term delimiter and `()` as grouping, so a query like `Rocket, Groot`
@@ -310,7 +341,14 @@ export async function getCategoryPage(
   const to = from + pageSize - 1;
 
   // Inner-join hero_tags only when filtering by tag, so the base query is unchanged.
-  const selectCols = tagJoinSelect(tagList);
+  // Tag filters resolve to ids first — see heroIdsForTags for why the embedded
+  // join could not stay.
+  let tagIds: string[] | null = null;
+  if (tagList.length) {
+    tagIds = await heroIdsForTags(tagList);
+    if (!tagIds.length) return EMPTY_PAGE;
+  }
+  const selectCols = CATEGORY_LIST_COLUMNS;
 
   let q: any = supabase
     .from('heroes')
@@ -366,7 +404,8 @@ export async function getCategoryPage(
   else if (publisher === 'other')
     q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%');
 
-  q = applyListFacets(q, { alignment, gender, hasStats, tagList, search, sort });
+  if (tagIds) q = q.in('id', tagIds);
+  q = applyListFacets(q, { alignment, gender, hasStats, search, sort });
 
   const { data, error, count } = await q.range(from, to);
   if (error) throw new Error(error.message);
@@ -382,12 +421,11 @@ function applyListFacets(
     alignment: CategoryFilters['alignment'];
     gender: CategoryFilters['gender'];
     hasStats: boolean;
-    tagList: string[];
     search: string;
     sort: CategoryFilters['sort'];
   },
 ): any {
-  const { alignment, gender, hasStats, tagList, search, sort } = opts;
+  const { alignment, gender, hasStats, search, sort } = opts;
   if (alignment === 'good') q = q.eq('alignment', 'good');
   else if (alignment === 'bad') q = q.eq('alignment', 'bad');
   else if (alignment === 'neutral') q = q.ilike('alignment', '%neutral%');
@@ -396,11 +434,6 @@ function applyListFacets(
   else if (gender === 'female') q = q.ilike('gender', 'female');
 
   if (hasStats) q = q.gte('powerstats_total', 1);
-
-  // Aliased inner joins (t0, t1, …) so multiple tags AND correctly — see tagJoinSelect.
-  tagList.forEach((tag, i) => {
-    q = q.eq(`t${i}.tag`, tag);
-  });
 
   if (search.trim()) q = q.or(ilikeSearchOr(search));
 
@@ -437,14 +470,22 @@ export async function getUniversePage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const selectCols = tagJoinSelect(tagList);
+  // Tag filters resolve to ids first — see heroIdsForTags for why the embedded
+  // join could not stay.
+  let tagIds: string[] | null = null;
+  if (tagList.length) {
+    tagIds = await heroIdsForTags(tagList);
+    if (!tagIds.length) return EMPTY_PAGE;
+  }
+  const selectCols = CATEGORY_LIST_COLUMNS;
 
   let q: any = supabase
     .from('heroes')
     .select(selectCols, withCount ? { count: 'estimated' } : undefined)
     .ilike('publisher', `%${term}%`);
 
-  q = applyListFacets(q, { alignment, gender, hasStats, tagList, search, sort });
+  if (tagIds) q = q.in('id', tagIds);
+  q = applyListFacets(q, { alignment, gender, hasStats, search, sort });
 
   const { data, error, count } = await q.range(from, to);
   if (error) throw new Error(error.message);
@@ -475,14 +516,22 @@ export async function getFranchisePage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const selectCols = tagJoinSelect(tagList);
+  // Tag filters resolve to ids first — see heroIdsForTags for why the embedded
+  // join could not stay.
+  let tagIds: string[] | null = null;
+  if (tagList.length) {
+    tagIds = await heroIdsForTags(tagList);
+    if (!tagIds.length) return EMPTY_PAGE;
+  }
+  const selectCols = CATEGORY_LIST_COLUMNS;
 
   let q: any = supabase
     .from('heroes')
     .select(selectCols, withCount ? { count: 'estimated' } : undefined)
     .eq('franchise', term);
 
-  q = applyListFacets(q, { alignment, gender, hasStats, tagList, search, sort });
+  if (tagIds) q = q.in('id', tagIds);
+  q = applyListFacets(q, { alignment, gender, hasStats, search, sort });
 
   const { data, error, count } = await q.range(from, to);
   if (error) throw new Error(error.message);
@@ -609,14 +658,22 @@ export async function getTeamPage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const selectCols = tagJoinSelect(tagList);
+  // Tag filters resolve to ids first — see heroIdsForTags for why the embedded
+  // join could not stay.
+  let tagIds: string[] | null = null;
+  if (tagList.length) {
+    tagIds = await heroIdsForTags(tagList);
+    if (!tagIds.length) return EMPTY_PAGE;
+  }
+  const selectCols = CATEGORY_LIST_COLUMNS;
 
   let q: any = supabase
     .from('heroes')
     .select(selectCols, withCount ? { count: 'estimated' } : undefined)
     .contains('teams', [teamName]);
 
-  q = applyListFacets(q, { alignment, gender, hasStats, tagList, search, sort });
+  if (tagIds) q = q.in('id', tagIds);
+  q = applyListFacets(q, { alignment, gender, hasStats, search, sort });
 
   const { data, error, count } = await q.range(from, to);
   if (error) throw new Error(error.message);
