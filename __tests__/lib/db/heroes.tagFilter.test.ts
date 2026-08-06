@@ -1,4 +1,8 @@
-import { getAllHeroesBySlug, getCategoryPage, getHeroesByMediaTag } from '../../../src/lib/db/heroes';
+import {
+  getAllHeroesBySlug,
+  getCategoryPage,
+  getHeroesByMediaTag,
+} from '../../../src/lib/db/heroes';
 import { DEFAULT_FILTERS } from '../../../src/lib/db/categoryFilters';
 
 // Tag filtering used to be an embedded inner join (`t0:hero_tags!inner(tag)`
