@@ -178,6 +178,20 @@ Do **not** duplicate `useEffect`/fetch logic across the pair — change it once 
 the hook. When adding a screen with a web variant, both `foo.tsx` and
 `foo.web.tsx` must exist or expo-router throws a resolution error.
 
+## Reading screenshots from a dev build
+
+The user tests on an **Expo dev client**, so screenshots contain Expo's own
+chrome on top of the app. Do not report these as app bugs:
+
+- **The floating gear / bubble** (usually top-right, sometimes overlapping real
+  controls) is the **expo-dev-client debug menu launcher**. It is not in the
+  app, it is not in production builds, and there is nothing in this repo that
+  renders it.
+
+Before calling anything in a screenshot a layout bug, check it exists in the
+source. If you cannot find the element in `app/` or `src/`, it is dev-client
+chrome or an OS overlay.
+
 ## Working efficiently in this repo (for agents)
 
 - **Find the hook first.** Screen logic lives in `src/hooks/` and
