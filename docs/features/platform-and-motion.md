@@ -536,6 +536,29 @@ Unverified and worth checking first on a real device: `includeFontPadding`
 tuned on iOS — only 5 styles opt out today), and `expo-image` `blurRadius`
 parity, which the biography stage leans on.
 
+## Read the scroll offset, don't accumulate it
+
+Explore's billboard parallax is driven by the list's scroll offset. It used to
+be a `useSharedValue` fed by `useAnimatedScrollHandler`, and that shape has a
+defect worth naming: **an event handler accumulates, it does not read state**.
+Any move the handler doesn't see leaves the value stale, and a stale positive
+offset makes the billboard translate DOWN by `staleY × 0.5` with nothing
+scrolled away above it — the deep-navy root shows as a band across the top of
+the art.
+
+It got patched twice by guessing which moves went unseen: first `useFocusEffect`
+(tab away and back), then `onScrollToTop` and an `AppState` resume hook. Each
+guess closed one door and the band returned through another, because a list's
+offset can change without an `onScroll` in more ways than are worth
+enumerating — tab-bar scroll-to-top, state restoration on resume, RNScreens
+re-attaching the scroll view, a content-size change that clamps the offset.
+
+`useScrollOffset(animatedRef)` reads the scroll view's live `contentOffset`
+instead, so it cannot hold a value the list doesn't have. All three patches
+were deleted with it. **Prefer it over a hand-rolled scroll handler wherever
+the value drives layout rather than just an effect** — if a stale offset would
+be visible, an event handler is the wrong primitive.
+
 ## Overscroll must never show the canvas
 
 Keep the bounce. It is the iOS feel and a screen without it reads as broken —

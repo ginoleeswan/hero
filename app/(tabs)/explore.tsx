@@ -9,7 +9,7 @@ import {
   Pressable,
   StyleSheet,
   StatusBar,
-  AppState,
+  type FlatList,
   type ListRenderItem,
   type FlatListProps,
 } from 'react-native';
@@ -17,18 +17,19 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeOut,
-  useSharedValue,
-  useAnimatedScrollHandler,
+  useAnimatedRef,
+  useScrollOffset,
   useAnimatedStyle,
   useAnimatedReaction,
   runOnJS,
   interpolate,
   Extrapolation,
   type AnimatedProps,
+  type AnimatedRef,
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect, type Href } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useSignalFirstPaint } from '../../src/components/ui/BootStage';
 import { DUR, STAGGER, SPRING_SETTLE } from '../../src/lib/nativeMotion';
 import * as Haptics from 'expo-haptics';
@@ -101,8 +102,10 @@ type FeedRow =
   | { type: 'curated'; key: string; label: string; title: string; heroes: Hero[]; route?: Href };
 
 // Typed Animated.FlatList so renderItem/keyExtractor/CellRenderer infer FeedRow.
+// The ref is part of the cast because useScrollOffset needs an animated ref to
+// read the live contentOffset from — see the band-bug note in HomeScreen.
 const FeedList = Animated.FlatList as unknown as ComponentType<
-  AnimatedProps<FlatListProps<FeedRow>>
+  AnimatedProps<FlatListProps<FeedRow>> & { ref?: AnimatedRef<FlatList<FeedRow>> }
 >;
 
 // The dark "stage" rows (deepNavy, glass containers). Everything else is the
@@ -160,10 +163,26 @@ export default function HomeScreen() {
 
   const signalFirstPaint = useSignalFirstPaint();
 
-  const scrollY = useSharedValue(0);
-  const scrollHandler = useAnimatedScrollHandler((e) => {
-    scrollY.value = e.contentOffset.y;
-  });
+  // THE BAND BUG, properly this time.
+  //
+  // scrollY used to be a plain shared value fed by an onScroll handler. That
+  // ACCUMULATES events rather than reading state, so any move the handler does
+  // not see leaves it stale — and a stale positive value makes the billboard
+  // parallax DOWN by staleY × 0.5 with nothing scrolled away above it, so the
+  // deep-navy root shows as a band across the top of the art.
+  //
+  // It was patched twice by guessing at which moves went unseen (focus, then
+  // scroll-to-top and AppState resume). Each guess closed one door and the
+  // band came back through another, because the list's offset can change
+  // without an onScroll in more ways than are worth enumerating: tab-bar
+  // scroll-to-top, state restoration on resume, RNScreens re-attaching the
+  // scroll view, content-size changes that clamp the offset.
+  //
+  // useScrollOffset READS the scroll view's live contentOffset instead of
+  // accumulating events, so it cannot hold a value the list does not have.
+  // That removes the whole class rather than the instances of it.
+  const listRef = useAnimatedRef<FlatList<FeedRow>>();
+  const scrollY = useScrollOffset(listRef);
   // Counteract the overscroll bounce so the whole page holds still on pull-down —
   // only the spotlight portrait zooms (Apple TV style), no navy gap appears.
   const spotH = spotlightHeight(insets.top);
@@ -177,37 +196,9 @@ export default function HomeScreen() {
     }
     return { transform: [{ translateY: sy * SPOTLIGHT_PARALLAX }] };
   });
-  // THE BAND BUG: scrollY only updates from onScroll, which does NOT fire when
-  // the list is moved programmatically — the list lands back at offset 0 while
-  // scrollY keeps its last value. The billboard then parallaxes DOWN by
-  // staleY × 0.5 with nothing scrolled away above it, so the stage shows
-  // through as a band of flat colour above the art.
-  //
-  // Three ways in, and the first fix only closed one of them:
-  //
-  //  1. Leaving the tab and coming back      → useFocusEffect (was here).
-  //  2. Scroll-to-top while ALREADY on this  → onScrollToTop on the list.
-  //     tab (tab-bar tap, status-bar tap).      Focus never changes, so the
-  //                                             focus effect cannot fire —
-  //                                             this is why the band survived.
-  //  3. Backgrounding and resuming, where     → AppState 'active'.
-  //     iOS restores contentOffset without
-  //     an onScroll event.
-  //
-  // (2) and (3) are both "the app's been open a while" paths, which is exactly
-  // how this kept getting reported after it was called fixed.
-  const resyncScroll = useCallback(() => {
-    scrollY.value = 0;
-  }, [scrollY]);
-
-  useFocusEffect(resyncScroll);
-
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') resyncScroll();
-    });
-    return () => sub.remove();
-  }, [resyncScroll]);
+  // No focus / AppState / scroll-to-top resyncs any more — useScrollOffset owns
+  // the value and writing to it would fight the real offset. Their removal is
+  // the point: they were three patches standing in for one correct read.
 
   // As the stage slides up over the portrait, a dark frost fades in over it.
   const spotlightBlur = useAnimatedStyle(() => ({
@@ -621,11 +612,8 @@ export default function HomeScreen() {
               </Pressable>
             </PaperSurface>
           }
+          ref={listRef}
           scrollEventThrottle={16}
-          onScroll={scrollHandler}
-          // Scroll-to-top moves the list without firing onScroll. Without this
-          // the billboard keeps the pre-jump offset and paints the band.
-          onScrollToTop={resyncScroll}
           // The boot stage holds its reveal until this fires. Content SIZE
           // (not the data arriving) is the honest signal that rows have been
           // laid out — gating on data alone opened the stage onto a list that
