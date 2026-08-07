@@ -124,6 +124,11 @@ impossible to type into**:
 2. A navigation stack inside the tab (`app/(tabs)/search/_layout.tsx`).
 3. `Stack.SearchBar` with `placement` left at **`automatic`**.
 
+**Do not set `barTintColor`.** It is the search *field's* background colour,
+and on the iOS 26 bottom-aligned field it paints an opaque rectangle behind the
+Liquid Glass capsule — the rounded corners then show grey square shoulders. The
+system material renders a legible dark field over this screen on its own.
+
 Point 3 is the one that bit. The placement was `stacked` (field pinned under
 the header) and the whole search tab was dead for a release.
 `react-native-screens` documents the cause on `allowToolbarIntegration`: *"When

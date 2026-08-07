@@ -572,14 +572,31 @@ content ScrollView on iOS 26+ — a light blur band under the header items, on b
 default (`automatic`). Over a flat dark top it reads as a grey scrim across the
 status bar.
 
-`scrollEdgeEffects: { top: 'hidden' }` is the surgical fix but is **not
-reachable through expo-router's Stack options** — only react-native-screens'
-raw `<Screen>` or its gamma `<ScrollViewMarker>`, and that one is a Fabric
-native component, so it renders an empty view on any build predating it. It
-cannot be shipped over the air.
+**`scrollEdgeEffects: { top: 'hidden' }` is the fix, and it IS reachable from
+expo-router.** Put it straight in `Stack.Screen options`:
 
-The workable fix for a header that carries nothing but a back chevron is to not
-have a header: `headerShown: false` plus `FloatingBackButton`.
+```tsx
+const headerOptions = {
+  headerShown: true,
+  headerTransparent: true,
+  headerTintColor: COLORS.beige,
+  scrollEdgeEffects: { top: 'hidden' }, // ← kills the grey band
+} as const;
+```
+
+This section previously said the option was "not reachable through
+expo-router's Stack options — only react-native-screens' raw `<Screen>` or its
+gamma `<ScrollViewMarker>`", and sent screens to `headerShown: false` plus
+`FloatingBackButton` as the workaround. That is **out of date**: expo-router
+56.2.15 documents `scrollEdgeEffects` in its own native-stack option types
+(`expo-router/build/react-navigation/native-stack/types.d.ts`), all four edges
+optional. A screen can keep a real native header — system chevron, system
+swipe-back — and still have no scrim. Check the installed types before
+assuming an option is unreachable.
+
+`FloatingBackButton` is still right for a screen that genuinely wants no
+header (`biography/[id]` renders its own chrome over a full-bleed stage). It is
+no longer the answer to the scrim.
 
 Audit of the native screens that show a header:
 
@@ -589,7 +606,7 @@ Audit of the native screens that show a header:
 | `compare/[hero]/pick`       | chevron only      | flat navy     | affected; safe to convert                                                                                                 |
 | `event/[slug]`              | chevron only      | flat deep-ink | affected; safe to convert                                                                                                 |
 | `event/index`               | chevron only      | flat deep-ink | affected; safe to convert                                                                                                 |
-| `house/[slug]`              | chevron only      | **navy band** | **fixed** — no header. This row used to read "beige · unaffected", which was wrong: the screen's ROOT is beige but its top SURFACE is the navy `HouseBanner`, and the scrim was plainly visible on device. Check the surface at the top of the scroll, not the root colour. |
+| `house/[slug]`              | chevron only      | **navy band** | **fixed** — keeps its native header, with `scrollEdgeEffects: { top: 'hidden' }`. This row used to read "beige · unaffected", which was wrong: the screen's ROOT is beige but its top SURFACE is the navy `HouseBanner`, and the scrim was plainly visible on device. Check the surface at the top of the scroll, not the root colour. |
 | `character/[id]`            | + `headerRight`   | dark stage    | affected, but the header has real content                                                                                 |
 | `compare/[hero]/[opponent]` | + `headerRight`   | dark          | affected, but the header has real content                                                                                 |
 | `category/[slug]`           | `Stack.SearchBar` | dark          | **must keep the header** — the search field lives in it, and a search bar is exactly what the effect is designed to serve |
