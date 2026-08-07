@@ -590,7 +590,11 @@ export default function SearchScreen() {
         placement="automatic"
         autoCapitalize="none"
         hideWhenScrolling={false}
-        barTintColor="rgba(245,235,220,0.12)"
+        // No barTintColor. It sets the search FIELD's background colour, which
+        // on the iOS 26 bottom-aligned field paints an opaque rectangle behind
+        // the Liquid Glass capsule — the capsule's rounded corners then show
+        // grey square shoulders. The system material already renders a dark,
+        // legible field over this screen; tinting it only fights the glass.
         textColor={COLORS.beige}
         hintTextColor="rgba(245,235,220,0.55)"
         headerIconColor="rgba(245,235,220,0.6)"

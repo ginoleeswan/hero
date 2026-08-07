@@ -9,6 +9,7 @@ import {
   Pressable,
   StyleSheet,
   StatusBar,
+  AppState,
   type ListRenderItem,
   type FlatListProps,
 } from 'react-native';
@@ -177,17 +178,36 @@ export default function HomeScreen() {
     return { transform: [{ translateY: sy * SPOTLIGHT_PARALLAX }] };
   });
   // THE BAND BUG: scrollY only updates from onScroll, which does NOT fire when
-  // the list is moved programmatically — leaving a tab and coming back (or the
-  // tab bar's scroll-to-top) resets the list to offset 0 while scrollY keeps
-  // its last value. The billboard then parallaxes DOWN by staleY × 0.5 with
-  // nothing scrolled away above it, so the stage shows through as a band of
-  // flat colour above the art. Re-syncing on focus is the fix; any real scroll
-  // corrects it immediately afterwards.
-  useFocusEffect(
-    useCallback(() => {
-      scrollY.value = 0;
-    }, [scrollY]),
-  );
+  // the list is moved programmatically — the list lands back at offset 0 while
+  // scrollY keeps its last value. The billboard then parallaxes DOWN by
+  // staleY × 0.5 with nothing scrolled away above it, so the stage shows
+  // through as a band of flat colour above the art.
+  //
+  // Three ways in, and the first fix only closed one of them:
+  //
+  //  1. Leaving the tab and coming back      → useFocusEffect (was here).
+  //  2. Scroll-to-top while ALREADY on this  → onScrollToTop on the list.
+  //     tab (tab-bar tap, status-bar tap).      Focus never changes, so the
+  //                                             focus effect cannot fire —
+  //                                             this is why the band survived.
+  //  3. Backgrounding and resuming, where     → AppState 'active'.
+  //     iOS restores contentOffset without
+  //     an onScroll event.
+  //
+  // (2) and (3) are both "the app's been open a while" paths, which is exactly
+  // how this kept getting reported after it was called fixed.
+  const resyncScroll = useCallback(() => {
+    scrollY.value = 0;
+  }, [scrollY]);
+
+  useFocusEffect(resyncScroll);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') resyncScroll();
+    });
+    return () => sub.remove();
+  }, [resyncScroll]);
 
   // As the stage slides up over the portrait, a dark frost fades in over it.
   const spotlightBlur = useAnimatedStyle(() => ({
@@ -603,6 +623,9 @@ export default function HomeScreen() {
           }
           scrollEventThrottle={16}
           onScroll={scrollHandler}
+          // Scroll-to-top moves the list without firing onScroll. Without this
+          // the billboard keeps the pre-jump offset and paints the band.
+          onScrollToTop={resyncScroll}
           // The boot stage holds its reveal until this fires. Content SIZE
           // (not the data arriving) is the honest signal that rows have been
           // laid out — gating on data alone opened the stage onto a list that
