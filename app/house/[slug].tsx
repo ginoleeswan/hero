@@ -18,21 +18,20 @@ import { StageSwitch, type StageView } from '../../src/components/family/StageSw
 import { useHouse } from '../../src/hooks/useHouse';
 import { HouseSkeleton } from '../../src/components/skeletons/HouseSkeleton';
 import { OverscrollBleed } from '../../src/components/ui/OverscrollBleed';
+import { FloatingBackButton } from '../../src/components/ui/FloatingBackButton';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 
-// The root stack hides headers globally, so `title` alone renders nothing —
-// without headerShown there is no back affordance on this screen at all.
-// Transparent + minimal back over the navy banner, matching the arena screens.
-const headerOptions = {
-  headerShown: true,
-  headerTitle: '',
-  headerTransparent: true,
-  headerStyle: { backgroundColor: 'transparent' },
-  headerShadowVisible: false,
-  headerTintColor: COLORS.beige,
-  headerBackButtonDisplayMode: 'minimal',
-} as const;
+// No header at all — the back affordance is a FloatingBackButton instead.
+//
+// This screen used to run a transparent header carrying nothing but a chevron,
+// which on iOS 26 is exactly the shape that earns a `UIScrollEdgeEffect`: a
+// light blur band under the header items, painted across the status bar over
+// the navy banner. The scroll-edge audit in docs/features/platform-and-motion.md
+// had this screen down as "unaffected — beige top", which was wrong: the ROOT
+// is beige but the top SURFACE is the navy HouseBanner, so the scrim was very
+// visible. Same fix as biography/[id]: no header, so there is no effect.
+const headerOptions = { headerShown: false } as const;
 
 export default function HousePage() {
   const router = useRouter();
@@ -95,6 +94,7 @@ export default function HousePage() {
       <View style={styles.root}>
         <Stack.Screen options={{ ...headerOptions, title: chrome?.name ?? 'House' }} />
         {phase === 'skeleton' ? <HouseSkeleton chrome={chrome} stageHeight={stageHeight} /> : null}
+        <FloatingBackButton />
       </View>
     );
   }
@@ -104,7 +104,8 @@ export default function HousePage() {
   if (error) {
     return (
       <View style={styles.centre}>
-        <Stack.Screen options={{ ...headerOptions, headerTintColor: COLORS.navy }} />
+        <Stack.Screen options={headerOptions} />
+        <FloatingBackButton />
         <Text style={styles.notFound}>Couldn’t load this house</Text>
         <Text style={styles.muted}>Check your connection and try again.</Text>
         <Pressable
@@ -123,7 +124,8 @@ export default function HousePage() {
   if (!house) {
     return (
       <View style={styles.centre}>
-        <Stack.Screen options={{ ...headerOptions, headerTintColor: COLORS.navy }} />
+        <Stack.Screen options={headerOptions} />
+        <FloatingBackButton />
         <Text style={styles.notFound}>No such house</Text>
         <Text style={styles.muted}>Nothing in the catalogue answers to that name.</Text>
       </View>
@@ -212,6 +214,9 @@ export default function HousePage() {
           <HouseSkeleton chrome={chrome} stageHeight={stageHeight} />
         </FadeOutSkeleton>
       ) : null}
+
+      {/* Above the scroll view, so it stays put over the banner and the paper. */}
+      <FloatingBackButton />
 
       <HousePicker
         mode={picking}

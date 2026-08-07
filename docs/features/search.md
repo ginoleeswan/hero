@@ -108,8 +108,31 @@ Idle (empty-query) surfaces: recent searches, the Recently Viewed rail
 the web palette — `useIdleShowcase` (trending teams + films, cached once per
 session).
 
-Native (`app/(tabs)/search/index.tsx`) uses the iOS `Stack.SearchBar` in the
-header plus `Stack.Toolbar.Menu` filter menus (Publisher, Alignment). Its
+Native (`app/(tabs)/search/index.tsx`) uses the iOS `Stack.SearchBar` plus
+`Stack.Toolbar.Menu` filter menus (Publisher, Alignment).
+
+**The search field is bottom-aligned, and that is deliberate.** The Search tab
+declares `role="search"` (`app/(tabs)/_layout.tsx`), which is Apple's
+recommended shape for a tabbed app on iOS 26: the search tab draws as its own
+circular button, and selecting it morphs that circle into a field at the bottom
+of the screen, reachable one-handed and animating up over the keyboard.
+
+Three things have to line up or the field **fails silently — visible but
+impossible to type into**:
+
+1. `role="search"` on the tab trigger.
+2. A navigation stack inside the tab (`app/(tabs)/search/_layout.tsx`).
+3. `Stack.SearchBar` with `placement` left at **`automatic`**.
+
+Point 3 is the one that bit. The placement was `stacked` (field pinned under
+the header) and the whole search tab was dead for a release.
+`react-native-screens` documents the cause on `allowToolbarIntegration`: *"When
+placement is set to `stacked`, this property's value will be overridden with
+`false`."* Toolbar integration is the channel the search-role tab uses to hand
+its field to the search bar, so `stacked` cuts the wire — the tab bar still
+renders the pill, because that is the role rather than anything we draw, and
+tapping it does nothing. **Never set `placement="stacked"` while the tab carries
+`role="search"`.** Its
 screen debounce is 250 ms with two feel rules: **clearing flushes
 immediately** (the idle surface must not coexist with the old query's
 sections), and the **settle gap shows the skeleton grid** — the beat between
