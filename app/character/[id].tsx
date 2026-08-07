@@ -698,12 +698,15 @@ export default function CharacterScreen() {
       useNativeDriver: true,
     }).start();
 
-  // Parallax: image drifts up at ~0.3x scroll speed as content covers it
-  // Overscroll zoom: when scrollY < 0, translateY tracks half the overscroll
-  // so the scaled image stays anchored at the top edge
+  // Parallax: image drifts up at ~0.3x scroll speed as content covers it.
+  // Overscroll stretch: the scale is centre-anchored, so pulling down by d
+  // (scale 1 + d/H) grows the image d/2 up and d/2 down — while the content
+  // below moves down by the full d, opening a beige gap under the identity.
+  // Translating DOWN by d/2 pins the top edge to the screen top and the bottom
+  // edge to the moving content: the art stretches to fill the pull exactly.
   const imageTranslateY = scrollY.interpolate({
     inputRange: [-HERO_IMAGE_HEIGHT, 0, HERO_IMAGE_HEIGHT],
-    outputRange: [-HERO_IMAGE_HEIGHT / 2, 0, -HERO_IMAGE_HEIGHT / 3],
+    outputRange: [HERO_IMAGE_HEIGHT / 2, 0, -HERO_IMAGE_HEIGHT / 3],
     extrapolate: 'clamp',
   });
 

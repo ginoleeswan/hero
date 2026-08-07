@@ -17,6 +17,7 @@ import { HouseGenerations } from '../../src/components/family/HouseGenerations';
 import { StageSwitch, type StageView } from '../../src/components/family/StageSwitch';
 import { useHouse } from '../../src/hooks/useHouse';
 import { HouseSkeleton } from '../../src/components/skeletons/HouseSkeleton';
+import { OverscrollBleed } from '../../src/components/ui/OverscrollBleed';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 
@@ -141,6 +142,8 @@ export default function HousePage() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Rubber-banding at the top shows navy, not the beige root. */}
+        <OverscrollBleed color={COLORS.navy} />
         <HouseBanner
           name={house.name}
           universe={house.universe}

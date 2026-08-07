@@ -231,6 +231,7 @@ into a dozen variants.
 | `src/components/ui/SectionHeader.tsx`      | section eyebrow + title (+ "See all")          | eleven different eyebrow sizes and letter-spacings outside `home/`.                                                                                                                                                                                                                                                                                                                                                    |
 | `src/components/ui/Sheet.tsx`              | any bottom sheet                               | `ReportSheet`/`ContributeSheet`/`StatsSheet` each hand-rolled the same Modal + backdrop + grabber + safe-area foot — three backdrop alphas, two grabber colours, and only one remembering to lift above the keyboard. `tone` picks paper/ink and carries the grabber and scrim with it; `avoidKeyboard` opts into the `KeyboardAvoidingView` (it changes layout even with no keyboard, so input-less sheets stay out). |
 | `src/components/ui/FloatingBackButton.tsx` | back chevron on a screen with no native header | see the iOS 26 scroll-edge note below.                                                                                                                                                                                                                                                                                                                                                                                 |
+| `src/components/ui/OverscrollBleed.tsx`    | a dark band as the first child of a ScrollView | the beige root showing through on rubber-band. See "Overscroll must never show the canvas" below.                                                                                                                                                                                                                                                                                                                       |
 | `src/lib/nativeMotion.ts`                  | every duration, easing, spring                 | ~25 ad-hoc `withTiming` durations and 6 spring configs.                                                                                                                                                                                                                                                                                                                                                                |
 | `src/constants/tokens.ts`                  | radii, spacing, tracking, `SCREEN_PAD`         | 30 distinct radii, 27 letter-spacings, 8 screen gutters.                                                                                                                                                                                                                                                                                                                                                               |
 
@@ -534,6 +535,35 @@ Unverified and worth checking first on a real device: `includeFontPadding`
 (Android adds font padding on top of `lineHeight`, and the Flame 1.22x rule was
 tuned on iOS — only 5 styles opt out today), and `expo-image` `blurRadius`
 parity, which the biography stage leans on.
+
+## Overscroll must never show the canvas
+
+Keep the bounce. It is the iOS feel and a screen without it reads as broken —
+the rule is not "stop the pull", it is **the pull must reveal more of the page,
+never the surface behind it**. Two different ways that broke:
+
+**A dark band as the first child of a ScrollView.** The house page and the
+houses index open on the navy band, but their root is `COLORS.beige`, so
+rubber-banding above the band showed a beige strip. `OverscrollBleed` fixes it:
+a 600px slab hanging above the content in the band's own colour, absolutely
+positioned so it takes no layout space and no touches. Drop it in as the first
+child, coloured to match whatever band follows it. Any dark-topped scroll screen
+on a light root needs it.
+
+**A centre-anchored scale used for a stretchy header.** The character page grows
+the hero art on overscroll (`scale: 1 + d/H`). Because the scale is
+centre-anchored, it grows `d/2` up *and* `d/2` down, while the content below
+moves down by the full `d` — so the translate has to make up the difference. It
+was `−d/2`, which pins the image's **top** edge to the screen and leaves the
+**bottom** short by `d`: a beige gap opens under the identity block. The right
+sign is `+d/2`:
+
+- top edge: `−d/2` (from scale) `+ d/2` (translate) = `0` → stays at the screen top
+- bottom edge: `H + d/2 + d/2` = `H + d` → tracks the content exactly
+
+Same rule in both cases, and the sign is easy to get backwards because
+`−d/2` *looks* like it counteracts the overscroll. Check the bottom edge, not
+the top.
 
 ## The iOS 26 scroll-edge scrim
 
