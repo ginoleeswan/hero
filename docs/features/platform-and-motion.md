@@ -589,7 +589,7 @@ Audit of the native screens that show a header:
 | `compare/[hero]/pick`       | chevron only      | flat navy     | affected; safe to convert                                                                                                 |
 | `event/[slug]`              | chevron only      | flat deep-ink | affected; safe to convert                                                                                                 |
 | `event/index`               | chevron only      | flat deep-ink | affected; safe to convert                                                                                                 |
-| `house/[slug]`              | chevron only      | beige         | unaffected — a light scrim on paper is invisible                                                                          |
+| `house/[slug]`              | chevron only      | **navy band** | **fixed** — no header. This row used to read "beige · unaffected", which was wrong: the screen's ROOT is beige but its top SURFACE is the navy `HouseBanner`, and the scrim was plainly visible on device. Check the surface at the top of the scroll, not the root colour. |
 | `character/[id]`            | + `headerRight`   | dark stage    | affected, but the header has real content                                                                                 |
 | `compare/[hero]/[opponent]` | + `headerRight`   | dark          | affected, but the header has real content                                                                                 |
 | `category/[slug]`           | `Stack.SearchBar` | dark          | **must keep the header** — the search field lives in it, and a search bar is exactly what the effect is designed to serve |

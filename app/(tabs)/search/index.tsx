@@ -571,10 +571,23 @@ export default function SearchScreen() {
       <Stack.SearchBar
         ref={searchRef}
         placeholder="Character, team, or real name…"
-        // "stacked" pins the field under the header. "automatic" became the
-        // iOS 26 bottom-toolbar search, which floats the field over the list
-        // mid-screen and fights this screen's own top-anchored layout.
-        placement="stacked"
+        // MUST stay "automatic" while the tab carries role="search".
+        //
+        // This was "stacked" — pinned under the header — and the field went
+        // completely dead: visible in the tab bar, impossible to type into.
+        // react-native-screens documents why on `allowToolbarIntegration`:
+        // "When placement is set to `stacked`, this property's value will be
+        // overridden with `false`". Toolbar integration is exactly the channel
+        // the iOS 26 search-role tab uses to hand its field to this search bar,
+        // so `stacked` severs it — the tab bar still draws the pill (that's the
+        // role, not us) but nothing behind it is wired.
+        //
+        // "automatic" is also the Apple-recommended shape for a tabbed app: the
+        // circular search tab morphs into a bottom-aligned field that rides up
+        // over the keyboard. The old comment here called that floating field a
+        // problem that "fights this screen's own top-anchored layout" — it is
+        // the iOS 26 pattern, and the list's paddingBottom already clears it.
+        placement="automatic"
         autoCapitalize="none"
         hideWhenScrolling={false}
         barTintColor="rgba(245,235,220,0.12)"
