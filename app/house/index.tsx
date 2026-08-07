@@ -12,6 +12,7 @@ import { EmptyState } from '../../src/components/ui/EmptyState';
 import { HouseIndexSkeleton } from '../../src/components/skeletons/HouseIndexSkeleton';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
+import { OverscrollBleed } from '../../src/components/ui/OverscrollBleed';
 
 export default function HouseIndexPage() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function HouseIndexPage() {
     <View style={styles.root}>
       <Stack.Screen options={{ title: 'Houses' }} />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
+        {/* Rubber-banding at the top shows navy, not the beige root. */}
+        <OverscrollBleed color={COLORS.navy} />
         <StageHeader
           title="The houses"
           subtitle={houses.length > 0 ? `${houses.length} dynasties charted` : undefined}

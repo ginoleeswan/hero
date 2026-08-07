@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { COLORS, SURFACE_GRADIENT, SEAM_COLOR } from '../../constants/colors';
-import { HouseBanner } from '../family/HouseBanner';
+import { HouseBanner, BANNER_NATIVE_CLEARANCE } from '../family/HouseBanner';
 import type { HouseChrome } from '../../hooks/useHouse';
 
 /** Placeholder fill for the ink band, where the beige base would glow. */
@@ -90,7 +90,7 @@ export function HouseSkeleton({
 /** Only seen if the house row itself is slow — brief, but it must not jump. */
 function BannerSkeleton({ maxWidth }: { maxWidth: number }) {
   const insets = useSafeAreaInsets();
-  const paddingTop = Platform.OS === 'web' ? undefined : insets.top + 16;
+  const paddingTop = Platform.OS === 'web' ? undefined : insets.top + BANNER_NATIVE_CLEARANCE;
   return (
     <View style={[styles.band, paddingTop !== undefined && { paddingTop }] as object}>
       <View style={[styles.bandInner, { maxWidth }] as object}>

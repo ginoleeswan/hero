@@ -13,6 +13,15 @@ import { HouseCrest } from './HouseCrest';
 /** The floating web nav is 64px tall; the band clears it. */
 const WEB_NAV_CLEARANCE = 64;
 
+/**
+ * Native clearance below the safe-area inset. The stack header on this screen
+ * is transparent with a floating minimal back chevron (~44pt starting at the
+ * inset), so anything closer than this puts the crest and eyebrow underneath
+ * the button — which is exactly how the band used to render. Shared with
+ * HouseSkeleton's placeholder band so the settle doesn't jump.
+ */
+export const BANNER_NATIVE_CLEARANCE = 60;
+
 export function HouseBanner({
   name,
   universe,
@@ -41,7 +50,7 @@ export function HouseBanner({
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const wide = width >= 720;
-  const paddingTop = Platform.OS === 'web' ? undefined : insets.top + 16;
+  const paddingTop = Platform.OS === 'web' ? undefined : insets.top + BANNER_NATIVE_CLEARANCE;
 
   return (
     <View style={[styles.band, paddingTop !== undefined && { paddingTop }] as object}>
