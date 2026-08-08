@@ -52,7 +52,22 @@ export function SpotlightSlide({
     // style. Scale clamps to 1 once scrolled normally.
     const sy = scrollY.value;
     const overscroll = sy < 0 ? interpolate(sy, [-height, 0], [1.6, 1], Extrapolation.CLAMP) : 1;
-    return { transform: [{ scale: kbScale * overscroll }] };
+    const s = kbScale * overscroll;
+    // Anchor the zoom to the slide's TOP edge by arithmetic, not by
+    // `transformOrigin: 'top'`.
+    //
+    // A scale is applied about the view's centre, so at scale s the top edge
+    // rises by (s−1)·height/2; translating down by exactly that pins it. The
+    // style property was supposed to do this, but each slide runs its own Ken
+    // Burns phase, and on device the slides sat at visibly DIFFERENT heights
+    // from one another — two of them side by side mid-swipe with their art
+    // starting at different y. That can only happen if the origin is not being
+    // honoured and every slide is scaling about its centre by its own amount.
+    //
+    // Computing the offset makes the anchor deterministic and identical on
+    // every platform, instead of depending on a style property whose support
+    // we cannot verify from here.
+    return { transform: [{ translateY: ((s - 1) * height) / 2 }, { scale: s }] };
   });
 
   // Apple TV / Disney+ billboard: full-bleed portrait, dark gradient base, a
@@ -98,9 +113,10 @@ export function SpotlightSlide({
 const styles = StyleSheet.create({
   container: { overflow: 'hidden', backgroundColor: COLORS.deepNavy },
   // Full-bleed: the portrait's own top edge sits at the screen top, so the art's
-  // built-in headroom seats the head just below the status bar. Top-anchored zoom
-  // (Ken Burns + overscroll) grows downward and never eats that headroom.
-  imageWrap: { transformOrigin: 'top' },
+  // built-in headroom seats the head just below the status bar. The zoom is
+  // top-anchored by the translate in imageStyle — deliberately NOT by
+  // `transformOrigin`, which was not holding the slides to a common top edge.
+  imageWrap: {},
   // Sits low on the portrait; the dark stage overlaps the fade just below it.
   meta: {
     position: 'absolute',

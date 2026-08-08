@@ -536,6 +536,30 @@ Unverified and worth checking first on a real device: `includeFontPadding`
 tuned on iOS — only 5 styles opt out today), and `expo-image` `blurRadius`
 parity, which the biography stage leans on.
 
+## Anchor a scale with arithmetic, not `transformOrigin`
+
+A scale transform applies about the view's **centre**. At scale `s` the top edge
+rises by `(s − 1) · height / 2`, so pinning the top means translating down by
+exactly that much.
+
+`transformOrigin: 'top'` is supposed to do it for you, and the spotlight leaned
+on it for both the Ken Burns drift and the pull-down stretch. On device the
+carousel slides sat at visibly **different heights from one another** — two of
+them side by side mid-swipe with their art starting at different `y`. Each slide
+runs its own Ken Burns phase, so different scales meant different vertical
+offsets, which can only happen if the origin isn't being honoured and every
+slide is scaling about its centre.
+
+Both now compute the offset instead. For the pull-down case the algebra
+collapses neatly: with `s = 1 − sy/spotH`, the correction `(s − 1)·spotH/2` is
+`−sy/2`, so `translateY: sy` with a top origin is the same thing as
+`translateY: sy/2` with the default one.
+
+**The general rule: if a transform's visual correctness depends on
+`transformOrigin`, compute the offset instead.** It's two lines of arithmetic
+and it behaves identically everywhere, rather than depending on a property whose
+support varies by platform and renderer.
+
 ## Read the scroll offset, don't accumulate it
 
 Explore's billboard parallax is driven by the list's scroll offset. It used to
