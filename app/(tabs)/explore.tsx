@@ -61,7 +61,6 @@ import { PulseTicker } from '../../src/components/home/PulseTicker';
 import { DailyChallengeBanner } from '../../src/components/game/DailyChallengeBanner';
 import { SponsorSlot } from '../../src/components/SponsorSlot';
 import { useExploreData } from '../../src/lib/query/exploreQueries';
-import { SpotlightProbe } from '../../src/components/dev/SpotlightProbe';
 import type { FavouriteHero } from '../../src/types';
 
 const SPOTLIGHT_POOL = 5;
@@ -601,8 +600,6 @@ export default function HomeScreen() {
           beige tail). Both sit behind the transparent FeedList; the opaque content
           hides the seam — only the over-scroll gaps reveal them. */}
       <View style={styles.bottomFill} pointerEvents="none" />
-      {/* TEMPORARY — see SpotlightProbe. Remove once the band is root-caused. */}
-      <SpotlightProbe scrollY={scrollY} insetTop={insets.top} spotH={spotH} />
       {initialLoaded && (
         <FeedList
           entering={FadeIn.duration(DUR.base)}

@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 import { useEffect, useState } from 'react';
 import { Platform, View, Text, Pressable, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import {
   Stack,
   useRouter,
@@ -233,17 +234,38 @@ export default function RootLayout() {
   // single boot gate inside AuthGate own the loading screen for both fonts and
   // auth. One persistent LogoLoader, no remount/animation restart.
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="dark" />
-        <AnalyticsProvider />
-        <PresenceHeartbeat />
-        <QueryFocusBridge />
-        <QueryOnlineBridge />
-        <AuthGate fontsReady={fontsReady} />
-        <OfflineBanner />
-        <UpdateReadyPill />
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+    // SafeAreaProvider with initialWindowMetrics, at the ROOT — load-bearing.
+    //
+    // expo-router wraps EVERY native tab screen in its own <SafeAreaProvider>
+    // (NativeTabsView.ios.tsx). A nested provider seeds its insets from the
+    // PARENT provider:
+    //
+    //   useState(initialMetrics?.insets ?? initialSafeAreaInsets ?? parentInsets ?? null)
+    //
+    // There was no root provider, so parentInsets was null and every tab
+    // started with NO insets, then jumped to the real ones once the native
+    // measurement landed a frame or two later. That is the "it's there and
+    // then it shifts down" the whole app was doing: Arena pads by
+    // insets.top + 24, Profile sizes its cover 140 + insets.top, Explore
+    // computes the billboard height from it — all of them settled late, and
+    // the gap that opened above the content read as a band of the root colour.
+    //
+    // initialWindowMetrics is a synchronous snapshot captured natively at
+    // startup, so frame one already has the right numbers and the per-tab
+    // providers inherit them instead of null.
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style="dark" />
+          <AnalyticsProvider />
+          <PresenceHeartbeat />
+          <QueryFocusBridge />
+          <QueryOnlineBridge />
+          <AuthGate fontsReady={fontsReady} />
+          <OfflineBanner />
+          <UpdateReadyPill />
+        </QueryClientProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }

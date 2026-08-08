@@ -536,6 +536,39 @@ Unverified and worth checking first on a real device: `includeFontPadding`
 tuned on iOS — only 5 styles opt out today), and `expo-image` `blurRadius`
 parity, which the biography stage leans on.
 
+## The root `SafeAreaProvider` is load-bearing — never remove it
+
+`app/_layout.tsx` renders `<SafeAreaProvider initialMetrics={initialWindowMetrics}>`
+around everything. It looks redundant, because expo-router already wraps each
+native tab screen in its own provider. It is not.
+
+A nested `SafeAreaProvider` seeds its state from the **parent**:
+
+```js
+useState(initialMetrics?.insets ?? initialSafeAreaInsets ?? parentInsets ?? null)
+```
+
+With no root provider, `parentInsets` is `null`, so every tab screen started
+with **no insets** and jumped to the real ones a frame or two later, once the
+native measurement landed. Everything keyed to `insets.top` moved with it —
+Arena pads `insets.top + 24`, Profile sizes its cover `140 + insets.top`,
+Explore computes the billboard height from it. The symptom reported was *"the
+content is there and then it shifts down"*, on **every tab**, and the gap that
+opened above the content read as a band of the root colour.
+
+`initialWindowMetrics` is a synchronous snapshot captured natively at startup,
+so frame one already has the right numbers and the per-tab providers inherit
+them instead of `null`.
+
+**It cost four wrong fixes to find.** Each one looked at whichever screen the
+screenshot showed — the spotlight parallax, then the scroll-offset primitive,
+then the slide's transform — because the band was only ever reported on
+Explore. The evidence that broke it open was *"it happens on Arena and Profile
+too"*: no amount of debugging one screen's transforms can explain a shift that
+happens on three unrelated screens at once. **When a layout bug appears on
+screens that share no layout code, look at what they share — the provider
+tree.**
+
 ## Anchor a scale with arithmetic, not `transformOrigin`
 
 A scale transform applies about the view's **centre**. At scale `s` the top edge
