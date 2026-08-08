@@ -1157,6 +1157,7 @@ export default function CharacterScreen() {
                 ) : data.details.summary || data.details.hasBiography ? (
                   <View style={styles.summaryBlock}>
                     <PullQuoteBio
+                      flat
                       summary={data.details.summary ?? ''}
                       accent={theme.accent}
                       hasBiography={data.details.hasBiography}
@@ -1995,8 +1996,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
 
-  // Summary — wrapper gutter only; PullQuoteBio brings its own card + padding.
-  summaryBlock: { paddingHorizontal: 20, paddingVertical: 6 },
+  // Summary — gutter only. PullQuoteBio renders flat here (no card, no accent
+  // bar): the white card was the single surface on this page that didn't use
+  // the page's own card language, so it read as a foreign box on the beige.
+  summaryBlock: { paddingHorizontal: 20, paddingVertical: 8 },
   // Signature-power tiles above the abilities grid — same 20px section gutter.
   signatureWrap: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 },
 
