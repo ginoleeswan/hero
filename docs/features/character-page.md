@@ -123,7 +123,7 @@ or scrolls to nothing.
 | Section (nav key)       | Components                                                                                                                    | Data                                                                       |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | Hero header             | portrait, favourite heart, share, TraitBand                                                                                   | `heroRow`, `narrative.tags` (`hero_tags`)                                  |
-| Summary                 | `PullQuoteBio`                                                                                                                | ComicVine `summary`/`description`                                          |
+| Summary                 | `PullQuoteBio` — `flat` on every narrow layout; see the card-language note below                                              | ComicVine `summary`/`description`                                          |
 | Stats — "Power Profile" | native: worklet-driven SVG arc `StatDial`s; web: bars with an average tick. Total `/ 600`, "Stronger than N%" percentile chip | powerstats, `useHeroPercentile`                                            |
 | Abilities               | `SignaturePowerTiles` (`pickSignaturePowers`) + `AbilitiesSection` → `PowersDecoded` explainers                               | powers list, `narrative.powerExplainers`                                   |
 | Trivia                  | `DidYouKnowDeck`                                                                                                              | `hero_narrative_facts` via `useHeroNarrative` → `src/lib/db/heroFacts.ts`  |
@@ -137,6 +137,25 @@ or scrolls to nothing.
 A sticky **Compare** CTA rides the bottom of the screen (`compareStrip`,
 native) and sits contextually on the Power Profile card (web), routing to
 `/compare/[id]/pick`. Modals: `FirstIssueModal`, `ImageLightbox`.
+
+### The page's card language — there is no white card
+
+Sections on the beige body are a **5% ink tint with a hairline border and no
+shadow** (`statsCard` and its siblings in `app/character/[id].tsx`). Nothing
+here is `#fff`.
+
+`PullQuoteBio` used to be, and it showed: a white card with a drop shadow on
+beige reads as a foreign box rather than a section of the page. Its comment
+even claimed the card was "matching the page's other sections" — it wasn't,
+and the comment two lines above it still described the intended treatment as
+"no card chrome".
+
+Every narrow layout (native + mobile web) now passes `flat`, which drops the
+card **and** the accent bar together. That pairing is deliberate: the bar only
+works as the card's left EDGE, cropped by the card's overflow. Standing alone
+on the sheet it is a decorative stripe beside a paragraph. The pull-quote
+effect comes from the type — 23px Flame against 15px FlameSans — not from
+chrome. Desktop web keeps the card, where a wide column has room for it.
 
 ## Editing and reporting
 

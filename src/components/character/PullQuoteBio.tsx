@@ -32,7 +32,17 @@ export function PullQuoteBio({
   hasBiography: boolean;
   onReadMore: () => void;
   onEdit?: () => void;
-  /** Sit directly on the beige sheet (no white card chrome) — mobile web. */
+  /**
+   * Sit directly on the beige sheet: no card, and no accent bar either.
+   *
+   * The bar only earns its place as the card's left EDGE — cropped by the
+   * card's overflow, it reads as part of the box. Standing alone on the sheet
+   * beside a paragraph it is just a decorative stripe, which is exactly the
+   * generic look it was flagged for. Card and bar go together or not at all.
+   *
+   * Used by every narrow layout (native + mobile web); the desktop column keeps
+   * the card, where stacked cards have the width to breathe.
+   */
   flat?: boolean;
 }) {
   if (!summary && !hasBiography) return null;
@@ -40,7 +50,7 @@ export function PullQuoteBio({
   const quotable = rest.length > 0;
   return (
     <View style={[styles.wrap, flat && (styles.flat as object)] as object}>
-      <View style={[styles.quoteBar, { backgroundColor: accent }] as object} />
+      {flat ? null : <View style={[styles.quoteBar, { backgroundColor: accent }] as object} />}
       <View style={styles.body}>
         {summary ? (
           <Text style={quotable ? styles.lead : styles.plain}>
@@ -105,15 +115,22 @@ const styles = StyleSheet.create({
     padding: 20,
     overflow: 'hidden',
   } as object,
-  // Flat variant: the editorial quote sits directly on the sheet — accent bar
-  // + typography only, no box (mobile web, where stacked cards read heavy).
+  // Flat variant: typography only, straight onto the sheet.
+  //
+  // The white card was the one surface on the character page that wasn't the
+  // page's own card language (`statsCard` and friends are a 5%-ink tint with no
+  // shadow), so on beige it read as a foreign white box rather than a section.
+  // The lead sentence is already 23px Flame against 15px FlameSans — that scale
+  // contrast is the pull-quote. It does not need a box or a stripe to say so.
   flat: {
     backgroundColor: 'transparent',
     borderWidth: 0,
     borderRadius: 0,
     boxShadow: 'none',
     padding: 0,
-    paddingVertical: 2,
+    // A little more air than the card's padding gave, since there is no longer
+    // an edge to separate the quote from the chips above and the rule below.
+    paddingVertical: 6,
   } as object,
   quoteBar: {
     width: 3,
