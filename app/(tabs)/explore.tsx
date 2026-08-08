@@ -192,7 +192,13 @@ export default function HomeScreen() {
   const spotlightParallax = useAnimatedStyle(() => {
     const sy = scrollY.value;
     if (sy < 0) {
-      return { transform: [{ translateY: sy }, { scale: 1 - sy / spotH }] };
+      // Pull-down stretch, anchored to the billboard's TOP edge by arithmetic
+      // rather than `transformOrigin: 'top'` — see SpotlightSlide for why that
+      // property stopped being trusted. A scale applies about the centre, so at
+      // scale s the top rises by (s−1)·spotH/2; with s = 1 − sy/spotH that term
+      // is exactly −sy/2, and the two together reduce to sy/2.
+      const s = 1 - sy / spotH;
+      return { transform: [{ translateY: sy / 2 }, { scale: s }] };
     }
     return { transform: [{ translateY: sy * SPOTLIGHT_PARALLAX }] };
   });
@@ -705,6 +711,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 16,
   },
-  // Top-anchored so the pull-down stretch grows the billboard downward (top pinned).
-  spotlightWrap: { transformOrigin: 'top' },
+  // No transformOrigin — the top anchor is computed in spotlightParallax so it
+  // does not depend on a style property we cannot verify is honoured here.
+  spotlightWrap: {},
 });
