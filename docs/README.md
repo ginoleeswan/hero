@@ -49,6 +49,7 @@ history) the linked spec.**
 
 | Doc | Covers |
 | --- | --- |
+| [`design-system.md`](architecture/design-system.md) | The tokens (`src/design`), the two canvases, the type/elevation scales, and the ratchet that stops the scales widening. **Read before adding a colour, radius, font size or shadow.** |
 | [`data-pipelines.md`](architecture/data-pipelines.md) | How the DB gets its data: seed/drain/derive, the 6 drains, source-of-truth per field. **Read before touching any enrichment cron/edge function.** |
 | [`family-trees-and-houses.md`](architecture/family-trees-and-houses.md) | The kinship graph, the two-id-space trap, house pages, the relation console. **Read before touching `hero_relatives`, `get_house`, or `FamilyCanvas`.** |
 | [`builds-and-updates.md`](architecture/builds-and-updates.md) | EAS build profiles, channels vs branches, OTA updates, opening a version from the dev build. **Read before touching `eas.json` or the `updates`/`runtimeVersion` block.** |

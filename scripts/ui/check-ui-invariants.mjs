@@ -211,6 +211,81 @@ for (const file of files) {
   }
 }
 
+// ── 5. the design-scale ratchet ─────────────────────────────────────────────
+// The other four rules are absolutes: a violation is a bug, so it fails. Scale
+// drift is different — there are ~1,000 radius call sites and 52 distinct font
+// sizes, many of them deliberate (a 2px bar, a 26px squircle tuned to its art).
+// Failing on all of them would mean turning the rule off, which is how the
+// last three token files ended up decorative.
+//
+// So this is a RATCHET. It counts off-scale literals and compares against a
+// committed baseline. The count may fall; it may not rise. New code has to
+// pick a step from the scale, existing code converges when someone is already
+// in the file, and the number only travels one direction.
+//
+// When it falls, the check tells you to re-baseline — that is the tightening.
+const RADIUS_SCALE = new Set([4, 8, 12, 16, 20, 24, 999]);
+const FONT_SCALE = new Set([10, 11, 12, 13, 13.5, 14.5, 15, 18, 23, 30, 38, 46]);
+
+const offScale = { radius: [], font: [] };
+for (const file of files) {
+  const src = readFileSync(join(ROOT, file), 'utf8');
+  for (const m of src.matchAll(/\bborderRadius:\s*([0-9.]+)/g)) {
+    if (!RADIUS_SCALE.has(+m[1])) offScale.radius.push(`${file}:${lineOf(src, m.index)} ${m[1]}`);
+  }
+  for (const m of src.matchAll(/\bfontSize:\s*([0-9.]+)/g)) {
+    if (!FONT_SCALE.has(+m[1])) offScale.font.push(`${file}:${lineOf(src, m.index)} ${m[1]}`);
+  }
+}
+
+const BASELINE_PATH = 'scripts/ui/design-baseline.json';
+let baseline = null;
+try {
+  baseline = JSON.parse(readFileSync(join(ROOT, BASELINE_PATH), 'utf8'));
+} catch {
+  // No baseline yet — the writer below prints one to adopt.
+}
+
+const counts = { radius: offScale.radius.length, font: offScale.font.length };
+
+if (!baseline) {
+  console.error(
+    `No design baseline found. Create ${BASELINE_PATH} with:\n` +
+      `${JSON.stringify(counts, null, 2)}\n`,
+  );
+  process.exit(1);
+}
+
+for (const kind of ['radius', 'font']) {
+  if (counts[kind] > baseline[kind]) {
+    const added = counts[kind] - baseline[kind];
+    console.error(
+      `Design scale ratchet: ${added} new off-scale ${kind} value(s) ` +
+        `(${baseline[kind]} → ${counts[kind]}).\n\n` +
+        `  Pick a step from src/design — ${
+          kind === 'radius' ? 'RADIUS' : 'DISPLAY / BODY / LABEL'
+        }.\n` +
+        `  If the value is genuinely deliberate, raise the baseline in ${BASELINE_PATH}\n` +
+        `  in the same commit, so the exception is reviewed rather than absorbed.\n\n` +
+        `  Off-scale ${kind} values now present:\n` +
+        offScale[kind]
+          .slice(0, 40)
+          .map((s) => `    ${s}`)
+          .join('\n') +
+        (offScale[kind].length > 40 ? `\n    …and ${offScale[kind].length - 40} more` : ''),
+    );
+    process.exit(1);
+  }
+}
+
+const tightened = ['radius', 'font'].filter((k) => counts[k] < baseline[k]);
+if (tightened.length) {
+  console.log(
+    `Design scale ratchet TIGHTENED — update ${BASELINE_PATH}:\n` +
+      `${JSON.stringify(counts, null, 2)}`,
+  );
+}
+
 if (failures.length) {
   const byRule = failures.reduce((a, f) => ((a[f.rule] ??= []).push(f), a), {});
   console.error(`UI invariants check failed (${failures.length}):\n`);
