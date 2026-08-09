@@ -23,7 +23,7 @@ export function TeammatesRail({ captainName, sideLabel, tint, items, onAdd }: Pr
   return (
     <View style={styles.wrap}>
       <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
-        ★ Teammates of {captainName} → {sideLabel}
+        Teammates of {captainName} → {sideLabel}
       </Text>
       <ScrollView
         horizontal

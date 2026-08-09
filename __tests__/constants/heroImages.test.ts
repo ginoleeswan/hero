@@ -1,4 +1,8 @@
-import { heroNodeTextureSource, withHeadDiscTransform } from '../../src/constants/heroImages';
+import {
+  hasRealArt,
+  heroNodeTextureSource,
+  withHeadDiscTransform,
+} from '../../src/constants/heroImages';
 
 const AVATAR = 'https://res.cloudinary.com/dgrsb5o4p/image/upload/v1784980146/hero-avatars/346.png';
 const PORTRAIT =
@@ -40,5 +44,27 @@ describe('heroNodeTextureSource', () => {
   it('scales the disc with the requested texture width', () => {
     expect(withHeadDiscTransform(PORTRAIT, 128)).toContain('r_max,w_100/');
     expect(withHeadDiscTransform(PORTRAIT, 128)).toContain('c_lpad,w_128,h_128');
+  });
+
+  // ComicVine serves several different stand-ins for "no art", and the guard
+  // used to enumerate filenames — so `img_broken.png` sailed through and 89
+  // heroes rendered a grey broken-image graphic in the feed. Matching the
+  // /images/core/ directory covers the whole family, including variants that
+  // have not appeared yet.
+  it('rejects every ComicVine core placeholder, not just the ones already seen', () => {
+    const core = 'https://comicvine.gamespot.com/a/bundles/phoenixsite/images/core/loose/';
+    expect(hasRealArt(`${core}img_broken.png`)).toBe(false);
+    // A sibling nobody has reported yet must fail on the same rule.
+    expect(hasRealArt(`${core}some_future_placeholder.png`)).toBe(false);
+    expect(
+      hasRealArt('https://comicvine.gamespot.com/a/uploads/scale_large/11/113/blank.png'),
+    ).toBe(false);
+    expect(hasRealArt('https://cdn.example.com/heroes/no-portrait.png')).toBe(false);
+  });
+
+  it('still accepts real art', () => {
+    expect(
+      hasRealArt('https://comicvine.gamespot.com/a/uploads/scale_large/1/15776/9971293-hulk.jpg'),
+    ).toBe(true);
   });
 });

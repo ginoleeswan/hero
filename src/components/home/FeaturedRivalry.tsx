@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { PressScale } from '../ui/PressScale';
 import { VsBadge } from '../compare/VsBadge';
-import { COLORS } from '../../constants/colors';
+import { COLORS, EYEBROW } from '../../constants/colors';
 import type { Rivalry } from '../../lib/db/heroes';
 
 export function FeaturedRivalry({
@@ -45,6 +45,11 @@ export function FeaturedRivalry({
           />
         </View>
         <LinearGradient
+          colors={['rgba(11,24,32,0.85)', 'transparent']}
+          locations={[0, 1]}
+          style={s.topScrim}
+        />
+        <LinearGradient
           colors={['transparent', 'rgba(11,24,32,0.9)']}
           locations={[0.5, 1]}
           style={s.scrim}
@@ -79,17 +84,19 @@ const s = StyleSheet.create({
   faceB: { position: 'absolute', top: 0, right: 0, width: '50%', height: '100%' },
   flip: { transform: [{ scaleX: -1 }] },
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 90 },
+  // The kicker sat in raw orange on whatever art the two portraits happened to
+  // be — 5.92:1 on ink, but nothing guarantees ink up there, and on a pale
+  // costume it vanished. The names below it read fine only because the bottom
+  // scrim gives them a canvas; this gives the kicker the same one.
+  topScrim: { position: 'absolute', left: 0, right: 0, top: 0, height: 72 },
   kicker: {
     position: 'absolute',
     top: 16,
     left: 0,
     right: 0,
     textAlign: 'center',
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
+    ...EYEBROW,
     letterSpacing: 2.5,
-    textTransform: 'uppercase',
-    color: COLORS.orange,
   },
   center: {
     position: 'absolute',

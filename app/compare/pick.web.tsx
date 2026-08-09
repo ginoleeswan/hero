@@ -324,7 +324,7 @@ export default function BattleBuilderWeb() {
       >
         {isWide ? (
           <View style={s.header}>
-            <Text style={s.eyebrow}>★ Build a Battle ★</Text>
+            <Text style={s.eyebrow}>Build a Battle</Text>
             <Text style={s.title}>Select Your Fighters</Text>
           </View>
         ) : null}
