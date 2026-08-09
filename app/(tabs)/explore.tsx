@@ -610,7 +610,12 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           contentInsetAdjustmentBehavior="never"
           automaticallyAdjustContentInsets={false}
-          contentContainerStyle={styles.content}
+          // The tab bar FLOATS over the content on iOS 26, so the list has to
+          // reserve room for it or the last row sits under the glass — the
+          // support pill was doing exactly that. Every other tab already pads
+          // for it (search +150 for its bottom field, versus +40); explore was
+          // the only one still on 0.
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 96 }]}
           ListFooterComponent={
             <PaperSurface style={styles.footer}>
               <Pressable style={styles.supportPill} onPress={() => router.push('/support' as Href)}>
@@ -658,7 +663,7 @@ const styles = StyleSheet.create({
   // Deep-navy scroll surface: the dark stage rows sit straight on it; beige
   // Library rows bring their own PaperSurface. Overscroll reveals dark, matching
   // the spotlight.
-  content: { flexGrow: 1, backgroundColor: COLORS.deepNavy, paddingBottom: 0 },
+  content: { flexGrow: 1, backgroundColor: COLORS.deepNavy },
   // Beige paper tail so the bottom padding isn't a dark strip.
   footer: { minHeight: 120, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   supportPill: {

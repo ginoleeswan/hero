@@ -8,6 +8,15 @@ export default function SearchLayout() {
     <Stack
       screenOptions={{
         headerTitle: '',
+        // Kill the iOS 26 UIScrollEdgeEffect. This screen HAS a header (the
+        // search bar and filter menus live in it), so unlike biography or the
+        // house page it cannot simply drop the header to avoid the effect —
+        // and the effect's light blur reads as a grey scrim in the wrong
+        // colour across the top of the dark navy stage.
+        //
+        // Reachable straight from Stack options; see the scroll-edge section
+        // of docs/features/platform-and-motion.md.
+        scrollEdgeEffects: { top: 'hidden' },
       }}
     />
   );
