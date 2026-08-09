@@ -101,7 +101,7 @@ export default function BattleBuilderScreen() {
         >
           <Ionicons name="arrow-back" size={19} color="rgba(245,235,220,0.85)" />
         </Pressable>
-        <Text style={styles.eyebrow}>★ Build a Battle ★</Text>
+        <Text style={styles.eyebrow}>Build a Battle</Text>
         <Text style={styles.title}>Assemble Your Sides</Text>
 
         <View style={styles.focalRow}>

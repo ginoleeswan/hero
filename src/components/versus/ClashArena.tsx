@@ -433,7 +433,7 @@ function ClashHeadline({
   return (
     <View style={styles.headline}>
       <Animated.Text entering={animate ? FadeIn.duration(200) : undefined} style={styles.eyebrow}>
-        {'★ Team Battle ★'}
+        {'Team Battle'}
       </Animated.Text>
       <Animated.Text
         entering={animate ? FadeIn.duration(240) : undefined}

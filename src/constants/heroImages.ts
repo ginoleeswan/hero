@@ -23,11 +23,21 @@ type ComicVineVariant =
 // CDN only has images for numeric SuperheroAPI IDs — ComicVine (cv-*) IDs will 404.
 const isNumericId = (id: string | number) => /^\d+$/.test(String(id));
 
-// Some ingested rows point at a "no image" placeholder (ComicVine's blank.png or
-// the akabab no-portrait). Treat those as missing so cards fall back to their own
-// empty/initial treatment instead of rendering a broken-looking grey placeholder.
+// Some ingested rows point at a "no image" placeholder rather than art. Treat
+// those as missing so cards fall back to their own empty/initial treatment
+// instead of rendering a broken-looking grey box.
+//
+// The path test is the important one. This used to list only `blank.png` and
+// `no-portrait`, and 89 heroes were pointing at
+// `…/phoenixsite/images/core/loose/img_broken.png` — a DIFFERENT ComicVine
+// stand-in — which sailed through and rendered as a grey broken-image graphic
+// in the feed (reported on "Ushiano"). Enumerating filenames loses that race
+// every time a source adds one. Anything under ComicVine's `/images/core/`
+// is site chrome by definition, never character art, so match the directory
+// and the whole family is covered including ones we haven't seen.
 const isPlaceholder = (url?: string | null): boolean =>
-  !!url && (url.includes('blank.png') || url.includes('no-portrait'));
+  !!url &&
+  (url.includes('/images/core/') || url.includes('blank.png') || url.includes('no-portrait'));
 
 /**
  * Whether a hero has art worth showing, as opposed to a source's stand-in for

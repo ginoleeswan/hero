@@ -80,7 +80,7 @@ export default function VersusHubWeb() {
         <View style={s.glowA as object} />
         <View style={s.glowB as object} />
         <View style={s.stageInner}>
-          <Text style={s.eyebrow}>{"★ Today's Debate ★"}</Text>
+          <Text style={s.eyebrow}>{"Today's Debate"}</Text>
           {matchup ? (
             <Text
               style={[s.title, !isDesktop && (s.titleMobile as object)] as object}

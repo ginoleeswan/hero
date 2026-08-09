@@ -78,7 +78,7 @@ export default function VersusScreen() {
           locations={[0, 0.5, 1]}
           style={[styles.stage, { paddingTop: insets.top + 24 }]}
         >
-          <Text style={styles.eyebrow}>{"★ Today's Debate ★"}</Text>
+          <Text style={styles.eyebrow}>{"Today's Debate"}</Text>
           {matchup ? (
             <Text style={[styles.title, hookText && styles.titleWithHook]} numberOfLines={1}>
               {matchup.heroA.name} vs {matchup.heroB.name}
@@ -186,7 +186,7 @@ export default function VersusScreen() {
               router.push(`/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}`);
             }}
           >
-            <Text style={styles.teamEyebrow}>★ Team Battle ★</Text>
+            <Text style={styles.teamEyebrow}>Team Battle</Text>
             <Text style={styles.teamTitle} numberOfLines={1}>
               {teamBattle.teamA.name} vs {teamBattle.teamB.name}
             </Text>
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   stage: { paddingHorizontal: 16, paddingBottom: 30, alignItems: 'center' },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 11.5,
+    fontSize: 11,
     letterSpacing: 4,
     textTransform: 'uppercase',
     color: COLORS.goldAccent,

@@ -29,7 +29,7 @@ export function ChallengerIntro({ lead, rivals, onPick, onSurprise }: Props) {
       </Text>
 
       {rivals.length > 0 ? (
-        <CuratedRow label="★ Their arch-enemies" items={rivals} onPick={onPick} cardW={96} />
+        <CuratedRow label="Their arch-enemies" items={rivals} onPick={onPick} cardW={96} />
       ) : null}
 
       <View style={s.paths}>
