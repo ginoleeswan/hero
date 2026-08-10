@@ -671,7 +671,14 @@ export default function SearchScreen() {
           }
           onEndReachedThreshold={0.6}
           onEndReached={loadMore}
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 150 }]}
+          // 150 exists so the last RESULT row clears the iOS 26 bottom-aligned
+          // search field. Idle has no results — the pods ARE the end of the
+          // content — so that same padding became a screenful of nothing you
+          // could scroll into. Idle keeps only what the floating field needs.
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: insets.bottom + (isIdle ? 72 : 150) },
+          ]}
           columnWrapperStyle={listData.length > 0 ? styles.gridRow : undefined}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           renderItem={({ item }) => (

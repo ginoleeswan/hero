@@ -29,6 +29,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useStableTopInset } from '../../src/hooks/useStableTopInset';
 import { useRouter, type Href } from 'expo-router';
 import { useSignalFirstPaint } from '../../src/components/ui/BootStage';
 import { DUR, STAGGER, SPRING_SETTLE } from '../../src/lib/nativeMotion';
@@ -130,6 +131,7 @@ const SPOTLIGHT_PARALLAX = 0.5;
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const topInset = useStableTopInset();
 
   // Shared, platform-neutral data layer (see useExploreData). Aliased to the
   // names this view already renders with; spotlight is sliced to the native
@@ -185,7 +187,7 @@ export default function HomeScreen() {
   const scrollY = useScrollOffset(listRef);
   // Counteract the overscroll bounce so the whole page holds still on pull-down —
   // only the spotlight portrait zooms (Apple TV style), no navy gap appears.
-  const spotH = spotlightHeight(insets.top);
+  const spotH = spotlightHeight(topInset);
   // Pull-down (sy < 0): stretch the billboard, top-anchored, to fill the overscroll
   // so no band is ever revealed behind it. Down-scroll (sy > 0): parallax lag so the
   // dark stage slides up over the portrait instead of scrolling off with it.
@@ -421,7 +423,7 @@ export default function HomeScreen() {
               <Animated.View style={[styles.spotlightWrap, spotlightParallax]}>
                 <SpotlightCarousel
                   heroes={item.heroes}
-                  insetTop={insets.top}
+                  insetTop={topInset}
                   scrollY={scrollY}
                   onHeroPress={handlePress}
                   showLip={false}
@@ -566,7 +568,7 @@ export default function HomeScreen() {
       return entering ? <Animated.View entering={entering}>{surfaced}</Animated.View> : surfaced;
     },
     [
-      insets.top,
+      topInset,
       scrollY,
       handlePress,
       handleHeroId,

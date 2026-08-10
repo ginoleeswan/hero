@@ -19,7 +19,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Defs, Pattern, Circle, Rect, Path } from 'react-native-svg';
 import { DUR } from '../../src/lib/nativeMotion';
 import { LOGO_MASK_PATH as HERO_LOGO_PATH } from '../../src/constants/logo';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useStableTopInset } from '../../src/hooks/useStableTopInset';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SquircleMask } from '../../src/components/ui/SquircleMask';
@@ -148,7 +148,7 @@ const GUEST_BENEFITS = [
 function GuestProfileScreen() {
   const router = useRouter();
   const pathname = usePathname();
-  const insets = useSafeAreaInsets();
+  const topInset = useStableTopInset();
 
   return (
     // Entrance parity with Explore — three of four tabs used to snap in
@@ -161,7 +161,7 @@ function GuestProfileScreen() {
         contentInsetAdjustmentBehavior="never"
       >
         {/* Cover banner */}
-        <View style={[styles.cover, { height: 140 + insets.top }]}>
+        <View style={[styles.cover, { height: 140 + topInset }]}>
           <LinearGradient
             colors={['#293C43', '#3d5a66']}
             start={{ x: 0, y: 0 }}
@@ -261,7 +261,7 @@ function GuestProfileScreen() {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const topInset = useStableTopInset();
   const { user } = useAuth();
   const {
     profile,
@@ -569,7 +569,7 @@ export default function ProfileScreen() {
           onPress={pickAndUploadCover}
           onLongPress={handleCoverLongPress}
           disabled={coverUploading}
-          style={[styles.cover, { height: 140 + insets.top }]}
+          style={[styles.cover, { height: 140 + topInset }]}
         >
           {profile?.cover_url ? (
             <Image

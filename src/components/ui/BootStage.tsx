@@ -32,7 +32,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -52,15 +53,57 @@ import { LOGO_MASK_PATH as LOGO_PATH } from '../../constants/logo';
 import { COLORS } from '../../constants/colors';
 import { DUR, EASE_REVEAL } from '../../lib/nativeMotion';
 
-// Match the native splash exactly (app.config.ts: image 200px wide on
-// #293c43). The mask spans ~83.3% of its 1024 viewBox, so a 240px Svg shows
-// the mark at 200px. Rendered at 2× and scaled DOWN by transform:
+// ── Frame-1 geometry, measured rather than assumed ──────────────────────────
+//
+// The first frame must be PIXEL-CONTINUOUS with the native splash, so both
+// sides of the handoff are derived from real measurements of the two assets:
+//
+//   assets/splash.png   720x279 canvas, opaque ink 695x260 (aspect 2.673).
+//                       The ink spans 96.53% of the canvas width, and its
+//                       centre sits 6 canvas units ABOVE the canvas centre.
+//                       app.config.ts renders it at imageWidth 200 →
+//                       ink = 200 x 0.9653 = 193.06pt, lifted 1.67pt.
+//
+//   LOGO_MASK_PATH      1024 viewBox, true curve bounds (cubic extremes, not
+//                       the control hull) x 100.75..923.35, y 359.60..667.31.
+//                       Ink 822.60 x 307.71 — aspect 2.673, identical to the
+//                       PNG, confirming one artwork. It spans 80.33% of the
+//                       viewBox, and its centre sits 1.5 units BELOW centre.
+//
+// The old constants claimed 83.3% and "200px", both wrong; the errors happened
+// to cancel to within 0.26pt of width, which is why nobody caught them. The
+// vertical never cancelled: the mark landed ~2pt low at handoff, a 6-physical-
+// pixel jump on a 3x screen, and it was visible as a small settle.
+const SPLASH_INK_W = 193.06; // what the OS splash actually shows, in points
+const INK_SPAN = 822.6 / 1024; // ink width as a fraction of the viewBox
+const SVG_DISPLAY = SPLASH_INK_W / INK_SPAN; // ≈240.3, not 240
+const SVG_SIZE = 480; // rendered at 2x, scaled DOWN by transform:
 // react-native-svg rasterizes at layout size, and a downscaled raster stays
 // crisp through the bloom where an upscaled one went soft.
-const SVG_DISPLAY = 240;
-const SVG_SIZE = 480;
 const BASE_SCALE = SVG_DISPLAY / SVG_SIZE;
+// Align the two inks' centres: the path's is 1.5/1024 of the display box low,
+// the PNG's is 1.67pt high. Both corrections push the same way.
+const FRAME1_DY = -((1.5 / 1024) * SVG_DISPLAY + 1.67);
 const SPLASH_NAVY = '#293C43'; // must equal app.config.ts splash backgroundColor
+
+// ── The resting composition ─────────────────────────────────────────────────
+//
+// The splash does NOT rest where it starts. It starts as an exact copy of the
+// OS splash — centred, full size — because that is the only way the handoff can
+// be invisible; then, during the alive act, the mark settles into the real
+// composition: smaller, lifted above centre, with the wordmark arriving in the
+// footer beneath it.
+//
+// This is deliberately motion rather than a different first frame. Changing
+// where the mark STARTS would mean changing assets/splash.png and app.config.ts
+// — a native change that cannot ship over the air, and one that would pop at
+// handoff unless the PNG were re-cut to the new position. Animating from the
+// shared frame gets the composition the design wants while keeping frame 1
+// honest.
+const REST_SCALE = 0.66; // mark settles to two-thirds
+const REST_CENTRE = 0.36; // ...centred at 36% of screen height, not 50%
+const WORDMARK_SIZE = 30;
+const WORDMARK_BOTTOM = 44; // above the safe-area inset
 
 const ALIVE_DELAY_MS = 250; // hold the perfect splash match for a beat
 const ALIVE_MS = 900; // the still frame waking up
@@ -79,8 +122,21 @@ export function useSignalFirstPaint(): () => void {
   return useContext(SignalFirstPaintContext);
 }
 
-export function BootStage({ booting, children }: { booting: boolean; children: ReactNode }) {
+export function BootStage({
+  booting,
+  fontsReady = true,
+  children,
+}: {
+  booting: boolean;
+  /** Gates the wordmark so it never paints in a fallback face. */
+  fontsReady?: boolean;
+  children: ReactNode;
+}) {
   const reduceMotion = useReducedMotion();
+  const insets = useSafeAreaInsets();
+  const { height: screenH } = useWindowDimensions();
+  // How far the mark rises from the OS splash's centre to its resting place.
+  const restRise = (0.5 - REST_CENTRE) * screenH;
   const [revealDone, setRevealDone] = useState(!booting);
   const alive = useSharedValue(0); // act 2: 0→1 once
   const breathe = useSharedValue(0); // act 2: 0↔1 forever
@@ -91,7 +147,14 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   const signalFirstPaint = useCallback(() => startRevealRef.current?.(), []);
 
   useEffect(() => {
-    if (reduceMotion) return;
+    if (reduceMotion) {
+      // Reduce Motion means no MOTION, not a different composition. `alive`
+      // now carries the resting layout as well as the animation, so leaving it
+      // at 0 would strand these users on the pre-settle frame with no wordmark.
+      // Snap to the end state instead: same picture, nothing moves.
+      alive.value = 1;
+      return;
+    }
     alive.value = withDelay(
       ALIVE_DELAY_MS,
       withTiming(1, { duration: ALIVE_MS, easing: Easing.inOut(Easing.ease) }),
@@ -137,6 +200,14 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     };
   }, [booting, revealDone, exit, breathe, reduceMotion]);
 
+  // The mark, its ember halo and the reveal ring must stay concentric, so the
+  // lift lives on the group that holds all three rather than on the mark alone.
+  // At alive=0 the group sits exactly where the OS splash puts the ink; at
+  // alive=1 it has risen into the resting composition.
+  const groupStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(alive.value, [0, 1], [FRAME1_DY, -restRise]) }],
+  }));
+
   const logoStyle = useAnimatedStyle(() => ({
     // Gone by 55% of the reveal — the mark must never float over readable
     // app content while the stage dissolves behind it.
@@ -145,10 +216,24 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
       {
         scale:
           BASE_SCALE * // downscale from the 2× raster — never magnify
+          interpolate(alive.value, [0, 1], [1, REST_SCALE]) * // settle to the rest size
           (1 + breathe.value * 0.012) * // barely-there breath
           interpolate(exit.value, [0, 1], [1, 1.3]), // bloom toward the viewer
       },
     ],
+  }));
+
+  // The wordmark belongs to the resting composition, so it arrives with it —
+  // and only once Righteous has actually loaded. `booting` covers font loading,
+  // so without this gate the first frames could paint "Mythique" in the system
+  // fallback and then swap faces in place, which is exactly the kind of small
+  // wrongness this screen cannot afford.
+  const wordmarkStyle = useAnimatedStyle(() => ({
+    opacity:
+      (fontsReady ? 1 : 0) *
+      interpolate(alive.value, [0, 0.55, 1], [0, 0, 1], Extrapolation.CLAMP) *
+      interpolate(exit.value, [0, 0.35], [1, 0], Extrapolation.CLAMP),
+    transform: [{ translateY: interpolate(alive.value, [0, 1], [8, 0]) }],
   }));
 
   // Depth gradient + ember halo fade in AFTER the splash-matched still frame,
@@ -205,7 +290,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
             />
           </Animated.View>
 
-          <View style={styles.centre} pointerEvents="none">
+          <Animated.View style={[styles.centre, groupStyle]} pointerEvents="none">
             {/* Ember halo. A real radial gradient (react-native-svg, as in
                 NotFoundView) — three stacked translucent discs faking one gave
                 visible hard edges where they met. */}
@@ -230,7 +315,20 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
                 <Path d={LOGO_PATH} fill={COLORS.beige} />
               </Svg>
             </Animated.View>
-          </View>
+          </Animated.View>
+
+          {/* The wordmark sits in the footer, not under the mark — the mark
+              carries the top of the composition and this anchors the bottom. */}
+          <Animated.View
+            style={[
+              styles.wordmarkWrap,
+              { bottom: insets.bottom + WORDMARK_BOTTOM },
+              wordmarkStyle,
+            ]}
+            pointerEvents="none"
+          >
+            <Text style={styles.wordmark}>Mythique</Text>
+          </Animated.View>
         </Animated.View>
       )}
     </View>
@@ -250,7 +348,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  centre: { alignItems: 'center', justifyContent: 'center' },
+  centre: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wordmarkWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  // Righteous lowercase is the brand's quiet-authority voice — the same face
+  // the share cards use (SHARE_CARD.wordmarkFamilyRN), never coloured.
+  wordmark: {
+    fontFamily: 'Righteous_400Regular',
+    fontSize: WORDMARK_SIZE,
+    lineHeight: WORDMARK_SIZE * 1.3,
+    color: COLORS.beige,
+    letterSpacing: 0.5,
+  },
   haloWrap: {
     position: 'absolute',
     width: HALO_W,
