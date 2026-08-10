@@ -48,7 +48,7 @@ import { PressScale } from '../../src/components/ui/PressScale';
 import { useBattleBuilder } from '../../src/hooks/useBattleBuilder';
 import { usePresetTeams } from '../../src/hooks/usePresetTeams';
 import { FACTION_A, FACTION_B } from '../../src/components/versus/factionColors';
-import { COLORS, PAPER_TEXT } from '../../src/constants/colors';
+import { COLORS, PAPER_TEXT, STAGE_INK, GOLD_METAL } from '../../src/constants/colors';
 import { EYEBROW_TYPE } from '../../src/design';
 import { getTeamRoster } from '../../src/lib/db/teams';
 import { MAX_SIDE, type PickedHero, type Side } from '../../src/lib/battleBuilderState';
@@ -226,10 +226,7 @@ export default function BattleBuilderScreen() {
       <StatusBar style="light" />
 
       {/* ── Pinned: top bar + tray, on the arena-lobby gradient ── */}
-      <LinearGradient
-        colors={['#1c2f5a', '#13203a', '#0c1526']}
-        style={[s.stage, { paddingTop: topInset + 4 }]}
-      >
+      <LinearGradient colors={[...STAGE_INK]} style={[s.stage, { paddingTop: topInset + 4 }]}>
         <View style={s.topBar}>
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/versus'))}
@@ -330,11 +327,13 @@ export default function BattleBuilderScreen() {
       <View style={[s.ctaBar, { paddingBottom: insets.bottom + 10 }]} pointerEvents="box-none">
         {b.canBattle && b.battleHref ? (
           <Animated.View entering={FadeInDown.duration(220)} style={s.ctaStrip}>
-            {/* The Fight button IS the matchup: the two faction colours crash
-                into an ink centre where the verdict happens — the same split
-                the showdown cards and share-card vote bar use. Counts ride on
-                ink scrim chips so they stay legible at any gradient point,
-                framed in the arbiter's gold. */}
+            {/* Struck metal, not a meter. The previous version ran the two
+                faction colours across the full width into a dark centre, which
+                reads as a progress bar or a battery — the shape of a STATUS,
+                not of an action. This is a solid gold CTA with a lit top edge
+                and a shadowed base (GOLD_METAL), so it looks pressable; the
+                factions survive as rings around the two count discs, which is
+                identity without turning the button into a gauge. */}
             <PressScale
               scale={0.97}
               onPress={() => {
@@ -346,20 +345,22 @@ export default function BattleBuilderScreen() {
               style={s.cta}
             >
               <LinearGradient
-                colors={[FACTION_A, COLORS.deepNavy, COLORS.deepNavy, FACTION_B]}
-                locations={[0, 0.34, 0.66, 1]}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
+                colors={[...GOLD_METAL]}
+                locations={[0, 0.55, 1]}
                 style={StyleSheet.absoluteFill}
               />
-              <View style={s.ctaCount}>
+              {/* The lit bevel — one hairline of white along the top edge is
+                  what sells "raised" more than any shadow underneath. */}
+              <View style={s.ctaBevel} pointerEvents="none" />
+
+              <View style={[s.ctaCount, { borderColor: FACTION_A }]}>
                 <Text style={s.ctaCountTxt}>{b.aHeroes.length}</Text>
               </View>
               <View style={s.ctaCenter}>
-                <MaterialCommunityIcons name="sword-cross" size={16} color={COLORS.goldAccent} />
+                <MaterialCommunityIcons name="sword-cross" size={17} color={COLORS.deepNavy} />
                 <Text style={s.ctaTxt}>Fight</Text>
               </View>
-              <View style={s.ctaCount}>
+              <View style={[s.ctaCount, { borderColor: FACTION_B }]}>
                 <Text style={s.ctaCountTxt}>{b.bHeroes.length}</Text>
               </View>
             </PressScale>
@@ -682,34 +683,48 @@ const s = StyleSheet.create({
   ctaBar: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
   ctaStrip: { alignSelf: 'stretch', paddingHorizontal: H_PAD, paddingTop: 10 },
   cta: {
-    height: 54,
+    height: 56,
     borderRadius: 16,
     borderCurve: 'continuous',
     overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
+    paddingHorizontal: 13,
+    // A deep-gold rim rather than a grey one: a neutral border on metal reads
+    // as a sticker edge, a darker shade of the fill reads as the metal's own.
     borderWidth: 1,
-    borderColor: 'rgba(206,155,51,0.5)',
-    backgroundColor: COLORS.deepNavy,
-    boxShadow: '0 6px 18px rgba(11,24,32,0.35)',
-    elevation: 8,
+    borderColor: 'rgba(120,84,20,0.55)',
+    backgroundColor: COLORS.goldAccent,
+    boxShadow: '0 8px 20px rgba(11,24,32,0.45)',
+    elevation: 10,
   },
-  ctaCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  ctaBevel: {
+    position: 'absolute',
+    top: 0,
+    left: 12,
+    right: 12,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+  },
+  ctaCenter: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   ctaTxt: {
     fontFamily: 'Flame-Regular',
     fontSize: 18,
     lineHeight: 24,
-    color: COLORS.beige,
-    letterSpacing: 1,
+    color: COLORS.deepNavy,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
+  // Ink discs ringed in each side's colour — 15.27:1 for the numeral, and the
+  // factions stay legible as identity without painting the whole button.
   ctaCount: {
-    minWidth: 30,
-    height: 30,
+    minWidth: 32,
+    height: 32,
     borderRadius: 999,
     paddingHorizontal: 8,
-    backgroundColor: 'rgba(11,24,32,0.55)',
+    backgroundColor: COLORS.deepNavy,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

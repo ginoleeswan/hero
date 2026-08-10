@@ -40,6 +40,27 @@ The same alpha behaves completely differently on each: beige at 0.6α on ink is
 are split by canvas rather than shared, and why `check:ui` measures contrast
 against the canvas a colour is evidently for.
 
+### Dark stages come from `STAGE_INK`, never from hand-rolled hex
+
+Every dark surface in the app sits in one hue family — deepNavy, navy, the
+daily game, the boot stage, the profile cover are all **~195–200°**, a teal
+ink. The Arena hub and the Battle Builder had hand-rolled
+`['#1c2f5a','#13203a','#0c1526']`, which is **~220°** — a true blue that
+appears nowhere in `COLORS`. A 20–25° hue gap is obvious the moment two of
+those screens are seen in sequence, and nothing was stopping the drift because
+the values were raw literals in a JSX prop, not tokens.
+
+`STAGE_INK` (in `colors.ts`) is the native colour array for
+`expo-linear-gradient`; the Arena, the builder and the daily game now share it.
+`SURFACE_GRADIENT` remains the CSS-string equivalent for web. **If a screen
+needs a dark stage, take this one** — a gradient written inline is how the app
+grew a second navy.
+
+`GOLD_METAL` is the matching CTA ramp: flat `goldAccent` at button size reads
+as a plastic slab, so the primary action uses a light→base→deep vertical ramp
+(same ~40° hue, only lightness moves) with a hairline white bevel on its top
+edge. Ink on it measures 7.17:1.
+
 ### The palette, measured on both canvases
 
 Every palette colour is canvas-specific — there is no "safe" brand colour that
