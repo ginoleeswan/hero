@@ -11,7 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableTopInset } from '../../src/hooks/useStableTopInset';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, STAGE_INK } from '../../src/constants/colors';
 import { useVersusHub } from '../../src/hooks/useVersusHub';
 import { pickRandomPair } from '../../src/lib/versus';
 import { stashFighters, type FighterArt } from '../../src/lib/compareHandoff';
@@ -76,7 +76,7 @@ export default function VersusScreen() {
       >
         {/* ── Navy game-lobby stage ── */}
         <LinearGradient
-          colors={['#1c2f5a', '#13203a', '#0c1526']}
+          colors={[...STAGE_INK]}
           locations={[0, 0.5, 1]}
           style={[styles.stage, { paddingTop: topInset + 24 }]}
         >

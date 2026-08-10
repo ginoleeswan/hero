@@ -98,6 +98,31 @@ export const SURFACE_GRADIENT = {
     `radial-gradient(130% 100% at 50% -5%, ${COLORS.navy} 0%, ${COLORS.deepNavy} 70%)`,
 } as const;
 
+/**
+ * The immersive dark stage, as a colour array for expo-linear-gradient (native).
+ * Lifted ink at the top easing to the floor — the "lobby" depth the Arena, the
+ * builder and the daily game all want.
+ *
+ * It exists because two screens hand-rolled `['#1c2f5a','#13203a','#0c1526']`,
+ * which is a ~220° BLUE. Every other dark surface in the app — deepNavy, navy,
+ * the daily game, the boot stage, the profile cover — sits at ~195-200°, a
+ * teal ink. A 20-25° hue gap is obvious the moment two of those screens are
+ * seen in sequence, and no token was stopping it because the values were raw
+ * literals. Reach for this instead of writing a stage gradient by hand.
+ */
+export const STAGE_INK = ['#16323d', '#0d2029', COLORS.deepNavy] as const;
+
+/**
+ * The struck-metal gold ramp for the app's primary CTA. Flat `goldAccent` at
+ * button size reads as a plastic slab: a light→base→deep vertical ramp gives
+ * the fill a lit top edge and a shadowed base, which is what makes a button
+ * look pressable rather than painted. All three stops share goldAccent's hue
+ * (~40°); only lightness moves, so it stays the same brand gold.
+ *
+ * Ink on this measures 7.17:1 — use `COLORS.deepNavy` for its label.
+ */
+export const GOLD_METAL = ['#E9C05C', COLORS.goldAccent, '#A87A22'] as const;
+
 /** The seam — a warm orange hairline where a dark band meets beige content. */
 export const SEAM_COLOR = 'rgba(231,115,51,0.20)';
 

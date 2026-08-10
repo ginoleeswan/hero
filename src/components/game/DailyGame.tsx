@@ -23,7 +23,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SURFACE, INK_TEXT } from '../../constants/colors';
+import { COLORS, SURFACE, INK_TEXT, STAGE_INK } from '../../constants/colors';
 import { useScreenChrome } from '../../hooks/useScreenChrome';
 import { MysteryPortrait } from './MysteryPortrait';
 import { ClueSticker } from './ClueSticker';
@@ -468,7 +468,7 @@ export function DailyGame() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#16323d', '#0d2029', '#0b1820']}
+        colors={[...STAGE_INK]}
         locations={[0, 0.55, 1]}
         style={styles.bg}
         pointerEvents="none"
