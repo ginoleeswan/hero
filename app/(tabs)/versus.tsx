@@ -9,6 +9,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useStableTopInset } from '../../src/hooks/useStableTopInset';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { useVersusHub } from '../../src/hooks/useVersusHub';
@@ -26,6 +27,7 @@ import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 export default function VersusScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const topInset = useStableTopInset();
   const {
     matchup,
     hookText,
@@ -76,7 +78,7 @@ export default function VersusScreen() {
         <LinearGradient
           colors={['#1c2f5a', '#13203a', '#0c1526']}
           locations={[0, 0.5, 1]}
-          style={[styles.stage, { paddingTop: insets.top + 24 }]}
+          style={[styles.stage, { paddingTop: topInset + 24 }]}
         >
           <Text style={styles.eyebrow}>{"Today's Debate"}</Text>
           {matchup ? (

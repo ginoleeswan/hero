@@ -569,6 +569,30 @@ happens on three unrelated screens at once. **When a layout bug appears on
 screens that share no layout code, look at what they share — the provider
 tree.**
 
+### …and the root provider was necessary but not sufficient
+
+The shift came back — later in a session, after switching tabs rather than at
+boot. Seeding the providers correctly fixes frame one; it does not stop a
+nested provider being *re-measured* afterwards and disagreeing with the window.
+
+`useSafeAreaInsets()` answers "what is safe inside the nearest provider's
+view". expo-router gives each tab screen its own provider, so on these screens
+that is a different question from the one they are actually asking: "where does
+the window's chrome end". When the two answers diverge, every screen keyed to
+the value moves at once — the same three-screens-together signature as before.
+
+`src/hooks/useStableTopInset.ts` removes the dependency instead of arbitrating
+it. The app is **portrait-locked** (`orientation: 'portrait'`), so the window's
+top inset physically cannot change while the app runs — which means a top inset
+that *does* change is wrong no matter what produced it. The hook returns
+`initialWindowMetrics.insets.top`, a native snapshot taken before the first
+render, falling back to the live hook where that is unavailable.
+
+Full-bleed, top-anchored screens (Explore, Arena, Profile) use it for `.top`.
+Keep `useSafeAreaInsets()` for anything genuinely relative to its container and
+for `.bottom`, which tracks the keyboard and tab bar. **The rule: if a value is
+physically constant, do not read it from something that can re-measure.**
+
 ## Anchor a scale with arithmetic, not `transformOrigin`
 
 A scale transform applies about the view's **centre**. At scale `s` the top edge
