@@ -1,26 +1,56 @@
-import { useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, FlatList, Pressable, StyleSheet, Dimensions } from 'react-native';
+// app/compare/pick.tsx — the native Battle Builder, structured as a DRAFT
+// BOARD: a pinned tray (what you have) over a dominant catalogue (what you can
+// pick). The design rules, learned from the version this replaced:
+//
+//   1. The CATALOGUE is the star. You spend the whole session browsing heroes,
+//      so the grid starts above the fold. The old screen spent ~60% of the
+//      viewport on empty question-mark placeholders (a focal card, a giant
+//      anchor, five dashed slots — seven "?" boxes before one real character).
+//   2. The TRAY never scrolls away. Adding a fighter must visibly change the
+//      roster; the old header scrolled off with it, so taps appeared to do
+//      nothing. Here both sides stay pinned while the grid scrolls beneath.
+//   3. Picked heroes STAY in the grid, marked `added` (gold ring + check, tap
+//      again to remove) — the old filter-them-out approach reflowed the whole
+//      grid under your finger on every add.
+//   4. The CTA guides instead of scolding. No dead grey button reading "Add at
+//      least one fighter to each side" before you've done anything — a quiet
+//      contextual hint that names the NEXT step, replaced by the Fight button
+//      the moment the battle is valid.
+//
+// "Armed" side = where taps land. Tap a tray row to arm it; the armed row gets
+// its faction tint, a "+" in its next open slot, and the dice (random fill).
+import { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useStableTopInset } from '../../src/hooks/useStableTopInset';
 import { useHeroSearchInfinite } from '../../src/lib/query/heroQueries';
 import { OpponentCard } from '../../src/components/compare/OpponentCard';
 import { CardSkeleton } from '../../src/components/compare/CardSkeleton';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { VsBadge } from '../../src/components/compare/VsBadge';
-import { BuilderSide } from '../../src/components/versus/BuilderSide';
-import { FilterChips } from '../../src/components/versus/FilterChips';
-import { PresetRail } from '../../src/components/versus/PresetRail';
 import { useBattleBuilder } from '../../src/hooks/useBattleBuilder';
 import { usePresetTeams } from '../../src/hooks/usePresetTeams';
 import { FACTION_A, FACTION_B } from '../../src/components/versus/factionColors';
-import { COLORS, PAPER_TEXT, INK_TEXT } from '../../src/constants/colors';
+import { COLORS, PAPER_TEXT } from '../../src/constants/colors';
+import { EYEBROW_TYPE } from '../../src/design';
 import { getTeamRoster } from '../../src/lib/db/teams';
-import type { PickedHero } from '../../src/lib/battleBuilderState';
+import { MAX_SIDE, type PickedHero, type Side } from '../../src/lib/battleBuilderState';
 import type { PublisherFilter, AlignmentFilter } from '../../src/lib/db/heroes/types';
 import { useDebouncedValue } from '../../src/hooks/useDebouncedValue';
 
@@ -33,6 +63,17 @@ const CARD_H = Math.round(CARD_W * 1.4);
 // search rather than scroll. Pagination is capped to match: fetching a page
 // whose rows the slice below would discard is pure waste on the user's data.
 const GRID_CAP = 120;
+const SLOT = 40;
+
+const PUBLISHERS: PublisherFilter[] = ['All', 'Marvel', 'DC'];
+const ALIGNMENTS: AlignmentFilter[] = ['All', 'Heroes', 'Villains'];
+
+const tintBg = (hex: string, a: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${a})`;
+};
 
 function pickRandom<T extends { id: string }>(pool: T[], n: number): T[] {
   const copy = [...pool];
@@ -46,219 +87,260 @@ function pickRandom<T extends { id: string }>(pool: T[], n: number): T[] {
 export default function BattleBuilderScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const topInset = useStableTopInset();
   const b = useBattleBuilder();
   const { teams } = usePresetTeams();
+
   const [query, setQuery] = useState('');
   const [publisher, setPublisher] = useState<PublisherFilter>('All');
   const [alignment, setAlignment] = useState<AlignmentFilter>('All');
-  const [focal, setFocal] = useState<PickedHero | null>(null);
   const [peek, setPeek] = useState<PeekHero | null>(null);
   const debounced = useDebouncedValue(query, 200);
 
   const searchQ = useHeroSearchInfinite(debounced, publisher, alignment);
+  // Placed heroes stay in the grid (marked `added`) — no filter, no reflow.
   const heroes = useMemo(
-    () =>
-      (searchQ.data?.pages ?? [])
-        .flat()
-        .filter((h) => !b.isPlaced(h.id))
-        .slice(0, GRID_CAP),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- granular inputs, not the unstable `b`
-    [searchQ.data, b.aHeroes, b.bHeroes, b.isPlaced],
+    () => (searchQ.data?.pages ?? []).flat().slice(0, GRID_CAP) as PickedHero[],
+    [searchQ.data],
   );
-
-  const add = (hero: PickedHero) => {
-    Haptics.selectionAsync();
-    b.addToActive(hero);
-    setFocal(hero);
-  };
-  const pickPreset = async (teamId: string) => {
-    const roster = (await getTeamRoster(teamId, 5)) as PickedHero[];
-    b.fillActive(roster);
-    if (roster[0]) setFocal(roster[0]);
-  };
-  const randomFill = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const picks = pickRandom(heroes, 3);
-    b.fillActive(picks);
-    if (picks[0]) setFocal(picks[0]);
-  };
 
   const activeTint = b.active === 'A' ? FACTION_A : FACTION_B;
   const activeRoster = b.active === 'A' ? b.aHeroes : b.bHeroes;
-  const focalHero = focal ?? activeRoster[0] ?? null;
-  const focalUri = focalHero?.portrait_url ?? focalHero?.image_url ?? undefined;
+  const anyPicked = b.aHeroes.length > 0 || b.bHeroes.length > 0;
 
-  const header = (
-    <>
-      <LinearGradient
-        colors={['#1c2f5a', '#13203a', '#0c1526']}
-        style={[styles.stage, { paddingTop: insets.top + 20 }]}
-      >
-        {/* The stack header is hidden — without this chevron the builder has
-            no visible way out (edge-swipe only). */}
-        <Pressable
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/versus'))}
-          style={[styles.backBtn, { top: insets.top + 4 }]}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-        >
-          <Ionicons name="arrow-back" size={19} color="rgba(245,235,220,0.85)" />
-        </Pressable>
-        <Text style={styles.eyebrow}>Build a Battle</Text>
-        <Text style={styles.title}>Assemble Your Sides</Text>
+  const add = (hero: PickedHero) => {
+    if (activeRoster.length >= MAX_SIDE) {
+      // Side is full — a silent no-op reads as a broken tap.
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+    Haptics.selectionAsync();
+    b.addToActive(hero);
+  };
+  const remove = (id: string) => {
+    Haptics.selectionAsync();
+    b.removeHero(id);
+  };
+  const arm = (side: Side) => {
+    if (side !== b.active) Haptics.selectionAsync();
+    b.setActive(side);
+  };
+  const pickPreset = async (teamId: string) => {
+    const roster = (await getTeamRoster(teamId, MAX_SIDE)) as PickedHero[];
+    b.fillActive(roster);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+  const randomFill = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    b.fillActive(
+      pickRandom(
+        heroes.filter((h) => !b.isPlaced(h.id)),
+        3,
+      ),
+    );
+  };
 
-        <View style={styles.focalRow}>
-          <View style={[styles.focalCard, { borderColor: activeTint }]}>
-            {focalUri ? (
-              <Image
-                source={{ uri: focalUri }}
-                style={StyleSheet.absoluteFill}
-                contentFit="cover"
-              />
-            ) : (
-              <Text style={styles.focalQ}>?</Text>
-            )}
-          </View>
-          <VsBadge size={40} variant="glass" />
-          <Text style={styles.focalName} numberOfLines={1}>
-            {focalHero?.name ?? 'Pick your fighters'}
-          </Text>
-        </View>
+  // The hint names the NEXT step rather than restating the rule.
+  const hint = !anyPicked
+    ? 'Tap a fighter below to start Side A'
+    : b.aHeroes.length === 0
+      ? 'Side A needs a fighter — tap its row, then pick'
+      : 'Side B needs a fighter — tap its row, then pick';
 
-        {/* Segmented Side A | Side B */}
-        <View style={styles.seg}>
-          <Segment
-            label="Side A"
-            count={b.aHeroes.length}
-            synergy={b.synergyA}
-            tint={FACTION_A}
-            active={b.active === 'A'}
-            onPress={() => b.setActive('A')}
-          />
-          <Segment
-            label="Side B"
-            count={b.bHeroes.length}
-            synergy={b.synergyB}
-            tint={FACTION_B}
-            active={b.active === 'B'}
-            onPress={() => b.setActive('B')}
-          />
-        </View>
-
-        {/* The active side's roster, detailed */}
-        <BuilderSide
-          label={b.active === 'A' ? 'Side A' : 'Side B'}
-          tint={activeTint}
-          roster={activeRoster}
-          synergy={b.active === 'A' ? b.synergyA : b.synergyB}
-          publisher={b.active === 'A' ? b.publisherA : b.publisherB}
-          active
-          flip={b.active === 'B'}
-          anchorW={108}
-          anchorH={135}
-          slot={30}
-          onActivate={() => {}}
-          onRemove={b.removeHero}
+  const gridHeader = (
+    <View style={s.sheetHead}>
+      <View style={s.searchRow}>
+        <Ionicons name="search" size={17} color="rgba(41,60,67,0.4)" />
+        <TextInput
+          style={s.input}
+          placeholder="Search any hero or villain…"
+          placeholderTextColor={PAPER_TEXT.placeholder}
+          value={query}
+          onChangeText={setQuery}
+          autoCapitalize="none"
         />
-        <View style={styles.actionRow}>
-          <Pressable onPress={randomFill} style={styles.dice}>
-            <Ionicons name="dice" size={15} color="rgba(245,235,220,0.85)" />
-            <Text style={styles.diceText}>Random fill</Text>
+        {query.length > 0 ? (
+          <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityLabel="Clear search">
+            <Ionicons name="close-circle" size={17} color="rgba(41,60,67,0.35)" />
           </Pressable>
-          {activeRoster.length > 0 ? (
-            <Pressable onPress={() => b.clearSide(b.active)} style={styles.dice}>
-              <Text style={styles.diceText}>Clear</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      </LinearGradient>
-
-      <View style={styles.sheetTop}>
-        <FilterChips
-          publisher={publisher}
-          alignment={alignment}
-          onPublisher={setPublisher}
-          onAlignment={setAlignment}
-        />
-        <PresetRail
-          teams={teams}
-          label={`→ ${b.active === 'A' ? 'Side A' : 'Side B'}`}
-          tint={activeTint}
-          onPick={pickPreset}
-        />
-        <View style={styles.searchRow}>
-          <Ionicons name="search" size={17} color="rgba(41,60,67,0.4)" />
-          <TextInput
-            style={styles.input}
-            placeholder="Search any hero or villain…"
-            placeholderTextColor={PAPER_TEXT.placeholder}
-            value={query}
-            onChangeText={setQuery}
-            autoCapitalize="none"
-          />
-        </View>
-        {heroes.length === 0 && !searchQ.isPending ? (
-          <Text style={styles.empty}>No fighters match these filters.</Text>
         ) : null}
       </View>
-    </>
+
+      {/* One row: publisher · alignment. The old two labelled groups wrapped
+          into a tall block that pushed the grid below the fold. */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
+        {PUBLISHERS.map((p) => (
+          <Chip key={p} label={p} selected={publisher === p} onPress={() => setPublisher(p)} />
+        ))}
+        <View style={s.chipDivider} />
+        {ALIGNMENTS.map((a) => (
+          <Chip key={a} label={a} selected={alignment === a} onPress={() => setAlignment(a)} />
+        ))}
+      </ScrollView>
+
+      {teams.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.presets}
+        >
+          {teams.slice(0, 10).map((t) => (
+            <Pressable key={t.id} onPress={() => pickPreset(t.id)} style={s.presetPill}>
+              {t.logo_url ? (
+                <Image source={{ uri: t.logo_url }} style={s.presetLogo} contentFit="contain" />
+              ) : null}
+              <Text style={s.presetName} numberOfLines={1}>
+                {t.name}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
+
+      {/* Education + destination in one quiet line: the gesture hint, and a
+          solid tint pill (ink text on the faction colour — raw orange/blue TEXT
+          on paper fails contrast, the solid pill doesn't) naming where taps go. */}
+      <View style={s.captionRow}>
+        <Text style={s.caption}>Tap to add · hold to preview</Text>
+        <View style={[s.destPill, { backgroundColor: activeTint }]}>
+          <Text style={s.destText}>→ Side {b.active}</Text>
+        </View>
+      </View>
+
+      {heroes.length === 0 && !searchQ.isPending ? (
+        <Text style={s.empty}>No fighters match these filters.</Text>
+      ) : null}
+    </View>
   );
 
   return (
-    <View style={styles.root}>
+    <View style={s.root}>
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar style="light" />
-      <FlatList
-        data={heroes}
-        keyExtractor={(it) => it.id}
-        numColumns={3}
-        columnWrapperStyle={styles.gridRow}
-        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 96 }]}
-        keyboardShouldPersistTaps="handled"
-        ListHeaderComponent={header}
-        ListEmptyComponent={
-          searchQ.isPending ? (
-            <View style={styles.skeletonGrid}>
-              {Array.from({ length: 12 }).map((_, i) => (
-                <CardSkeleton key={i} width={CARD_W} height={CARD_H} />
-              ))}
-            </View>
-          ) : null
-        }
-        onEndReached={() => {
-          if (heroes.length >= GRID_CAP) return;
-          if (searchQ.hasNextPage && !searchQ.isFetchingNextPage) searchQ.fetchNextPage();
-        }}
-        onEndReachedThreshold={0.4}
-        renderItem={({ item }) => (
-          <OpponentCard
-            item={item}
-            onPress={() => add(item)}
-            onLongPress={() => setPeek(item)}
-            width={CARD_W}
-            height={CARD_H}
-          />
-        )}
-      />
 
-      <View style={[styles.ctaBar, { paddingBottom: insets.bottom + 10 }]}>
-        <Pressable
-          disabled={!b.canBattle || !b.battleHref}
-          onPress={() => {
-            if (b.battleHref) {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push(b.battleHref as Parameters<typeof router.push>[0]);
-            }
+      {/* ── Pinned: top bar + tray, on the arena-lobby gradient ── */}
+      <LinearGradient
+        colors={['#1c2f5a', '#13203a', '#0c1526']}
+        style={[s.stage, { paddingTop: topInset + 4 }]}
+      >
+        <View style={s.topBar}>
+          <Pressable
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/versus'))}
+            style={s.backBtn}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
+            <Ionicons name="arrow-back" size={19} color="rgba(245,235,220,0.85)" />
+          </Pressable>
+          <Text style={s.title}>Build a Battle</Text>
+          {anyPicked ? (
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                b.clearAll();
+              }}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Reset both sides"
+            >
+              <Text style={s.reset}>Reset</Text>
+            </Pressable>
+          ) : (
+            <View style={s.resetGhost} />
+          )}
+        </View>
+
+        <SideRow
+          side="A"
+          tint={FACTION_A}
+          roster={b.aHeroes}
+          synergy={b.synergyA}
+          armed={b.active === 'A'}
+          onArm={() => arm('A')}
+          onRemove={remove}
+          onDice={randomFill}
+        />
+        <View style={s.vsRow}>
+          <View style={s.vsLine} />
+          <VsBadge size={24} variant="solid" />
+          <View style={s.vsLine} />
+        </View>
+        <SideRow
+          side="B"
+          tint={FACTION_B}
+          roster={b.bHeroes}
+          synergy={b.synergyB}
+          armed={b.active === 'B'}
+          onArm={() => arm('B')}
+          onRemove={remove}
+          onDice={randomFill}
+        />
+      </LinearGradient>
+
+      {/* ── Scrolls: the catalogue ── */}
+      <View style={s.sheet}>
+        <FlatList
+          data={heroes}
+          extraData={b}
+          keyExtractor={(it) => it.id}
+          numColumns={3}
+          columnWrapperStyle={s.gridRow}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
+          keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={gridHeader}
+          ListEmptyComponent={
+            searchQ.isPending ? (
+              <View style={s.skeletonGrid}>
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <CardSkeleton key={i} width={CARD_W} height={CARD_H} />
+                ))}
+              </View>
+            ) : null
+          }
+          onEndReached={() => {
+            if (heroes.length >= GRID_CAP) return;
+            if (searchQ.hasNextPage && !searchQ.isFetchingNextPage) searchQ.fetchNextPage();
           }}
-          style={[styles.cta, !b.canBattle ? styles.ctaDim : null]}
-        >
-          <Text style={[styles.ctaTxt, !b.canBattle ? styles.ctaTxtDim : null]}>
-            {b.canBattle
-              ? `⚔ FIGHT · ${b.aHeroes.length} vs ${b.bHeroes.length} →`
-              : 'Add at least one fighter to each side'}
-          </Text>
-        </Pressable>
+          onEndReachedThreshold={0.4}
+          renderItem={({ item }) => {
+            const placed = b.isPlaced(item.id);
+            return (
+              <OpponentCard
+                item={item}
+                added={placed}
+                onPress={() => (placed ? remove(item.id) : add(item))}
+                onLongPress={() => setPeek(item)}
+                width={CARD_W}
+                height={CARD_H}
+              />
+            );
+          }}
+        />
+      </View>
+
+      {/* ── CTA: a guide until valid, the Fight button after ── */}
+      <View style={[s.ctaBar, { paddingBottom: insets.bottom + 10 }]} pointerEvents="box-none">
+        {b.canBattle && b.battleHref ? (
+          <Animated.View entering={FadeInDown.duration(220)} style={s.ctaStrip}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push(b.battleHref as Parameters<typeof router.push>[0]);
+              }}
+              accessibilityRole="button"
+              style={s.cta}
+            >
+              <Text style={s.ctaTxt}>
+                ⚔ Fight · {b.aHeroes.length} vs {b.bHeroes.length}
+              </Text>
+            </Pressable>
+          </Animated.View>
+        ) : (
+          <View style={s.hintPill} pointerEvents="none">
+            <Text style={s.hintTxt}>{hint}</Text>
+          </View>
+        )}
       </View>
 
       {peek ? (
@@ -279,145 +361,282 @@ export default function BattleBuilderScreen() {
   );
 }
 
-function Segment({
-  label,
-  count,
-  synergy,
+/** One pinned tray row: label column, five slots, dice when armed. Tapping the
+ *  row arms it; tapping a filled slot removes (armed row) or arms (idle row —
+ *  first tap selects, second acts, so idle rows can't lose a fighter by
+ *  accident). The armed row's next open slot shows a tinted "+": taps land here. */
+function SideRow({
+  side,
   tint,
-  active,
-  onPress,
+  roster,
+  synergy,
+  armed,
+  onArm,
+  onRemove,
+  onDice,
 }: {
-  label: string;
-  count: number;
-  synergy: number;
+  side: Side;
   tint: string;
-  active: boolean;
-  onPress: () => void;
+  roster: PickedHero[];
+  synergy: number;
+  armed: boolean;
+  onArm: () => void;
+  onRemove: (id: string) => void;
+  onDice: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={[styles.segBtn, active ? styles.segOn : null]}>
-      <Text style={[styles.segLabel, { color: active ? tint : INK_TEXT.faint }]}>
-        {label} · {count}
-      </Text>
-      {count >= 2 ? (
-        <Text style={[styles.segSyn, { color: active ? tint : INK_TEXT.faint }]}>+{synergy}%</Text>
-      ) : null}
+    <Pressable
+      onPress={onArm}
+      accessibilityRole="button"
+      accessibilityLabel={`Side ${side}, ${roster.length} of ${MAX_SIDE} fighters${armed ? ', selected' : ''}`}
+      style={[s.row, armed ? { borderColor: tint, backgroundColor: tintBg(tint, 0.1) } : s.rowIdle]}
+    >
+      <View style={s.rowLabelCol}>
+        <Text style={[s.rowLabel, { color: armed ? tint : 'rgba(245,235,220,0.55)' }]}>
+          Side {side}
+        </Text>
+        <Text style={s.rowMeta}>
+          {roster.length >= 2 && synergy > 0 ? `+${synergy}%` : `${roster.length}/${MAX_SIDE}`}
+        </Text>
+      </View>
+
+      <View style={[s.slots, armed ? null : s.slotsIdle]}>
+        {Array.from({ length: MAX_SIDE }).map((_, i) => {
+          const hero = roster[i];
+          if (!hero) {
+            const isNext = armed && i === roster.length;
+            return (
+              <View key={`e${i}`} style={[s.slotEmpty, isNext ? { borderColor: tint } : null]}>
+                {isNext ? <Text style={[s.slotPlus, { color: tint }]}>+</Text> : null}
+              </View>
+            );
+          }
+          const uri = hero.portrait_url ?? hero.image_url ?? undefined;
+          return (
+            <Pressable
+              key={hero.id}
+              onPress={() => (armed ? onRemove(hero.id) : onArm())}
+              accessibilityLabel={armed ? `Remove ${hero.name}` : `Select side ${side}`}
+              style={s.slot}
+            >
+              <Animated.View entering={ZoomIn.duration(160)} style={StyleSheet.absoluteFill}>
+                {uri ? (
+                  <Image
+                    source={{ uri }}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                    recyclingKey={hero.id}
+                  />
+                ) : (
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
+                )}
+              </Animated.View>
+              {armed ? (
+                <View style={s.rmBadge}>
+                  <Ionicons name="close" size={9} color="#fff" />
+                </View>
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {armed ? (
+        <Pressable
+          onPress={onDice}
+          hitSlop={6}
+          style={s.diceBtn}
+          accessibilityRole="button"
+          accessibilityLabel={`Random fill side ${side}`}
+        >
+          <Ionicons name="dice-outline" size={16} color="rgba(245,235,220,0.85)" />
+        </Pressable>
+      ) : (
+        <View style={s.diceGhost} />
+      )}
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.navy },
-  stage: { paddingHorizontal: H_PAD, paddingBottom: 18, alignItems: 'center', gap: 12 },
-  eyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 4,
-    textTransform: 'uppercase',
-    color: COLORS.goldAccent,
-    marginBottom: 2,
-  },
-  title: { fontFamily: 'Flame-Regular', fontSize: 23, color: COLORS.beige, textAlign: 'center' },
-  focalRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  focalCard: {
-    width: 66,
-    height: 84,
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 2,
-    backgroundColor: '#16242b',
+function Chip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[s.chip, selected ? s.chipOn : null]}>
+      <Text style={[s.chipText, selected ? s.chipTextOn : null]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.deepNavy },
+  stage: { paddingHorizontal: H_PAD, paddingBottom: 26, gap: 8 },
+
+  topBar: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // 0.5a over the #16242b slot = 5.0:1. The old 0.3a read as 2.69:1 — the empty
-  // slot's "?" is the only cue that a fighter is missing, so it has to be legible.
-  focalQ: { fontFamily: 'Flame-Regular', fontSize: 30, color: 'rgba(255,255,255,0.5)' },
-  focalName: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 17,
-    lineHeight: 21,
-    color: COLORS.beige,
-    maxWidth: 150,
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
   backBtn: {
-    position: 'absolute',
-    left: 10,
-    zIndex: 10,
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(245,235,220,0.08)',
   },
-
-  seg: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 12,
-    padding: 3,
-    gap: 3,
-    alignSelf: 'stretch',
+  title: { fontFamily: 'Flame-Regular', fontSize: 18, lineHeight: 24, color: COLORS.beige },
+  reset: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.7)',
+    width: 36,
+    textAlign: 'right',
   },
-  segBtn: {
-    flex: 1,
+  resetGhost: { width: 36 },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    borderWidth: 1.5,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  rowIdle: { borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.03)' },
+  rowLabelCol: { width: 52, gap: 1 },
+  rowLabel: { ...EYEBROW_TYPE },
+  rowMeta: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: 'rgba(245,235,220,0.55)' },
+  slots: { flexDirection: 'row', gap: 5, flex: 1 },
+  slotsIdle: { opacity: 0.7 },
+  slot: {
+    width: SLOT,
+    height: SLOT,
+    borderRadius: 8,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    backgroundColor: '#1b2a30',
+  },
+  slotEmpty: {
+    width: SLOT,
+    height: SLOT,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(245,235,220,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 9,
-    gap: 1,
   },
-  segOn: {
-    backgroundColor: 'rgba(206,155,51,0.12)',
-    borderWidth: 1.5,
-    borderColor: COLORS.goldAccent,
-  },
-  segLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
-  segSyn: { fontFamily: 'Nunito_700Bold', fontSize: 10 },
-
-  actionRow: { flexDirection: 'row', gap: 8 },
-  dice: {
-    flexDirection: 'row',
+  slotPlus: { fontFamily: 'Nunito_700Bold', fontSize: 15, lineHeight: 18 },
+  rmBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 13,
+    height: 13,
+    borderRadius: 999,
+    backgroundColor: 'rgba(11,24,32,0.82)',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
+    justifyContent: 'center',
   },
-  diceText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(245,235,220,0.85)' },
+  diceBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(245,235,220,0.1)',
+  },
+  diceGhost: { width: 30 },
 
-  sheetTop: {
+  vsRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: -2 },
+  vsLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(245,235,220,0.14)' },
+
+  sheet: {
+    flex: 1,
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    marginTop: -14,
-    paddingTop: 16,
-    paddingHorizontal: H_PAD,
-    gap: 12,
+    borderCurve: 'continuous',
+    marginTop: -18,
+    overflow: 'hidden',
   },
+  sheetHead: { paddingTop: 16, paddingHorizontal: H_PAD, gap: 10, paddingBottom: 10 },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(41,60,67,0.06)',
-    borderRadius: 14,
+    borderRadius: 12,
+    borderCurve: 'continuous',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(41,60,67,0.12)',
     paddingHorizontal: 14,
-    height: 46,
+    height: 44,
     gap: 9,
   },
   input: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy },
-  empty: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: PAPER_TEXT.faint,
-    paddingTop: 8,
+
+  chips: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  chip: {
+    paddingHorizontal: 13,
+    height: 30,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.22)',
+  },
+  chipOn: { backgroundColor: COLORS.goldAccent, borderColor: COLORS.goldAccent },
+  chipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: PAPER_TEXT.muted },
+  chipTextOn: { color: '#1a130a' },
+  chipDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: 'rgba(41,60,67,0.15)',
+    marginHorizontal: 2,
   },
 
-  listContent: { backgroundColor: COLORS.beige, flexGrow: 1 },
+  presets: { flexDirection: 'row', gap: 8 },
+  presetPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.55)',
+  },
+  presetLogo: { width: 16, height: 16 },
+  presetName: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: PAPER_TEXT.muted,
+    maxWidth: 130,
+  },
+
+  captionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  caption: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: PAPER_TEXT.faint },
+  destPill: {
+    paddingHorizontal: 10,
+    height: 22,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  destText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.deepNavy },
+
+  empty: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: PAPER_TEXT.faint, paddingTop: 6 },
   gridRow: { gap: GAP, marginBottom: GAP, paddingHorizontal: H_PAD },
   skeletonGrid: {
     flexDirection: 'row',
@@ -426,22 +645,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: H_PAD,
     paddingTop: GAP,
   },
-  ctaBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: H_PAD,
-    paddingTop: 10,
-    backgroundColor: 'rgba(11,24,32,0.92)',
-  },
+
+  ctaBar: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
+  ctaStrip: { alignSelf: 'stretch', paddingHorizontal: H_PAD, paddingTop: 10 },
   cta: {
     backgroundColor: COLORS.goldAccent,
-    borderRadius: 14,
+    borderRadius: 16,
+    borderCurve: 'continuous',
     paddingVertical: 14,
     alignItems: 'center',
+    boxShadow: '0 6px 18px rgba(11,24,32,0.35)',
+    elevation: 8,
   },
-  ctaDim: { backgroundColor: 'rgba(255,255,255,0.12)' },
-  ctaTxt: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: '#1a130a', letterSpacing: 0.5 },
-  ctaTxtDim: { color: 'rgba(245,235,220,0.6)' },
+  ctaTxt: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#1a130a', letterSpacing: 0.5 },
+  hintPill: {
+    paddingHorizontal: 14,
+    height: 30,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(11,24,32,0.8)',
+  },
+  hintTxt: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(245,235,220,0.85)' },
 });

@@ -117,7 +117,19 @@ the URL, and **non-votable** (no stable battle identity to tally against).
 The builder itself is `/compare/pick` — `useBattleBuilder` over the pure
 reducer helpers in `src/lib/battleBuilderState.ts` (`MAX_SIDE = 5`, N-vs-N,
 sides need not match). It surfaces live synergy per side, the active captain's
-teammates as suggestions, and preset rosters via `usePresetTeams`. Its opponent grid renders at most `GRID_CAP` (120) cards, and **`onEndReached`
+teammates as suggestions, and preset rosters via `usePresetTeams`.
+
+On native the screen is a **draft board**: a pinned tray (both sides as slot
+rows, the armed side tinted with a "+" in its next open slot) above a dominant
+catalogue grid. Four rules hold it together, each earned by the design it
+replaced: the catalogue starts above the fold (no wall of "?" placeholders);
+the tray never scrolls away (adding must visibly change the roster); picked
+heroes stay in the grid marked `added` instead of being filtered out (no
+reflow under your finger — and tapping an added card removes it); and the CTA
+guides rather than scolds (a contextual next-step hint until the battle is
+valid, then the Fight button). On paper the "→ Side A/B" destination cue is a
+solid faction-tint pill with ink text — raw orange/blue *text* on paper fails
+contrast (see the design-system matrix). Its opponent grid renders at most `GRID_CAP` (120) cards, and **`onEndReached`
 is capped to match**. A render cap without a matching pagination cap means the
 list keeps fetching pages whose rows the `.slice()` immediately discards —
 requests on the user's data for cards that can never appear. Any cap on what a
