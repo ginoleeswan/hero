@@ -80,6 +80,11 @@ import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import type { CharacterData } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+// One tint for BOTH sides of the header bar. The back chevron takes it via
+// `headerTintColor`; the share glyph has to be told explicitly, because a
+// custom `headerRight` child does not inherit the header tint. Sharing the
+// constant is what stops them drifting apart again.
+const HEADER_TINT = COLORS.orange;
 const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.66);
 // The identity (name + vitals) sits ON the portrait over a dark scrim; the beige
 // content sheet then rises over the hero with a rounded lip, overlapping this far.
@@ -916,7 +921,11 @@ export default function CharacterScreen() {
           // previous route's name ("(tabs)").
           headerBackButtonDisplayMode: 'minimal',
           // Native back button, tinted to match the brand instead of a custom chip.
-          headerTintColor: COLORS.orange,
+          // HEADER_TINT is shared with the headerRight glyphs below so the two
+          // sides of the bar cannot drift apart — the share icon used to carry
+          // its own hard-coded COLORS.black and read as a dark smudge inside
+          // the glass chip iOS 26 draws around it.
+          headerTintColor: HEADER_TINT,
           headerStyle: { backgroundColor: 'transparent' },
           headerTitleAlign: 'center',
           headerTitle: () => (
@@ -944,11 +953,11 @@ export default function CharacterScreen() {
                 <SymbolView
                   name="square.and.arrow.up"
                   weight="bold"
-                  tintColor={COLORS.black}
+                  tintColor={HEADER_TINT}
                   size={22}
                   resizeMode="scaleAspectFit"
                   style={styles.headerShareIcon}
-                  fallback={<Ionicons name="share-outline" size={23} color={COLORS.black} />}
+                  fallback={<Ionicons name="share-outline" size={23} color={HEADER_TINT} />}
                 />
               </TouchableOpacity>
               {user ? (

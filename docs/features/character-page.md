@@ -267,6 +267,20 @@ No header means no header-anchored effect.
 Any other native screen that pairs a transparent header with a dark full-bleed
 top will hit the same thing on iOS 26+.
 
+### One tint for both sides of the header
+
+The character screen's header bar is two different mechanisms wearing the same
+costume. The back chevron is the **native** back button, coloured by
+`headerTintColor`. The share glyph is a custom `SymbolView` inside
+`headerRight` — and a custom `headerRight` child **does not inherit the header
+tint**, so it must be told the colour explicitly. It had been hard-coded to
+`COLORS.black`, which iOS 26 then framed inside its glass header chip: a dark
+smudge on the right, a brand-orange chevron on the left.
+
+Both now read the module-level `HEADER_TINT`. If you add another
+`headerRight` control here, tint it from that constant — hard-coding a colour
+is how the two sides drifted apart in the first place.
+
 Web's `scroll-margin-top` on `h2` must clear `TOPBAR_HEIGHT` — it was 32px
 against a 64px fixed bar, so every desktop contents jump landed the heading
 half-buried under the nav.
