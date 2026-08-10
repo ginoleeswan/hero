@@ -10,9 +10,9 @@ import { openKofi } from '../src/lib/support/kofi';
 import { PageEndCap } from '../src/components/web/PageEndCap';
 
 const TIERS = [
-  { emoji: '☕', label: 'Coffee', amount: '$3' },
-  { emoji: '❤️', label: 'Fan', amount: '$10' },
-  { emoji: '⭐', label: 'Champion', amount: '$25' },
+  { icon: 'cafe' as const, label: 'Coffee', amount: '$3' },
+  { icon: 'heart' as const, label: 'Fan', amount: '$10' },
+  { icon: 'star' as const, label: 'Champion', amount: '$25' },
 ];
 
 export default function WebSupportScreen() {
@@ -41,7 +41,7 @@ export default function WebSupportScreen() {
                   hovered && (styles.tierHover as object),
                 ]}
               >
-                <Text style={styles.tierEmoji}>{t.emoji}</Text>
+                <Ionicons name={t.icon} size={20} color={COLORS.orange} style={styles.tierIcon} />
                 <Text style={styles.tierLabel}>{t.label}</Text>
                 <Text style={styles.tierAmount}>{t.amount}</Text>
               </Pressable>
@@ -60,7 +60,7 @@ export default function WebSupportScreen() {
           </Pressable>
         </SectionShell>
 
-        <Text style={styles.thanks}>Thank you — it genuinely means a lot. 🧡</Text>
+        <Text style={styles.thanks}>Thank you — it genuinely means a lot.</Text>
       </View>
 
       {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     cursor: 'pointer',
   } as object,
   tierHover: { backgroundColor: '#fdece0', borderColor: COLORS.orange } as object,
-  tierEmoji: { fontSize: 22 },
+  tierIcon: { marginBottom: 2 },
   tierLabel: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
   tierAmount: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: PAPER_TEXT.faint },
   note: {

@@ -166,6 +166,12 @@ Tests live in `__tests__/` mirroring the source tree. Run with `yarn test:ci`.
 - `StyleSheet.create` for all styles — no inline style objects except `StyleSheet.absoluteFill`.
 - Font families: `Flame-Bold` for headings, `FlameSans-Regular` for body, `Nunito_*` for UI text.
 - Background colour: `#f5ebdc` (`COLORS.beige`) — the app's base canvas.
+- **No emoji anywhere in the product.** UI copy uses vector icons
+  (Ionicons/MaterialCommunityIcons) and typography, never emoji — they render
+  as coloured glyphs that ignore the palette, differ per OS, and read as
+  filler. Text-presentation symbols are fine (★ ratings, † deceased,
+  ❖ ornament, ✓). The two content exceptions (the daily-game share payload,
+  social captions) are allowlisted by file. Enforced by `yarn check:ui`.
 - **Horizontal rails bleed to the screen edge — never clipped by parent
   padding.** A horizontal `ScrollView`/`FlatList` inside a padded container
   clips its content at the padding box: cards cut off at both edges, and the

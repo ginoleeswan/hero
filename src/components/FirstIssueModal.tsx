@@ -11,6 +11,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import type { FirstIssue } from '../types';
 import { COLORS, INK_TEXT, PAPER_TEXT, ORANGE_INK } from '../constants/colors';
@@ -136,8 +137,14 @@ export function FirstIssueModal({ firstIssue, onClose }: Props) {
         <Pressable style={styles.backdropDesktop} onPress={handleClose}>
           <Pressable style={styles.dialogDesktop} onPress={(e) => e.stopPropagation()}>
             {/* Close */}
-            <Pressable style={styles.closeBtnDesktop} onPress={handleClose} hitSlop={10}>
-              <Text style={styles.closeBtnText}>✕</Text>
+            <Pressable
+              style={styles.closeBtnDesktop}
+              onPress={handleClose}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
+              <Ionicons name="close" size={15} color={COLORS.navy} />
             </Pressable>
 
             {/* Left: full-bleed cover panel */}
@@ -335,11 +342,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(41,60,67,0.14)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeBtnText: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 12,
-    color: COLORS.navy,
   },
 
   /* ── Shared text (light — desktop) ── */

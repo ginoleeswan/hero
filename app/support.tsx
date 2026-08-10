@@ -8,9 +8,9 @@ import { SectionShell } from '../src/components/profile/SectionShell';
 import { openKofi } from '../src/lib/support/kofi';
 
 const TIERS = [
-  { emoji: '☕', label: 'Coffee', amount: '$3' },
-  { emoji: '❤️', label: 'Fan', amount: '$10' },
-  { emoji: '⭐', label: 'Champion', amount: '$25' },
+  { icon: 'cafe' as const, label: 'Coffee', amount: '$3' },
+  { icon: 'heart' as const, label: 'Fan', amount: '$10' },
+  { icon: 'star' as const, label: 'Champion', amount: '$25' },
 ];
 
 export default function SupportScreen() {
@@ -48,7 +48,7 @@ export default function SupportScreen() {
                 onPress={openKofi}
                 style={({ pressed }) => [styles.tier, pressed && styles.tierPressed]}
               >
-                <Text style={styles.tierEmoji}>{t.emoji}</Text>
+                <Ionicons name={t.icon} size={20} color={COLORS.orange} style={styles.tierIcon} />
                 <Text style={styles.tierLabel}>{t.label}</Text>
                 <Text style={styles.tierAmount}>{t.amount}</Text>
               </Pressable>
@@ -64,7 +64,7 @@ export default function SupportScreen() {
           </Pressable>
         </SectionShell>
 
-        <Text style={styles.thanks}>Thank you — it genuinely means a lot. 🧡</Text>
+        <Text style={styles.thanks}>Thank you — it genuinely means a lot.</Text>
       </ScrollView>
     </View>
   );
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     borderColor: '#f0e2d0',
   },
   tierPressed: { backgroundColor: '#fdece0', borderColor: COLORS.orange },
-  tierEmoji: { fontSize: 22 },
+  tierIcon: { marginBottom: 2 },
   tierLabel: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
   tierAmount: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: PAPER_TEXT.faint },
   note: {

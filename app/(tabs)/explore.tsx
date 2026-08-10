@@ -28,6 +28,7 @@ import Animated, {
   type AnimatedRef,
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableTopInset } from '../../src/hooks/useStableTopInset';
 import { useRouter, type Href } from 'expo-router';
@@ -621,7 +622,8 @@ export default function HomeScreen() {
           ListFooterComponent={
             <PaperSurface style={styles.footer}>
               <Pressable style={styles.supportPill} onPress={() => router.push('/support' as Href)}>
-                <Text style={styles.supportText}>♥ Support Mythique — it’s free &amp; ad-free</Text>
+                <Ionicons name="heart" size={13} color={ORANGE_INK} />
+                <Text style={styles.supportText}>Support Mythique — it’s free &amp; ad-free</Text>
               </Pressable>
             </PaperSurface>
           }
@@ -671,6 +673,9 @@ const styles = StyleSheet.create({
   supportPill: {
     backgroundColor: '#fff',
     borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 18,
     paddingVertical: 11,
     borderWidth: 1,

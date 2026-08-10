@@ -95,8 +95,14 @@ export function MovieGridModal({ movies, onClose, onSelectMovie }: Props) {
 
           <View style={styles.header}>
             <Text style={styles.headerTitle}>All Appearances</Text>
-            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
-              <Text style={styles.closeBtnText}>✕</Text>
+            <Pressable
+              style={styles.closeBtn}
+              onPress={onClose}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
+              <Ionicons name="close" size={16} color={COLORS.navy} />
             </Pressable>
           </View>
 
@@ -169,11 +175,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy + '18',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeBtnText: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    color: COLORS.navy,
   },
   grid: {
     paddingHorizontal: 16,

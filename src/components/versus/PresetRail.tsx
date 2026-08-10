@@ -23,7 +23,7 @@ export function PresetRail({ teams, label, tint, onPick, tone = 'light', limit =
   return (
     <View style={styles.wrap}>
       <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
-        ⚡ Quick teams {label}
+        Quick teams {label}
       </Text>
       <View style={styles.row}>
         {teams.slice(0, limit).map((t) => (
