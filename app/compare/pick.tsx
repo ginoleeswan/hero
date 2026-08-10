@@ -29,6 +29,10 @@ const H_PAD = 16;
 const GAP = 10;
 const CARD_W = (SCREEN_W - H_PAD * 2 - GAP * 2) / 3;
 const CARD_H = Math.round(CARD_W * 1.4);
+// The opponent grid renders at most this many cards — past it, you refine the
+// search rather than scroll. Pagination is capped to match: fetching a page
+// whose rows the slice below would discard is pure waste on the user's data.
+const GRID_CAP = 120;
 
 function pickRandom<T extends { id: string }>(pool: T[], n: number): T[] {
   const copy = [...pool];
@@ -57,7 +61,7 @@ export default function BattleBuilderScreen() {
       (searchQ.data?.pages ?? [])
         .flat()
         .filter((h) => !b.isPlaced(h.id))
-        .slice(0, 120),
+        .slice(0, GRID_CAP),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- granular inputs, not the unstable `b`
     [searchQ.data, b.aHeroes, b.bHeroes, b.isPlaced],
   );
@@ -223,6 +227,7 @@ export default function BattleBuilderScreen() {
           ) : null
         }
         onEndReached={() => {
+          if (heroes.length >= GRID_CAP) return;
           if (searchQ.hasNextPage && !searchQ.isFetchingNextPage) searchQ.fetchNextPage();
         }}
         onEndReachedThreshold={0.4}
