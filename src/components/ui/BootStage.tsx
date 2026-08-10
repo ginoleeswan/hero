@@ -225,9 +225,10 @@ export function BootStage({
 
   // The wordmark belongs to the resting composition, so it arrives with it —
   // and only once Righteous has actually loaded. `booting` covers font loading,
-  // so without this gate the first frames could paint "Mythique" in the system
-  // fallback and then swap faces in place, which is exactly the kind of small
-  // wrongness this screen cannot afford.
+  // so without this gate the first frames could paint the wordmark in the
+  // system fallback and then swap faces in place, which is exactly the kind of
+  // small wrongness this screen cannot afford. The gate is load-bearing
+  // precisely BECAUSE the wordmark is type rather than art (see below).
   const wordmarkStyle = useAnimatedStyle(() => ({
     opacity:
       (fontsReady ? 1 : 0) *
@@ -327,7 +328,7 @@ export function BootStage({
             ]}
             pointerEvents="none"
           >
-            <Text style={styles.wordmark}>Mythique</Text>
+            <Text style={styles.wordmark}>mythique</Text>
           </Animated.View>
         </Animated.View>
       )}
@@ -358,14 +359,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   wordmarkWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
-  // Righteous lowercase is the brand's quiet-authority voice — the same face
-  // the share cards use (SHARE_CARD.wordmarkFamilyRN), never coloured.
+  // The Mythique wordmark is TYPE, not art — there is no SVG for it, by design.
+  // `mythique-logo.svg` (= LOGO_MASK_PATH, the mark above) is the *mask emblem*;
+  // the wordmark is defined in SHARE_CARD as "always beige lowercase Righteous",
+  // and the landing page renders exactly that. `assets/hero-wordmark.svg` is a
+  // dead legacy asset spelling the OLD brand — nothing imports it, and putting
+  // it here would print the wrong name on the splash.
+  //
+  // So this matches the canonical treatment rather than inventing one:
+  // lowercase, beige, negative tracking (the landing page runs -3px at 128px,
+  // ~-0.023em, which is -0.7 here) and the same warm bloom behind it.
   wordmark: {
     fontFamily: 'Righteous_400Regular',
     fontSize: WORDMARK_SIZE,
     lineHeight: WORDMARK_SIZE * 1.3,
     color: COLORS.beige,
-    letterSpacing: 0.5,
+    letterSpacing: -0.7,
+    textShadowColor: 'rgba(231,115,51,0.35)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 12,
   },
   haloWrap: {
     position: 'absolute',
