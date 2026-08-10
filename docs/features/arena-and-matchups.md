@@ -117,7 +117,11 @@ the URL, and **non-votable** (no stable battle identity to tally against).
 The builder itself is `/compare/pick` — `useBattleBuilder` over the pure
 reducer helpers in `src/lib/battleBuilderState.ts` (`MAX_SIDE = 5`, N-vs-N,
 sides need not match). It surfaces live synergy per side, the active captain's
-teammates as suggestions, and preset rosters via `usePresetTeams`. The web
+teammates as suggestions, and preset rosters via `usePresetTeams`. Its opponent grid renders at most `GRID_CAP` (120) cards, and **`onEndReached`
+is capped to match**. A render cap without a matching pagination cap means the
+list keeps fetching pages whose rows the `.slice()` immediately discards —
+requests on the user's data for cards that can never appear. Any cap on what a
+paginated list renders needs the same cap on what it fetches. The web
 guided flow is `DuelStepper` / `MobileDuel` / `DuelDock` in
 `src/components/versus/`. The 1-v-1 opponent picker is
 `/compare/[hero]/pick` (`usePickOpponents`): rails of sworn rivals,
