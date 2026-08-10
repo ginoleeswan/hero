@@ -40,6 +40,52 @@ The same alpha behaves completely differently on each: beige at 0.6α on ink is
 are split by canvas rather than shared, and why `check:ui` measures contrast
 against the canvas a colour is evidently for.
 
+### The palette, measured on both canvases
+
+Every palette colour is canvas-specific — there is no "safe" brand colour that
+works on both grounds. Measured WCAG ratios of `COLORS.<token>` as **text**:
+
+| token | on paper | on ink | on band | safe as text on |
+| --- | ---: | ---: | ---: | --- |
+| `beige` | 1.00 | 15.27 | 9.77 | ink, band |
+| `skin` | 1.24 | 12.29 | 7.86 | ink, band |
+| `yellow` | 1.56 | 9.80 | 6.27 | ink, band |
+| `goldAccent` | 2.13 | 7.17 | 4.59 | ink, band |
+| `grey` | 2.20 | 6.95 | 4.45 | ink |
+| `green` | 2.45 | 6.23 | 3.98 | ink |
+| `orange` | 2.58 | 5.92 | 3.79 | ink |
+| `blue` | 2.65 | 5.76 | 3.69 | ink |
+| `gold` | 3.08 | 4.96 | 3.17 | ink |
+| `purple` | 4.83 | 3.16 | 2.02 | paper |
+| `red` | 5.20 | 2.94 | 1.88 | paper |
+| `navy` | 9.77 | 1.56 | 1.00 | paper |
+| `brown` | 11.18 | 1.37 | 1.14 | paper |
+| `black` | 11.67 | 1.31 | 1.19 | paper |
+| `deepNavy` | 15.27 | 1.00 | 1.56 | paper |
+
+Regenerate with `yarn contrast:matrix --md` — the script parses the `COLORS`
+literal from source, so the table cannot drift from the palette it describes.
+Note `grey` on band: 4.45, which *just* misses AA. That is exactly the kind of
+near-miss a hand-maintained table gets wrong, which is why this one isn't
+hand-maintained.
+
+Read the two `orange` cells together — 5.92 on ink, 2.58 on paper — because
+that single row has produced the same bug repeatedly: an eyebrow styled once,
+reused on the other canvas, and silently illegible. `SectionHeader` solves it
+the right way, with an `eyebrowLight` variant swapping in `ORANGE_INK`; the
+`FeaturedRivalry` kicker solved it the other right way, by guaranteeing the
+canvas with a scrim instead of guessing at it.
+
+**Nothing in the table is a licence to use a raw palette token at a call site.**
+It exists so new semantic roles can be built with their contrast known rather
+than assumed. If you are picking a colour for text, reach for `PAPER_TEXT` /
+`INK_TEXT` / `ACCENT_INK`, which already encode these numbers.
+
+An audit of the native app (excluding the web-only admin console) found **no
+text failing on its own canvas** — the semantic roles are doing their job. The
+risk this table guards against is not today's code; it is the next component
+that hard-codes `COLORS.orange` and gets moved onto paper a year later.
+
 ## The type scale
 
 Three families, three jobs, and they do not swap:

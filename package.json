@@ -17,6 +17,7 @@
     "smoke": "node scripts/smoke/e2e-smoke.mjs",
     "docs:links": "node scripts/docs/check-doc-links.mjs",
     "check:ui": "node scripts/ui/check-ui-invariants.mjs",
+    "contrast:matrix": "node scripts/ui/contrast-matrix.mjs",
     "social": "node scripts/social/studio.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
