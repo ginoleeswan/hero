@@ -168,7 +168,12 @@ export default function BattleBuilderScreen() {
 
       {/* One row: publisher · alignment. The old two labelled groups wrapped
           into a tall block that pushed the grid below the fold. */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={s.railBleed}
+        contentContainerStyle={s.chips}
+      >
         {PUBLISHERS.map((p) => (
           <Chip key={p} label={p} selected={publisher === p} onPress={() => setPublisher(p)} />
         ))}
@@ -182,6 +187,7 @@ export default function BattleBuilderScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={s.railBleed}
           contentContainerStyle={s.presets}
         >
           {teams.slice(0, 10).map((t) => (
@@ -585,7 +591,12 @@ const s = StyleSheet.create({
   },
   input: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy },
 
-  chips: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  // Horizontal rails escape the header's padding (negative margin) and carry
+  // their own edge insets — otherwise the padded parent CLIPS the rail at both
+  // edges instead of letting it scroll to the screen edge. Repo-wide rule; see
+  // "Horizontal rails bleed to the screen edge" in CLAUDE.md.
+  railBleed: { marginHorizontal: -H_PAD },
+  chips: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: H_PAD },
   chip: {
     paddingHorizontal: 13,
     height: 30,
@@ -605,7 +616,7 @@ const s = StyleSheet.create({
     marginHorizontal: 2,
   },
 
-  presets: { flexDirection: 'row', gap: 8 },
+  presets: { flexDirection: 'row', gap: 8, paddingHorizontal: H_PAD },
   presetPill: {
     flexDirection: 'row',
     alignItems: 'center',

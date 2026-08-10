@@ -166,6 +166,16 @@ Tests live in `__tests__/` mirroring the source tree. Run with `yarn test:ci`.
 - `StyleSheet.create` for all styles — no inline style objects except `StyleSheet.absoluteFill`.
 - Font families: `Flame-Bold` for headings, `FlameSans-Regular` for body, `Nunito_*` for UI text.
 - Background colour: `#f5ebdc` (`COLORS.beige`) — the app's base canvas.
+- **Horizontal rails bleed to the screen edge — never clipped by parent
+  padding.** A horizontal `ScrollView`/`FlatList` inside a padded container
+  clips its content at the padding box: cards cut off at both edges, and the
+  scrolled-in content vanishing early. Either keep the scroller's ancestors
+  unpadded and put the inset on `contentContainerStyle`, or escape a padded
+  parent with the pair:
+  `style={{ marginHorizontal: -H_PAD }}` +
+  `contentContainerStyle={{ paddingHorizontal: H_PAD }}`.
+  The rail's first card then aligns with the page inset, but content scrolls
+  all the way to the physical screen edge.
 - **Clamped Flame text needs `lineHeight ≥ 1.22× fontSize`.** The Flame font's ink spans ~119% of its em box (tall caps + deep descenders). Any `Text` with `numberOfLines` set to a `Flame-Regular`/`Flame-Bold` style clips its descenders (`g`/`y`/`p`) if `lineHeight` is tighter — RNW turns `numberOfLines` into `-webkit-line-clamp` + `overflow: hidden`, so the descender gets cut. Non-clamped Flame text overflows visibly and is fine at any line-height.
 
 ## Platform-specific files (`.web.tsx` / `.tsx`)
