@@ -87,6 +87,19 @@ on `onPressIn` via `src/lib/query/prefetchBrowse.ts` — its query keys must
 match the page hooks **exactly** (React Query hashes by value), and it warms
 the first grid images too.
 
+**Nothing may page while the screen is idle.** `loadMore` returns early on
+`isIdle`, and the footer spinner is gated on `!isIdle` as well. This is not
+belt-and-braces fussiness — it is the fix for a live loop. When idle, `listData`
+is deliberately `[]` (the pods are the doorway, not a "Popular" wall), so the
+list's entire content is its header and the user sits permanently inside
+`onEndReachedThreshold`. VirtualizedList re-arms `onEndReached` whenever content
+length changes, and the footer spinner mounting/unmounting changes it every
+cycle: fetch → footer appears → re-arm → fetch. The visible symptom was a
+spinner below the pods that never stopped; the invisible one was the app paging
+through all ~34k heroes in the background, for rows nothing would ever render.
+`getNextPageParam` is a length heuristic with no count cap, so `hasNextPage`
+stays true for hundreds of pages and cannot break the loop on its own.
+
 Filters: publisher + alignment are **server-side** arguments to
 `search_heroes` (so pages stay correctly filled). Category pages have much
 richer facets — `src/lib/db/categoryFilters.ts` + the `category_facet_counts`

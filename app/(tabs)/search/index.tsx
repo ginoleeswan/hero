@@ -95,6 +95,10 @@ export default function SearchScreen() {
 
   const cardWidth = (width - H_PAD * 2 - GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
   const debouncedQuery = useDebouncedValue(query, 250, flushWhenBlank);
+  // Declared up here rather than beside the other derived flags because
+  // `loadMore` needs it: when idle the screen is a browse surface and the hero
+  // list is deliberately empty, so nothing must page.
+  const isIdle = !debouncedQuery.trim();
 
   const handleSearchText = useCallback(
     (e: string | { nativeEvent?: { text?: string } }) =>
@@ -128,9 +132,17 @@ export default function SearchScreen() {
 
   const displayedHeroes = useMemo(() => data?.pages.flat() ?? [], [data]);
 
+  // The `isIdle` guard is load-bearing, not defensive. While idle `listData` is
+  // [] by design, so the list's whole content is the header — the user is
+  // permanently inside the end-reached threshold. VirtualizedList re-arms
+  // `onEndReached` whenever content length changes, and the footer spinner
+  // mounting and unmounting changes it on every cycle. The result was a closed
+  // loop: fetch → footer appears → re-arm → fetch, spinning forever and paging
+  // through all ~34k heroes in the background for results nothing would render.
   const loadMore = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    if (isIdle || !hasNextPage || isFetchingNextPage) return;
+    fetchNextPage();
+  }, [isIdle, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Tapping any result is a successful search — record the term. The Search
   // keyboard button alone missed the common path (type → tap a card), so
@@ -315,7 +327,6 @@ export default function SearchScreen() {
     [router, recordQuery],
   );
 
-  const isIdle = !debouncedQuery.trim();
   const showIdleExtras = !query.trim();
   // The beat between the first keystroke and the debounced query settling:
   // idle extras are already hidden but results haven't been asked for yet.
@@ -652,7 +663,7 @@ export default function SearchScreen() {
           ListHeaderComponent={listHeader}
           ListEmptyComponent={listEmpty}
           ListFooterComponent={
-            isFetchingNextPage ? (
+            !isIdle && isFetchingNextPage ? (
               <View style={styles.footer}>
                 <ActivityIndicator color={COLORS.orange} />
               </View>
