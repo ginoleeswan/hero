@@ -1,4 +1,5 @@
 import { Text, Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Sheet } from '../ui/Sheet';
 import { COLORS, PAPER_TEXT } from '../../constants/colors';
 
@@ -13,7 +14,7 @@ export function DonateNudge({
 }) {
   return (
     <Sheet visible={visible} onClose={onDismiss} label="Support Mythique" style={styles.card}>
-      <Text style={styles.emoji}>☕</Text>
+      <Ionicons name="cafe" size={30} color={COLORS.orange} style={styles.icon} />
       <Text style={styles.title}>Enjoying Mythique?</Text>
       <Text style={styles.body}>It’s free, made by one person — a coffee keeps it alive.</Text>
       <Pressable
@@ -31,7 +32,7 @@ export function DonateNudge({
 
 const styles = StyleSheet.create({
   card: { paddingHorizontal: 24, alignItems: 'center' },
-  emoji: { fontSize: 34, marginBottom: 8 },
+  icon: { marginBottom: 8 },
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 24,

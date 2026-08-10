@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { rankResults } from '../../../src/lib/db/heroes';
 import type { HeroSearchResult, HeroPowerResult } from '../../../src/lib/db/heroes';
 import { usePickOpponents, type PickSubject } from '../../../src/hooks/usePickOpponents';
@@ -76,7 +76,7 @@ function Rail({
     <View style={styles.section}>
       {accent ? (
         <View style={styles.rivalHead as object}>
-          <Text style={styles.swords}>⚔</Text>
+          <MaterialCommunityIcons name="sword-cross" size={15} color={COLORS.gold} />
           <Text style={styles.rivalLabel}>{label}</Text>
           <View style={styles.rivalBar as object} />
         </View>
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
     paddingBottom: 44,
   } as object,
   rivalHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 } as object,
-  swords: { fontSize: 16, color: COLORS.gold },
+
   rivalLabel: {
     fontFamily: 'Flame-Regular',
     fontSize: 16,

@@ -911,7 +911,7 @@ function AsideMemberNode({
         <View style={[styles.linkMeta, styles.metaPadLeft]}>
           <Text style={[styles.plainName, { maxWidth: 150 }]} numberOfLines={1}>
             {member.name}
-            {dead ? ' ✝' : ''}
+            {dead ? ' †' : ''}
           </Text>
           <Text style={styles.roleText} numberOfLines={1}>
             {roleLabel(member)}

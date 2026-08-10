@@ -356,7 +356,8 @@ export function DailyGame() {
       </View>
       {streak.current > 0 ? (
         <View style={styles.streakPill}>
-          <Text style={styles.streakText}>🔥 {streak.current}</Text>
+          <Ionicons name="flame" size={13} color={COLORS.orange} />
+          <Text style={styles.streakText}>{streak.current}</Text>
         </View>
       ) : (
         <View style={styles.iconBtn} />
@@ -559,6 +560,8 @@ const styles = StyleSheet.create({
     height: 38,
     paddingHorizontal: 11,
     borderRadius: 999,
+    flexDirection: 'row',
+    gap: 3,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(231,115,51,0.16)',

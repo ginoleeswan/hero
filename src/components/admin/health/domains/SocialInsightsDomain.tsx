@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
     color: COLORS.navy,
   },
-  // minWidth 0 + shrink: the stats line ("♥ 145 · 💬 29 · 7 posts") otherwise
+  // minWidth 0 + shrink: the stats line ("145 likes · 29 comments") otherwise
   // sets the row's min-content width and pushes the panel past 390px viewports;
   // with shrink it wraps to a second line instead.
   platNums: { alignItems: 'flex-end', gap: 1, flexShrink: 1, minWidth: 0 },

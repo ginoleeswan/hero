@@ -14,7 +14,7 @@ interface TodaysMatchupProps {
   onOpen: (path: string) => void;
 }
 
-// "⚔ Today's Battle" kicker — uses the same sword-cross mark as the top bar's
+// Sword-cross "Today's Battle" kicker — the same mark as the top bar's
 // versus tab (the bare emoji rendered as tofu in the web font stack).
 function Eyebrow() {
   return (

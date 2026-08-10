@@ -2,6 +2,7 @@
 // styles: a gold "sword" header (accent) or a plain uppercase label. Extracted
 // from the opponent picker so Search and Pick share one rail.
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { OpponentCard } from '../compare/OpponentCard';
 import type { PeekHero } from '../compare/HeroPeek';
 import { COLORS, PAPER_TEXT } from '../../constants/colors';
@@ -36,7 +37,7 @@ export function AccentRail({
     <View style={styles.section}>
       {accent ? (
         <View style={styles.rivalHead}>
-          <Text style={styles.swords}>⚔</Text>
+          <MaterialCommunityIcons name="sword-cross" size={15} color={COLORS.gold} />
           <Text style={styles.rivalLabel}>{label}</Text>
           <View style={styles.rivalBar} />
         </View>
@@ -80,7 +81,7 @@ const styles = StyleSheet.create({
   railScroll: { marginHorizontal: -H_PAD },
   railRow: { gap: 11, paddingLeft: H_PAD, paddingRight: H_PAD, paddingTop: 4, paddingBottom: 8 },
   rivalHead: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 3 },
-  swords: { fontSize: 15, color: COLORS.gold },
+
   rivalLabel: {
     fontFamily: 'Flame-Regular',
     fontSize: 15,

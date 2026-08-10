@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// UI invariants checker — the tripwire for four rules that are invisible when
-// broken.
+// UI invariants checker — the tripwire for rules that are invisible (or too
+// easy to miss) when broken.
 //
 // Every rule here was a real, shipped bug found by hand. None of them changes
 // how anything renders when violated, which is exactly why they came back
@@ -135,6 +135,12 @@ function element(src, i) {
 const CONTROL = /<(Pressable|TouchableOpacity|AnimatedPressable|PressScale)\b/g;
 const ICON = /<(Ionicons|MaterialCommunityIcons|MaterialIcons|Feather|FontAwesome\w*|SymbolView)\b/;
 const HAS_TEXT = /<Text\b/;
+// A capitalized CUSTOM component inside the control (IssueInfo, HeroImage…)
+// almost certainly renders text of its own — "wraps only an icon" must mean
+// ONLY an icon, or a modal wrapper whose content lives one component down
+// gets flagged as an unnamed icon button.
+const HAS_COMPONENT =
+  /<(?!(?:Ionicons|MaterialCommunityIcons|MaterialIcons|Feather|FontAwesome\w*|SymbolView|View|ScrollView|Image|ImageBackground|LinearGradient|Animated|Svg|Path|Rect|Circle|Defs|Stop|RadialGradient|Text)\b)[A-Z]\w*/;
 
 for (const file of files) {
   const src = readFileSync(join(ROOT, file), 'utf8');
@@ -183,7 +189,7 @@ for (const file of files) {
     const rnLabel = /accessibilityLabel/.test(el.attrs);
     const domLabel = /aria-label/.test(el.attrs);
 
-    if (ICON.test(el.inner) && !HAS_TEXT.test(el.inner)) {
+    if (ICON.test(el.inner) && !HAS_TEXT.test(el.inner) && !HAS_COMPONENT.test(el.inner)) {
       // On web either prop names the control; on native only accessibilityLabel does.
       if (!rnLabel && !(domLabel && !shared)) {
         fail(file, line, 'unnamed-control', `${m[1]} wraps only an icon`);
@@ -206,6 +212,67 @@ for (const file of files) {
           fail(file, line, 'small-target', `${k[1]} is ${w}x${h}, under 44 with no hitSlop`);
         }
         break;
+      }
+    }
+  }
+}
+
+// ── 4½. no emoji ────────────────────────────────────────────────────────────
+// UI copy uses vector icons and typography, never emoji pictographs — emoji
+// render as coloured glyphs that ignore the palette, differ per OS, and read
+// as filler. Text-presentation symbols the app uses deliberately are allowed
+// by character; content that is genuinely MADE of emoji (share payloads
+// pasted into other apps, social captions) is allowed by file, with a reason.
+// Scans .ts as well as .tsx, and includes the admin console — the rule is
+// about the product's voice, not one surface.
+const EMOJI_FILE_ALLOW = {
+  'src/lib/game/shareGrid.ts':
+    'The daily-game share payload — coloured squares ARE the feature, pasted into iMessage.',
+  'src/lib/social/tiktokCsv.ts':
+    'Social-caption content for the content factory — marketing copy, not app UI.',
+};
+const EMOJI_CHAR_ALLOW = new Set([
+  '★', // ratings — a text-presentation star, monochrome
+  '✓', // checkmarks in dense chrome
+  '❖', // the biography colophon ornament
+  '♪', // music-note in admin social labels
+  '♥', // card-suit heart, text presentation
+]);
+const isPictograph = (o) =>
+  (o >= 0x2600 && o <= 0x27bf) ||
+  (o >= 0x1f000 && o <= 0x1faff) ||
+  (o >= 0x1f1e6 && o <= 0x1f1ff) ||
+  o === 0x2b50 ||
+  o === 0x2b55 ||
+  o === 0xfe0f;
+
+const walkTs = (dir, out = []) => {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, e.name);
+    if (e.isDirectory()) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+      walkTs(full, out);
+    } else if (e.name.endsWith('.ts') || e.name.endsWith('.tsx')) out.push(full);
+  }
+  return out;
+};
+
+for (const file of [...walkTs(join(ROOT, 'src')), ...walkTs(join(ROOT, 'app'))].map(rel).sort()) {
+  if (EMOJI_FILE_ALLOW[file]) continue;
+  const src = readFileSync(join(ROOT, file), 'utf8');
+  const lines = src.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    for (const ch of lines[i]) {
+      const o = ch.codePointAt(0);
+      if (o < 0x2000 || EMOJI_CHAR_ALLOW.has(ch)) continue;
+      if (isPictograph(o)) {
+        fail(
+          file,
+          i + 1,
+          'emoji',
+          `"${ch}" (U+${o.toString(16).toUpperCase()}) — use a vector icon or typography`,
+        );
+        break; // one report per line is enough
       }
     }
   }

@@ -31,7 +31,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -44,6 +44,7 @@ import { OpponentCard } from '../../src/components/compare/OpponentCard';
 import { CardSkeleton } from '../../src/components/compare/CardSkeleton';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { VsBadge } from '../../src/components/compare/VsBadge';
+import { PressScale } from '../../src/components/ui/PressScale';
 import { useBattleBuilder } from '../../src/hooks/useBattleBuilder';
 import { usePresetTeams } from '../../src/hooks/usePresetTeams';
 import { FACTION_A, FACTION_B } from '../../src/components/versus/factionColors';
@@ -329,18 +330,39 @@ export default function BattleBuilderScreen() {
       <View style={[s.ctaBar, { paddingBottom: insets.bottom + 10 }]} pointerEvents="box-none">
         {b.canBattle && b.battleHref ? (
           <Animated.View entering={FadeInDown.duration(220)} style={s.ctaStrip}>
-            <Pressable
+            {/* The Fight button IS the matchup: the two faction colours crash
+                into an ink centre where the verdict happens — the same split
+                the showdown cards and share-card vote bar use. Counts ride on
+                ink scrim chips so they stay legible at any gradient point,
+                framed in the arbiter's gold. */}
+            <PressScale
+              scale={0.97}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 router.push(b.battleHref as Parameters<typeof router.push>[0]);
               }}
               accessibilityRole="button"
+              accessibilityLabel={`Fight, ${b.aHeroes.length} versus ${b.bHeroes.length}`}
               style={s.cta}
             >
-              <Text style={s.ctaTxt}>
-                ⚔ Fight · {b.aHeroes.length} vs {b.bHeroes.length}
-              </Text>
-            </Pressable>
+              <LinearGradient
+                colors={[FACTION_A, COLORS.deepNavy, COLORS.deepNavy, FACTION_B]}
+                locations={[0, 0.34, 0.66, 1]}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={s.ctaCount}>
+                <Text style={s.ctaCountTxt}>{b.aHeroes.length}</Text>
+              </View>
+              <View style={s.ctaCenter}>
+                <MaterialCommunityIcons name="sword-cross" size={16} color={COLORS.goldAccent} />
+                <Text style={s.ctaTxt}>Fight</Text>
+              </View>
+              <View style={s.ctaCount}>
+                <Text style={s.ctaCountTxt}>{b.bHeroes.length}</Text>
+              </View>
+            </PressScale>
           </Animated.View>
         ) : (
           <View style={s.hintPill} pointerEvents="none">
@@ -660,15 +682,38 @@ const s = StyleSheet.create({
   ctaBar: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
   ctaStrip: { alignSelf: 'stretch', paddingHorizontal: H_PAD, paddingTop: 10 },
   cta: {
-    backgroundColor: COLORS.goldAccent,
+    height: 54,
     borderRadius: 16,
     borderCurve: 'continuous',
-    paddingVertical: 14,
+    overflow: 'hidden',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(206,155,51,0.5)',
+    backgroundColor: COLORS.deepNavy,
     boxShadow: '0 6px 18px rgba(11,24,32,0.35)',
     elevation: 8,
   },
-  ctaTxt: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#1a130a', letterSpacing: 0.5 },
+  ctaCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  ctaTxt: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 18,
+    lineHeight: 24,
+    color: COLORS.beige,
+    letterSpacing: 1,
+  },
+  ctaCount: {
+    minWidth: 30,
+    height: 30,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    backgroundColor: 'rgba(11,24,32,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaCountTxt: { fontFamily: 'Flame-Regular', fontSize: 15, lineHeight: 20, color: COLORS.beige },
   hintPill: {
     paddingHorizontal: 14,
     height: 30,
