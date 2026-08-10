@@ -17,10 +17,10 @@ one system, not a native one with a web copy.
 
 **Two layers, and the distinction is the whole point:**
 
-| Layer | What it is | Examples |
-| --- | --- | --- |
+| Layer          | What it is                                       | Examples                                                                                   |
+| -------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------ |
 | **Primitives** | Raw scales. No opinion about where they're used. | `RADIUS`, `SPACE`, `TRACKING`, `DISPLAY`/`BODY`/`LABEL`, `ELEVATION`, the `COLORS` palette |
-| **Semantic** | What a value *means* on a given canvas. | `SURFACE`, `PAPER_TEXT`, `INK_TEXT`, `ACCENT_INK`, `EYEBROW` |
+| **Semantic**   | What a value _means_ on a given canvas.          | `SURFACE`, `PAPER_TEXT`, `INK_TEXT`, `ACCENT_INK`, `EYEBROW`                               |
 
 **Reach for semantic first.** `PAPER_TEXT.muted` says "secondary text on the
 beige canvas" and is a measured 5.61:1. `COLORS.navy` at 60% opacity says
@@ -56,37 +56,40 @@ the values were raw literals in a JSX prop, not tokens.
 needs a dark stage, take this one** — a gradient written inline is how the app
 grew a second navy.
 
-`GOLD_METAL` is the matching CTA ramp: flat `goldAccent` at button size reads
-as a plastic slab, so the primary action uses a light→base→deep vertical ramp
-(same ~40° hue, only lightness moves) with a hairline white bevel on its top
-edge. Ink on it measures 7.17:1.
+The primary CTA (the builder's Fight button) is **flat `goldAccent`, thick,
+generously rounded, and lifted by a long soft shadow** — no gradient, no bevel,
+no rim. Two richer treatments were tried and both failed for the same reason:
+decoration inside the fill competes with the label. A full-width horizontal
+faction gradient took the shape of a progress bar (a _status_, not an action),
+and a metallic light→deep ramp read as fussy. Depth belongs in the elevation,
+not in the paint. Ink on gold measures 7.17:1.
 
 ### The palette, measured on both canvases
 
 Every palette colour is canvas-specific — there is no "safe" brand colour that
 works on both grounds. Measured WCAG ratios of `COLORS.<token>` as **text**:
 
-| token | on paper | on ink | on band | safe as text on |
-| --- | ---: | ---: | ---: | --- |
-| `beige` | 1.00 | 15.27 | 9.77 | ink, band |
-| `skin` | 1.24 | 12.29 | 7.86 | ink, band |
-| `yellow` | 1.56 | 9.80 | 6.27 | ink, band |
-| `goldAccent` | 2.13 | 7.17 | 4.59 | ink, band |
-| `grey` | 2.20 | 6.95 | 4.45 | ink |
-| `green` | 2.45 | 6.23 | 3.98 | ink |
-| `orange` | 2.58 | 5.92 | 3.79 | ink |
-| `blue` | 2.65 | 5.76 | 3.69 | ink |
-| `gold` | 3.08 | 4.96 | 3.17 | ink |
-| `purple` | 4.83 | 3.16 | 2.02 | paper |
-| `red` | 5.20 | 2.94 | 1.88 | paper |
-| `navy` | 9.77 | 1.56 | 1.00 | paper |
-| `brown` | 11.18 | 1.37 | 1.14 | paper |
-| `black` | 11.67 | 1.31 | 1.19 | paper |
-| `deepNavy` | 15.27 | 1.00 | 1.56 | paper |
+| token        | on paper | on ink | on band | safe as text on |
+| ------------ | -------: | -----: | ------: | --------------- |
+| `beige`      |     1.00 |  15.27 |    9.77 | ink, band       |
+| `skin`       |     1.24 |  12.29 |    7.86 | ink, band       |
+| `yellow`     |     1.56 |   9.80 |    6.27 | ink, band       |
+| `goldAccent` |     2.13 |   7.17 |    4.59 | ink, band       |
+| `grey`       |     2.20 |   6.95 |    4.45 | ink             |
+| `green`      |     2.45 |   6.23 |    3.98 | ink             |
+| `orange`     |     2.58 |   5.92 |    3.79 | ink             |
+| `blue`       |     2.65 |   5.76 |    3.69 | ink             |
+| `gold`       |     3.08 |   4.96 |    3.17 | ink             |
+| `purple`     |     4.83 |   3.16 |    2.02 | paper           |
+| `red`        |     5.20 |   2.94 |    1.88 | paper           |
+| `navy`       |     9.77 |   1.56 |    1.00 | paper           |
+| `brown`      |    11.18 |   1.37 |    1.14 | paper           |
+| `black`      |    11.67 |   1.31 |    1.19 | paper           |
+| `deepNavy`   |    15.27 |   1.00 |    1.56 | paper           |
 
 Regenerate with `yarn contrast:matrix --md` — the script parses the `COLORS`
 literal from source, so the table cannot drift from the palette it describes.
-Note `grey` on band: 4.45, which *just* misses AA. That is exactly the kind of
+Note `grey` on band: 4.45, which _just_ misses AA. That is exactly the kind of
 near-miss a hand-maintained table gets wrong, which is why this one isn't
 hand-maintained.
 
@@ -111,11 +114,11 @@ that hard-codes `COLORS.orange` and gets moved onto paper a year later.
 
 Three families, three jobs, and they do not swap:
 
-| Family | Job | Token |
-| --- | --- | --- |
-| Flame | Display only — titles, hero names, pull quotes | `DISPLAY.xl…xs` |
-| FlameSans | Long-form body copy — summaries, prose | `BODY.lg…sm` |
-| Nunito | UI — labels, buttons, stats, captions | `LABEL.lg…xs` |
+| Family    | Job                                            | Token           |
+| --------- | ---------------------------------------------- | --------------- |
+| Flame     | Display only — titles, hero names, pull quotes | `DISPLAY.xl…xs` |
+| FlameSans | Long-form body copy — summaries, prose         | `BODY.lg…sm`    |
+| Nunito    | UI — labels, buttons, stats, captions          | `LABEL.lg…xs`   |
 
 **Every Flame step satisfies `lineHeight >= 1.22 × fontSize`.** Flame's ink
 spans ~119% of its em box, so a clamped (`numberOfLines`) Flame style with a
@@ -128,7 +131,7 @@ CLAUDE.md comment, where it had to be remembered rather than inherited.
 
 Four steps, because four is how many depths the app actually has: resting,
 lifted (a card), floating (a pill, a FAB), overlaying (a sheet). Shadow is a
-depth *signal* — when every card has its own, the signal carries no information.
+depth _signal_ — when every card has its own, the signal carries no information.
 
 **Each step carries `elevation` as well as `boxShadow`**, because `boxShadow`
 is a no-op on Android. Spreading the token gets you a shadow on both platforms;
@@ -138,14 +141,14 @@ Android".
 ## The ratchet — why this system isn't decorative
 
 Three token files preceded this one and were ignored, because they were
-*descriptive* and nothing enforced them. The audit that prompted this found:
+_descriptive_ and nothing enforced them. The audit that prompted this found:
 
-| | Count |
-| --- | --- |
-| `borderRadius` call sites | ~1,000 across 24 distinct values |
-| Distinct `fontSize` values | 52 |
-| Hardcoded hex colours | 170, against 53 tokens |
-| Distinct `boxShadow` strings | 87 |
+|                              | Count                            |
+| ---------------------------- | -------------------------------- |
+| `borderRadius` call sites    | ~1,000 across 24 distinct values |
+| Distinct `fontSize` values   | 52                               |
+| Hardcoded hex colours        | 170, against 53 tokens           |
+| Distinct `boxShadow` strings | 87                               |
 
 Failing CI on all of those at once would mean turning the rule off within a
 day. So `yarn check:ui` runs a **ratchet** instead:
@@ -157,7 +160,7 @@ day. So `yarn check:ui` runs a **ratchet** instead:
 New code has to pick a step. Existing code converges when someone is already in
 the file. The number travels one direction only.
 
-When the count falls, the check passes *and* prints the new baseline to adopt —
+When the count falls, the check passes _and_ prints the new baseline to adopt —
 that is the tightening, and it should be committed with the change that earned
 it.
 
@@ -175,13 +178,13 @@ direction without demanding the sweep.
 
 ## Map
 
-| Concern | Path |
-| --- | --- |
-| The one import | `src/design/index.ts` |
-| Radius / space / tracking | `src/constants/tokens.ts` |
-| Type scale | `src/design/type.ts` |
-| Elevation | `src/design/elevation.ts` |
-| Palette + semantic roles + contrast | `src/constants/colors.ts` |
-| Motion vocabulary | `src/lib/nativeMotion.ts` |
-| Enforcement | `scripts/ui/check-ui-invariants.mjs`, `scripts/ui/design-baseline.json` |
-| Contrast / target / label rules | `docs/features/platform-and-motion.md` |
+| Concern                             | Path                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------- |
+| The one import                      | `src/design/index.ts`                                                   |
+| Radius / space / tracking           | `src/constants/tokens.ts`                                               |
+| Type scale                          | `src/design/type.ts`                                                    |
+| Elevation                           | `src/design/elevation.ts`                                               |
+| Palette + semantic roles + contrast | `src/constants/colors.ts`                                               |
+| Motion vocabulary                   | `src/lib/nativeMotion.ts`                                               |
+| Enforcement                         | `scripts/ui/check-ui-invariants.mjs`, `scripts/ui/design-baseline.json` |
+| Contrast / target / label rules     | `docs/features/platform-and-motion.md`                                  |

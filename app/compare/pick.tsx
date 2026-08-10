@@ -48,7 +48,7 @@ import { PressScale } from '../../src/components/ui/PressScale';
 import { useBattleBuilder } from '../../src/hooks/useBattleBuilder';
 import { usePresetTeams } from '../../src/hooks/usePresetTeams';
 import { FACTION_A, FACTION_B } from '../../src/components/versus/factionColors';
-import { COLORS, PAPER_TEXT, STAGE_INK, GOLD_METAL } from '../../src/constants/colors';
+import { COLORS, PAPER_TEXT, STAGE_INK } from '../../src/constants/colors';
 import { EYEBROW_TYPE } from '../../src/design';
 import { getTeamRoster } from '../../src/lib/db/teams';
 import { MAX_SIDE, type PickedHero, type Side } from '../../src/lib/battleBuilderState';
@@ -327,13 +327,10 @@ export default function BattleBuilderScreen() {
       <View style={[s.ctaBar, { paddingBottom: insets.bottom + 10 }]} pointerEvents="box-none">
         {b.canBattle && b.battleHref ? (
           <Animated.View entering={FadeInDown.duration(220)} style={s.ctaStrip}>
-            {/* Struck metal, not a meter. The previous version ran the two
-                faction colours across the full width into a dark centre, which
-                reads as a progress bar or a battery — the shape of a STATUS,
-                not of an action. This is a solid gold CTA with a lit top edge
-                and a shadowed base (GOLD_METAL), so it looks pressable; the
-                factions survive as rings around the two count discs, which is
-                identity without turning the button into a gauge. */}
+            {/* Flat, thick, rounded, elevated. No gradient and no bevel: the
+                depth comes from the drop shadow alone, so the fill stays one
+                honest gold. A full-width horizontal gradient read as a battery
+                meter; a metallic ramp read as fussy. A slab reads as a button. */}
             <PressScale
               scale={0.97}
               onPress={() => {
@@ -344,15 +341,6 @@ export default function BattleBuilderScreen() {
               accessibilityLabel={`Fight, ${b.aHeroes.length} versus ${b.bHeroes.length}`}
               style={s.cta}
             >
-              <LinearGradient
-                colors={[...GOLD_METAL]}
-                locations={[0, 0.55, 1]}
-                style={StyleSheet.absoluteFill}
-              />
-              {/* The lit bevel — one hairline of white along the top edge is
-                  what sells "raised" more than any shadow underneath. */}
-              <View style={s.ctaBevel} pointerEvents="none" />
-
               <View style={[s.ctaCount, { borderColor: FACTION_A }]}>
                 <Text style={s.ctaCountTxt}>{b.aHeroes.length}</Text>
               </View>
@@ -683,29 +671,18 @@ const s = StyleSheet.create({
   ctaBar: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
   ctaStrip: { alignSelf: 'stretch', paddingHorizontal: H_PAD, paddingTop: 10 },
   cta: {
-    height: 56,
-    borderRadius: 16,
+    height: 64,
+    borderRadius: 24,
     borderCurve: 'continuous',
-    overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 13,
-    // A deep-gold rim rather than a grey one: a neutral border on metal reads
-    // as a sticker edge, a darker shade of the fill reads as the metal's own.
-    borderWidth: 1,
-    borderColor: 'rgba(120,84,20,0.55)',
+    paddingHorizontal: 16,
     backgroundColor: COLORS.goldAccent,
-    boxShadow: '0 8px 20px rgba(11,24,32,0.45)',
-    elevation: 10,
-  },
-  ctaBevel: {
-    position: 'absolute',
-    top: 0,
-    left: 12,
-    right: 12,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.55)',
+    // The only depth cue. A long soft shadow lifts the slab off the beige
+    // sheet without adding a single edge, gradient or highlight to the fill.
+    boxShadow: '0 10px 26px rgba(11,24,32,0.40)',
+    elevation: 12,
   },
   ctaCenter: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   ctaTxt: {
