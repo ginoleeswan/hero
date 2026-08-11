@@ -237,9 +237,26 @@ half-frame of skeleton.
   exactly when it should have been strongest. It is held burning past the
   curtain's drop so the app arrives on a warm frame, not a dark one.
 
+  **The draw-back is one gesture, not three.** The mask contracts, the ember
+  dims, and the wordmark rises and shrinks toward the mask — drawn in by the
+  breath rather than shooed off the bottom of the screen. Same 230ms; the
+  difference is whether the screen is doing one thing or three separate ones.
+
   Only the curtain ever fades — double-fading curtain + app reads as a grey
-  wash. Honors Reduce Motion (plain crossfade, no fly-through, no haptic) —
-  note the mask's opacity has to branch there: with nothing carrying it off
+  wash. Honors Reduce Motion (plain crossfade, no fly-through, no haptic).
+
+  **Every animated style has to branch on Reduce Motion, and the reason is
+  structural:** the flying curves are written in PROGRESS space against a
+  1150ms exit, and Reduce Motion swaps that for a 220ms crossfade. The same
+  numbers then mean something completely different — `[0, LUNGE_AT]` stops
+  being "the first 230ms" and becomes "the first 44ms". Three separate bugs
+  came out of this one mistake: the mask sat at full opacity over the app and
+  popped out at the end, the wordmark vanished in the opening frames, and the
+  ember dimmed and then spiked to 2.4x inside a fifth of a second — a
+  brightness flash delivered to exactly the people who asked for less of this.
+  If you add a style here, branch it.
+
+  On the mask's opacity specifically: with nothing carrying it off
   screen it must leave _with_ the curtain, where the flying curve left it
   sitting at full opacity over the app and then popping out in the crossfade's
   last few milliseconds. `LogoLoader` remains the simple fallback (web,

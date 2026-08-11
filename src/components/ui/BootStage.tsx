@@ -367,13 +367,31 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
       : 0,
   }));
 
-  // The wordmark sinks and fades before the mark moves — it hands the screen
-  // over rather than being run over by it.
+  // The wordmark is DRAWN IN by the breath, not shooed off the bottom of the
+  // screen. It used to sink and fade on its own, which is a second thing
+  // happening rather than a part of the first: during the draw-back the mask
+  // contracts and the ember dims, so the wordmark rising and shrinking toward
+  // the mask makes the whole screen participate in one gesture instead of
+  // three. Same 230ms, considerably more intent.
+  //
+  // Under Reduce Motion it has to fade with everything else. The flying curve
+  // is written in progress space, and a 220ms crossfade would have run it out
+  // in the first 44ms — the same bug the mask's opacity had.
   const wordStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(exit.value, [0, LUNGE_AT], [1, 0], Extrapolation.CLAMP),
+    opacity: flies
+      ? interpolate(exit.value, [0, LUNGE_AT], [1, 0], Extrapolation.CLAMP)
+      : 1 - exit.value,
     transform: [
-      { translateY: interpolate(exit.value, [0, LUNGE_AT * 1.4], [0, 26], Extrapolation.CLAMP) },
-      { scale: interpolate(exit.value, [0, LUNGE_AT * 1.4], [1, 0.94], Extrapolation.CLAMP) },
+      {
+        translateY: flies
+          ? interpolate(exit.value, [0, LUNGE_AT * 1.3], [0, -20], Extrapolation.CLAMP)
+          : 0,
+      },
+      {
+        scale: flies
+          ? interpolate(exit.value, [0, LUNGE_AT * 1.3], [1, 0.9], Extrapolation.CLAMP)
+          : 1,
+      },
     ],
   }));
 
@@ -408,23 +426,32 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     const grow = flies ? markGrow(exit.value, ramp) : 1;
     const eye = eyeCentre(grow, screenW, markCY);
     const pull = flies ? centringPull(exit.value) : 0;
+    const base = ambient.value * (0.4 + breathe.value * 0.18);
     return {
-      opacity:
-        ambient.value *
-        (0.4 + breathe.value * 0.18) *
-        interpolate(
-          exit.value,
-          [0, LUNGE_AT, 0.55, SEAT_AT + 0.08],
-          // Dims into the draw-back, then blazes: the light goes with the mask,
-          // so the anticipation is carried by the whole screen and not by a 6%
-          // scale change nobody can see on its own.
-          [1, 0.7, 2.4, 0],
-          Extrapolation.CLAMP,
-        ),
+      opacity: flies
+        ? base *
+          interpolate(
+            exit.value,
+            [0, LUNGE_AT, 0.55, SEAT_AT + 0.08],
+            // Dims into the draw-back, then blazes: the light goes with the
+            // mask, so the anticipation is carried by the whole screen and not
+            // by a 6% scale change nobody can see on its own.
+            [1, 0.7, 2.4, 0],
+            Extrapolation.CLAMP,
+          )
+        : // Reduce Motion: just leave with the curtain. The flying curve is
+          // written in progress space, so on a 220ms crossfade it would dim and
+          // then spike to 2.4x inside a fifth of a second — a brightness flash
+          // delivered to precisely the people who asked for less of this.
+          base * (1 - exit.value),
       transform: [
         { translateX: pull * (screenW / 2 - eye.x) },
         { translateY: pull * (screenH / 2 - eye.y) },
-        { scale: (1 + breathe.value * 0.05) * interpolate(exit.value, [0, SEAT_AT], [1, 7]) },
+        {
+          scale:
+            (1 + breathe.value * 0.05) *
+            (flies ? interpolate(exit.value, [0, SEAT_AT], [1, 7]) : 1),
+        },
       ],
     };
   });
