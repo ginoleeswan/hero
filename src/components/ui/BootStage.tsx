@@ -311,6 +311,21 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     };
   });
 
+  // Contact. One frame of warm light as the mask reaches your face, under the
+  // same haptic — the eye is told what the hand is told. Kept to 14% and about
+  // 150ms: enough to land the impact, far short of a camera flash, which is
+  // where this device reads as cheap rather than physical.
+  const contactStyle = useAnimatedStyle(() => ({
+    opacity: flies
+      ? interpolate(
+          exit.value,
+          [SEAT_AT - 0.04, SEAT_AT, SEAT_AT + 0.07],
+          [0, 0.14, 0],
+          Extrapolation.CLAMP,
+        )
+      : 0,
+  }));
+
   // The wordmark sinks and fades before the mark moves — it hands the screen
   // over rather than being run over by it.
   const wordStyle = useAnimatedStyle(() => ({
@@ -343,23 +358,35 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   // flat, and the sense of being inside an eye was lost exactly when it should
   // have been strongest. It brightens as the eye rushes in, then hands over to
   // the app.
-  const emberStyle = useAnimatedStyle(() => ({
-    opacity:
-      ambient.value *
-      (0.4 + breathe.value * 0.18) *
-      interpolate(
-        exit.value,
-        [0, LUNGE_AT, 0.55, SEAT_AT + 0.08],
-        // Dims into the draw-back, then blazes: the light goes with the mask,
-        // so the anticipation is carried by the whole screen and not by a 6%
-        // scale change nobody can see on its own.
-        [1, 0.7, 2.4, 0],
-        Extrapolation.CLAMP,
-      ),
-    transform: [
-      { scale: (1 + breathe.value * 0.05) * interpolate(exit.value, [0, SEAT_AT], [1, 7]) },
-    ],
-  }));
+  //
+  // It also TRAVELS with the mask. It used to sit where the mark rested while
+  // the mask flew off toward the centre of the screen, which is light detached
+  // from the thing lighting up — the single most common way a glow reads as a
+  // sticker rather than as illumination.
+  const emberStyle = useAnimatedStyle(() => {
+    const grow = flies ? markGrow(exit.value, ramp) : 1;
+    const eye = eyeCentre(grow, screenW, markCY);
+    const pull = flies ? centringPull(exit.value) : 0;
+    return {
+      opacity:
+        ambient.value *
+        (0.4 + breathe.value * 0.18) *
+        interpolate(
+          exit.value,
+          [0, LUNGE_AT, 0.55, SEAT_AT + 0.08],
+          // Dims into the draw-back, then blazes: the light goes with the mask,
+          // so the anticipation is carried by the whole screen and not by a 6%
+          // scale change nobody can see on its own.
+          [1, 0.7, 2.4, 0],
+          Extrapolation.CLAMP,
+        ),
+      transform: [
+        { translateX: pull * (screenW / 2 - eye.x) },
+        { translateY: pull * (screenH / 2 - eye.y) },
+        { scale: (1 + breathe.value * 0.05) * interpolate(exit.value, [0, SEAT_AT], [1, 7]) },
+      ],
+    };
+  });
 
   // The app underneath is ALWAYS fully opaque — only the curtain fades. Fading
   // both at once averaged two translucent layers into a muddy grey wash. Its
@@ -446,6 +473,13 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
             </Svg>
           </Animated.View>
 
+          {/* Contact. Over everything, including the mask, because the light is
+              in the room rather than on the object. */}
+          <Animated.View
+            style={[StyleSheet.absoluteFill, styles.contact, contactStyle]}
+            pointerEvents="none"
+          />
+
           {/* The wordmark anchors the bottom of the lockup. Outlined, not set:
               it is the same geometry the splash PNG was drawn from, so there is
               no font to load and no metrics to disagree about. */}
@@ -492,6 +526,7 @@ const styles = StyleSheet.create({
   // it, so the box is now cropped to the ink itself: smaller than the screen,
   // positioned with positive offsets, nothing to clamp and nothing to clip.
   abs: { position: 'absolute' },
+  contact: { backgroundColor: COLORS.beige },
   wordBox: { position: 'absolute', width: SPLASH_LOCKUP.wordW, height: WORD_H },
   halo: { position: 'absolute', width: HALO_W, height: HALO_H },
 });

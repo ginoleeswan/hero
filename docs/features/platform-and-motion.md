@@ -217,6 +217,18 @@ half-frame of skeleton.
   sharpness, because react-native-svg rasterises at layout size and UIKit does
   not redraw for a transform.
 
+  **Contact gets one frame of warm light** — a 14% beige wash over everything,
+  about 150ms, peaking at `SEAT_AT` under the same haptic, so the eye is told
+  what the hand is told. Anything stronger reads as a camera flash, which is
+  where the device stops feeling physical and starts feeling cheap.
+
+  **There is no ember rim on the mask, and that was tried.** A stroke of the
+  same path in the accent, riding inside the silhouette, looked like a sticker
+  outline; stacking strokes to fake a falloff banded into a contour map and put
+  a brown halo round the eyes. A hard-edged stroke is a graphic device, not a
+  light — and the screen already has real light in the ember, so a second,
+  worse implementation of the same idea makes it cheaper rather than richer.
+
   **The ember sits above the curtain and below the mark**, so one layer does two
   jobs: at rest it is the bloom around the mark and a faint glow inside its
   eyes; during the flight it is the only thing visible through the eye while the
