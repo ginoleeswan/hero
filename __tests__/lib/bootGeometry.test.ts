@@ -6,14 +6,11 @@ import {
   revealRamp,
   markBox,
   markRest,
-  markTilt,
   EYE_H,
   INK_PT,
   LUNGE_AT,
-  MARK_PERSPECTIVE,
   RECOIL,
   SEAT_AT,
-  TILT_PEAK_AT,
 } from '../../src/lib/bootGeometry';
 import { LOGO_EYE_LEFT, LOGO_INK, SPLASH_LOCKUP } from '../../src/constants/logo';
 
@@ -182,57 +179,6 @@ describe('boot reveal geometry', () => {
       expect(curtainOpacity(markGrow(1, ramp), ramp)).toBe(0);
       expect(ramp.max).toBeGreaterThan(ramp.cover);
     }
-  });
-
-  // ── the tilt ────────────────────────────────────────────────────────────
-  //
-  // Perspective foreshortens the far side of a rotated plane, and `cover` is
-  // computed from flat geometry. Rather than reconcile them, the tilt is level
-  // everywhere the curtain can move — so no frame is subject to both. This is
-  // what keeps that true if someone extends the tilt "just a little further".
-  it('is level everywhere the curtain is moving', () => {
-    for (const screen of SCREENS) {
-      const ramp = revealRamp(screen.h);
-      for (let p = 0; p <= 1.0001; p += 0.005) {
-        if (curtainOpacity(markGrow(p, ramp), ramp) === 1) continue;
-        expect(markTilt(p)).toEqual({ x: 0, y: 0 });
-      }
-    }
-  });
-
-  it('leans, turns, and levels — without a corner in it', () => {
-    // Check the act boundaries directly: sampling a steep-but-smooth stretch
-    // produces large steps too, and a threshold loose enough to allow those is
-    // loose enough to miss a real discontinuity.
-    const EPS = 1e-4;
-    for (const boundary of [LUNGE_AT, TILT_PEAK_AT, SEAT_AT]) {
-      const before = markTilt(boundary - EPS);
-      const after = markTilt(boundary + EPS);
-      expect(Math.abs(after.x - before.x)).toBeLessThan(0.01);
-      expect(Math.abs(after.y - before.y)).toBeLessThan(0.01);
-    }
-    expect(markTilt(0)).toEqual({ x: 0, y: 0 });
-    expect(markTilt(1)).toEqual({ x: 0, y: 0 });
-  });
-
-  // The number that actually decides whether the tilt reads or is wasted risk.
-  // At the perspective distance it started life with (1000) the keystone was
-  // 4% — a rotation with no projection behind it. This pins the effect into
-  // the band where it is unmistakably dimensional and still short of a
-  // funhouse, and pins the near edge well clear of the camera plane, which is
-  // where a projection blows up rather than merely looking wrong.
-  it('projects a keystone you can see, from a safe distance', () => {
-    let worstKeystone = 1;
-    let worstRatio = 0;
-    for (let p = 0; p <= SEAT_AT; p += 0.002) {
-      const halfWidth = (LOGO_INK.w * INK_PT * markGrow(p, revealRamp(852))) / 2;
-      const z = halfWidth * Math.sin(Math.abs(markTilt(p).y) * (Math.PI / 180));
-      worstKeystone = Math.max(worstKeystone, MARK_PERSPECTIVE / (MARK_PERSPECTIVE - z));
-      worstRatio = Math.max(worstRatio, z / MARK_PERSPECTIVE);
-    }
-    expect(worstKeystone).toBeGreaterThan(1.12);
-    expect(worstKeystone).toBeLessThan(1.3);
-    expect(worstRatio).toBeLessThan(0.35);
   });
 
   it('scales the eye from a hole in the resting mark', () => {

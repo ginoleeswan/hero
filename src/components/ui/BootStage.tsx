@@ -13,8 +13,8 @@
 //   2. Open   — gated on the home feed's first paint (useSignalFirstPaint), and
 //               never before HOLD_MS so a fast boot still gets the moment:
 //               the wordmark sinks away while the mask draws back (RECOIL),
-//               then it lunges — tipping in perspective so it moves through
-//               space rather than inflating in place — with its LEFT EYE drawn
+//               then it lunges — accelerating the whole way in — with its
+//               LEFT EYE drawn
 //               to the centre of the screen. Once its ink covers the display,
 //               the navy curtain behind it drops (with a single haptic tap: the
 //               mask making contact) and what shows through the eye hole is the
@@ -80,9 +80,7 @@ import {
   revealRamp,
   markBox,
   markRest,
-  markTilt,
   LUNGE_AT,
-  MARK_PERSPECTIVE,
   MARK_VIEWBOX,
   SEAT_AT,
 } from '../../lib/bootGeometry';
@@ -90,9 +88,6 @@ import {
 const SPLASH_NAVY = '#293C43'; // must equal app.config.ts splash backgroundColor
 
 const WORD_H = SPLASH_LOCKUP.wordW / WORDMARK_ASPECT;
-
-/** Reused rather than allocated per frame in the Reduce Motion branch. */
-const ZERO_TILT = { x: 0, y: 0 };
 
 const AMBIENT_DELAY_MS = 150; // hold the flat splash match for a beat
 const AMBIENT_MS = 560; // depth + ember waking up behind the mark
@@ -325,11 +320,21 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   // starts at exactly zero — a fixed-point scale would be geometrically purer
   // and visually worse, because the mark would begin drifting on frame one.
   //
-  // The tilt is what makes this a flight rather than a zoom — see markTilt for
-  // why the perspective distance is 420 and not the 1000 it started at. It is
-  // live only while the mask is small: markTilt returns level at SEAT_AT, so
-  // every large-scale frame, and every frame in which the curtain is moving, is
-  // a plain 2D translate and scale.
+  // There is NO 3D tilt, and this is now a proven constraint rather than a
+  // precaution. A perspective transform on this view clips the mask on device.
+  // Established by A/B across four shipped builds: removed with the viewBox
+  // crop and the clipping stopped; restored on its own and the clipping came
+  // back; the build after that touched no geometry at all and it persisted.
+  //
+  // Reasoning about why did not help — the keystone is bounded, the near edge
+  // stays at 16% of the camera distance, the tilt is level before any large
+  // scale, and it clipped anyway. iOS rasterises a 3D-transformed layer
+  // differently, and a mask that is magnified 30x afterwards is exactly the
+  // case where that bites. Everything here is a plain 2D translate and scale.
+  //
+  // If the depth cue is wanted back, it has to come from an affine
+  // approximation (a skew plus an axis-differential scale), not from
+  // perspective. Do not simply try a smaller angle.
   const markStyle = useAnimatedStyle(() => {
     const grow = flies ? markGrow(exit.value, ramp) : 1;
     const breath = 1 + breathe.value * 0.012 * (1 - exit.value);
@@ -337,7 +342,6 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     const eye = eyeCentre(grow * breath, screenW, markCY);
     // ...and how hard it is drawn toward the centre of the screen.
     const pull = flies ? centringPull(exit.value) : 0;
-    const tilt = flies ? markTilt(exit.value) : ZERO_TILT;
     return {
       // Flying: the rim is off the display by the end, so this fade only has
       // to hide the last sliver of it — kept late and short so the screen
@@ -350,11 +354,8 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
         ? interpolate(exit.value, [0, 0.92, 1], [1, 1, 0], Extrapolation.CLAMP)
         : 1 - exit.value,
       transform: [
-        { perspective: MARK_PERSPECTIVE },
         { translateX: pull * (screenW / 2 - eye.x) },
         { translateY: pull * (screenH / 2 - eye.y) },
-        { rotateX: `${tilt.x}deg` },
-        { rotateY: `${tilt.y}deg` },
         { scale: restScale * grow * breath },
       ],
     };
