@@ -69,15 +69,21 @@ export function revealRamp(screenH: number) {
 // the exit is "the screen draws breath" and act two is the strike; the mask
 // never grows while the wordmark is still on screen, because two things moving
 // at once read as a scramble rather than a handover.
-export const RECOIL = 0.955;
+export const RECOIL = 0.94;
 
 /** Progress at which the recoil bottoms out and the lunge begins. */
-export const LUNGE_AT = 0.22;
+export const LUNGE_AT = 0.2;
 /**
  * Progress at which the ink covers the display — the breakthrough. The curtain
  * may begin to drop here and not before, and it is where the haptic fires.
+ *
+ * It also splits the running time, and the split is a design decision rather
+ * than a number: everything before it is the approach, everything after it is
+ * the only part the audience came for — the app arriving through the eye. At
+ * 0.72 the approach ran 728ms and the payoff got 248ms, which is the wrong way
+ * round. The reveal should not be the shortest act in its own sequence.
  */
-export const SEAT_AT = 0.72;
+export const SEAT_AT = 0.65;
 
 /**
  * The mask's scale multiplier at exit progress `p`, in three continuous acts.
@@ -101,12 +107,24 @@ export function markGrow(p: number, ramp: { cover: number; max: number }): numbe
   if (p <= 0) return 1;
   if (p >= 1) return ramp.max;
   if (p <= LUNGE_AT) {
-    // Ease out into the loaded position: the draw-back settles, it does not
-    // stop dead and leave a corner where the lunge begins.
+    // Smoothstep: leaves rest and arrives at the loaded position with zero
+    // velocity at both ends. The mask must not appear to be shoved backwards
+    // (a hard start) and must be visibly HELD at the bottom for an instant —
+    // the held beat is the anticipation; without it a draw-back is just a
+    // wobble.
     const v = p / LUNGE_AT;
-    return 1 - (1 - RECOIL) * (1 - (1 - v) * (1 - v));
+    return 1 - (1 - RECOIL) * (v * v * (3 - 2 * v));
   }
   if (p <= SEAT_AT) {
+    // Pure exponential, entered at full speed. The velocity discontinuity at
+    // LUNGE_AT is the point: the recoil ends at rest and the lunge begins at
+    // speed, which is what a strike is. Smoothing it would ease the mask out
+    // of the loaded position and throw away the anticipation that was just
+    // paid for.
+    //
+    // Exponential is also the physically honest curve — an object approaching
+    // at constant velocity grows at a constant RELATIVE rate, so this reads as
+    // approach while its absolute growth still accelerates.
     const u = (p - LUNGE_AT) / (SEAT_AT - LUNGE_AT);
     return RECOIL * Math.pow(ramp.cover / RECOIL, u);
   }
@@ -157,4 +175,36 @@ export function eyeCentre(scale: number, screenW: number, markCY: number) {
     x: screenW / 2 - (INK_CX - 512) * UNIT * MARK_REST + (LOGO_EYE_LEFT.cx - 512) * UNIT * scale,
     y: markCY - (INK_CY - 512) * UNIT * MARK_REST + (LOGO_EYE_LEFT.cy - 512) * UNIT * scale,
   };
+}
+
+/**
+ * The mask's tilt in degrees at exit progress `p`, as [rotateX, rotateY].
+ *
+ * The tilt is what makes this a FLIGHT rather than a zoom: uniform scaling
+ * reads as an image being enlarged, while a few degrees of rotation under
+ * perspective reads as an object moving through space. It leans back into the
+ * recoil, turns hardest mid-lunge, and is LEVEL by SEAT_AT.
+ *
+ * Level by SEAT_AT is not a taste call, it is what keeps the coverage rule
+ * true. Perspective foreshortens the far side of a rotated plane — at the
+ * mid-lunge peak the mask is wide enough that a few degrees costs its far edge
+ * several percent — and `cover` is computed from flat geometry. Because the
+ * tilt returns to zero exactly where the curtain is first allowed to move,
+ * every frame in which the curtain is fading is a frame with no perspective
+ * distortion at all, so the two never have to be reconciled. Tested.
+ */
+/** Progress at which the mask is turned hardest — the middle of the lunge. */
+export const TILT_PEAK_AT = (LUNGE_AT + SEAT_AT) / 2;
+
+export function markTilt(p: number): { x: number; y: number } {
+  'worklet';
+  if (p >= SEAT_AT) return { x: 0, y: 0 };
+  const mid = TILT_PEAK_AT;
+  const lean = (from: number, to: number, a: number, b: number) => {
+    const v = (p - a) / (b - a);
+    return from + (to - from) * (v * v * (3 - 2 * v));
+  };
+  if (p <= LUNGE_AT) return { x: lean(0, -2.5, 0, LUNGE_AT), y: lean(0, 2, 0, LUNGE_AT) };
+  if (p <= mid) return { x: lean(-2.5, 5, LUNGE_AT, mid), y: lean(2, -7, LUNGE_AT, mid) };
+  return { x: lean(5, 0, mid, SEAT_AT), y: lean(-7, 0, mid, SEAT_AT) };
 }

@@ -75,6 +75,7 @@ import {
   centringPull,
   markGrow,
   revealRamp,
+  markTilt,
   INK_CX,
   INK_CY,
   LUNGE_AT,
@@ -83,6 +84,9 @@ import {
   SEAT_AT,
   UNIT,
 } from '../../lib/bootGeometry';
+
+/** Reused rather than allocated per frame in the Reduce Motion branch. */
+const ZERO_TILT = { x: 0, y: 0 };
 
 const SPLASH_NAVY = '#293C43'; // must equal app.config.ts splash backgroundColor
 
@@ -93,20 +97,27 @@ const AMBIENT_MS = 700; // depth + ember waking up behind the mark
 const BREATHE_MS = 2600; // full in-out breath
 const EXIT_MS = 1400; // recoil, lunge, and the mask settling over your face
 
-// The exit's driver. NOT EASE_REVEAL, and this is the single most important
-// line in the file: EASE_REVEAL is bezier(0.22, 1, 0.36, 1), which is 96% done
-// by the halfway point. That is exactly right for what it was built for — one
-// property settling to one value — and catastrophic as the driver of a ramp
-// whose acts are defined in PROGRESS space, because it crushes every act into
-// the opening frames. Measured on the previous build: the recoil lasted 46ms,
-// the lunge was over by 126ms, the breakthrough fired at 193ms, and the
-// remaining 900ms was spent creeping through scales that were already off
-// screen. It did not look like a fast animation. It looked like a glitch
-// followed by nothing, because that is what it was.
+// The exit's driver is LINEAR, and that is deliberate to the point of being
+// the most important decision in the file. Every act of this sequence is
+// defined in progress space and carries its OWN easing (smoothstep draw-back,
+// exponential approach, decelerating seat), so a driver with a curve of its
+// own does not add polish — it silently reweights how much time each act
+// gets, and there is no place you can read what the result will be.
 //
-// So the driver is near-linear with soft ends, and markGrow owns all of the
-// shaping. One curve decides the motion; the other just turns the handle.
-const EASE_BOOT = Easing.inOut(Easing.quad);
+// EASE_REVEAL, which drove it originally, is bezier(0.22, 1, 0.36, 1): 96%
+// done by the halfway point. Right for one property settling to one value,
+// catastrophic here. Measured on the build that shipped it — recoil 46ms,
+// lunge over by 126ms, breakthrough at 193ms, then ~900ms creeping through
+// scales already off screen. Its replacement, inOut(quad), was better and
+// still wrong: its ease-IN stretched a 4.5% draw-back across 465ms, which is
+// under the threshold where a scale change reads as motion at all. The
+// anticipation was invisible for the second time in a row.
+//
+// Linear makes the constants honest: progress IS the fraction of EXIT_MS, so
+// LUNGE_AT = 0.2 means "the draw-back takes a fifth of the sequence" and can
+// be checked against a stopwatch. One curve decides the motion; the driver
+// just turns the handle.
+const EASE_BOOT = Easing.linear;
 const REVEAL_CAP_MS = 1400; // max wait for the feed's first paint after boot
 
 // The FLOOR: the reveal may not begin before the composition has been held long
@@ -285,23 +296,24 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     const eye = eyeCentre(scale, screenW, markCY);
     // ...and how hard it is drawn toward the centre of the screen.
     const pull = flies ? centringPull(exit.value) : 0;
-    const tiltX = flies
-      ? interpolate(exit.value, [0, LUNGE_AT, 0.5, SEAT_AT], [0, -2.5, 5, 0], Extrapolation.CLAMP)
-      : 0;
-    const tiltY = flies
-      ? interpolate(exit.value, [0, LUNGE_AT, 0.5, SEAT_AT], [0, 2, -7, 0], Extrapolation.CLAMP)
-      : 0;
+    const tilt = flies ? markTilt(exit.value) : ZERO_TILT;
     return {
-      // The rim is off the display by the end, so this fade only has to hide
-      // the last sliver of it; kept late and short so the screen never spends
-      // long under a translucent beige wash.
-      opacity: interpolate(exit.value, [0, 0.92, 1], [1, 1, 0], Extrapolation.CLAMP),
+      // Flying: the rim is off the display by the end, so this fade only has
+      // to hide the last sliver of it — kept late and short so the screen
+      // never spends long under a translucent beige wash. Standing still
+      // (Reduce Motion): the mask has to leave WITH the curtain, because
+      // nothing has carried it off screen. Holding the flying curve there left
+      // the mask sitting at full opacity over the app for most of the
+      // crossfade and then popping out in its last few milliseconds.
+      opacity: flies
+        ? interpolate(exit.value, [0, 0.92, 1], [1, 1, 0], Extrapolation.CLAMP)
+        : 1 - exit.value,
       transform: [
         { perspective: 1000 },
         { translateX: pull * (screenW / 2 - eye.x) },
         { translateY: pull * (screenH / 2 - eye.y) },
-        { rotateX: `${tiltX}deg` },
-        { rotateY: `${tiltY}deg` },
+        { rotateX: `${tilt.x}deg` },
+        { rotateY: `${tilt.y}deg` },
         { scale },
       ],
     };
@@ -343,7 +355,15 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     opacity:
       ambient.value *
       (0.4 + breathe.value * 0.18) *
-      interpolate(exit.value, [0, 0.5, SEAT_AT + 0.08], [1, 2.4, 0], Extrapolation.CLAMP),
+      interpolate(
+        exit.value,
+        [0, LUNGE_AT, 0.55, SEAT_AT + 0.08],
+        // Dims into the draw-back, then blazes: the light goes with the mask,
+        // so the anticipation is carried by the whole screen and not by a 6%
+        // scale change nobody can see on its own.
+        [1, 0.7, 2.4, 0],
+        Extrapolation.CLAMP,
+      ),
     transform: [
       { scale: (1 + breathe.value * 0.05) * interpolate(exit.value, [0, SEAT_AT], [1, 7]) },
     ],

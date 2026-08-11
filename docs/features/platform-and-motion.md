@@ -226,8 +226,12 @@ half-frame of skeleton.
   curtain's drop so the app arrives on a warm frame, not a dark one.
 
   Only the curtain ever fades — double-fading curtain + app reads as a grey
-  wash. Honors Reduce Motion (plain crossfade, no fly-through). `LogoLoader`
-  remains the simple fallback (web, Suspense).
+  wash. Honors Reduce Motion (plain crossfade, no fly-through, no haptic) —
+  note the mask's opacity has to branch there: with nothing carrying it off
+  screen it must leave _with_ the curtain, where the flying curve left it
+  sitting at full opacity over the app and then popping out in the crossfade's
+  last few milliseconds. `LogoLoader` remains the simple fallback (web,
+  Suspense).
 
   **The floor.** The reveal is gated on content, which was only safe on a
   **cold** start. On a warm launch — fonts cached, no auth round-trip —
@@ -241,16 +245,33 @@ half-frame of skeleton.
   between a choreography that always plays and one that plays only when the
   network is slow.
 
-  **The driver is `EASE_BOOT`, not `EASE_REVEAL`, and that is load-bearing.**
-  `EASE_REVEAL` is `bezier(0.22, 1, 0.36, 1)` — 96% done by the halfway point.
-  Correct for one property settling to one value; catastrophic as the driver of
-  a ramp whose acts are defined in _progress_ space, because it crushes every
-  act into the opening frames. Measured on the build that shipped it: recoil
-  46ms, lunge over by 126ms, breakthrough at 193ms, then ~900ms creeping
-  through scales that were already off screen. It did not read as fast, it read
-  as a glitch followed by nothing. The driver is now near-linear with soft ends
-  and `markGrow` owns all the shaping — one curve decides the motion, the other
-  turns the handle.
+  **The driver is LINEAR, and that is load-bearing.** Every act carries its own
+  easing, so a driver with a curve of its own does not add polish — it silently
+  reweights how much time each act gets, and nowhere can you read the result.
+  Two versions of this went out wrong. `EASE_REVEAL` is
+  `bezier(0.22, 1, 0.36, 1)` — 96% done by the halfway point, correct for one
+  property settling to one value, catastrophic here: recoil 46ms, lunge over by
+  126ms, breakthrough at 193ms, then ~900ms creeping through scales already off
+  screen. It read as a glitch followed by nothing. Its replacement,
+  `inOut(quad)`, was better and still wrong: the ease-_in_ stretched a 4.5%
+  draw-back across 465ms, under the threshold where a scale change reads as
+  motion at all — the anticipation was invisible for the second time running.
+  Linear makes the constants honest: progress _is_ the fraction of `EXIT_MS`,
+  so `LUNGE_AT = 0.2` means "the draw-back takes a fifth of the sequence" and
+  can be checked against a stopwatch.
+
+  **`SEAT_AT` splits the running time, and the split is a design decision.**
+  Everything before it is approach; everything after is the only part the
+  audience came for. At 0.72 the approach ran 728ms and the payoff got 248ms.
+  The reveal should not be the shortest act in its own sequence — it is 0.65
+  now.
+
+  **The tilt is level everywhere the curtain can move.** Perspective
+  foreshortens the far side of a rotated plane, and `cover` is computed from
+  flat geometry. Rather than reconcile the two, `markTilt` returns to zero
+  exactly at `SEAT_AT`, so no frame is ever subject to both. Tested, because
+  the failure mode of extending the tilt "just a little further" is invisible
+  until it isn't.
 
   `markGrow` is continuous rather than piecewise-linear for the same reason:
   linear scale is not linear approach (scale goes as 1/distance, so constant
