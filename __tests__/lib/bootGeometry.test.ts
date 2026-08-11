@@ -3,11 +3,14 @@ import {
   curtainOpacity,
   eyeCentre,
   markGrow,
+  markTilt,
   revealRamp,
   EYE_H,
-  GROW_AT,
+  LUNGE_AT,
   MARK_REST,
   RECOIL,
+  SEAT_AT,
+  TILT_PEAK_AT,
   UNIT,
 } from '../../src/lib/bootGeometry';
 import { LOGO_EYE_LEFT, LOGO_INK, SPLASH_LOCKUP } from '../../src/constants/logo';
@@ -52,23 +55,46 @@ describe('boot reveal geometry', () => {
     for (const screen of SCREENS) {
       const ramp = revealRamp(screen.h);
       expect(markGrow(0, ramp)).toBe(1);
-      expect(markGrow(GROW_AT[1], ramp)).toBeCloseTo(RECOIL, 6);
+      expect(markGrow(LUNGE_AT, ramp)).toBeCloseTo(RECOIL, 6);
+      expect(markGrow(SEAT_AT, ramp)).toBeCloseTo(ramp.cover, 6);
       expect(markGrow(1, ramp)).toBeCloseTo(ramp.max, 6);
       // The anticipation dip is the ONLY non-monotonic stretch: shrinking
       // during the recoil window, never below RECOIL, and strictly growing
       // from the moment the lunge starts.
       let prev = 1;
-      for (let p = 0; p <= GROW_AT[1] + 1e-9; p += 0.005) {
+      for (let p = 0; p <= LUNGE_AT + 1e-9; p += 0.005) {
         const g = markGrow(p, ramp);
         expect(g).toBeLessThanOrEqual(prev + 1e-9);
         expect(g).toBeGreaterThanOrEqual(RECOIL - 1e-9);
         prev = g;
       }
-      for (let p = GROW_AT[1]; p <= 1.0001; p += 0.005) {
+      for (let p = LUNGE_AT; p <= 1.0001; p += 0.005) {
         const g = markGrow(p, ramp);
         expect(g).toBeGreaterThanOrEqual(prev - 1e-9);
         prev = g;
       }
+    }
+  });
+
+  // The bug that made the whole thing invisible was not in the geometry, it
+  // was in how fast the geometry got walked. These lock the ACTS to sane
+  // shares of the running time, so a driver that front-loads progress (or an
+  // act quietly moved to the end of the ramp) shows up as a failure instead of
+  // as "it feels choppy".
+  it('spends its running time on the acts you can actually see', () => {
+    for (const screen of SCREENS) {
+      const ramp = revealRamp(screen.h);
+      // The recoil is an act, not a frame.
+      expect(LUNGE_AT).toBeGreaterThanOrEqual(0.15);
+      // The reveal — curtain dropping, rim retreating, app through the eye —
+      // gets a real share of the end, not a handful of frames.
+      expect(1 - SEAT_AT).toBeGreaterThanOrEqual(0.2);
+      // And no act is spent on magnification that is already off screen: the
+      // ramp must not overshoot far past the point where the eye has
+      // swallowed the display.
+      const swallow = screen.h / EYE_H;
+      expect(ramp.max).toBeLessThanOrEqual(swallow * 1.25);
+      expect(ramp.max).toBeGreaterThanOrEqual(swallow);
     }
   });
 
@@ -118,6 +144,45 @@ describe('boot reveal geometry', () => {
       expect(curtainOpacity(markGrow(1, ramp), ramp)).toBe(0);
       expect(ramp.max).toBeGreaterThan(ramp.cover);
     }
+  });
+
+  // The tilt is drawn under `perspective`, which foreshortens the far side of
+  // a rotated plane — and `cover` is computed from FLAT geometry. Rather than
+  // reconcile the two, the tilt is level everywhere the curtain can move, so
+  // no frame is ever subject to both. This is the test that keeps that true if
+  // someone later extends the tilt "just a little further".
+  it('is level everywhere the curtain is moving', () => {
+    for (const screen of SCREENS) {
+      const ramp = revealRamp(screen.h);
+      for (let p = 0; p <= 1.0001; p += 0.005) {
+        if (curtainOpacity(markGrow(p, ramp), ramp) === 1) continue;
+        const tilt = markTilt(p);
+        expect(tilt.x).toBe(0);
+        expect(tilt.y).toBe(0);
+      }
+    }
+  });
+
+  it('leans, turns, and levels — without a corner in it', () => {
+    // A jump in the tilt is a visible snap on the largest object on screen, so
+    // check the act boundaries directly rather than inferring from a sampled
+    // sweep: sampling a steep-but-smooth stretch produces large steps too, and
+    // a threshold loose enough to allow those is loose enough to miss a real
+    // discontinuity.
+    const EPS = 1e-4;
+    for (const boundary of [LUNGE_AT, TILT_PEAK_AT, SEAT_AT]) {
+      const before = markTilt(boundary - EPS);
+      const after = markTilt(boundary + EPS);
+      expect(Math.abs(after.x - before.x)).toBeLessThan(0.01);
+      expect(Math.abs(after.y - before.y)).toBeLessThan(0.01);
+    }
+    expect(markTilt(0)).toEqual({ x: 0, y: 0 });
+    expect(markTilt(1)).toEqual({ x: 0, y: 0 });
+    // Enough to read as depth, not so much that the mask reads as a spinning
+    // card or that foreshortening starts distorting the silhouette.
+    const peak = Math.abs(markTilt(TILT_PEAK_AT).y);
+    expect(peak).toBeGreaterThan(4);
+    expect(peak).toBeLessThan(12);
   });
 
   it('scales the eye from a hole in the resting mark', () => {

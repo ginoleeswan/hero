@@ -66,7 +66,7 @@ import {
   WORDMARK_VIEW_H,
 } from '../../constants/logo';
 import { COLORS } from '../../constants/colors';
-import { DUR, EASE_REVEAL } from '../../lib/nativeMotion';
+import { DUR } from '../../lib/nativeMotion';
 // The reveal's geometry lives next door so its one hard rule — the curtain may
 // not drop before the ink covers the screen — can be unit-tested.
 import {
@@ -75,13 +75,18 @@ import {
   centringPull,
   markGrow,
   revealRamp,
-  GROW_AT,
+  markTilt,
   INK_CX,
   INK_CY,
+  LUNGE_AT,
   MARK_REST,
   MARK_SVG,
+  SEAT_AT,
   UNIT,
 } from '../../lib/bootGeometry';
+
+/** Reused rather than allocated per frame in the Reduce Motion branch. */
+const ZERO_TILT = { x: 0, y: 0 };
 
 const SPLASH_NAVY = '#293C43'; // must equal app.config.ts splash backgroundColor
 
@@ -90,7 +95,29 @@ const WORD_H = SPLASH_LOCKUP.wordW / WORDMARK_ASPECT;
 const AMBIENT_DELAY_MS = 200; // hold the flat splash match for a beat
 const AMBIENT_MS = 700; // depth + ember waking up behind the mark
 const BREATHE_MS = 2600; // full in-out breath
-const EXIT_MS = 1100; // recoil, lunge, and the mask settling over your face
+const EXIT_MS = 1400; // recoil, lunge, and the mask settling over your face
+
+// The exit's driver is LINEAR, and that is deliberate to the point of being
+// the most important decision in the file. Every act of this sequence is
+// defined in progress space and carries its OWN easing (smoothstep draw-back,
+// exponential approach, decelerating seat), so a driver with a curve of its
+// own does not add polish — it silently reweights how much time each act
+// gets, and there is no place you can read what the result will be.
+//
+// EASE_REVEAL, which drove it originally, is bezier(0.22, 1, 0.36, 1): 96%
+// done by the halfway point. Right for one property settling to one value,
+// catastrophic here. Measured on the build that shipped it — recoil 46ms,
+// lunge over by 126ms, breakthrough at 193ms, then ~900ms creeping through
+// scales already off screen. Its replacement, inOut(quad), was better and
+// still wrong: its ease-IN stretched a 4.5% draw-back across 465ms, which is
+// under the threshold where a scale change reads as motion at all. The
+// anticipation was invisible for the second time in a row.
+//
+// Linear makes the constants honest: progress IS the fraction of EXIT_MS, so
+// LUNGE_AT = 0.2 means "the draw-back takes a fifth of the sequence" and can
+// be checked against a stopwatch. One curve decides the motion; the driver
+// just turns the handle.
+const EASE_BOOT = Easing.linear;
 const REVEAL_CAP_MS = 1400; // max wait for the feed's first paint after boot
 
 // The FLOOR: the reveal may not begin before the composition has been held long
@@ -103,6 +130,16 @@ const REVEAL_CAP_MS = 1400; // max wait for the feed's first paint after boot
 // MOUNT, the cap runs from boot resolving. The reveal window is therefore
 // [mount + HOLD_MS, bootResolved + REVEAL_CAP_MS].
 const HOLD_MS = AMBIENT_DELAY_MS + AMBIENT_MS - 50;
+
+// ...and a beat AFTER the signal, always. `signalFirstPaint` fires from the
+// feed's first layout, which is the single busiest moment of the launch: the
+// list is committing rows, images are decoding, the row cascade is starting.
+// Beginning a 1.4s animation in that exact frame is how a smooth reveal ends
+// up looking dropped — not because the animation is expensive (it runs on the
+// UI thread) but because the commit it shares a frame with is. Letting the
+// first commit land first costs a beat nobody notices and buys the whole
+// reveal a clear runway.
+const SETTLE_MS = 150;
 
 // The first meaningful screen calls this once it has real content laid out, so
 // the reveal opens onto content rather than a skeleton. A context, not a
@@ -188,7 +225,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
       cancelAnimation(breathe);
       exit.value = withTiming(
         1,
-        { duration: reduceMotion ? DUR.base : EXIT_MS, easing: EASE_REVEAL },
+        { duration: reduceMotion ? DUR.base : EXIT_MS, easing: EASE_BOOT },
         (done) => {
           if (done) runOnJS(setRevealDone)(true);
         },
@@ -200,7 +237,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
       // Reduce Motion has no choreography to protect, and holding those users on
       // a static screen would be delay without purpose.
       const since = mountedAt.current ? Date.now() - mountedAt.current : 0;
-      const wait = reduceMotion ? 0 : Math.max(0, HOLD_MS - since);
+      const wait = reduceMotion ? 0 : Math.max(SETTLE_MS, HOLD_MS - since);
       if (wait === 0) open();
       else floor = setTimeout(open, wait);
     };
@@ -217,8 +254,8 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   const flies = !reduceMotion;
 
   // One sharp tap at the breakthrough — the exact progress at which the ink
-  // covers the screen and the curtain starts to drop (GROW_AT[3] is where the
-  // ramp hands `cover` over). Felt, it is the mask making contact with your
+  // covers the screen and the curtain starts to drop (SEAT_AT). Felt, it is
+  // the mask making contact with your
   // face; heard through the fingers it marks the single most important frame
   // of the sequence. Fired from an animated reaction because the moment is
   // defined by the animation's progress, not by any JS timer — and never under
@@ -231,7 +268,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     () => exit.value,
     (now, prev) => {
       if (reduceMotion || hapticFired.value) return;
-      if (now >= GROW_AT[3] && prev !== null && prev < GROW_AT[3]) {
+      if (now >= SEAT_AT && prev !== null && prev < SEAT_AT) {
         hapticFired.value = 1;
         runOnJS(fireContactHaptic)();
       }
@@ -259,23 +296,24 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     const eye = eyeCentre(scale, screenW, markCY);
     // ...and how hard it is drawn toward the centre of the screen.
     const pull = flies ? centringPull(exit.value) : 0;
-    const tiltX = flies
-      ? interpolate(exit.value, [0, 0.18, 0.45, 0.75], [0, -2.5, 5, 0], Extrapolation.CLAMP)
-      : 0;
-    const tiltY = flies
-      ? interpolate(exit.value, [0, 0.18, 0.45, 0.75], [0, 2, -7, 0], Extrapolation.CLAMP)
-      : 0;
+    const tilt = flies ? markTilt(exit.value) : ZERO_TILT;
     return {
-      // The rim is off the display by the end, so this fade only has to hide
-      // the last sliver of it; kept late and short so the screen never spends
-      // long under a translucent beige wash.
-      opacity: interpolate(exit.value, [0, 0.9, 1], [1, 1, 0], Extrapolation.CLAMP),
+      // Flying: the rim is off the display by the end, so this fade only has
+      // to hide the last sliver of it — kept late and short so the screen
+      // never spends long under a translucent beige wash. Standing still
+      // (Reduce Motion): the mask has to leave WITH the curtain, because
+      // nothing has carried it off screen. Holding the flying curve there left
+      // the mask sitting at full opacity over the app for most of the
+      // crossfade and then popping out in its last few milliseconds.
+      opacity: flies
+        ? interpolate(exit.value, [0, 0.92, 1], [1, 1, 0], Extrapolation.CLAMP)
+        : 1 - exit.value,
       transform: [
         { perspective: 1000 },
         { translateX: pull * (screenW / 2 - eye.x) },
         { translateY: pull * (screenH / 2 - eye.y) },
-        { rotateX: `${tiltX}deg` },
-        { rotateY: `${tiltY}deg` },
+        { rotateX: `${tilt.x}deg` },
+        { rotateY: `${tilt.y}deg` },
         { scale },
       ],
     };
@@ -284,10 +322,10 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   // The wordmark sinks and fades before the mark moves — it hands the screen
   // over rather than being run over by it.
   const wordStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(exit.value, [0, 0.22], [1, 0], Extrapolation.CLAMP),
+    opacity: interpolate(exit.value, [0, LUNGE_AT], [1, 0], Extrapolation.CLAMP),
     transform: [
-      { translateY: interpolate(exit.value, [0, 0.3], [0, 26], Extrapolation.CLAMP) },
-      { scale: interpolate(exit.value, [0, 0.3], [1, 0.94], Extrapolation.CLAMP) },
+      { translateY: interpolate(exit.value, [0, LUNGE_AT * 1.4], [0, 26], Extrapolation.CLAMP) },
+      { scale: interpolate(exit.value, [0, LUNGE_AT * 1.4], [1, 0.94], Extrapolation.CLAMP) },
     ],
   }));
 
@@ -317,8 +355,18 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     opacity:
       ambient.value *
       (0.4 + breathe.value * 0.18) *
-      interpolate(exit.value, [0, 0.45, 0.72], [1, 2.4, 0], Extrapolation.CLAMP),
-    transform: [{ scale: (1 + breathe.value * 0.05) * interpolate(exit.value, [0, 0.72], [1, 7]) }],
+      interpolate(
+        exit.value,
+        [0, LUNGE_AT, 0.55, SEAT_AT + 0.08],
+        // Dims into the draw-back, then blazes: the light goes with the mask,
+        // so the anticipation is carried by the whole screen and not by a 6%
+        // scale change nobody can see on its own.
+        [1, 0.7, 2.4, 0],
+        Extrapolation.CLAMP,
+      ),
+    transform: [
+      { scale: (1 + breathe.value * 0.05) * interpolate(exit.value, [0, SEAT_AT], [1, 7]) },
+    ],
   }));
 
   // The app underneath is ALWAYS fully opaque — only the curtain fades. Fading
@@ -326,7 +374,9 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   // scale settle is timed to the window in which it is actually visible through
   // the eye, so the push-through reads as the app rushing up to meet you.
   const appStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(exit.value, [0.5, 1], [0.94, 1], Extrapolation.CLAMP) }],
+    transform: [
+      { scale: interpolate(exit.value, [SEAT_AT - 0.1, 1], [0.94, 1], Extrapolation.CLAMP) },
+    ],
   }));
 
   return (
