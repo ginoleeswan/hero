@@ -248,3 +248,48 @@ export function eyeCentre(grow: number, screenW: number, markCY: number) {
  * every frame in which the curtain is fading is a frame with no perspective
  * distortion at all, so the two never have to be reconciled. Tested.
  */
+
+// ── The tilt ────────────────────────────────────────────────────────────────
+//
+// What makes the flight a FLIGHT and not a zoom. Uniform scaling reads as an
+// image being enlarged; a few degrees of rotation under perspective reads as
+// an object moving through space.
+//
+// The perspective distance is the whole ballgame and the first attempt got it
+// wrong: 1000pt against a mask this size produced a 4% keystone — a rotation
+// with almost no projection, which is to say an invisible effect carrying a
+// real rendering risk. 420 puts it at about 20%: unmistakably dimensional,
+// well short of a funhouse, and it keeps the near edge at 16% of the camera
+// distance, nowhere near the plane where a projection blows up.
+export const MARK_PERSPECTIVE = 420;
+
+/** Progress at which the mask is turned hardest — the middle of the lunge. */
+export const TILT_PEAK_AT = 0.41;
+
+/**
+ * The mask's tilt in degrees at exit progress `p`, as [x, y].
+ *
+ * It leans back into the draw-back, turns hardest mid-lunge, and is LEVEL by
+ * SEAT_AT — a mask being seated straight on your face, not a card spinning.
+ *
+ * Level by SEAT_AT is not a taste call, it is what keeps the coverage rule
+ * true. Perspective foreshortens the far side of a rotated plane, and `cover`
+ * is computed from flat geometry. Because the tilt returns to zero exactly
+ * where the curtain is first allowed to move, every frame in which the curtain
+ * is fading is a frame with no perspective distortion at all, and the two
+ * never have to be reconciled. It also means the 3D transform is only ever
+ * live while the mask is small. Both are tested.
+ */
+export function markTilt(p: number): { x: number; y: number } {
+  'worklet';
+  if (p <= 0 || p >= SEAT_AT) return { x: 0, y: 0 };
+  const lean = (from: number, to: number, a: number, b: number) => {
+    const v = (p - a) / (b - a);
+    return from + (to - from) * (v * v * (3 - 2 * v));
+  };
+  if (p <= LUNGE_AT) return { x: lean(0, -4, 0, LUNGE_AT), y: lean(0, 3, 0, LUNGE_AT) };
+  if (p <= TILT_PEAK_AT) {
+    return { x: lean(-4, 6, LUNGE_AT, TILT_PEAK_AT), y: lean(3, -13, LUNGE_AT, TILT_PEAK_AT) };
+  }
+  return { x: lean(6, 0, TILT_PEAK_AT, SEAT_AT), y: lean(-13, 0, TILT_PEAK_AT, SEAT_AT) };
+}

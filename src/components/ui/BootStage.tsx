@@ -78,7 +78,9 @@ import {
   revealRamp,
   markBox,
   markRest,
+  markTilt,
   LUNGE_AT,
+  MARK_PERSPECTIVE,
   MARK_VIEWBOX,
   SEAT_AT,
 } from '../../lib/bootGeometry';
@@ -86,6 +88,9 @@ import {
 const SPLASH_NAVY = '#293C43'; // must equal app.config.ts splash backgroundColor
 
 const WORD_H = SPLASH_LOCKUP.wordW / WORDMARK_ASPECT;
+
+/** Reused rather than allocated per frame in the Reduce Motion branch. */
+const ZERO_TILT = { x: 0, y: 0 };
 
 const AMBIENT_DELAY_MS = 150; // hold the flat splash match for a beat
 const AMBIENT_MS = 560; // depth + ember waking up behind the mark
@@ -312,13 +317,11 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   // starts at exactly zero — a fixed-point scale would be geometrically purer
   // and visually worse, because the mark would begin drifting on frame one.
   //
-  // There is no 3D tilt here any more, and its absence is deliberate. It made
-  // the flight read as movement through space rather than as an image being
-  // enlarged, which is worth having — but a perspective transform changes how
-  // iOS rasterises the layer, and the mask has now been reported clipped on
-  // device twice. Correct beats characterful: the tilt comes back once the
-  // geometry is confirmed right on hardware, not before. Everything here is a
-  // plain 2D translate and scale, which cannot clip.
+  // The tilt is what makes this a flight rather than a zoom — see markTilt for
+  // why the perspective distance is 420 and not the 1000 it started at. It is
+  // live only while the mask is small: markTilt returns level at SEAT_AT, so
+  // every large-scale frame, and every frame in which the curtain is moving, is
+  // a plain 2D translate and scale.
   const markStyle = useAnimatedStyle(() => {
     const grow = flies ? markGrow(exit.value, ramp) : 1;
     const breath = 1 + breathe.value * 0.012 * (1 - exit.value);
@@ -326,6 +329,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     const eye = eyeCentre(grow * breath, screenW, markCY);
     // ...and how hard it is drawn toward the centre of the screen.
     const pull = flies ? centringPull(exit.value) : 0;
+    const tilt = flies ? markTilt(exit.value) : ZERO_TILT;
     return {
       // Flying: the rim is off the display by the end, so this fade only has
       // to hide the last sliver of it — kept late and short so the screen
@@ -338,8 +342,11 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
         ? interpolate(exit.value, [0, 0.92, 1], [1, 1, 0], Extrapolation.CLAMP)
         : 1 - exit.value,
       transform: [
+        { perspective: MARK_PERSPECTIVE },
         { translateX: pull * (screenW / 2 - eye.x) },
         { translateY: pull * (screenH / 2 - eye.y) },
+        { rotateX: `${tilt.x}deg` },
+        { rotateY: `${tilt.y}deg` },
         { scale: restScale * grow * breath },
       ],
     };
@@ -360,13 +367,31 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
       : 0,
   }));
 
-  // The wordmark sinks and fades before the mark moves — it hands the screen
-  // over rather than being run over by it.
+  // The wordmark is DRAWN IN by the breath, not shooed off the bottom of the
+  // screen. It used to sink and fade on its own, which is a second thing
+  // happening rather than a part of the first: during the draw-back the mask
+  // contracts and the ember dims, so the wordmark rising and shrinking toward
+  // the mask makes the whole screen participate in one gesture instead of
+  // three. Same 230ms, considerably more intent.
+  //
+  // Under Reduce Motion it has to fade with everything else. The flying curve
+  // is written in progress space, and a 220ms crossfade would have run it out
+  // in the first 44ms — the same bug the mask's opacity had.
   const wordStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(exit.value, [0, LUNGE_AT], [1, 0], Extrapolation.CLAMP),
+    opacity: flies
+      ? interpolate(exit.value, [0, LUNGE_AT], [1, 0], Extrapolation.CLAMP)
+      : 1 - exit.value,
     transform: [
-      { translateY: interpolate(exit.value, [0, LUNGE_AT * 1.4], [0, 26], Extrapolation.CLAMP) },
-      { scale: interpolate(exit.value, [0, LUNGE_AT * 1.4], [1, 0.94], Extrapolation.CLAMP) },
+      {
+        translateY: flies
+          ? interpolate(exit.value, [0, LUNGE_AT * 1.3], [0, -20], Extrapolation.CLAMP)
+          : 0,
+      },
+      {
+        scale: flies
+          ? interpolate(exit.value, [0, LUNGE_AT * 1.3], [1, 0.9], Extrapolation.CLAMP)
+          : 1,
+      },
     ],
   }));
 
@@ -401,23 +426,32 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     const grow = flies ? markGrow(exit.value, ramp) : 1;
     const eye = eyeCentre(grow, screenW, markCY);
     const pull = flies ? centringPull(exit.value) : 0;
+    const base = ambient.value * (0.4 + breathe.value * 0.18);
     return {
-      opacity:
-        ambient.value *
-        (0.4 + breathe.value * 0.18) *
-        interpolate(
-          exit.value,
-          [0, LUNGE_AT, 0.55, SEAT_AT + 0.08],
-          // Dims into the draw-back, then blazes: the light goes with the mask,
-          // so the anticipation is carried by the whole screen and not by a 6%
-          // scale change nobody can see on its own.
-          [1, 0.7, 2.4, 0],
-          Extrapolation.CLAMP,
-        ),
+      opacity: flies
+        ? base *
+          interpolate(
+            exit.value,
+            [0, LUNGE_AT, 0.55, SEAT_AT + 0.08],
+            // Dims into the draw-back, then blazes: the light goes with the
+            // mask, so the anticipation is carried by the whole screen and not
+            // by a 6% scale change nobody can see on its own.
+            [1, 0.7, 2.4, 0],
+            Extrapolation.CLAMP,
+          )
+        : // Reduce Motion: just leave with the curtain. The flying curve is
+          // written in progress space, so on a 220ms crossfade it would dim and
+          // then spike to 2.4x inside a fifth of a second — a brightness flash
+          // delivered to precisely the people who asked for less of this.
+          base * (1 - exit.value),
       transform: [
         { translateX: pull * (screenW / 2 - eye.x) },
         { translateY: pull * (screenH / 2 - eye.y) },
-        { scale: (1 + breathe.value * 0.05) * interpolate(exit.value, [0, SEAT_AT], [1, 7]) },
+        {
+          scale:
+            (1 + breathe.value * 0.05) *
+            (flies ? interpolate(exit.value, [0, SEAT_AT], [1, 7]) : 1),
+        },
       ],
     };
   });

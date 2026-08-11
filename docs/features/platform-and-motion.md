@@ -237,9 +237,26 @@ half-frame of skeleton.
   exactly when it should have been strongest. It is held burning past the
   curtain's drop so the app arrives on a warm frame, not a dark one.
 
+  **The draw-back is one gesture, not three.** The mask contracts, the ember
+  dims, and the wordmark rises and shrinks toward the mask — drawn in by the
+  breath rather than shooed off the bottom of the screen. Same 230ms; the
+  difference is whether the screen is doing one thing or three separate ones.
+
   Only the curtain ever fades — double-fading curtain + app reads as a grey
-  wash. Honors Reduce Motion (plain crossfade, no fly-through, no haptic) —
-  note the mask's opacity has to branch there: with nothing carrying it off
+  wash. Honors Reduce Motion (plain crossfade, no fly-through, no haptic).
+
+  **Every animated style has to branch on Reduce Motion, and the reason is
+  structural:** the flying curves are written in PROGRESS space against a
+  1150ms exit, and Reduce Motion swaps that for a 220ms crossfade. The same
+  numbers then mean something completely different — `[0, LUNGE_AT]` stops
+  being "the first 230ms" and becomes "the first 44ms". Three separate bugs
+  came out of this one mistake: the mask sat at full opacity over the app and
+  popped out at the end, the wordmark vanished in the opening frames, and the
+  ember dimmed and then spiked to 2.4x inside a fifth of a second — a
+  brightness flash delivered to exactly the people who asked for less of this.
+  If you add a style here, branch it.
+
+  On the mask's opacity specifically: with nothing carrying it off
   screen it must leave _with_ the curtain, where the flying curve left it
   sitting at full opacity over the app and then popping out in the crossfade's
   last few milliseconds. `LogoLoader` remains the simple fallback (web,
@@ -345,12 +362,22 @@ half-frame of skeleton.
   offsets everywhere. There is nothing left to clamp and nothing left to clip;
   a test pins that.
 
-  **There is no 3D tilt.** A perspective transform made the flight read as
-  movement through space rather than as an image being enlarged, which is worth
-  having — but it also changes how iOS rasterises the layer, and the mask had
-  been reported clipped twice by then. It was removed to cut a variable, not
-  because it was wrong. It comes back once the geometry is confirmed on
-  hardware. Everything the mask does now is a plain 2D translate and scale.
+  **The tilt: the perspective distance is the effect, not the angle.** It began
+  at `perspective: 1000`, which against a mask this size projects a **4%**
+  keystone — a rotation with almost no projection behind it, i.e. an invisible
+  effect carrying a real rendering risk. `MARK_PERSPECTIVE` is 420, which puts
+  it near 20%: unmistakably dimensional, well short of a funhouse, and it keeps
+  the near edge at 16% of the camera distance, nowhere near the plane where a
+  projection blows up. A test pins both the keystone into that band and the
+  safety margin, so the angle cannot be cranked later without failing.
+
+  The mask leans back into the draw-back, turns hardest at `TILT_PEAK_AT`, and
+  is level by `SEAT_AT`. Level there is not taste: perspective foreshortens the
+  far side of a rotated plane and `cover` is computed from flat geometry, so
+  returning to zero exactly where the curtain is first allowed to move means no
+  frame is ever subject to both. It also confines the 3D transform to frames
+  where the mask is small — every large-scale frame is a plain 2D translate and
+  scale.
 
   **The stage is one labelled element for VoiceOver.** It used to announce
   itself for free, because the wordmark was live `<Text>`; outlining it to a
