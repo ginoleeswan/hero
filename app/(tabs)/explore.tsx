@@ -36,7 +36,8 @@ import { useSignalFirstPaint } from '../../src/components/ui/BootStage';
 import { DUR, STAGGER, SPRING_SETTLE } from '../../src/lib/nativeMotion';
 import * as Haptics from 'expo-haptics';
 import { COLORS, ORANGE_INK } from '../../src/constants/colors';
-import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
+import { HomeSkeleton, MatchupSkeleton } from '../../src/components/skeletons/HomeSkeleton';
+import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { SpotlightCarousel, spotlightHeight } from '../../src/components/home/SpotlightCarousel';
 import { SPOTLIGHT } from '../../src/components/home/homeGeometry';
 import { PaperSurface } from '../../src/components/home/PaperSurface';
@@ -82,6 +83,7 @@ type FeedRow =
   | { type: 'spotlight'; heroes: Hero[] }
   | { type: 'publishers' }
   | { type: 'matchup'; matchup: Matchup }
+  | { type: 'matchupPending' }
   | { type: 'daily' }
   | { type: 'ticker'; heroCount: number; newlyAddedCount: number }
   | { type: 'recent'; heroes: RowHero[] }
@@ -121,6 +123,10 @@ const DARK_ROWS = new Set<FeedRow['type']>([
   'spotlight',
   'publishers',
   'matchup',
+  // The pending slot belongs to the same zone as the card it is holding open.
+  // Omitting it would put a navy-tinted shimmer on beige paper AND make it the
+  // first beige row, which is the one that carries the seam.
+  'matchupPending',
   'daily',
   'ticker',
   'rightnow',
@@ -299,7 +305,12 @@ export default function HomeScreen() {
     const out: FeedRow[] = [];
     if (spotlightPool.length > 0) out.push({ type: 'spotlight', heroes: spotlightPool });
     out.push({ type: 'publishers' });
+    // `undefined` is PENDING, `null` is resolved-but-none — the data layer
+    // already draws that distinction, so hold the slot for the first and skip
+    // it for the second. Without this the card arrives late and moves the whole
+    // feed under the reader's thumb.
     if (matchup) out.push({ type: 'matchup', matchup });
+    else if (matchup === undefined) out.push({ type: 'matchupPending' });
     out.push({ type: 'daily' });
     if (heroCount > 0) out.push({ type: 'ticker', heroCount, newlyAddedCount: newlyAdded.length });
     if (
@@ -468,6 +479,14 @@ export default function HomeScreen() {
             );
           case 'matchup':
             return <TodaysMatchup matchup={item.matchup} onOpen={handleOpenPath} />;
+          case 'matchupPending':
+            // Literally the skeleton's own block, so the slot cannot drift from
+            // what was promised a moment earlier.
+            return (
+              <SkeletonProvider>
+                <MatchupSkeleton />
+              </SkeletonProvider>
+            );
           case 'ticker':
             return (
               <PulseTicker heroCount={item.heroCount} newlyAddedCount={item.newlyAddedCount} />
@@ -665,7 +684,7 @@ export default function HomeScreen() {
           exiting={FadeOut.duration(SKELETON_DISSOLVE_MS)}
           pointerEvents="none"
         >
-          <HomeSkeleton insets={insets} />
+          <HomeSkeleton insetTop={topInset} />
         </Animated.View>
       )}
     </View>
