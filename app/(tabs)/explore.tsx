@@ -65,6 +65,11 @@ import { SponsorSlot } from '../../src/components/SponsorSlot';
 import { useExploreData } from '../../src/lib/query/exploreQueries';
 import type { FavouriteHero } from '../../src/types';
 
+// One number for both halves of the swap: a row's entrance and the skeleton's
+// exit. They are a cross-dissolve, so they have to be the same length — tuning
+// either alone is how the gap got there in the first place.
+const SKELETON_DISSOLVE_MS = 480;
+
 const SPOTLIGHT_POOL = 5;
 
 function toRowHero(h: Hero | FavouriteHero): RowHero {
@@ -404,10 +409,19 @@ export default function HomeScreen() {
       // delay would start from that later moment — reading as rows popping in
       // raggedly after the entrance, which is exactly the "disjointed" feel.
       if (!cascadeWindow || index >= STAGGER.cap) return undefined;
-      // Base delay ≈ when the boot stage is half-dissolved, so the rows are
-      // seen rising into place as the open completes — one continuous motion.
-      return FadeInDown.delay(DUR.base + index * STAGGER.step)
-        .duration(480)
+      // NO base delay. There used to be one (DUR.base), chosen so the rows rose
+      // into place as the boot stage half-dissolved — sound reasoning about the
+      // wrong clock, because nothing coordinated it with the SKELETON's fade.
+      // The skeleton starts dissolving the moment the data lands and is gone in
+      // 320ms; the first row did not begin arriving until 220ms. That left a
+      // window with a 31%-opacity ghost of the skeleton over an empty screen,
+      // and a skeleton dying alone reads as a second, broken skeleton.
+      //
+      // Starting at zero is what makes the comment below the list true: the
+      // placeholders resolve INTO the content because both are on screen at
+      // once. Total ink never dips.
+      return FadeInDown.delay(index * STAGGER.step)
+        .duration(SKELETON_DISSOLVE_MS)
         .springify()
         .damping(SPRING_SETTLE.damping)
         .stiffness(SPRING_SETTLE.stiffness);
@@ -642,11 +656,13 @@ export default function HomeScreen() {
       )}
       {/* The skeleton dissolves IN PLACE over the incoming feed (exiting fade
           on unmount) instead of hard-swapping — placeholders resolve into
-          content, matching the anti-flash loading language everywhere else. */}
+          content, matching the anti-flash loading language everywhere else.
+          Its fade is the SAME length as a row's entrance, so it covers the
+          arrival rather than clearing before it. */}
       {!initialLoaded && (
         <Animated.View
           style={StyleSheet.absoluteFill}
-          exiting={FadeOut.duration(DUR.enter)}
+          exiting={FadeOut.duration(SKELETON_DISSOLVE_MS)}
           pointerEvents="none"
         >
           <HomeSkeleton insets={insets} />
