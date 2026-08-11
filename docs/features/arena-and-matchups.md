@@ -182,6 +182,17 @@ subject and an Open/Settled marker, plus the streak. The debate line records
 what _you_ did rather than repeating a pairing shown a few hundred points above
 it — an echo is not information.
 
+**`MakeAFight` arrives with a fight already in it.** The first version drew two
+empty dashed slots reading "+ CHOOSE" — a screen and a half of placeholder
+asking to be furnished before it would do anything, so the most prominent thing
+in the act was the absence of content. The slots now come loaded with a real
+clash from the iconic pool (`pickRandomPair`, dealt by the screen so it survives
+the toggle), which turns three separate controls into one object acted on three
+ways: **Fight** takes it as dealt, **shuffle** deals another, and tapping a
+fighter replaces just that side via `/compare/[hero]/pick`, which keeps the
+other. Shuffle replaced "Surprise me" — that button teleported you into a random
+arena sight unseen; here the surprise happens on the card and you decide.
+
 **`MakeAFight` looks like the thing it makes.** Two empty slots canted at the
 showdown's angle with the same VS medallion between them, so it reads as an
 invitation rather than a control; the toggle swaps them for two squads, which
@@ -202,6 +213,27 @@ passes `?mode=team`, which only changes what the screen _says_ (its title, and a
 hint naming the squad size instead of a single fighter); arriving from "Team
 battle" to copy about picking two fighters would be the screen contradicting the
 button that opened it.
+
+**The rail is spread, not just ranked.** `get_top_rivalries` orders by the two
+fighters' summed fame — a fine ranking and a poor sequence, because the single
+most famous character appears in many of the top pairs and leads three or four
+cards in a row, making twelve curated rivalries read as one hero versus a queue.
+`spreadRivalries` (`src/lib/versus.ts`) greedily emits the highest-ranked pair
+that shares no fighter with the card just emitted, falling back when every
+candidate shares one. It is lossless — a rail of nothing but Batman rivalries
+cannot be spread, and dropping cards to fake it would make the count beside the
+rail a lie.
+
+**Today's split needs a crowd before it is a split.** `ShowdownCards` only draws
+the vote bar from today's tally at `CROWD_FLOOR` (10) votes or more. Below it the
+bar shows the pair's all-time record, labelled as such, with the day's call count
+underneath — one vote is usually your own, and reflecting it back as a full-width
+100% bar is a verdict the app has no business claiming.
+
+**One link into the arena.** The showdown block used to carry "See full
+breakdown →" with the takes link directly beneath it — two gold chevroned links,
+stacked, going to the same screen. `ShowdownCards` no longer takes `onOpen`; the
+screen owns the single link.
 
 `RivalriesRail` takes `headless` so a section that supplies its own label does
 not get a second heading. The rail still brings its own inset and must sit

@@ -1,46 +1,58 @@
 // src/components/versus/MakeAFight.tsx — the second act of the Arena hub.
 //
-// One-v-one and team battle are two of the biggest things this app does, and
-// they used to be a pair of buttons wedged between the showdown and a card of
-// chips — a primary capability treated as a footnote. They are now an act of
-// their own, directly under today's fight: you have just voted on someone
-// else's bout, and the next thing offered is making your own.
+// One-v-one and team battle are two of the biggest things this app does. They
+// are an act of their own, directly under today's fight: you have just voted on
+// someone else's bout, and the next thing offered is making your own.
 //
-// It reads as an invitation rather than a control because it LOOKS LIKE THE
-// THING IT MAKES — two empty slots canted at the angle the showdown cards use,
-// with the same VS medallion between them. One toggle swaps those slots for two
-// squads, which says without a word that the two features are siblings: the
-// same act at different scale.
+// IT ARRIVES WITH A FIGHT ALREADY IN IT. The first version drew two empty
+// dashed slots reading "+ CHOOSE" — a screen and a half of placeholder asking
+// to be furnished before it would do anything. Handsome, and completely inert:
+// the most prominent thing in the act was the absence of content.
 //
-// Everything that starts a fight lives here, ordered by how much say you want:
-// build it yourself, take one that is ready, or let the app choose. Splitting
-// those across the screen (a build button up top, a rivalries rail three
-// sections down, a surprise button between them) scattered one intent across
-// three places.
+// Now the slots come loaded with a real clash from the iconic pool. That turns
+// three separate controls into one object you can act on three ways —
+//
+//   Fight    take the clash as dealt (one tap, and it is a real arena)
+//   Shuffle  deal another (this is what "Surprise me" wanted to be: the old
+//            button teleported you into a random arena sight unseen; here the
+//            surprise happens ON the card, and you decide)
+//   Tap a fighter to replace just that side in the builder
+//
+// — ordered by how much say you want, which is the same order the act always
+// meant to offer. The toggle swaps the pair for two squads, saying without a
+// word that one-v-one and team battle are siblings: the same act at scale.
 import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { COLORS, INK_TEXT } from '../../constants/colors';
+import { SECTION, SUBHEAD } from '../../constants/arenaType';
 import { RADIUS } from '../../design';
+import { HeroImage } from '../HeroImage';
 import { RivalriesRail } from './RivalriesRail';
 import type { FighterArt } from '../../lib/compareHandoff';
 import type { Rivalry } from '../../lib/db/heroes';
 
 const H_PAD = 16;
+const SLOT_H = 132;
 
 export function MakeAFight({
-  onBuild,
+  pair,
+  onFight,
+  onShuffle,
+  onChoose,
   onDraft,
-  onSurprise,
-  canSurprise,
   rivalries,
   onOpenRivalry,
 }: {
-  onBuild: () => void;
+  /** The clash currently dealt into the slots — null while the pool loads. */
+  pair: [FighterArt, FighterArt] | null;
+  onFight: () => void;
+  onShuffle: () => void;
+  /** Replace one side: opens the builder rather than cycling blindly. */
+  onChoose: (side: 'a' | 'b') => void;
   onDraft: () => void;
-  onSurprise: () => void;
-  canSurprise: boolean;
   rivalries: Rivalry[];
   onOpenRivalry: (a: FighterArt, b: FighterArt) => void;
 }) {
@@ -77,38 +89,45 @@ export function MakeAFight({
       </View>
 
       {team ? (
-        <View style={[styles.inset, styles.slots]}>
-          <Squad label="Your side" onPress={onDraft} />
-          <View style={styles.medallion}>
-            <Text style={styles.medallionText}>VS</Text>
+        <>
+          <View style={[styles.inset, styles.slots]}>
+            <Squad label="Your side" onPress={onDraft} />
+            <View style={styles.medallion}>
+              <Text style={styles.medallionText}>VS</Text>
+            </View>
+            <Squad label="Their side" onPress={onDraft} />
           </View>
-          <Squad label="Their side" onPress={onDraft} />
-        </View>
+          <View style={styles.inset}>
+            <Primary label="Draft the squads" icon="people" onPress={onDraft} />
+          </View>
+        </>
       ) : (
-        <View style={[styles.inset, styles.slots]}>
-          <Slot cant={-3.2} onPress={onBuild} />
-          <View style={styles.medallion}>
-            <Text style={styles.medallionText}>VS</Text>
+        <>
+          <View style={[styles.inset, styles.slots]}>
+            <Fighter fighter={pair?.[0]} cant={-3.2} onPress={() => onChoose('a')} />
+            <View style={styles.medallion}>
+              <Text style={styles.medallionText}>VS</Text>
+            </View>
+            <Fighter fighter={pair?.[1]} cant={3.2} onPress={() => onChoose('b')} />
           </View>
-          <Slot cant={3.2} onPress={onBuild} />
-        </View>
-      )}
 
-      <Pressable
-        onPress={onSurprise}
-        disabled={!canSurprise}
-        accessibilityRole="button"
-        accessibilityLabel="Surprise me with a random iconic clash"
-        style={({ pressed }) => [
-          styles.inset,
-          styles.surprise,
-          pressed && styles.dim,
-          !canSurprise && styles.off,
-        ]}
-      >
-        <Ionicons name="shuffle" size={15} color={COLORS.goldAccent} />
-        <Text style={styles.surpriseText}>Surprise me — a random iconic clash</Text>
-      </Pressable>
+          <View style={[styles.inset, styles.actions]}>
+            <Primary label="Fight" icon="flash" onPress={onFight} disabled={!pair} flex />
+            <Pressable
+              onPress={onShuffle}
+              disabled={!pair}
+              accessibilityRole="button"
+              accessibilityLabel="Deal a different clash"
+              style={({ pressed }) => [styles.shuffle, pressed && styles.dim, !pair && styles.off]}
+            >
+              <Ionicons name="shuffle" size={19} color={COLORS.goldAccent} />
+            </Pressable>
+          </View>
+          <Text style={[styles.inset, styles.hint]}>
+            Tap a fighter to swap that side · shuffle to deal another
+          </Text>
+        </>
+      )}
 
       {rivalries.length > 0 ? (
         <View style={styles.ready}>
@@ -127,20 +146,56 @@ export function MakeAFight({
   );
 }
 
-function Slot({ cant, onPress }: { cant: number; onPress: () => void }) {
+/** One side of the dealt clash: the fighter's art, their name, and a quiet
+ *  "swap" affordance so the card reads as changeable rather than fixed. */
+function Fighter({
+  fighter,
+  cant,
+  onPress,
+}: {
+  fighter: FighterArt | undefined;
+  cant: number;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="Choose a fighter"
+      accessibilityLabel={fighter?.name ? `Swap ${fighter.name}` : 'Choose a fighter'}
       style={({ pressed }) => [
         styles.slot,
         { transform: [{ rotate: `${cant}deg` }] },
+        !fighter && styles.slotEmpty,
         pressed && styles.slotPressed,
       ]}
     >
-      <Text style={styles.plus}>+</Text>
-      <Text style={styles.slotLabel}>Choose</Text>
+      {fighter ? (
+        <>
+          <HeroImage
+            id={fighter.id}
+            name={fighter.name ?? ''}
+            imageUrl={fighter.image_url}
+            portraitUrl={fighter.portrait_url}
+            contentFit="cover"
+            contentPosition="top"
+            style={StyleSheet.absoluteFill}
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(8,12,24,0.94)']}
+            locations={[0.42, 1]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          <View style={styles.swapPip}>
+            <Ionicons name="repeat" size={12} color={COLORS.beige} />
+          </View>
+          <Text style={styles.fighterName} numberOfLines={1}>
+            {fighter.name}
+          </Text>
+        </>
+      ) : (
+        <Text style={styles.slotLabel}>Choose</Text>
+      )}
     </Pressable>
   );
 }
@@ -158,18 +213,54 @@ function Squad({ label, onPress }: { label: string; onPress: () => void }) {
           <View key={i} style={styles.pip} />
         ))}
       </View>
-      <Text style={styles.slotLabel}>{label} · pick 5</Text>
+      {/* Two lines, deliberately. "YOUR SIDE · PICK 5" as one uppercase
+          letterspaced string does not fit a 40%-wide box — it wrapped and hung
+          the "5" outside the border. */}
+      <Text style={styles.slotLabel}>{label}</Text>
+      <Text style={styles.squadPick}>Pick 5</Text>
+    </Pressable>
+  );
+}
+
+function Primary({
+  label,
+  icon,
+  onPress,
+  disabled,
+  flex,
+}: {
+  label: string;
+  icon: 'flash' | 'people';
+  onPress: () => void;
+  disabled?: boolean;
+  flex?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        styles.primary,
+        flex && styles.primaryFlex,
+        pressed && styles.dim,
+        disabled && styles.off,
+      ]}
+    >
+      <Ionicons name={icon} size={16} color={COLORS.deepNavy} />
+      <Text style={styles.primaryText}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 40 },
+  wrap: { marginTop: 28 },
   // Everything except the rail is inset; the rail brings its own inset and
   // must reach the physical screen edge (see CLAUDE.md's rail rule).
   inset: { paddingHorizontal: H_PAD },
   head: { flexDirection: 'row', alignItems: 'baseline', gap: 12, marginBottom: 16 },
-  title: { fontFamily: 'Flame-Regular', fontSize: 23, lineHeight: 32, color: COLORS.beige },
+  title: { ...SECTION, color: COLORS.beige },
   rule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(245,235,220,0.14)' },
 
   modes: {
@@ -189,24 +280,44 @@ const styles = StyleSheet.create({
 
   slots: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   slot: {
-    width: '40%',
-    aspectRatio: 3 / 4,
+    width: '42%',
+    height: SLOT_H,
     borderRadius: RADIUS.xl,
     borderCurve: 'continuous',
+    overflow: 'hidden',
     borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.2)',
+    backgroundColor: COLORS.deepNavy,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slotEmpty: {
     borderStyle: 'dashed',
     borderColor: 'rgba(245,235,220,0.26)',
     backgroundColor: 'rgba(41,60,67,0.28)',
+  },
+  slotPressed: { borderColor: COLORS.orange },
+  fighterName: {
+    position: 'absolute',
+    left: 8,
+    right: 8,
+    bottom: 9,
+    textAlign: 'center',
+    fontFamily: 'Flame-Regular',
+    fontSize: 15,
+    lineHeight: 20,
+    color: COLORS.beige,
+  },
+  swapPip: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 22,
+    height: 22,
+    borderRadius: RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-  },
-  slotPressed: { borderColor: COLORS.orange, backgroundColor: 'rgba(231,115,51,0.1)' },
-  plus: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 23,
-    lineHeight: 32,
-    color: INK_TEXT.faint,
+    backgroundColor: 'rgba(11,24,32,0.72)',
   },
   slotLabel: {
     fontFamily: 'Nunito_700Bold',
@@ -216,18 +327,19 @@ const styles = StyleSheet.create({
     color: INK_TEXT.faint,
   },
   squad: {
-    width: '40%',
+    width: '42%',
+    height: SLOT_H,
     borderRadius: RADIUS.xl,
     borderCurve: 'continuous',
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: 'rgba(245,235,220,0.26)',
     backgroundColor: 'rgba(41,60,67,0.28)',
-    paddingVertical: 18,
-    paddingHorizontal: 12,
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'center',
+    gap: 8,
   },
+  squadPick: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: INK_TEXT.faint },
   pips: { flexDirection: 'row', gap: 5 },
   pip: {
     width: 14,
@@ -254,19 +366,40 @@ const styles = StyleSheet.create({
     color: INK_TEXT.faint,
   },
 
-  surprise: {
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18 },
+  primary: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 18,
-    paddingVertical: 13,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.beige,
   },
-  surpriseText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.goldAccent },
+  primaryFlex: { flex: 1 },
+  primaryText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 15, color: COLORS.deepNavy },
+  shuffle: {
+    width: 50,
+    height: 50,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(245,235,220,0.22)',
+    backgroundColor: 'rgba(41,60,67,0.5)',
+  },
+  hint: {
+    marginTop: 10,
+    textAlign: 'center',
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: INK_TEXT.faint,
+  },
   dim: { opacity: 0.6 },
   off: { opacity: 0.35 },
 
-  ready: { marginTop: 8, paddingTop: 16 },
+  ready: { marginTop: 26 },
   readyHead: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(245,235,220,0.14)',
@@ -276,18 +409,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  readyLabel: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 11,
-    letterSpacing: 1.6,
-    textTransform: 'uppercase',
-    color: INK_TEXT.faint,
-  },
-  readyCount: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 11,
-    letterSpacing: 1.6,
-    textTransform: 'uppercase',
-    color: INK_TEXT.faint,
-  },
+  // One subhead spec across the tab — see SUBHEAD in constants/arenaType.
+  readyLabel: { ...SUBHEAD, color: INK_TEXT.muted },
+  readyCount: { ...SUBHEAD, color: INK_TEXT.faint },
 });
