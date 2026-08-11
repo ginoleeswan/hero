@@ -116,6 +116,15 @@ export const RECOIL = 0.94;
 
 /** Progress at which the recoil bottoms out and the lunge begins. */
 export const LUNGE_AT = 0.2;
+
+/**
+ * The lunge's shape. 1 is a constant approach speed (pure exponential); above
+ * 1 the mask accelerates the whole way in, which is what a thrown object does
+ * and what makes the strike feel like a strike rather than a dolly move. Held
+ * modest — past about 1.4 the first half of the lunge stops moving enough to
+ * hold attention and the whole thing collapses into a late whip.
+ */
+export const LUNGE_BITE = 1.25;
 /**
  * Progress at which the ink covers the display — the breakthrough. The curtain
  * may begin to drop here and not before, and it is where the haptic fires.
@@ -126,7 +135,7 @@ export const LUNGE_AT = 0.2;
  * 0.72 the approach ran 728ms and the payoff got 248ms, which is the wrong way
  * round. The reveal should not be the shortest act in its own sequence.
  */
-export const SEAT_AT = 0.65;
+export const SEAT_AT = 0.62;
 
 /**
  * The mask's scale multiplier at exit progress `p`, in three continuous acts.
@@ -169,7 +178,7 @@ export function markGrow(p: number, ramp: { cover: number; max: number }): numbe
     // at constant velocity grows at a constant RELATIVE rate, so this reads as
     // approach while its absolute growth still accelerates.
     const u = (p - LUNGE_AT) / (SEAT_AT - LUNGE_AT);
-    return RECOIL * Math.pow(ramp.cover / RECOIL, u);
+    return RECOIL * Math.pow(ramp.cover / RECOIL, Math.pow(u, LUNGE_BITE));
   }
   const v = (p - SEAT_AT) / (1 - SEAT_AT);
   return ramp.cover + (ramp.max - ramp.cover) * (1 - (1 - v) * (1 - v));
