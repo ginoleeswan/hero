@@ -101,6 +101,9 @@ supabase/
   functions/           Edge functions (enrichment drains, verdicts, push, …)
   seed.sql             initial seed (DB has grown to ~34,000 heroes)
 
+scripts/brand/         Brand asset generators — build-splash.mjs draws the
+                       native splash lockup AND the outlined wordmark the
+                       boot stage renders, so both come from one source
 scripts/social/        Social content factory → docs/brand/design-language.md
 __tests__/             Jest tests mirroring src/ structure
 ```

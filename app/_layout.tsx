@@ -200,7 +200,7 @@ function AuthGate({ fontsReady }: { fontsReady: boolean }) {
   const booting = !fontsReady || loading || !settled;
 
   return (
-    <BootStage booting={booting} fontsReady={fontsReady}>
+    <BootStage booting={booting}>
       {booting ? null : (
         <ThemeProvider value={APP_DARK_THEME}>
           <Stack screenOptions={{ headerShown: false }} />

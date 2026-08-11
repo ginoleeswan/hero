@@ -99,7 +99,12 @@ const config: ExpoConfig = {
       {
         image: './assets/splash.png',
         backgroundColor: '#293c43',
-        imageWidth: 200,
+        // The whole lockup — mark high, wordmark low — not just the mark. Its
+        // width IS the composition's coordinate system: BootStage rebuilds the
+        // same centred box from SPLASH_LOCKUP.w to take over without a jump, so
+        // this number and `SPLASH_LOCKUP.w` in src/constants/logo.ts must agree.
+        // Regenerate the asset with `yarn build:splash`.
+        imageWidth: 300,
       },
     ],
     // Crash/error reporting. The config plugin wires native symbolication +

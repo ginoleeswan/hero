@@ -163,39 +163,83 @@ half-frame of skeleton.
   spanning the whole cold start (fonts → auth settle), so the boot animation
   never restarts.
 - `src/components/ui/BootStage.tsx` — the **native** boot surface
-  (`app/_layout.tsx`), one continuous piece from OS splash to feed: **still**
-  (first frame pixel-continuous with the native splash — same flat `#293C43`,
-  same filled 200px mask; never a trace-in, which erased and redrew the mark
-  the user was already looking at), **alive** (depth gradient + ember halo
-  fade in, the mark breathes), **open** (gated on the Explore feed's first
-  paint via `useSignalFirstPaint` from `src/components/ui/BootStage.tsx`,
-  capped at 1.4s — ring ripples, the mark
-  blooms and is gone by 55%, the stage dissolves over the fully-opaque app,
-  which scale-settles from 96.5%; the feed's row cascade lands as the stage
-  clears). Only the stage ever fades — double-fading stage + app reads as a
-  grey wash. Honors Reduce Motion (plain crossfade). `LogoLoader` remains the
-  simple fallback (web, Suspense).
+  (`app/_layout.tsx`). One idea: **the mask is the door, and you go through its
+  eye.**
 
-  **The timeline, and why there is a floor.** `0ms` OS-splash copy · `250ms`
-  hold ends, the settle begins · `250→1150ms` the mark shrinks to 66% and rises
-  to 36% of screen height while depth and halo fade in · `745→1150ms` the
-  wordmark fades in (it starts at `alive = 0.55`) · `700ms` the breath starts,
-  2.6s per cycle · then the open, `DUR.feature` 620ms.
+  **Still.** The first frame is not a lookalike of the native splash, it is the
+  same picture: `assets/splash.png` and the JS stage are both drawn from
+  `SPLASH_LOCKUP` in `src/constants/logo.ts` — mark high, wordmark low, on flat
+  `#293C43`. expo-splash-screen renders the PNG at `imageWidth` points wide,
+  centred, aspect preserved, so the stage can rebuild that exact box from the
+  screen size alone. Nothing assembles, because the composition is already what
+  you launched into. Only the ambient wakes: depth gradient and ember fade in,
+  the mark breathes.
 
-  The reveal is gated on content, which was only safe on a **cold** start. On a
-  warm launch — fonts cached, no auth round-trip — `booting` can flip false
-  around 300–500ms and the feed can paint immediately after; the mark would
-  begin to shrink and then bloom straight out, and **the wordmark, which does
-  not start appearing until 745ms, would never be seen at all.** `MIN_STAGE_MS`
-  (1400ms from MOUNT) holds the open until the composition has assembled and
-  been readable for a beat. `REVEAL_CAP_MS` is the same number on a _different
-  clock_ — from boot resolving — so the window is
-  `[mount + 1400ms, bootResolved + 1400ms]`. Reduce Motion skips the floor:
-  `alive` snaps to 1, so there is nothing to wait for.
+  **Open.** Gated on the Explore feed's first paint (`useSignalFirstPaint`),
+  capped at `REVEAL_CAP_MS`, floored at `HOLD_MS`. The wordmark sinks and fades
+  while the mark holds still — two things moving at once read as a scramble
+  rather than a handover. Then the mark accelerates toward the viewer with its
+  **left eye** pulled to the centre of the screen, the navy curtain behind it
+  drops, and the eye keeps opening until it is larger than the display.
+
+  **Why an eye and not the centre.** The bridge between the eyes is solid, so
+  scaling about the mark's centre parks a growing beige column over the middle
+  of the screen forever. The aperture has to be a hole, and `LOGO_MASK_PATH`'s
+  eyes already are holes in the filled path — so whatever is drawn under the
+  mark shows through them. No mask layer, no blend modes, no animated SVG props:
+  the reveal is a transform on one view.
+
+  **The rule the reveal must obey.** The curtain may not start to fade until the
+  mark's ink covers the whole display. Drop it early and the app does not arrive
+  through the eye — it leaks in around the mark's outer edge, on whichever
+  device the margin happens to fail on. So the curtain's opacity is keyed to the
+  mark's **scale**, not to elapsed time: "does the ink cover the screen" is a
+  fact about geometry and the device's height. That maths lives in
+  `src/lib/bootGeometry.ts` and is swept across six screen heights (SE → iPad)
+  in `__tests__/lib/bootGeometry.test.ts`. The test has teeth — the naive
+  coverage constant fails it.
+
+  `centringPull` finishes before the curtain is allowed to move, which is what
+  lets `cover` budget only half a screen of ink. While the centring lagged, the
+  ink had to reach the far edge from wherever the eye had got to (0.68 of the
+  height, not 0.55) — that cost real magnification, and magnification is
+  sharpness, because react-native-svg rasterises at layout size and UIKit does
+  not redraw for a transform.
+
+  **The ember sits above the curtain and below the mark**, so one layer does two
+  jobs: at rest it is the bloom around the mark and a faint glow inside its
+  eyes; during the flight it is the only thing visible through the eye while the
+  curtain is still up. Without it, that stretch was navy seen through navy — the
+  mark grew, the screen went flat, and the sense of being inside an eye was lost
+  exactly when it should have been strongest. It is held burning past the
+  curtain's drop so the app arrives on a warm frame, not a dark one.
+
+  Only the curtain ever fades — double-fading curtain + app reads as a grey
+  wash. Honors Reduce Motion (plain crossfade, no fly-through). `LogoLoader`
+  remains the simple fallback (web, Suspense).
+
+  **The floor.** The reveal is gated on content, which was only safe on a
+  **cold** start. On a warm launch — fonts cached, no auth round-trip —
+  `booting` can flip false around 300–500ms and the feed can paint immediately
+  after, turning the whole screen into a flash. `HOLD_MS` (from MOUNT) holds the
+  open until the composition has been readable for a beat; `REVEAL_CAP_MS` runs
+  on a _different clock_ — from boot resolving — so the window is
+  `[mount + HOLD_MS, bootResolved + REVEAL_CAP_MS]`. Reduce Motion skips it.
 
   **Do not remove the floor to shave startup time.** It is the difference
   between a choreography that always plays and one that plays only when the
   network is slow.
+
+  **The wordmark is outlined, not set.** `WORDMARK_PATH` is Righteous converted
+  to a path by `scripts/brand/build-splash.mjs` (`yarn build:splash`), which
+  draws the splash PNG from the same geometry. Live text could never match a
+  raster exactly, and drawing type on the very first frame means gating on font
+  load. As paths there is nothing to load and nothing to disagree about.
+
+  **`assets/splash.png` and `imageWidth` are NATIVE.** They are baked into the
+  binary and cannot ship over the air, so a change to the lockup needs a new
+  build — until then the OS shows the old splash and the JS stage shows the new
+  one, and the handoff pops.
 
 - Explore's entrance: the skeleton dissolves in place (exiting fade overlay)
   and the first batch of feed rows cascades once (`STAGGER.step`, soft
