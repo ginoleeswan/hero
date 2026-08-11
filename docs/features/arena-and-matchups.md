@@ -82,13 +82,13 @@ profile. Auth-only by grant; anon votes never enter it.
 Takes are pick-a-side one-liners on a pair. Reads are plain RLS selects
 (`status = 'visible'` or your own row); writes are RPC-only.
 
-| Piece | Where | The rule |
-| --- | --- | --- |
-| Post/replace | `post_take` RPC via `src/lib/db/takes.ts` | auth-only, 3–280 chars, **one take per user per pair** (re-post replaces and resets agreements), 20/day rate limit |
-| Agree | `toggle_take_agreement(take_id, voter_key)` + `take_agreements` | anon-capable — uid wins over voter key; recounts `agree_count` |
-| Order | `getTakes` | `agree_count` desc, then newest |
-| Moderation | `set_take_status` (`20260712150000_take_moderation.sql`) + `reports` with `target_type='take'` | admin hide/remove lever |
-| UI | `src/components/takes/TakesSection.tsx`, `src/components/profile/MyTakes.tsx`, hook `src/hooks/useMatchupTakes.ts` | agree is optimistic `setQueryData`; agreed-state is session-only, the server owns the real toggle |
+| Piece        | Where                                                                                                              | The rule                                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Post/replace | `post_take` RPC via `src/lib/db/takes.ts`                                                                          | auth-only, 3–280 chars, **one take per user per pair** (re-post replaces and resets agreements), 20/day rate limit |
+| Agree        | `toggle_take_agreement(take_id, voter_key)` + `take_agreements`                                                    | anon-capable — uid wins over voter key; recounts `agree_count`                                                     |
+| Order        | `getTakes`                                                                                                         | `agree_count` desc, then newest                                                                                    |
+| Moderation   | `set_take_status` (`20260712150000_take_moderation.sql`) + `reports` with `target_type='take'`                     | admin hide/remove lever                                                                                            |
+| UI           | `src/components/takes/TakesSection.tsx`, `src/components/profile/MyTakes.tsx`, hook `src/hooks/useMatchupTakes.ts` | agree is optimistic `setQueryData`; agreed-state is session-only, the server owns the real toggle                  |
 
 `matchup_takes.user_id` references `auth.users`, not `user_profiles`, so
 PostgREST can't embed display names — `getTakes` does a second `in()` query.
@@ -128,7 +128,7 @@ heroes stay in the grid marked `added` instead of being filtered out (no
 reflow under your finger — and tapping an added card removes it); and the CTA
 guides rather than scolds (a contextual next-step hint until the battle is
 valid, then the Fight button). On paper the "→ Side A/B" destination cue is a
-solid faction-tint pill with ink text — raw orange/blue *text* on paper fails
+solid faction-tint pill with ink text — raw orange/blue _text_ on paper fails
 contrast (see the design-system matrix). Its opponent grid renders at most `GRID_CAP` (120) cards, and **`onEndReached`
 is capped to match**. A render cap without a matching pagination cap means the
 list keeps fetching pages whose rows the `.slice()` immediately discards —
@@ -156,6 +156,50 @@ iconic pool for "Surprise me", and the featured team battle. Every query
 degrades to a hidden section, never a broken hub. `useDiscoveryRows` derives
 the discovery feed (dream matches, goliath fights, team matchups) client-side
 from data the hub already fetched — no extra requests.
+
+### The native hub is three acts, grouped by intent
+
+Three people open this tab: the one keeping a **streak**, the one who wants a
+**specific fight**, and the one who wants to be **handed** one. `versus.tsx`
+answers those three in that order, and nothing appears twice.
+
+1. **Today.** `ShowdownCards` (vote → reveal in place, via `useMatchupVote`),
+   then `TodaysLedger`.
+2. **Make a fight.** `MakeAFight` — a one-v-one / team toggle over two empty
+   slots, then "Surprise me", then the rivalries rail.
+3. **Fight a villain.** `HallOfInfamy`.
+
+**It used to show two of the three dailies twice.** The chip card's _Daily
+Debate_ called `openArena(matchup.heroA, matchup.heroB)` — the same destination
+as the showdown directly above it — and its _Team Battle_ chip pushed the same
+route as the featured card directly below it. Nobody needs a third way to reach
+today's debate. Grouping by intent removed both duplicates and two whole
+sections (the featured team-battle card, the standalone rivalries deck),
+because their content moved to where the intent already lived.
+
+**`TodaysLedger` is state, not navigation.** Each daily is a line with its own
+subject and an Open/Settled marker, plus the streak. The debate line records
+what _you_ did rather than repeating a pairing shown a few hundred points above
+it — an echo is not information.
+
+**`MakeAFight` looks like the thing it makes.** Two empty slots canted at the
+showdown's angle with the same VS medallion between them, so it reads as an
+invitation rather than a control; the toggle swaps them for two squads, which
+says without a word that one-v-one and team battle are siblings. Everything
+that starts a fight lives in this one act, ordered by how much say you want:
+build it, take one that's ready, or let the app choose. Those were three
+separate sections serving a single intent.
+
+`RivalriesRail` takes `headless` so a section that supplies its own label does
+not get a second heading. The rail still brings its own inset and must sit
+**outside** any padded wrapper — see the horizontal-rail rule in CLAUDE.md.
+
+The takes link never opens with a zero: `0 takes — join the debate` advertises
+that nobody bothered, so with none yet it reads _Be first to call it_.
+
+Still open: act three's rows go to the character page rather than starting a
+fight, because `app/compare/pick.tsx` takes no params and cannot open with a
+fighter preselected. That is a new capability, not a layout change.
 
 ## History
 
