@@ -241,6 +241,30 @@ half-frame of skeleton.
   between a choreography that always plays and one that plays only when the
   network is slow.
 
+  **The driver is `EASE_BOOT`, not `EASE_REVEAL`, and that is load-bearing.**
+  `EASE_REVEAL` is `bezier(0.22, 1, 0.36, 1)` — 96% done by the halfway point.
+  Correct for one property settling to one value; catastrophic as the driver of
+  a ramp whose acts are defined in _progress_ space, because it crushes every
+  act into the opening frames. Measured on the build that shipped it: recoil
+  46ms, lunge over by 126ms, breakthrough at 193ms, then ~900ms creeping
+  through scales that were already off screen. It did not read as fast, it read
+  as a glitch followed by nothing. The driver is now near-linear with soft ends
+  and `markGrow` owns all the shaping — one curve decides the motion, the other
+  turns the handle.
+
+  `markGrow` is continuous rather than piecewise-linear for the same reason:
+  linear scale is not linear approach (scale goes as 1/distance, so constant
+  speed is _exponential_ growth), and every anchor in a piecewise ramp is a
+  corner the eye reads as a stutter. Three acts: draw-back easing to a stop,
+  exponential approach, decelerating seat. `__tests__` pins the acts to sane
+  shares of the running time, so "it feels choppy" surfaces as a failing test.
+
+  **`SETTLE_MS` always applies after the paint signal**, even when the floor
+  has already elapsed. `signalFirstPaint` fires from the feed's first layout —
+  the busiest frame of the launch (list commit, image decode, row cascade).
+  Starting a 1.4s animation in that frame is how a reveal that costs nothing on
+  the UI thread still looks dropped.
+
   **The wordmark is outlined, not set.** `WORDMARK_PATH` is Righteous converted
   to a path by `scripts/brand/build-splash.mjs` (`yarn build:splash`), which
   draws the splash PNG from the same geometry. Live text could never match a

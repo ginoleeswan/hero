@@ -5,9 +5,10 @@ import {
   markGrow,
   revealRamp,
   EYE_H,
-  GROW_AT,
+  LUNGE_AT,
   MARK_REST,
   RECOIL,
+  SEAT_AT,
   UNIT,
 } from '../../src/lib/bootGeometry';
 import { LOGO_EYE_LEFT, LOGO_INK, SPLASH_LOCKUP } from '../../src/constants/logo';
@@ -52,23 +53,46 @@ describe('boot reveal geometry', () => {
     for (const screen of SCREENS) {
       const ramp = revealRamp(screen.h);
       expect(markGrow(0, ramp)).toBe(1);
-      expect(markGrow(GROW_AT[1], ramp)).toBeCloseTo(RECOIL, 6);
+      expect(markGrow(LUNGE_AT, ramp)).toBeCloseTo(RECOIL, 6);
+      expect(markGrow(SEAT_AT, ramp)).toBeCloseTo(ramp.cover, 6);
       expect(markGrow(1, ramp)).toBeCloseTo(ramp.max, 6);
       // The anticipation dip is the ONLY non-monotonic stretch: shrinking
       // during the recoil window, never below RECOIL, and strictly growing
       // from the moment the lunge starts.
       let prev = 1;
-      for (let p = 0; p <= GROW_AT[1] + 1e-9; p += 0.005) {
+      for (let p = 0; p <= LUNGE_AT + 1e-9; p += 0.005) {
         const g = markGrow(p, ramp);
         expect(g).toBeLessThanOrEqual(prev + 1e-9);
         expect(g).toBeGreaterThanOrEqual(RECOIL - 1e-9);
         prev = g;
       }
-      for (let p = GROW_AT[1]; p <= 1.0001; p += 0.005) {
+      for (let p = LUNGE_AT; p <= 1.0001; p += 0.005) {
         const g = markGrow(p, ramp);
         expect(g).toBeGreaterThanOrEqual(prev - 1e-9);
         prev = g;
       }
+    }
+  });
+
+  // The bug that made the whole thing invisible was not in the geometry, it
+  // was in how fast the geometry got walked. These lock the ACTS to sane
+  // shares of the running time, so a driver that front-loads progress (or an
+  // act quietly moved to the end of the ramp) shows up as a failure instead of
+  // as "it feels choppy".
+  it('spends its running time on the acts you can actually see', () => {
+    for (const screen of SCREENS) {
+      const ramp = revealRamp(screen.h);
+      // The recoil is an act, not a frame.
+      expect(LUNGE_AT).toBeGreaterThanOrEqual(0.15);
+      // The reveal — curtain dropping, rim retreating, app through the eye —
+      // gets a real share of the end, not a handful of frames.
+      expect(1 - SEAT_AT).toBeGreaterThanOrEqual(0.2);
+      // And no act is spent on magnification that is already off screen: the
+      // ramp must not overshoot far past the point where the eye has
+      // swallowed the display.
+      const swallow = screen.h / EYE_H;
+      expect(ramp.max).toBeLessThanOrEqual(swallow * 1.25);
+      expect(ramp.max).toBeGreaterThanOrEqual(swallow);
     }
   });
 
