@@ -1,10 +1,17 @@
 // src/components/home/HallOfInfamy.tsx — native "Public Enemies" carousel.
 // Villains ranked by enemy in-degree (how many heroes line up against them).
+//
+// Renders on two canvases: Explore's beige paper and the Arena's navy stage.
+// Its heading was written for paper only (navy title, ORANGE_INK eyebrow — both
+// chosen to be dark ENOUGH), so on the Arena it came out dark-on-dark and the
+// section header was effectively invisible. `tone` picks the pair; the cards
+// themselves are dark art either way and never needed it.
 import { View, Text, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { PressScale } from '../ui/PressScale';
 import { COLORS, ORANGE_INK } from '../../constants/colors';
+import { SECTION } from '../../constants/arenaType';
 import type { FearedVillain } from '../../lib/db/heroes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -53,18 +60,22 @@ function FearedCard({
 export function HallOfInfamy({
   villains,
   onPress,
+  tone = 'paper',
 }: {
   villains: FearedVillain[];
   onPress: (id: string) => void;
+  /** 'ink' for dark backgrounds (the Arena stage). */
+  tone?: 'paper' | 'ink';
 }) {
   if (villains.length === 0) return null;
+  const ink = tone === 'ink';
   return (
     <View style={c.section}>
       <View style={c.header}>
         <View style={c.accentBar} />
         <View style={c.headerText}>
-          <Text style={c.label}>Public Enemies</Text>
-          <Text style={c.title}>Most Feared</Text>
+          <Text style={[c.label, ink && c.labelInk]}>Public Enemies</Text>
+          <Text style={[c.title, ink && c.titleInk]}>Most Feared</Text>
         </View>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={c.row}>
@@ -94,7 +105,9 @@ const c = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.navy, lineHeight: 28 },
+  labelInk: { color: COLORS.goldAccent },
+  title: { ...SECTION, color: COLORS.navy },
+  titleInk: { color: COLORS.beige },
   row: { gap: 12, paddingHorizontal: 15, paddingBottom: 4 },
   card: {
     width: CARD_W,

@@ -15,8 +15,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDailies } from '../../hooks/useDailies';
 import type { DailySurface } from '../../lib/db/dailies';
 import { COLORS, INK_TEXT } from '../../constants/colors';
+import { SUBHEAD } from '../../constants/arenaType';
 
-type Row = { key: DailySurface; n: string; label: string; note: string; onPress: () => void };
+type Row = {
+  key: DailySurface;
+  n: string;
+  label: string;
+  note: string;
+  /** Shown once the line is settled — a line that has been played should say
+   *  what you did, not keep repeating the invitation to do it. */
+  doneNote: string;
+  onPress: () => void;
+};
 
 export function TodaysLedger({
   onDebate,
@@ -33,11 +43,25 @@ export function TodaysLedger({
   debateNote: string;
   teamNote: string;
 }) {
-  const { current, today } = useDailies();
+  const { current, today, tracked } = useDailies();
 
   const rows: Row[] = [
-    { key: 'debate', n: '01', label: 'The debate', note: debateNote, onPress: onDebate },
-    { key: 'puzzle', n: '02', label: 'Guess the hero', note: 'Six guesses', onPress: onPuzzle },
+    {
+      key: 'debate',
+      n: '01',
+      label: 'The debate',
+      note: debateNote,
+      doneNote: 'You called it — see the crowd',
+      onPress: onDebate,
+    },
+    {
+      key: 'puzzle',
+      n: '02',
+      label: 'Guess the hero',
+      note: 'Six guesses',
+      doneNote: 'Solved — see your stats',
+      onPress: onPuzzle,
+    },
   ];
   if (onTeamBattle) {
     rows.push({
@@ -45,6 +69,7 @@ export function TodaysLedger({
       n: '03',
       label: 'Team battle',
       note: teamNote,
+      doneNote: 'You picked a side',
       onPress: onTeamBattle,
     });
   }
@@ -57,8 +82,11 @@ export function TodaysLedger({
             are already thinking about boxing; everywhere else "card" is a box
             on a screen. This states the question the person actually has. */}
         <Text style={styles.title}>{left === 0 ? 'All done today' : "What's left today"}</Text>
-        <Text style={[styles.streak, current === 0 && styles.streakZero]}>
-          {current > 0 ? `Streak ${current}` : 'Start a streak'}
+        {/* Logged out, today's ticks are real but no streak is being kept —
+            "Start a streak" would be a button-shaped lie, since playing every
+            surface would still leave it at zero. Say what is actually true. */}
+        <Text style={[styles.streak, (!tracked || current === 0) && styles.streakZero]}>
+          {!tracked ? 'Sign in to keep a streak' : current > 0 ? `Streak ${current}` : 'Day one'}
         </Text>
       </View>
 
@@ -76,7 +104,7 @@ export function TodaysLedger({
             <View style={styles.body}>
               <Text style={styles.label}>{r.label}</Text>
               <Text style={styles.note} numberOfLines={1}>
-                {r.note}
+                {done ? r.doneNote : r.note}
               </Text>
             </View>
             <View style={styles.state}>
@@ -98,7 +126,7 @@ export function TodaysLedger({
 
 const styles = StyleSheet.create({
   wrap: {
-    marginTop: 26,
+    marginTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(245,235,220,0.14)',
   },
@@ -109,20 +137,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 10,
   },
-  title: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 11,
-    letterSpacing: 2.4,
-    textTransform: 'uppercase',
-    color: INK_TEXT.muted,
-  },
-  streak: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: COLORS.goldAccent,
-  },
+  title: { ...SUBHEAD, color: INK_TEXT.muted },
+  streak: { ...SUBHEAD, color: COLORS.goldAccent },
   streakZero: { color: INK_TEXT.faint },
   line: {
     flexDirection: 'row',

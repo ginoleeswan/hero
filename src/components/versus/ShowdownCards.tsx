@@ -1,19 +1,21 @@
 // src/components/versus/ShowdownCards.tsx — native Battle-Deck showdown. Two
 // tilted holographic fighter cards flank a gold VS coin; tapping a card casts
-// your vote and reveals the crowd split in place. "See full breakdown →" opens
-// the arena. Mirrors the web ShowdownStage (src/components/web/versus) so the two
+// your vote and reveals the split in place. The link into the arena lives in
+// the screen, not here — this block had one and the screen had another,
+// stacked, both gold, both chevroned. Mirrors the web ShowdownStage (src/components/web/versus) so the two
 // platforms read as one design; both share useMatchupVote.
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
-import { statSplit, statLead } from '../../lib/home/matchupVote';
+import { statSplit } from '../../lib/home/matchupVote';
 import type { TodaysMatchup, MatchupHero } from '../../lib/matchup';
-import type { FighterArt } from '../../lib/compareHandoff';
 
 const ACCENT_A = COLORS.orange;
 const ACCENT_B = COLORS.blue;
+/** Votes needed before today's split is shown as today's split. */
+const CROWD_FLOOR = 10;
 const CARD_W = 150;
 const CARD_H = 200;
 const COIN = 56;
@@ -81,23 +83,26 @@ function HoloCard({
   );
 }
 
-export function ShowdownCards({
-  matchup,
-  onOpen,
-}: {
-  matchup: TodaysMatchup;
-  onOpen: (a: FighterArt, b: FighterArt) => void;
-}) {
+export function ShowdownCards({ matchup }: { matchup: TodaysMatchup }) {
   const { heroA, heroB, winsA, winsB } = matchup;
   const { revealed, pickedId, tally, castVote } = useMatchupVote(heroA.id, heroB.id);
 
-  const usingVotes = !!tally && tally.total > 0;
+  // Today's crowd only speaks once there IS a crowd. Below the floor a "split"
+  // is one or two people — most often just you — and drawing your own vote back
+  // as a full-width 100% bar reads as a verdict the app has no business
+  // claiming. Under the floor the bar shows the pair's all-time record (real
+  // data, plainly labelled) and the caption says how many have called it today.
+  const votes = tally?.total ?? 0;
+  const usingVotes = votes >= CROWD_FLOOR;
   const { pctA, pctB } = usingVotes
     ? statSplit(tally!.votesA, tally!.votesB)
     : statSplit(winsA, winsB);
-  const caption = usingVotes
-    ? `${tally!.total} ${tally!.total === 1 ? 'fan' : 'fans'} voted`
-    : statLead(winsA, winsB, heroA.name, heroB.name);
+  const caption = usingVotes ? `${votes} fans voted today` : 'All-time record';
+  const todayNote = usingVotes
+    ? null
+    : votes <= 1
+      ? 'You called it first today'
+      : `${votes} calls today so far`;
   const pickedA = pickedId === heroA.id;
 
   return (
@@ -139,13 +144,7 @@ export function ShowdownCards({
               {pctB}%
             </Text>
           </View>
-          <Pressable
-            onPress={() => onOpen(heroA, heroB)}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.linkRow, pressed && styles.linkPressed]}
-          >
-            <Text style={styles.link}>See full breakdown →</Text>
-          </Pressable>
+          {todayNote ? <Text style={styles.todayNote}>{todayNote}</Text> : null}
         </View>
       )}
     </View>
@@ -250,12 +249,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: INK_TEXT.faint,
   },
-  linkRow: { alignSelf: 'center', marginTop: 8 },
-  linkPressed: { opacity: 0.7 },
-  link: {
-    fontFamily: 'Nunito_700Bold',
+  todayNote: {
+    marginTop: 8,
+    textAlign: 'center',
+    fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: COLORS.goldAccent,
-    letterSpacing: 0.3,
+    color: INK_TEXT.faint,
   },
 });

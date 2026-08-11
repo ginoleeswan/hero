@@ -98,10 +98,26 @@ never client-visible.
 A "perfect day" (all three surfaces) is **reserved in the migration comment
 for a future badge — it is not built**. Don't invent UI for it.
 
-Client plumbing (`src/lib/db/dailies.ts`) is deliberately fire-and-forget:
-`recordDailyCompletion` silently no-ops when logged out or on any failure. A
-missed write costs one day of streak; it must never throw into a game or vote
-flow.
+Client plumbing (`src/lib/db/dailies.ts`) is deliberately fire-and-forget: the
+server write in `recordDailyCompletion` silently no-ops when logged out or on
+any failure. A missed write costs one day of streak; it must never throw into a
+game or vote flow.
+
+**Today's ticks are not gated on auth; the streak is.** Every completion also
+writes a local, date-stamped mirror (`dailyDone:<surface>:<UTC date>`), and
+`getMyDailyStreak` ORs it over the server response. Two reasons:
+
+1. Voting is deliberately anon-friendly — no sign-up wall at the vote moment.
+   Reading today's ticks from the signed-in RPC alone meant a logged-out player
+   saw three permanently OPEN rows in the Arena's ledger no matter what they
+   played: the app refusing to acknowledge a vote it had just accepted.
+2. The debate is voted **on** the Arena. `useDailies` refreshed on focus, so
+   even signed in, the row you had just satisfied kept saying OPEN until you
+   left the tab and came back. `subscribeToDailies` re-reads on completion.
+
+`DailyStreak.tracked` is false when logged out — today's ticks are real, but no
+streak is being kept, so a surface can offer an account instead of showing a
+zero that playing cannot move.
 
 ## Logged out, and the merge
 

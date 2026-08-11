@@ -15,6 +15,7 @@
 // opened the same route. Grouping by intent removed both duplicates and two
 // whole sections. Shares useVersusHub with the web hub (versus.web.tsx) so the
 // data layer never drifts.
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,8 +25,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableTopInset } from '../../src/hooks/useStableTopInset';
 import * as Haptics from 'expo-haptics';
 import { COLORS, STAGE_INK } from '../../src/constants/colors';
+import { SUBHEAD } from '../../src/constants/arenaType';
 import { useVersusHub } from '../../src/hooks/useVersusHub';
-import { pickRandomPair } from '../../src/lib/versus';
+import { pickRandomPair, spreadRivalries } from '../../src/lib/versus';
 import { stashFighters, type FighterArt } from '../../src/lib/compareHandoff';
 import { ShowdownCards } from '../../src/components/versus/ShowdownCards';
 import { HallOfInfamy } from '../../src/components/home/HallOfInfamy';
@@ -68,13 +70,36 @@ export default function VersusScreen() {
     router.push(`/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}`);
   };
 
-  const surprise = () => {
-    const pair = pickRandomPair(iconicPool);
-    if (!pair) return;
+  // The clash currently dealt into "Make a fight". Held here rather than in the
+  // component so it survives the one-v-one / team toggle, and so the screen can
+  // deal the first one the moment the iconic pool lands.
+  const [dealt, setDealt] = useState<[FighterArt, FighterArt] | null>(null);
+  useEffect(() => {
+    if (dealt || iconicPool.length < 2) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDealt(pickRandomPair(iconicPool));
+  }, [iconicPool, dealt]);
+
+  const shuffle = useCallback(() => {
+    const next = pickRandomPair(iconicPool);
+    if (!next) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    openArena(pair[0], pair[1]);
+    setDealt(next);
+  }, [iconicPool]);
+
+  // Swapping one side keeps the other: the opponent picker takes a fixed
+  // fighter and returns a full matchup, which is exactly "change this one".
+  const chooseSide = (side: 'a' | 'b') => {
+    const keep = dealt?.[side === 'a' ? 1 : 0];
+    if (!keep) {
+      router.push('/compare/pick');
+      return;
+    }
+    router.push(`/compare/${keep.id}/pick?name=${encodeURIComponent(keep.name ?? '')}`);
   };
-  const canSurprise = iconicPool.length >= 2;
+
+  // One fighter per card until the list is exhausted — see spreadRivalries.
+  const spreadRail = useMemo(() => spreadRivalries(rivalries), [rivalries]);
 
   return (
     // NO collapsable={false} here, deliberately. Adding it let iOS pair this
@@ -116,18 +141,22 @@ export default function VersusScreen() {
               ) : null
             ) : matchup ? (
               <>
-                <ShowdownCards matchup={matchup} onOpen={openArena} />
+                <ShowdownCards matchup={matchup} />
+                {/* THE link into the arena, and the only one. The showdown
+                    block used to carry "See full breakdown →" and this sat
+                    directly beneath it — two gold chevroned links, stacked,
+                    going to the same screen. Never open by advertising that
+                    nobody bothered, so with no takes it names the act. */}
                 <Pressable
                   onPress={() => openArena(matchup.heroA, matchup.heroB)}
                   accessibilityRole="button"
-                  accessibilityLabel="Join the debate"
+                  accessibilityLabel="Open the arena"
                   style={styles.takesLink}
                 >
                   <Text style={styles.takesLinkText}>
-                    {/* Never open by advertising that nobody bothered. */}
                     {takesCount > 0
                       ? `${takesCount} ${takesCount === 1 ? 'take' : 'takes'} — see the debate`
-                      : 'Be first to call it'}
+                      : 'Open the arena — add the first take'}
                   </Text>
                   <Ionicons name="chevron-forward" size={13} color={COLORS.goldAccent} />
                 </Pressable>
@@ -160,21 +189,25 @@ export default function VersusScreen() {
 
         {/* ── Act 2 — everything that starts a fight, in one place ── */}
         <MakeAFight
-          onBuild={() => router.push('/compare/pick')}
-          // Both modes open the same builder — /versus/team/draft is the RESULT
-          // screen for a drafted clash and needs two rosters in its query string,
-          // so pushing it bare landed on "We couldn't build that battle". The
-          // builder itself routes: one-a-side goes to /compare/[a]/[b], anything
-          // larger to the team draft, via resolveBattleRoute.
+          pair={dealt}
+          onFight={() => dealt && openArena(dealt[0], dealt[1])}
+          onShuffle={shuffle}
+          onChoose={chooseSide}
+          // Team battle opens the same builder — /versus/team/draft is the
+          // RESULT screen for a drafted clash and needs two rosters in its
+          // query string. The builder routes: one-a-side goes to
+          // /compare/[a]/[b], anything larger to the team draft.
           onDraft={() => router.push('/compare/pick?mode=team')}
-          onSurprise={surprise}
-          canSurprise={canSurprise}
-          rivalries={rivalries}
+          rivalries={spreadRail}
           onOpenRivalry={openArena}
         />
 
         {/* ── Act 3 — the most-opposed board ── */}
-        <HallOfInfamy villains={mostFeared} onPress={(id) => router.push(`/character/${id}`)} />
+        <HallOfInfamy
+          villains={mostFeared}
+          onPress={(id) => router.push(`/character/${id}`)}
+          tone="ink"
+        />
       </ScrollView>
     </View>
   );
@@ -184,15 +217,9 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
   scroll: { flex: 1, backgroundColor: COLORS.deepNavy },
 
-  stage: { paddingHorizontal: 16, paddingBottom: 30, alignItems: 'center' },
-  eyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 4,
-    textTransform: 'uppercase',
-    color: COLORS.goldAccent,
-    marginBottom: 6,
-  },
+  stage: { paddingHorizontal: 16, paddingBottom: 22, alignItems: 'center' },
+  // Gold, because it names the live thing; the type is the shared SUBHEAD.
+  eyebrow: { ...SUBHEAD, color: COLORS.goldAccent, marginBottom: 6 },
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 26,
@@ -224,5 +251,5 @@ const styles = StyleSheet.create({
     color: COLORS.goldAccent,
   },
 
-  ledgerWrap: { alignSelf: 'stretch', marginTop: 14 },
+  ledgerWrap: { alignSelf: 'stretch', marginTop: 6 },
 });
