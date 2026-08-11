@@ -75,18 +75,12 @@ import {
   centringPull,
   markGrow,
   revealRamp,
-  markTilt,
-  INK_CX,
-  INK_CY,
+  markBox,
+  markRest,
   LUNGE_AT,
-  MARK_REST,
-  MARK_SVG,
+  MARK_VIEWBOX,
   SEAT_AT,
-  UNIT,
 } from '../../lib/bootGeometry';
-
-/** Reused rather than allocated per frame in the Reduce Motion branch. */
-const ZERO_TILT = { x: 0, y: 0 };
 
 const SPLASH_NAVY = '#293C43'; // must equal app.config.ts splash backgroundColor
 
@@ -177,11 +171,13 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   // percentages — is what makes the handoff a continuation instead of a cut.
   const boxTop = (screenH - SPLASH_LOCKUP.h) / 2;
   const markCY = boxTop + SPLASH_LOCKUP.markCY;
-  // Place the mark's SVG box so its INK centre lands on the lockup's mark
-  // position at rest. The transform origin is the box's centre, so the ink's
-  // own offset within the viewBox has to be taken out here.
-  const markLeft = screenW / 2 - MARK_SVG / 2 - (INK_CX - 512) * UNIT * MARK_REST;
-  const markTop = markCY - MARK_SVG / 2 - (INK_CY - 512) * UNIT * MARK_REST;
+  // The mark's box is cropped to the ink (MARK_VIEWBOX), so placing it is just
+  // centring it: its centre IS the ink's centre, and both offsets are positive
+  // on every device because the box is narrower than the screen.
+  const box = markBox(screenW);
+  const markLeft = (screenW - box.w) / 2;
+  const markTop = markCY - box.h / 2;
+  const restScale = markRest(box.w);
 
   // The reveal's scale ramp, derived from this device's height.
   const ramp = revealRamp(screenH);
@@ -282,21 +278,20 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   // starts at exactly zero — a fixed-point scale would be geometrically purer
   // and visually worse, because the mark would begin drifting on frame one.
   //
-  // The tilt is what makes this a FLIGHT rather than a zoom. Uniform scaling
-  // reads as an image being enlarged; a small rotation under perspective reads
-  // as an object moving through space. It leans back during the recoil, tips
-  // hardest mid-lunge, and levels out as it reaches your face — a mask being
-  // seated straight, not a card spinning. Kept out of bootGeometry because it
-  // is aesthetic: no coverage rule depends on it (at its ~7° peak the ink
-  // budget of `cover` absorbs the foreshortening many times over).
+  // There is no 3D tilt here any more, and its absence is deliberate. It made
+  // the flight read as movement through space rather than as an image being
+  // enlarged, which is worth having — but a perspective transform changes how
+  // iOS rasterises the layer, and the mask has now been reported clipped on
+  // device twice. Correct beats characterful: the tilt comes back once the
+  // geometry is confirmed right on hardware, not before. Everything here is a
+  // plain 2D translate and scale, which cannot clip.
   const markStyle = useAnimatedStyle(() => {
     const grow = flies ? markGrow(exit.value, ramp) : 1;
-    const scale = MARK_REST * grow * (1 + breathe.value * 0.012 * (1 - exit.value));
+    const breath = 1 + breathe.value * 0.012 * (1 - exit.value);
     // Where the eye sits with no correction applied...
-    const eye = eyeCentre(scale, screenW, markCY);
+    const eye = eyeCentre(grow * breath, screenW, markCY);
     // ...and how hard it is drawn toward the centre of the screen.
     const pull = flies ? centringPull(exit.value) : 0;
-    const tilt = flies ? markTilt(exit.value) : ZERO_TILT;
     return {
       // Flying: the rim is off the display by the end, so this fade only has
       // to hide the last sliver of it — kept late and short so the screen
@@ -309,12 +304,9 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
         ? interpolate(exit.value, [0, 0.92, 1], [1, 1, 0], Extrapolation.CLAMP)
         : 1 - exit.value,
       transform: [
-        { perspective: 1000 },
         { translateX: pull * (screenW / 2 - eye.x) },
         { translateY: pull * (screenH / 2 - eye.y) },
-        { rotateX: `${tilt.x}deg` },
-        { rotateY: `${tilt.y}deg` },
-        { scale },
+        { scale: restScale * grow * breath },
       ],
     };
   });
@@ -442,10 +434,14 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
           {/* The mark sits ABOVE the curtain, so the holes in its path are the
               aperture: whatever is under it shows through the eyes. */}
           <Animated.View
-            style={[styles.markBox, { left: markLeft, top: markTop }, markStyle]}
+            style={[
+              styles.abs,
+              { left: markLeft, top: markTop, width: box.w, height: box.h },
+              markStyle,
+            ]}
             pointerEvents="none"
           >
-            <Svg width={MARK_SVG} height={MARK_SVG} viewBox="0 0 1024 1024">
+            <Svg width={box.w} height={box.h} viewBox={MARK_VIEWBOX}>
               <Path d={LOGO_PATH} fill={COLORS.beige} />
             </Svg>
           </Animated.View>
@@ -486,28 +482,16 @@ const styles = StyleSheet.create({
   app: { flex: 1 },
   appAtRest: { opacity: 1 },
   flat: { backgroundColor: SPLASH_NAVY },
-  // Both of these MUST carry an explicit width and height.
+  // Every absolutely-positioned box here declares its own width and height,
+  // and every one of them fits on screen with positive offsets.
   //
-  // An absolutely-positioned box with only `left`/`top` is sized by Yoga from
-  // what is left of the parent, and the mark's box is deliberately positioned
-  // at a NEGATIVE left (its 512pt square is centred on a 160pt mark, so it
-  // hangs off the screen on both sides). On a 393pt-wide screen that left the
-  // box 452pt of room for the 512pt it asked for, and react-native-svg clips
-  // to its own viewport — so the mask lost the last 9pt of its ink.
-  //
-  // The clip is the smaller half. A clamped box also moves its own CENTRE,
-  // which is the origin every transform here scales about — 29.7pt left of
-  // where the placement maths put it. Scale multiplies that error: 12pt of
-  // displacement at rest, 139pt at the breakthrough, 362pt at the end, which
-  // is most of the width of the screen. The eye is pinned to the centre of the
-  // display by arithmetic that assumes a 512pt box, so with a 452pt box it
-  // never lands there at all, and the whole reveal drifts further off as it
-  // grows.
-  //
-  // Anything a transform multiplies has to be exactly right BEFORE the
-  // transform touches it. A rounding-level layout mistake does not stay
-  // rounding-level on the other side of a 31x scale.
-  markBox: { position: 'absolute', width: MARK_SVG, height: MARK_SVG },
+  // The mark's box used to be a 512pt square centred on a 160pt mark, which
+  // put it at left = -59.5 on a 393pt screen — hanging off both edges, three
+  // quarters empty, and relying on nothing in the parent chain ever clamping
+  // or clipping it. It got clipped. Declaring the width was not enough to fix
+  // it, so the box is now cropped to the ink itself: smaller than the screen,
+  // positioned with positive offsets, nothing to clamp and nothing to clip.
+  abs: { position: 'absolute' },
   wordBox: { position: 'absolute', width: SPLASH_LOCKUP.wordW, height: WORD_H },
   halo: { position: 'absolute', width: HALO_W, height: HALO_H },
 });

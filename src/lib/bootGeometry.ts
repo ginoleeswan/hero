@@ -15,23 +15,66 @@
 // the UI thread, and the tests call them as ordinary JavaScript.
 import { LOGO_EYE_LEFT, LOGO_INK, SPLASH_LOCKUP } from '../constants/logo';
 
-/** Layout size of the mark's SVG box, in points. */
-export const MARK_SVG = 512;
-/** Points per viewBox unit at transform scale 1. */
-export const UNIT = MARK_SVG / 1024;
-/** Transform scale that renders the mark's ink at the lockup's width. */
-export const MARK_REST = SPLASH_LOCKUP.markW / (LOGO_INK.w * UNIT);
-
 export const INK_CX = LOGO_INK.x + LOGO_INK.w / 2;
 export const INK_CY = LOGO_INK.y + LOGO_INK.h / 2;
+
+/**
+ * The SVG viewBox for the mark: the INK's own bounds, not the 1024 artboard.
+ *
+ * The box used to be a 1024-viewBox square laid out at 512pt. Three things
+ * were wrong with that, and they compound:
+ *
+ *   • the ink is 24% of that square's area, so three quarters of the raster
+ *     was empty and the mask got a fraction of the resolution it paid for;
+ *   • a 512pt box centred on a 160pt mark has to hang off BOTH screen edges
+ *     (left = -59.5 on a 393pt screen), which is a layout begging to be
+ *     clamped by anything in the parent chain;
+ *   • and every position had to carry a correction for where the ink sits
+ *     inside the artboard, which is arithmetic that can silently disagree
+ *     with what the layout engine actually did.
+ *
+ * Cropping the viewBox to the ink makes the box's centre the ink's centre and
+ * the box's edges the ink's edges. The maths below stops needing to know
+ * anything about artboards, and the box is small enough to sit fully on screen
+ * with positive offsets on every device — so there is nothing left to clamp.
+ */
+export const MARK_VIEWBOX = `${LOGO_INK.x} ${LOGO_INK.y} ${LOGO_INK.w} ${LOGO_INK.h}`;
+export const INK_ASPECT = LOGO_INK.w / LOGO_INK.h;
+
+/** Horizontal breathing room kept between the mark's box and the screen edge. */
+const BOX_INSET = 24;
+
+/**
+ * The mark's SVG box in points — as large as will comfortably fit, because its
+ * size is the resolution the reveal magnifies from, and no larger, because a
+ * box wider than its parent is the bug this replaced.
+ */
+export function markBox(screenW: number) {
+  'worklet';
+  const w = screenW - BOX_INSET;
+  return { w, h: w / INK_ASPECT };
+}
+
+/** Transform scale that renders the ink at the lockup's width, for this box. */
+export function markRest(boxW: number) {
+  'worklet';
+  return SPLASH_LOCKUP.markW / boxW;
+}
+
+/**
+ * Points per viewBox unit AT REST. Because the box is cropped to the ink, this
+ * depends only on the lockup — not on the box, the screen or the artboard — so
+ * the geometry below is device-independent and `grow` alone scales it.
+ */
+export const INK_PT = SPLASH_LOCKUP.markW / LOGO_INK.w;
 
 /**
  * Distance in points, at rest, from the eye's centre to the ink's top edge —
  * the SHORTER of the eye's two vertical margins, so covering this covers both.
  */
-export const INK_ABOVE_EYE = (LOGO_EYE_LEFT.cy - LOGO_INK.y) * UNIT * MARK_REST;
+export const INK_ABOVE_EYE = (LOGO_EYE_LEFT.cy - LOGO_INK.y) * INK_PT;
 /** The eye hole's height in points at rest. */
-export const EYE_H = LOGO_EYE_LEFT.h * UNIT * MARK_REST;
+export const EYE_H = LOGO_EYE_LEFT.h * INK_PT;
 
 /**
  * The reveal's shape, as multiples of the rest scale. Both ends are derived
@@ -166,14 +209,17 @@ export function curtainOpacity(grow: number, ramp: { cover: number }): number {
 }
 
 /**
- * Where the mark's left eye sits, in screen points, at transform `scale` and
- * before the centring pull is applied. `markCY` is the ink centre's resting y.
+ * Where the mark's left eye sits, in screen points, at scale multiple `grow`
+ * and before the centring pull is applied. `markCY` is the ink centre's
+ * resting y — and because the box is cropped to the ink, the ink's centre IS
+ * the box's centre, which is the origin the transform scales about. So the eye
+ * is simply its offset from that centre, grown.
  */
-export function eyeCentre(scale: number, screenW: number, markCY: number) {
+export function eyeCentre(grow: number, screenW: number, markCY: number) {
   'worklet';
   return {
-    x: screenW / 2 - (INK_CX - 512) * UNIT * MARK_REST + (LOGO_EYE_LEFT.cx - 512) * UNIT * scale,
-    y: markCY - (INK_CY - 512) * UNIT * MARK_REST + (LOGO_EYE_LEFT.cy - 512) * UNIT * scale,
+    x: screenW / 2 + (LOGO_EYE_LEFT.cx - INK_CX) * INK_PT * grow,
+    y: markCY + (LOGO_EYE_LEFT.cy - INK_CY) * INK_PT * grow,
   };
 }
 
@@ -193,18 +239,3 @@ export function eyeCentre(scale: number, screenW: number, markCY: number) {
  * every frame in which the curtain is fading is a frame with no perspective
  * distortion at all, so the two never have to be reconciled. Tested.
  */
-/** Progress at which the mask is turned hardest — the middle of the lunge. */
-export const TILT_PEAK_AT = (LUNGE_AT + SEAT_AT) / 2;
-
-export function markTilt(p: number): { x: number; y: number } {
-  'worklet';
-  if (p >= SEAT_AT) return { x: 0, y: 0 };
-  const mid = TILT_PEAK_AT;
-  const lean = (from: number, to: number, a: number, b: number) => {
-    const v = (p - a) / (b - a);
-    return from + (to - from) * (v * v * (3 - 2 * v));
-  };
-  if (p <= LUNGE_AT) return { x: lean(0, -2.5, 0, LUNGE_AT), y: lean(0, 2, 0, LUNGE_AT) };
-  if (p <= mid) return { x: lean(-2.5, 5, LUNGE_AT, mid), y: lean(2, -7, LUNGE_AT, mid) };
-  return { x: lean(5, 0, mid, SEAT_AT), y: lean(-7, 0, mid, SEAT_AT) };
-}
