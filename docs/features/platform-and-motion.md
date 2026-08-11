@@ -217,6 +217,34 @@ half-frame of skeleton.
   sharpness, because react-native-svg rasterises at layout size and UIKit does
   not redraw for a transform.
 
+  **The boot carries information, not just motion** (`src/lib/bootSignal.ts`,
+  `useBootSignal`). The choreography is identical every launch; only the LIGHT
+  behind the mask changes, and it changes for two reasons:
+
+  - **Its colour says what day it is.** `emberForDate` seeds one of eight lamps
+    from the UTC date, so everyone who opens the app on the same day sees the
+    same light and it turns over at midnight UTC. Shared, therefore worth
+    mentioning to someone. Eight rather than seven on purpose: a seven-lamp
+    cycle indexed by date lands on the same colour every Tuesday, which makes
+    the ritual a calendar rather than a surprise. Tested.
+  - **Its intensity says whether the day's game is still waiting.** Lit while
+    today's daily is unfinished, calm once it is spent. Nobody is told this;
+    you learn it the way you learn a room is occupied from the light under the
+    door. A notification with no notification.
+
+  Both are DERIVED, not fetched — the date is the date, and the daily's result
+  is already in AsyncStorage (`dh_v3_<date>`, written by `useDailyHero`). That
+  is the only reason either is allowed near a splash: it resolves in a couple
+  of milliseconds, offline, on the first frame. The ember is held back until
+  the read lands rather than shown in the fallback colour and swapped
+  underneath the viewer, and an unparseable record is treated as _finished_ —
+  this decides how bright a glow is, so the failure mode has to be the quiet
+  one.
+
+  The VoiceOver label carries the same thing the light does ("today's game is
+  waiting"), because a personalisation that only exists for sighted users is
+  half a feature.
+
   **Contact gets one frame of warm light** — a 14% beige wash over everything,
   about 150ms, peaking at `SEAT_AT` under the same haptic, so the eye is told
   what the hand is told. Anything stronger reads as a camera flash, which is

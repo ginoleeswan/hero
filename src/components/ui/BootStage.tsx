@@ -67,6 +67,8 @@ import {
   WORDMARK_VIEW_H,
 } from '../../constants/logo';
 import { COLORS } from '../../constants/colors';
+import { BOOT_SIGNAL_FALLBACK } from '../../lib/bootSignal';
+import { useBootSignal } from '../../hooks/useBootSignal';
 import { DUR, SPRING_SETTLE } from '../../lib/nativeMotion';
 // The reveal's geometry lives next door so its one hard rule — the curtain may
 // not drop before the ink covers the screen — can be unit-tested.
@@ -160,6 +162,12 @@ export function useSignalFirstPaint(): () => void {
 export function BootStage({ booting, children }: { booting: boolean; children: ReactNode }) {
   const reduceMotion = useReducedMotion();
   const { width: screenW, height: screenH } = useWindowDimensions();
+  // What the screen knows: the day's lamp, and whether the day's game is still
+  // waiting. Null until the local read lands (a couple of ms, against an ambient
+  // that does not start for 150) — the ember is held back rather than shown in
+  // the fallback colour and swapped underneath the user.
+  const signal = useBootSignal();
+  const ember = signal ?? BOOT_SIGNAL_FALLBACK;
   const [revealDone, setRevealDone] = useState(!booting);
   const ambient = useSharedValue(0); // act 1: 0→1 once
   const breathe = useSharedValue(0); // act 1: 0↔1 forever
@@ -422,11 +430,15 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   // the mask flew off toward the centre of the screen, which is light detached
   // from the thing lighting up — the single most common way a glow reads as a
   // sticker rather than as illumination.
+  const emberGain = signal === null ? 0 : signal.awaiting ? 1.45 : 0.75;
   const emberStyle = useAnimatedStyle(() => {
     const grow = flies ? markGrow(exit.value, ramp) : 1;
     const eye = eyeCentre(grow, screenW, markCY);
     const pull = flies ? centringPull(exit.value) : 0;
-    const base = ambient.value * (0.4 + breathe.value * 0.18);
+    // Lit when today's game is unfinished, calm once it is spent. The whole
+    // mechanic: a notification with no notification, learned the way you learn
+    // a room is occupied from the light under the door.
+    const base = ambient.value * (0.4 + breathe.value * 0.18) * emberGain;
     return {
       opacity: flies
         ? base *
@@ -491,7 +503,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
           // two gradients), so the whole thing is a single labelled element.
           accessible
           accessibilityRole="image"
-          accessibilityLabel="Mythique"
+          accessibilityLabel={ember.awaiting ? "Mythique — today's game is waiting" : 'Mythique'}
           // ...and modal, so focus cannot wander into the app underneath while
           // the curtain is still over it. The stage unmounts at revealDone, so
           // this releases itself.
@@ -522,9 +534,9 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
             <Svg width={HALO_W} height={HALO_H}>
               <Defs>
                 <RadialGradient id="boot-ember" cx="50%" cy="50%" r="50%">
-                  <Stop offset="0" stopColor={COLORS.orange} stopOpacity={0.22} />
-                  <Stop offset="0.55" stopColor={COLORS.orange} stopOpacity={0.08} />
-                  <Stop offset="1" stopColor={COLORS.orange} stopOpacity={0} />
+                  <Stop offset="0" stopColor={ember.ember} stopOpacity={0.22} />
+                  <Stop offset="0.55" stopColor={ember.ember} stopOpacity={0.08} />
+                  <Stop offset="1" stopColor={ember.ember} stopOpacity={0} />
                 </RadialGradient>
               </Defs>
               <Rect width={HALO_W} height={HALO_H} fill="url(#boot-ember)" />
@@ -549,7 +561,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
           {/* Contact. Over everything, including the mask, because the light is
               in the room rather than on the object. */}
           <Animated.View
-            style={[StyleSheet.absoluteFill, styles.contact, contactStyle]}
+            style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.beige }, contactStyle]}
             pointerEvents="none"
           />
 
@@ -599,7 +611,7 @@ const styles = StyleSheet.create({
   // it, so the box is now cropped to the ink itself: smaller than the screen,
   // positioned with positive offsets, nothing to clamp and nothing to clip.
   abs: { position: 'absolute' },
-  contact: { backgroundColor: COLORS.beige },
+
   wordBox: { position: 'absolute', width: SPLASH_LOCKUP.wordW, height: WORD_H },
   halo: { position: 'absolute', width: HALO_W, height: HALO_H },
 });
