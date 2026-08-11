@@ -7,6 +7,7 @@ import Animated, {
   useSharedValue,
   withRepeat,
   withTiming,
+  useReducedMotion,
 } from 'react-native-reanimated';
 import { COLORS } from '../../constants/colors';
 
@@ -27,14 +28,21 @@ export function VerdictReveal({
 }) {
   const pulse = useSharedValue(0.35);
   const dark = tone === 'dark';
+  const reduced = useReducedMotion();
 
   useEffect(() => {
+    if (reduced) {
+      // Rest at the BRIGHT end: this slot means "a verdict is coming", and
+      // parking it at 0.35 would read as disabled rather than as working.
+      pulse.value = 0.85;
+      return;
+    }
     pulse.value = withRepeat(
       withTiming(0.85, { duration: 760, easing: Easing.inOut(Easing.ease) }),
       -1,
       true,
     );
-  }, [pulse]);
+  }, [pulse, reduced]);
 
   const skeletonStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
 

@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
   cancelAnimation,
   Easing,
+  useReducedMotion,
 } from 'react-native-reanimated';
 
 /**
@@ -29,16 +30,20 @@ export function CardSkeleton({
 }) {
   const [measured, setMeasured] = useState(typeof width === 'number' ? width : 0);
   const x = useSharedValue(0);
+  // Under Reduce Motion the sweep is not slowed or parked, it is NOT DRAWN. A
+  // travelling highlight held still is a bright band sitting at one edge of the
+  // block, which reads as a rendering defect rather than as a placeholder.
+  const reduced = useReducedMotion();
 
   useEffect(() => {
-    if (!measured) return;
+    if (!measured || reduced) return;
     x.value = withRepeat(
       withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.ease) }),
       -1,
       false,
     );
     return () => cancelAnimation(x);
-  }, [measured, x]);
+  }, [measured, x, reduced]);
 
   const sweepStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: -measured + x.value * measured * 2 }],
@@ -59,7 +64,7 @@ export function CardSkeleton({
       ]}
     >
       <View style={[styles.nameBar, tone === 'light' && styles.nameBarLight]} />
-      {measured > 0 && (
+      {measured > 0 && !reduced && (
         <Animated.View
           pointerEvents="none"
           style={[StyleSheet.absoluteFill, { width: measured }, sweepStyle]}
