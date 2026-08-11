@@ -3,15 +3,14 @@ import {
   curtainOpacity,
   eyeCentre,
   markGrow,
-  markTilt,
   revealRamp,
+  markBox,
+  markRest,
   EYE_H,
+  INK_PT,
   LUNGE_AT,
-  MARK_REST,
   RECOIL,
   SEAT_AT,
-  TILT_PEAK_AT,
-  UNIT,
 } from '../../src/lib/bootGeometry';
 import { LOGO_EYE_LEFT, LOGO_INK, SPLASH_LOCKUP } from '../../src/constants/logo';
 
@@ -29,16 +28,15 @@ const SCREENS = [
 
 /** Where the mark's left eye actually is once the centring pull is applied. */
 function eyeAt(p: number, screen: { w: number; h: number }) {
-  const ramp = revealRamp(screen.h);
-  const scale = MARK_REST * markGrow(p, ramp);
+  const grow = markGrow(p, revealRamp(screen.h));
   const natural = eyeCentre(
-    scale,
+    grow,
     screen.w,
     (screen.h - SPLASH_LOCKUP.h) / 2 + SPLASH_LOCKUP.markCY,
   );
   const pull = centringPull(p);
   return {
-    scale,
+    grow,
     x: natural.x + pull * (screen.w / 2 - natural.x),
     y: natural.y + pull * (screen.h / 2 - natural.y),
   };
@@ -48,7 +46,27 @@ describe('boot reveal geometry', () => {
   it('renders the mark at the lockup width the splash PNG was drawn at', () => {
     // If this drifts, the JS stage and the native splash show different marks
     // and the handoff becomes a visible jump.
-    expect(LOGO_INK.w * UNIT * MARK_REST).toBeCloseTo(SPLASH_LOCKUP.markW, 6);
+    for (const screen of SCREENS) {
+      const box = markBox(screen.w);
+      expect(box.w * markRest(box.w)).toBeCloseTo(SPLASH_LOCKUP.markW, 6);
+    }
+    expect(LOGO_INK.w * INK_PT).toBeCloseTo(SPLASH_LOCKUP.markW, 6);
+  });
+
+  // The box that got clipped on device was 512pt wide and centred on a 160pt
+  // mark, so it sat at a negative left and hung off both screen edges. Cropping
+  // the viewBox to the ink makes it smaller than the screen with positive
+  // offsets everywhere — this is the test that keeps it that way.
+  it('keeps the mark box on screen, with room to spare', () => {
+    for (const screen of SCREENS) {
+      const box = markBox(screen.w);
+      expect(box.w).toBeLessThan(screen.w);
+      expect((screen.w - box.w) / 2).toBeGreaterThan(0);
+      expect(box.h).toBeLessThan(screen.h);
+      // ...and it is still the biggest box that fits, because its size is the
+      // resolution the reveal magnifies from.
+      expect(box.w).toBeGreaterThan(screen.w * 0.9);
+    }
   });
 
   it('recoils once, then grows monotonically to the ramp maximum', () => {
@@ -116,7 +134,7 @@ describe('boot reveal geometry', () => {
       for (let p = 0; p <= 1.0001; p += 0.005) {
         if (curtainOpacity(markGrow(p, ramp), ramp) === 1) continue;
         const eye = eyeAt(p, screen);
-        const k = UNIT * eye.scale;
+        const k = INK_PT * eye.grow;
         expect(eye.y - above * k).toBeLessThanOrEqual(0);
         expect(eye.y + below * k).toBeGreaterThanOrEqual(screen.h);
         expect(eye.x - left * k).toBeLessThanOrEqual(0);
@@ -128,8 +146,8 @@ describe('boot reveal geometry', () => {
   it('opens the eye wider than the screen by the end', () => {
     for (const screen of SCREENS) {
       const eye = eyeAt(1, screen);
-      const h = LOGO_EYE_LEFT.h * UNIT * eye.scale;
-      const w = LOGO_EYE_LEFT.w * UNIT * eye.scale;
+      const h = LOGO_EYE_LEFT.h * INK_PT * eye.grow;
+      const w = LOGO_EYE_LEFT.w * INK_PT * eye.grow;
       expect(h).toBeGreaterThanOrEqual(screen.h);
       expect(w).toBeGreaterThanOrEqual(screen.w);
       expect(eye.x).toBeCloseTo(screen.w / 2, 6);
@@ -144,45 +162,6 @@ describe('boot reveal geometry', () => {
       expect(curtainOpacity(markGrow(1, ramp), ramp)).toBe(0);
       expect(ramp.max).toBeGreaterThan(ramp.cover);
     }
-  });
-
-  // The tilt is drawn under `perspective`, which foreshortens the far side of
-  // a rotated plane — and `cover` is computed from FLAT geometry. Rather than
-  // reconcile the two, the tilt is level everywhere the curtain can move, so
-  // no frame is ever subject to both. This is the test that keeps that true if
-  // someone later extends the tilt "just a little further".
-  it('is level everywhere the curtain is moving', () => {
-    for (const screen of SCREENS) {
-      const ramp = revealRamp(screen.h);
-      for (let p = 0; p <= 1.0001; p += 0.005) {
-        if (curtainOpacity(markGrow(p, ramp), ramp) === 1) continue;
-        const tilt = markTilt(p);
-        expect(tilt.x).toBe(0);
-        expect(tilt.y).toBe(0);
-      }
-    }
-  });
-
-  it('leans, turns, and levels — without a corner in it', () => {
-    // A jump in the tilt is a visible snap on the largest object on screen, so
-    // check the act boundaries directly rather than inferring from a sampled
-    // sweep: sampling a steep-but-smooth stretch produces large steps too, and
-    // a threshold loose enough to allow those is loose enough to miss a real
-    // discontinuity.
-    const EPS = 1e-4;
-    for (const boundary of [LUNGE_AT, TILT_PEAK_AT, SEAT_AT]) {
-      const before = markTilt(boundary - EPS);
-      const after = markTilt(boundary + EPS);
-      expect(Math.abs(after.x - before.x)).toBeLessThan(0.01);
-      expect(Math.abs(after.y - before.y)).toBeLessThan(0.01);
-    }
-    expect(markTilt(0)).toEqual({ x: 0, y: 0 });
-    expect(markTilt(1)).toEqual({ x: 0, y: 0 });
-    // Enough to read as depth, not so much that the mask reads as a spinning
-    // card or that foreshortening starts distorting the silhouette.
-    const peak = Math.abs(markTilt(TILT_PEAK_AT).y);
-    expect(peak).toBeGreaterThan(4);
-    expect(peak).toBeLessThan(12);
   });
 
   it('scales the eye from a hole in the resting mark', () => {

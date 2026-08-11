@@ -292,18 +292,28 @@ half-frame of skeleton.
   raster exactly, and drawing type on the very first frame means gating on font
   load. As paths there is nothing to load and nothing to disagree about.
 
-  **The mark's and wordmark's boxes carry explicit `width`/`height`, and must.**
-  An absolutely-positioned box with only `left`/`top` is sized by Yoga from
-  what is left of the parent — and the mark's 512pt square is centred on a
-  160pt mark, so it is deliberately positioned at a negative `left` and hangs
-  off both edges. On a 393pt screen Yoga handed it 452pt, which clipped the
-  last 9pt of ink (react-native-svg clips to its viewport) _and_ moved the
-  box's centre 29.7pt — the origin every transform scales about. Scale
-  multiplies that: 12pt of displacement at rest, 139pt at the breakthrough,
-  362pt at the end. The eye is pinned to the screen's centre by arithmetic
-  that assumes a 512pt box, so it never landed there, and the drift grew with
-  the mask. Anything a transform multiplies has to be exactly right before the
-  transform touches it.
+  **The mark's viewBox is cropped to the INK, not the 1024 artboard**, and that
+  is what finally stopped it being clipped on device. The box used to be a
+  1024-viewBox square laid out at 512pt, which was wrong three ways at once:
+  the ink is 24% of that square's area, so three quarters of the raster was
+  empty; a 512pt box centred on a 160pt mark sits at `left: -59.5` on a 393pt
+  screen, hanging off both edges and relying on nothing in the parent chain
+  ever clamping it; and every position needed a correction for where the ink
+  sat inside the artboard, arithmetic that can silently disagree with what the
+  layout engine actually did. Declaring an explicit `width`/`height` was tried
+  first and was **not** enough — the mask still came back clipped from the
+  device. Cropping the viewBox makes the box's centre the ink's centre, makes
+  the geometry independent of artboards and box sizes (`INK_PT` and `grow` are
+  all it needs), and makes the box smaller than the screen with positive
+  offsets everywhere. There is nothing left to clamp and nothing left to clip;
+  a test pins that.
+
+  **There is no 3D tilt.** A perspective transform made the flight read as
+  movement through space rather than as an image being enlarged, which is worth
+  having — but it also changes how iOS rasterises the layer, and the mask had
+  been reported clipped twice by then. It was removed to cut a variable, not
+  because it was wrong. It comes back once the geometry is confirmed on
+  hardware. Everything the mask does now is a plain 2D translate and scale.
 
   **The stage is one labelled element for VoiceOver.** It used to announce
   itself for free, because the wordmark was live `<Text>`; outlining it to a
