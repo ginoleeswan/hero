@@ -30,7 +30,7 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
@@ -87,6 +87,12 @@ function pickRandom<T extends { id: string }>(pool: T[], n: number): T[] {
 
 export default function BattleBuilderScreen() {
   const router = useRouter();
+  // `mode=team` only changes what the screen SAYS. The mechanics are already
+  // identical — both sides hold up to MAX_SIDE, and resolveBattleRoute sends a
+  // one-a-side result to the pair arena and anything larger to the team draft.
+  // Arriving from "Team battle" with copy about picking two fighters would be
+  // the screen contradicting the button that opened it.
+  const team = useLocalSearchParams<{ mode?: string }>().mode === 'team';
   const insets = useSafeAreaInsets();
   const topInset = useStableTopInset();
   const b = useBattleBuilder();
@@ -143,7 +149,9 @@ export default function BattleBuilderScreen() {
 
   // The hint names the NEXT step rather than restating the rule.
   const hint = !anyPicked
-    ? 'Tap a fighter below to start Side A'
+    ? team
+      ? `Tap fighters below to build Side A — up to ${MAX_SIDE}`
+      : 'Tap a fighter below to start Side A'
     : b.aHeroes.length === 0
       ? 'Side A needs a fighter — tap its row, then pick'
       : 'Side B needs a fighter — tap its row, then pick';
@@ -237,7 +245,7 @@ export default function BattleBuilderScreen() {
           >
             <Ionicons name="arrow-back" size={19} color="rgba(245,235,220,0.85)" />
           </Pressable>
-          <Text style={s.title}>Build a Battle</Text>
+          <Text style={s.title}>{team ? 'Build a Team Battle' : 'Build a Battle'}</Text>
           {anyPicked ? (
             <Pressable
               onPress={() => {

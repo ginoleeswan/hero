@@ -188,7 +188,20 @@ invitation rather than a control; the toggle swaps them for two squads, which
 says without a word that one-v-one and team battle are siblings. Everything
 that starts a fight lives in this one act, ordered by how much say you want:
 build it, take one that's ready, or let the app choose. Those were three
-separate sections serving a single intent.
+separate sections serving a single intent — four, once the leftover "Build your
+own" / "Surprise me" pair was removed from act one, which had survived the
+restructure and shipped both actions twice on one screen.
+
+**Both toggle modes open `/compare/pick`.** `/versus/team/draft` is the _result_
+screen for a drafted clash and needs two rosters in its query string, so the
+team-battle slots briefly pushed it bare and landed on "We couldn't build that
+battle." The builder is already the same screen for both scales — each side
+holds up to `MAX_SIDE`, and `resolveBattleRoute` sends a one-a-side result to
+`/compare/[hero]/[opponent]` and anything larger to the team draft. Team mode
+passes `?mode=team`, which only changes what the screen _says_ (its title, and a
+hint naming the squad size instead of a single fighter); arriving from "Team
+battle" to copy about picking two fighters would be the screen contradicting the
+button that opened it.
 
 `RivalriesRail` takes `headless` so a section that supplies its own label does
 not get a second heading. The rail still brings its own inset and must sit

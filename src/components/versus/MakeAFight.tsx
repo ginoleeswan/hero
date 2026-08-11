@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   // must reach the physical screen edge (see CLAUDE.md's rail rule).
   inset: { paddingHorizontal: H_PAD },
   head: { flexDirection: 'row', alignItems: 'baseline', gap: 12, marginBottom: 16 },
-  title: { fontFamily: 'Flame-Bold', fontSize: 23, lineHeight: 32, color: COLORS.beige },
+  title: { fontFamily: 'Flame-Regular', fontSize: 23, lineHeight: 32, color: COLORS.beige },
   rule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(245,235,220,0.14)' },
 
   modes: {
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   slotPressed: { borderColor: COLORS.orange, backgroundColor: 'rgba(231,115,51,0.1)' },
   plus: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 23,
     lineHeight: 32,
     color: INK_TEXT.faint,
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245,235,220,0.2)',
   },
   medallionText: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 12,
     lineHeight: 16,
     color: INK_TEXT.faint,
