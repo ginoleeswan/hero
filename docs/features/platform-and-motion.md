@@ -47,13 +47,13 @@ whichever file you happened to have open.
 **This is not hypothetical — the character pair had silently drifted in three
 user-visible ways**, each found only by reading the two files side by side:
 
-| Behaviour | Native said | Web said | Reach |
-| --- | --- | --- | --- |
-| Placeholder filtering | kept `Unknown` / `None` / `No alter egos found.` | hid them | 426 + 236 + 164 rows |
-| `alignment: neutral` | "Neutral" | "Anti-Hero" | 919 characters |
-| `origin: training` | "Training" | "Trained" | — |
+| Behaviour             | Native said                                      | Web said    | Reach                |
+| --------------------- | ------------------------------------------------ | ----------- | -------------------- |
+| Placeholder filtering | kept `Unknown` / `None` / `No alter egos found.` | hid them    | 426 + 236 + 164 rows |
+| `alignment: neutral`  | "Neutral"                                        | "Anti-Hero" | 919 characters       |
+| `origin: training`    | "Training"                                       | "Trained"   | —                    |
 
-All three were *duplicated constants*, not duplicated markup: each file had its
+All three were _duplicated constants_, not duplicated markup: each file had its
 own junk-value set and its own label map. They now live in
 `src/lib/characterFacts.ts` and `src/lib/characterTaxonomy.ts`, tested, so the
 next divergence has to be deliberate.
@@ -175,6 +175,28 @@ half-frame of skeleton.
   clears). Only the stage ever fades — double-fading stage + app reads as a
   grey wash. Honors Reduce Motion (plain crossfade). `LogoLoader` remains the
   simple fallback (web, Suspense).
+
+  **The timeline, and why there is a floor.** `0ms` OS-splash copy · `250ms`
+  hold ends, the settle begins · `250→1150ms` the mark shrinks to 66% and rises
+  to 36% of screen height while depth and halo fade in · `745→1150ms` the
+  wordmark fades in (it starts at `alive = 0.55`) · `700ms` the breath starts,
+  2.6s per cycle · then the open, `DUR.feature` 620ms.
+
+  The reveal is gated on content, which was only safe on a **cold** start. On a
+  warm launch — fonts cached, no auth round-trip — `booting` can flip false
+  around 300–500ms and the feed can paint immediately after; the mark would
+  begin to shrink and then bloom straight out, and **the wordmark, which does
+  not start appearing until 745ms, would never be seen at all.** `MIN_STAGE_MS`
+  (1400ms from MOUNT) holds the open until the composition has assembled and
+  been readable for a beat. `REVEAL_CAP_MS` is the same number on a _different
+  clock_ — from boot resolving — so the window is
+  `[mount + 1400ms, bootResolved + 1400ms]`. Reduce Motion skips the floor:
+  `alive` snaps to 1, so there is nothing to wait for.
+
+  **Do not remove the floor to shave startup time.** It is the difference
+  between a choreography that always plays and one that plays only when the
+  network is slow.
+
 - Explore's entrance: the skeleton dissolves in place (exiting fade overlay)
   and the first batch of feed rows cascades once (`STAGGER.step`, soft
   spring), keyed to the boot reveal via `signalFirstPaint()` — only rows in
@@ -231,7 +253,7 @@ into a dozen variants.
 | `src/components/ui/SectionHeader.tsx`      | section eyebrow + title (+ "See all")          | eleven different eyebrow sizes and letter-spacings outside `home/`.                                                                                                                                                                                                                                                                                                                                                    |
 | `src/components/ui/Sheet.tsx`              | any bottom sheet                               | `ReportSheet`/`ContributeSheet`/`StatsSheet` each hand-rolled the same Modal + backdrop + grabber + safe-area foot — three backdrop alphas, two grabber colours, and only one remembering to lift above the keyboard. `tone` picks paper/ink and carries the grabber and scrim with it; `avoidKeyboard` opts into the `KeyboardAvoidingView` (it changes layout even with no keyboard, so input-less sheets stay out). |
 | `src/components/ui/FloatingBackButton.tsx` | back chevron on a screen with no native header | see the iOS 26 scroll-edge note below.                                                                                                                                                                                                                                                                                                                                                                                 |
-| `src/components/ui/OverscrollBleed.tsx`    | a dark band as the first child of a ScrollView | the beige root showing through on rubber-band. See "Overscroll must never show the canvas" below.                                                                                                                                                                                                                                                                                                                       |
+| `src/components/ui/OverscrollBleed.tsx`    | a dark band as the first child of a ScrollView | the beige root showing through on rubber-band. See "Overscroll must never show the canvas" below.                                                                                                                                                                                                                                                                                                                      |
 | `src/lib/nativeMotion.ts`                  | every duration, easing, spring                 | ~25 ad-hoc `withTiming` durations and 6 spring configs.                                                                                                                                                                                                                                                                                                                                                                |
 | `src/constants/tokens.ts`                  | radii, spacing, tracking, `SCREEN_PAD`         | 30 distinct radii, 27 letter-spacings, 8 screen gutters.                                                                                                                                                                                                                                                                                                                                                               |
 
@@ -432,7 +454,7 @@ the moment signal returns. Two decisions worth keeping:
 Unlike `appFocus.ts`, **this could not ship over the air** — NetInfo is a native
 module. It landed with the EAS build that includes it.
 
-That asymmetry is a trap worth naming: `appOnline.ts` itself *does* ship over
+That asymmetry is a trap worth naming: `appOnline.ts` itself _does_ ship over
 the air, and an update carrying it can land on an older binary that predates the
 NetInfo build — same `runtimeVersion`, same channel, so expo-updates considers
 them compatible and delivers it.
@@ -440,8 +462,8 @@ them compatible and delivers it.
 **A `try`/`catch` around the `require` is not enough**, which this cost a red
 screen to learn. NetInfo throws from module scope
 (`internal/nativeInterface.ts`: `if (!RNCNetInfo) throw`), and Metro reports a
-module-initialisation failure to LogBox *regardless of whether the caller
-swallows the rethrow*. The error is caught, the app keeps running — and the user
+module-initialisation failure to LogBox _regardless of whether the caller
+swallows the rethrow_. The error is caught, the app keeps running — and the user
 still stares at a full-screen error. Not importing it at all is the only quiet
 failure, so the code checks `NativeModules.RNCNetInfo` first, mirroring
 NetInfo's own resolution in `internal/nativeModule.ts`.
@@ -449,7 +471,7 @@ NetInfo's own resolution in `internal/nativeModule.ts`.
 **Any native module reached from OTA-shipped code needs a native-side presence
 check, not an exception handler.**
 
-`useIsOffline` (`src/hooks/useIsOffline.ts`) reads the *onlineManager*, not
+`useIsOffline` (`src/hooks/useIsOffline.ts`) reads the _onlineManager_, not
 NetInfo, so the UI can never disagree with what the data layer is actually
 doing — and the native module stays out of the web bundle, where the browser's
 own online/offline events feed the manager instead. `OfflineBanner` renders from
@@ -545,15 +567,15 @@ native tab screen in its own provider. It is not.
 A nested `SafeAreaProvider` seeds its state from the **parent**:
 
 ```js
-useState(initialMetrics?.insets ?? initialSafeAreaInsets ?? parentInsets ?? null)
+useState(initialMetrics?.insets ?? initialSafeAreaInsets ?? parentInsets ?? null);
 ```
 
 With no root provider, `parentInsets` is `null`, so every tab screen started
 with **no insets** and jumped to the real ones a frame or two later, once the
 native measurement landed. Everything keyed to `insets.top` moved with it —
 Arena pads `insets.top + 24`, Profile sizes its cover `140 + insets.top`,
-Explore computes the billboard height from it. The symptom reported was *"the
-content is there and then it shifts down"*, on **every tab**, and the gap that
+Explore computes the billboard height from it. The symptom reported was _"the
+content is there and then it shifts down"_, on **every tab**, and the gap that
 opened above the content read as a band of the root colour.
 
 `initialWindowMetrics` is a synchronous snapshot captured natively at startup,
@@ -563,8 +585,8 @@ them instead of `null`.
 **It cost four wrong fixes to find.** Each one looked at whichever screen the
 screenshot showed — the spotlight parallax, then the scroll-offset primitive,
 then the slide's transform — because the band was only ever reported on
-Explore. The evidence that broke it open was *"it happens on Arena and Profile
-too"*: no amount of debugging one screen's transforms can explain a shift that
+Explore. The evidence that broke it open was _"it happens on Arena and Profile
+too"_: no amount of debugging one screen's transforms can explain a shift that
 happens on three unrelated screens at once. **When a layout bug appears on
 screens that share no layout code, look at what they share — the provider
 tree.**
@@ -573,7 +595,7 @@ tree.**
 
 The shift came back — later in a session, after switching tabs rather than at
 boot. Seeding the providers correctly fixes frame one; it does not stop a
-nested provider being *re-measured* afterwards and disagreeing with the window.
+nested provider being _re-measured_ afterwards and disagreeing with the window.
 
 `useSafeAreaInsets()` answers "what is safe inside the nearest provider's
 view". expo-router gives each tab screen its own provider, so on these screens
@@ -584,7 +606,7 @@ the value moves at once — the same three-screens-together signature as before.
 `src/hooks/useStableTopInset.ts` removes the dependency instead of arbitrating
 it. The app is **portrait-locked** (`orientation: 'portrait'`), so the window's
 top inset physically cannot change while the app runs — which means a top inset
-that *does* change is wrong no matter what produced it. The hook returns
+that _does_ change is wrong no matter what produced it. The hook returns
 `initialWindowMetrics.insets.top`, a native snapshot taken before the first
 render, falling back to the live hook where that is unavailable.
 
@@ -656,7 +678,7 @@ on a light root needs it.
 
 **A centre-anchored scale used for a stretchy header.** The character page grows
 the hero art on overscroll (`scale: 1 + d/H`). Because the scale is
-centre-anchored, it grows `d/2` up *and* `d/2` down, while the content below
+centre-anchored, it grows `d/2` up _and_ `d/2` down, while the content below
 moves down by the full `d` — so the translate has to make up the difference. It
 was `−d/2`, which pins the image's **top** edge to the screen and leaves the
 **bottom** short by `d`: a beige gap opens under the identity block. The right
@@ -666,7 +688,7 @@ sign is `+d/2`:
 - bottom edge: `H + d/2 + d/2` = `H + d` → tracks the content exactly
 
 Same rule in both cases, and the sign is easy to get backwards because
-`−d/2` *looks* like it counteracts the overscroll. Check the bottom edge, not
+`−d/2` _looks_ like it counteracts the overscroll. Check the bottom edge, not
 the top.
 
 ## The iOS 26 scroll-edge scrim
@@ -704,17 +726,17 @@ no longer the answer to the scrim.
 
 Audit of the native screens that show a header:
 
-| Screen                      | Header carries    | Top surface   | Verdict                                                                                                                   |
-| --------------------------- | ----------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `biography/[id]`            | chevron only      | flat deep-ink | **fixed** — no header                                                                                                     |
-| `compare/[hero]/pick`       | chevron only      | flat navy     | affected; safe to convert                                                                                                 |
-| `event/[slug]`              | chevron only      | flat deep-ink | affected; safe to convert                                                                                                 |
-| `event/index`               | chevron only      | flat deep-ink | affected; safe to convert                                                                                                 |
+| Screen                      | Header carries    | Top surface   | Verdict                                                                                                                                                                                                                                                                                                                                |
+| --------------------------- | ----------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `biography/[id]`            | chevron only      | flat deep-ink | **fixed** — no header                                                                                                                                                                                                                                                                                                                  |
+| `compare/[hero]/pick`       | chevron only      | flat navy     | affected; safe to convert                                                                                                                                                                                                                                                                                                              |
+| `event/[slug]`              | chevron only      | flat deep-ink | affected; safe to convert                                                                                                                                                                                                                                                                                                              |
+| `event/index`               | chevron only      | flat deep-ink | affected; safe to convert                                                                                                                                                                                                                                                                                                              |
 | `house/[slug]`              | chevron only      | **navy band** | **fixed** — keeps its native header, with `scrollEdgeEffects: { top: 'hidden' }`. This row used to read "beige · unaffected", which was wrong: the screen's ROOT is beige but its top SURFACE is the navy `HouseBanner`, and the scrim was plainly visible on device. Check the surface at the top of the scroll, not the root colour. |
-| `character/[id]`            | + `headerRight`   | dark stage    | affected, but the header has real content                                                                                 |
-| `compare/[hero]/[opponent]` | + `headerRight`   | dark          | affected, but the header has real content                                                                                 |
-| `category/[slug]`           | `Stack.SearchBar` | dark          | **must keep the header** — the search field lives in it, and a search bar is exactly what the effect is designed to serve |
-| `team/[id]`                 | `Stack.SearchBar` | dark          | same                                                                                                                      |
+| `character/[id]`            | + `headerRight`   | dark stage    | affected, but the header has real content                                                                                                                                                                                                                                                                                              |
+| `compare/[hero]/[opponent]` | + `headerRight`   | dark          | affected, but the header has real content                                                                                                                                                                                                                                                                                              |
+| `category/[slug]`           | `Stack.SearchBar` | dark          | **must keep the header** — the search field lives in it, and a search bar is exactly what the effect is designed to serve                                                                                                                                                                                                              |
+| `team/[id]`                 | `Stack.SearchBar` | dark          | same                                                                                                                                                                                                                                                                                                                                   |
 
 ## History
 

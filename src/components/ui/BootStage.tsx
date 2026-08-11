@@ -110,6 +110,22 @@ const ALIVE_MS = 900; // the still frame waking up
 const BREATHE_MS = 2600; // full in-out breath
 const REVEAL_CAP_MS = 1400; // max wait for the feed's first paint after boot
 
+// The FLOOR: the reveal may not begin before the resting composition has
+// finished assembling (250ms hold + 900ms settle) and been held a beat longer.
+//
+// Without it the choreography was only reliable on a COLD start. The reveal is
+// gated on the feed's first paint, and on a warm launch — fonts cached, no auth
+// round-trip — `booting` can flip false around 300-500ms and the feed can paint
+// immediately after. The wordmark does not even begin to fade in until
+// alive=0.55, i.e. 745ms; so on a fast boot the mark would start to shrink and
+// then bloom straight out, and the wordmark composition — the whole point of
+// the screen — would never appear at all.
+//
+// Measured against a different clock from REVEAL_CAP_MS despite the matching
+// number: this one runs from MOUNT, the cap runs from boot resolving. The
+// reveal window is therefore [mount + 1400ms, bootResolved + 1400ms].
+const MIN_STAGE_MS = ALIVE_DELAY_MS + ALIVE_MS + 250;
+
 // The first meaningful screen calls this once it has real content laid out, so
 // the reveal opens onto content rather than a skeleton. A context, not a
 // module-level singleton: the signal is scoped to this BootStage instance, it
@@ -144,7 +160,18 @@ export function BootStage({
   // Held in a ref so the context value stays referentially stable — consumers
   // must not re-render when the reveal effect re-runs.
   const startRevealRef = useRef<(() => void) | null>(null);
+  // Mount time, for the MIN_STAGE_MS floor. A ref rather than state: reading it
+  // must never re-render, and it is written exactly once. Stamped in an effect
+  // rather than in `useRef(Date.now())` because reading the clock during render
+  // is impure (react-hooks/purity) — and this is the more honest measurement
+  // anyway, since it starts when the stage is actually on screen.
+  const mountedAt = useRef(0);
   const signalFirstPaint = useCallback(() => startRevealRef.current?.(), []);
+
+  // Declared before the reveal effect so it stamps first on mount.
+  useEffect(() => {
+    mountedAt.current = Date.now();
+  }, []);
 
   useEffect(() => {
     if (reduceMotion) {
@@ -179,9 +206,8 @@ export function BootStage({
   useEffect(() => {
     if (booting || revealDone) return;
     let started = false;
-    const start = () => {
-      if (started) return;
-      started = true;
+    let floor: ReturnType<typeof setTimeout> | null = null;
+    const open = () => {
       cancelAnimation(breathe);
       exit.value = withTiming(
         1,
@@ -191,10 +217,22 @@ export function BootStage({
         },
       );
     };
+    const start = () => {
+      if (started) return;
+      started = true; // claim the slot now, so the cap can't also fire
+      // Reduce Motion snaps `alive` to 1, so the composition already exists on
+      // frame one — there is nothing to wait for, and holding these users on a
+      // static screen would be delay without purpose.
+      const since = mountedAt.current ? Date.now() - mountedAt.current : 0;
+      const wait = reduceMotion ? 0 : Math.max(0, MIN_STAGE_MS - since);
+      if (wait === 0) open();
+      else floor = setTimeout(open, wait);
+    };
     startRevealRef.current = start;
     const cap = setTimeout(start, REVEAL_CAP_MS);
     return () => {
       clearTimeout(cap);
+      if (floor) clearTimeout(floor);
       startRevealRef.current = null;
       cancelAnimation(exit);
     };

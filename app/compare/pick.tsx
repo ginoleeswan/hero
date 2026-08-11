@@ -679,10 +679,13 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     backgroundColor: COLORS.goldAccent,
-    // The only depth cue. A long soft shadow lifts the slab off the beige
-    // sheet without adding a single edge, gradient or highlight to the fill.
-    boxShadow: '0 10px 26px rgba(11,24,32,0.40)',
-    elevation: 12,
+    // The only depth cue, so it carries the whole load: a long, deep, soft
+    // shadow that lifts the slab well off the beige sheet. Deliberately beyond
+    // the ELEVATION ramp — those steps (alpha 0.12-0.18) are tuned for cards
+    // RESTING on paper, and this is a floating primary action that has to read
+    // as hovering above the content it scrolls over.
+    boxShadow: '0 18px 44px rgba(11,24,32,0.55)',
+    elevation: 24,
   },
   ctaCenter: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   ctaTxt: {
