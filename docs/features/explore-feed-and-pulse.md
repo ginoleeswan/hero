@@ -310,3 +310,29 @@ broken at once:
   be tuned against different clocks (the row delay was set against the BOOT
   stage's dissolve), which left ~300ms of half-faded skeleton over an empty
   screen.
+
+## Motion that never ends
+
+The tab bar is `NativeTabs`, which keeps **every screen mounted** — that is why
+switching tabs is instant, and it means anything looping with
+`withRepeat(..., -1)` on Explore keeps running while you are on Search, Arena
+or Profile. Forever, for nobody. Same class of waste as a list paginating rows
+nothing will draw.
+
+Both of Explore's endless animations now hold still off-screen, via
+`useScreenFocused`:
+
+- **`PulseTicker`** resumes seamlessly rather than snapping back to the start.
+  It finishes the leg it was on, then hands over to the loop — `withRepeat`
+  restarts each iteration from the value its animation began at, so the loop
+  can only be started from 0, hence a zero-duration snap between the two. That
+  snap is invisible _because_ the strip is two identical copies: at `-copyW`
+  the second copy sits exactly where the first began, so 0 and `-copyW` are the
+  same picture.
+- **`PulseDot`** also gained a Reduce Motion check, which it never had. A dot
+  that throbs forever is the most literal thing Reduce Motion exists to
+  suppress — more so than any transition, because it never ends. It rests at
+  full opacity rather than wherever the blink was cancelled, so a live
+  indicator is never left frozen at 30% looking broken.
+
+**If you add a `withRepeat(..., -1)` anywhere, it needs both checks.**

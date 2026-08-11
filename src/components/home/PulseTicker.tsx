@@ -13,7 +13,9 @@ import Animated, {
   Easing,
   cancelAnimation,
   useReducedMotion,
+  withSequence,
 } from 'react-native-reanimated';
+import { useScreenFocused } from '../../hooks/useScreenFocused';
 import { COLORS } from '../../constants/colors';
 
 interface PulseTickerProps {
@@ -29,6 +31,9 @@ export function PulseTicker({ heroCount, newlyAddedCount }: PulseTickerProps) {
   const tx = useSharedValue(0);
   // Under Reduce Motion the marquee never scrolls — the strip renders static.
   const reduced = useReducedMotion();
+  // ...and it holds still while you are on another tab. NativeTabs keeps this
+  // screen mounted, so without this the strip scrolls forever for nobody.
+  const focused = useScreenFocused();
 
   const onCopyLayout = (e: LayoutChangeEvent) => {
     const w = e.nativeEvent.layout.width;
@@ -36,15 +41,30 @@ export function PulseTicker({ heroCount, newlyAddedCount }: PulseTickerProps) {
   };
 
   useEffect(() => {
-    if (copyW <= 0 || reduced) return;
-    tx.value = 0;
-    tx.value = withRepeat(
-      withTiming(-copyW, { duration: (copyW / SPEED) * 1000, easing: Easing.linear }),
-      -1,
-      false,
-    );
+    if (copyW <= 0 || reduced || !focused) return;
+    const cycle = (copyW / SPEED) * 1000;
+    const loop = () =>
+      withRepeat(withTiming(-copyW, { duration: cycle, easing: Easing.linear }), -1, false);
+    // Resuming has to be seamless, so it finishes the leg it was on before
+    // handing over to the loop. `withRepeat` restarts each iteration from the
+    // value the animation began at, so the loop can only be started from 0 —
+    // hence the zero-duration snap between the two. That snap is invisible
+    // BECAUSE the strip is two identical copies: at -copyW the second copy sits
+    // exactly where the first began, so 0 and -copyW are the same picture.
+    const from = tx.value;
+    if (from < 0 && from > -copyW) {
+      const remaining = ((copyW + from) / copyW) * cycle;
+      tx.value = withSequence(
+        withTiming(-copyW, { duration: remaining, easing: Easing.linear }),
+        withTiming(0, { duration: 0 }),
+        loop(),
+      );
+    } else {
+      tx.value = 0;
+      tx.value = loop();
+    }
     return () => cancelAnimation(tx);
-  }, [copyW, tx, reduced]);
+  }, [copyW, tx, reduced, focused]);
 
   const style = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }] }));
 
