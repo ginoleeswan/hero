@@ -390,31 +390,24 @@ half-frame of skeleton.
   offsets everywhere. There is nothing left to clamp and nothing left to clip;
   a test pins that.
 
-  **The tilt: the perspective distance is the effect, not the angle.** It began
-  at `perspective: 1000`, which against a mask this size projects a **4%**
-  keystone — a rotation with almost no projection behind it, i.e. an invisible
-  effect carrying a real rendering risk. `MARK_PERSPECTIVE` is 420, which puts
-  it near 20%: unmistakably dimensional, well short of a funhouse, and it keeps
-  the near edge at 16% of the camera distance, nowhere near the plane where a
-  projection blows up. A test pins both the keystone into that band and the
-  safety margin, so the angle cannot be cranked later without failing.
+  **There is no 3D tilt, and that is a proven constraint.** A `perspective`
+  transform on the mask's view CLIPS IT on device. Established by A/B across
+  four shipped builds: removed alongside the viewBox crop and the clipping
+  stopped; restored on its own and it came straight back; the build after that
+  touched no geometry at all and it stayed.
 
-  The mask leans back into the draw-back, turns hardest at `TILT_PEAK_AT`, and
-  is level by `SEAT_AT`. Level there is not taste: perspective foreshortens the
-  far side of a rotated plane and `cover` is computed from flat geometry, so
-  returning to zero exactly where the curtain is first allowed to move means no
-  frame is ever subject to both. It also confines the 3D transform to frames
-  where the mask is small — every large-scale frame is a plain 2D translate and
-  scale.
+  The arithmetic said it was safe every time — the keystone was bounded, the
+  near edge sat at 16% of the camera distance, the tilt was level before any
+  large scale, and there were tests pinning all three. It clipped regardless.
+  iOS rasterises a 3D-transformed layer differently and a view magnified 30x
+  afterwards is exactly where that bites; reasoning was not the missing
+  ingredient, a device was. The perspective distance question (1000 projects a
+  4% keystone, 420 projects 20%) is real and was worth answering — it just
+  turned out to be answering the wrong question.
 
-  **The stage is one labelled element for VoiceOver.** It used to announce
-  itself for free, because the wordmark was live `<Text>`; outlining it to a
-  path for the splash handoff silenced the whole screen and left screen-reader
-  users an unlabelled void for the length of the boot. Nothing inside is worth
-  reading on its own — a mark, a wordmark and two gradients — so the stage
-  carries `accessibilityRole="image"` with the label `Mythique`, and
-  `accessibilityViewIsModal` so focus cannot wander into the app behind the
-  curtain. It unmounts at `revealDone`, which releases the modal.
+  If the depth cue is wanted back it has to come from a **2D affine
+  approximation** — a skew plus an axis-differential scale — which cannot
+  change how the layer is rasterised. A smaller angle is not a fix.
 
   **`assets/splash.png` and `imageWidth` are NATIVE.** They are baked into the
   binary and cannot ship over the air, so a change to the lockup needs a new
