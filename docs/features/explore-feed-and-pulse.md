@@ -32,19 +32,19 @@ gcTime).
 Because computing it live costs ~4.5s cold against the anon role's 3s statement
 timeout, the public RPC serves a **single-row cache**:
 
-| Piece | What it is |
-| --- | --- |
-| `compute_explore_bundle` | The real work (the old RPC body). Not executable by anon. |
-| `explore_bundle_cache` | One row, RLS-locked, no client policies. |
-| `refresh_explore_bundle()` | Recompute + upsert; pg_cron runs it every 10 minutes. |
-| `get_explore_bundle` | Public API — serves the cache when args match, computes live otherwise. |
+| Piece                      | What it is                                                              |
+| -------------------------- | ----------------------------------------------------------------------- |
+| `compute_explore_bundle`   | The real work (the old RPC body). Not executable by anon.               |
+| `explore_bundle_cache`     | One row, RLS-locked, no client policies.                                |
+| `refresh_explore_bundle()` | Recompute + upsert; pg_cron runs it every 10 minutes.                   |
+| `get_explore_bundle`       | Public API — serves the cache when args match, computes live otherwise. |
 
 **Trap:** the slug list baked into `refresh_explore_bundle()` must mirror
 `BROWSE_PODS` in `src/components/home/CategoryPodGrid.tsx`. Change one, change
 both, or browse-grid requests miss the cache and go the slow path.
 
 **Trap:** `fetchExploreBundle` (`src/lib/db/exploreBundle.ts`) treats an empty
-`spotlight_famous` or `iconic` pool as a *fetch failure* and throws — those
+`spotlight_famous` or `iconic` pool as a _fetch failure_ and throws — those
 pools are structurally always populated, so empty means the read broke. Don't
 "fix" that throw into a fallback.
 
@@ -73,22 +73,22 @@ an "Origins" wall or an era timeline from scratch.
 Four pipelines keep the "Right Now" band newsy; all are bundle sections, pushed
 by cron (see `docs/architecture/data-pipelines.md` for the sync jobs):
 
-| Engine | Bundle section | Client module |
-| --- | --- | --- |
-| ComicVine weekly comics | `new_comics` | `src/lib/db/comics.ts` |
-| TMDB trending (on screen / coming soon / streaming) | `title_buckets`, `trending_on_screen` | `src/lib/db/trending.ts` |
-| Wikipedia pageview movers | `wiki_trending` | `src/lib/db/trending.ts` |
-| This Month in History (debut anniversaries) | `debuts` | `src/lib/db/anniversaries.ts` |
+| Engine                                              | Bundle section                        | Client module                 |
+| --------------------------------------------------- | ------------------------------------- | ----------------------------- |
+| ComicVine weekly comics                             | `new_comics`                          | `src/lib/db/comics.ts`        |
+| TMDB trending (on screen / coming soon / streaming) | `title_buckets`, `trending_on_screen` | `src/lib/db/trending.ts`      |
+| Wikipedia pageview movers                           | `wiki_trending`                       | `src/lib/db/trending.ts`      |
+| This Month in History (debut anniversaries)         | `debuts`                              | `src/lib/db/anniversaries.ts` |
 
 The band's freshness label (`src/lib/home/freshness.ts`) measures the freshest
-actual *event*, goes null past seven days, and is deliberately **not** derived
+actual _event_, goes null past seven days, and is deliberately **not** derived
 from `explore_bundle_cache.refreshed_at` — the cache recomputes every ten
 minutes whether or not anything changed, so `refreshed_at` is always fresh and
 says nothing about the content.
 
 ## The Pulse
 
-The rail of things that *happened*: kinds `live_event`, `trailer`, `surge`,
+The rail of things that _happened_: kinds `live_event`, `trailer`, `surge`,
 `issue`. One read (`get_pulse_candidates`, via `src/lib/db/pulse.ts`) does the
 indexed recency selection; **everything judgemental is client-side and
 unit-tested** in `src/lib/home/pulse.ts` (`__tests__/lib/home/pulse.test.ts`):
@@ -114,7 +114,7 @@ rationale lives in `docs/superpowers/specs/2026-07-26-pulse-tuning-guide.md`.
 
 ## Live events
 
-Real-world events (SDCC, a Direct) are *detected* from Wikipedia attention, not
+Real-world events (SDCC, a Direct) are _detected_ from Wikipedia attention, not
 read from a calendar: the `sync-watched-events` edge function writes detector
 state into `watched_events`, and `get_live_events` only ever returns rows an
 **admin approved** — nothing re-skins Explore off a threshold alone
@@ -212,22 +212,22 @@ Row estimates are now exact — 754/754 on dark-horse, 3/3 on Dynamite.
 
 Measured as anon, warm, after:
 
-| Predicate | Rows | Plan | Time |
-| --- | --- | --- | --- |
-| `%dark horse%` | 754 | bitmap · `heroes_publisher_trgm` | 6.9ms |
-| `%dynamite%` | 3 | bitmap · `heroes_publisher_trgm` | 13ms |
-| `%image%` | 3421 | index scan · `heroes_fame_score_idx` | 16.7ms |
+| Predicate      | Rows | Plan                                 | Time   |
+| -------------- | ---- | ------------------------------------ | ------ |
+| `%dark horse%` | 754  | bitmap · `heroes_publisher_trgm`     | 6.9ms  |
+| `%dynamite%`   | 3    | bitmap · `heroes_publisher_trgm`     | 13ms   |
+| `%image%`      | 3421 | index scan · `heroes_fame_score_idx` | 16.7ms |
 
 Note that `%image%` still takes the fame-index walk. With accurate statistics
-that is the *right* choice — 3421 matches means the limit fills after ~3.6k
+that is the _right_ choice — 3421 matches means the limit fills after ~3.6k
 rows, so the scan is bounded. The failure mode is never the plan shape itself,
 it is choosing a walk whose early exit never arrives.
 
 **Two rules fall out of this.** A `%pattern%` predicate is only as good as the
 planner's selectivity estimate, so a column that gets filtered by pattern needs
 a statistics target that covers its distinct values. And a timeout that comes
-and goes with cache warmth is a *costing* problem; one that fails every single
-time is a *shape* problem. They do not have the same fix.
+and goes with cache warmth is a _costing_ problem; one that fails every single
+time is a _shape_ problem. They do not have the same fix.
 
 Beware measuring this from a dev container: a trivial single-row fetch against
 the REST endpoint costs ~0.44s of pure network from here, so anything under
@@ -238,15 +238,15 @@ about a second is noise, not query time.
 Every other filter a browse grid applies was checked as anon at the same time.
 Nothing else needed changing, and the reason is worth keeping:
 
-| Predicate | Slug | Verdict |
-| --- | --- | --- |
-| `franchise = …` | franchise pages | Safe — `heroes_franchise_idx` serves it as an index *cond*, 0.8ms. |
-| `teams @> …` | team pages | Safe — GIN index cond. |
-| `alignment ILIKE '%neutral%'` | anti-heroes | Safe — 3 distinct values, all in the MCV, so the estimate is exact. |
-| `group_affiliation ILIKE '%x-men%'` | xmen | Healthy, but the one to watch. |
+| Predicate                           | Slug            | Verdict                                                             |
+| ----------------------------------- | --------------- | ------------------------------------------------------------------- |
+| `franchise = …`                     | franchise pages | Safe — `heroes_franchise_idx` serves it as an index _cond_, 0.8ms.  |
+| `teams @> …`                        | team pages      | Safe — GIN index cond.                                              |
+| `alignment ILIKE '%neutral%'`       | anti-heroes     | Safe — 3 distinct values, all in the MCV, so the estimate is exact. |
+| `group_affiliation ILIKE '%x-men%'` | xmen            | Healthy, but the one to watch.                                      |
 
 Equality or containment on an indexed column is never the trap: it becomes an
-index *condition*, so the scan is bounded no matter what the planner estimates.
+index _condition_, so the scan is bounded no matter what the planner estimates.
 The trap needs a **pattern** predicate that degrades into a filter over an
 ordered walk.
 
@@ -277,3 +277,36 @@ Historical specs and plans (status lines in them may be stale):
   `docs/superpowers/specs/2026-07-27-event-attribution-design.md`,
   `docs/superpowers/specs/2026-07-27-pulse-reach-design.md`,
   `docs/superpowers/specs/2026-07-27-pulse-return-design.md` — the Pulse arc.
+
+## The skeleton handoff
+
+Three things have to be true or the swap visibly jumps, and all three were
+broken at once:
+
+- **The skeleton and the feed must lay out from the SAME top inset.** The
+  skeleton took the live `useSafeAreaInsets().top` while the feed took
+  `useStableTopInset()` — the hook that exists precisely because the live value
+  was observed changing after mount. Different insets mean different billboard
+  heights, so the handoff jumped vertically by the difference. `HomeSkeleton`
+  now takes `insetTop` and the caller passes the stable one.
+
+- **The skeleton must not promise a row the feed cannot deliver.** Today's
+  matchup is a separate query, `enabled` on `iconic` — which comes from the
+  bundle, and the bundle resolving is exactly what clears the skeleton. So the
+  matchup query could not even START until the handoff, guaranteeing the feed
+  appeared without that row and that a ~206pt card punched in a moment later,
+  shoving everything below it down. Every cold load, deterministically. The
+  feed now holds the slot with the skeleton's own `MatchupSkeleton` while the
+  query is pending (`undefined` = pending, `null` = resolved-but-none — the
+  data layer already drew that distinction). Reusing the component rather than
+  building a matching placeholder is the point: a placeholder kept in step with
+  a skeleton by hand drifts.
+  Its row type is in `DARK_ROWS` too, or the navy-tinted shimmer would land on
+  beige paper and claim the seam.
+
+- **The two halves of the dissolve must be one cross-fade.** See
+  `SKELETON_DISSOLVE_MS` — the skeleton's exit and a row's entrance share one
+  constant and start together, so total ink on screen never dips. They used to
+  be tuned against different clocks (the row delay was set against the BOOT
+  stage's dissolve), which left ~300ms of half-faded skeleton over an empty
+  screen.

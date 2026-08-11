@@ -96,7 +96,19 @@ function PublisherGridSkeleton() {
   );
 }
 
-function MatchupSkeleton() {
+/**
+ * Exported, because the real feed renders THIS while today's matchup is still
+ * in flight. The matchup query cannot even start until the bundle resolves
+ * (it is enabled on `iconic`, which comes from the bundle) — and the bundle
+ * resolving is exactly what clears this skeleton. So the row was guaranteed to
+ * be absent at handoff and to punch in ~206pt later, shoving the feed down,
+ * every single cold load. The skeleton promised a card the feed could not yet
+ * deliver.
+ *
+ * Reusing the same component, rather than building a matching placeholder, is
+ * the point: a placeholder that has to be kept in step with a skeleton drifts.
+ */
+export function MatchupSkeleton() {
   return (
     <View style={styles.darkSection}>
       <View style={styles.headerLeft}>
@@ -162,14 +174,21 @@ function PortraitRowSkeleton() {
 }
 
 interface HomeSkeletonProps {
-  insets: { top: number };
+  /**
+   * The SAME top inset the feed lays out with — `useStableTopInset`, not the
+   * live one. The live value has been observed to change after mount, which is
+   * what the stable hook exists to sidestep; taking it here while the feed took
+   * the stable one meant the placeholder billboard and the real one could be
+   * different heights, and the handoff would jump vertically by the difference.
+   */
+  insetTop: number;
 }
 
-export function HomeSkeleton({ insets }: HomeSkeletonProps) {
+export function HomeSkeleton({ insetTop }: HomeSkeletonProps) {
   return (
     <SkeletonProvider>
       <ScrollView scrollEnabled={false} showsVerticalScrollIndicator={false} style={styles.scroll}>
-        <SpotlightSkeleton insetTop={insets.top} />
+        <SpotlightSkeleton insetTop={insetTop} />
         {/* The dark stage — the same row types the real feed keeps on navy. */}
         <View style={styles.stage}>
           <PublisherGridSkeleton />

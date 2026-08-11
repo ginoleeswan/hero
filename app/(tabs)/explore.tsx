@@ -36,7 +36,8 @@ import { useSignalFirstPaint } from '../../src/components/ui/BootStage';
 import { DUR, STAGGER, SPRING_SETTLE } from '../../src/lib/nativeMotion';
 import * as Haptics from 'expo-haptics';
 import { COLORS, ORANGE_INK } from '../../src/constants/colors';
-import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
+import { HomeSkeleton, MatchupSkeleton } from '../../src/components/skeletons/HomeSkeleton';
+import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { SpotlightCarousel, spotlightHeight } from '../../src/components/home/SpotlightCarousel';
 import { SPOTLIGHT } from '../../src/components/home/homeGeometry';
 import { PaperSurface } from '../../src/components/home/PaperSurface';
@@ -65,6 +66,11 @@ import { SponsorSlot } from '../../src/components/SponsorSlot';
 import { useExploreData } from '../../src/lib/query/exploreQueries';
 import type { FavouriteHero } from '../../src/types';
 
+// One number for both halves of the swap: a row's entrance and the skeleton's
+// exit. They are a cross-dissolve, so they have to be the same length — tuning
+// either alone is how the gap got there in the first place.
+const SKELETON_DISSOLVE_MS = 480;
+
 const SPOTLIGHT_POOL = 5;
 
 function toRowHero(h: Hero | FavouriteHero): RowHero {
@@ -77,6 +83,7 @@ type FeedRow =
   | { type: 'spotlight'; heroes: Hero[] }
   | { type: 'publishers' }
   | { type: 'matchup'; matchup: Matchup }
+  | { type: 'matchupPending' }
   | { type: 'daily' }
   | { type: 'ticker'; heroCount: number; newlyAddedCount: number }
   | { type: 'recent'; heroes: RowHero[] }
@@ -116,6 +123,10 @@ const DARK_ROWS = new Set<FeedRow['type']>([
   'spotlight',
   'publishers',
   'matchup',
+  // The pending slot belongs to the same zone as the card it is holding open.
+  // Omitting it would put a navy-tinted shimmer on beige paper AND make it the
+  // first beige row, which is the one that carries the seam.
+  'matchupPending',
   'daily',
   'ticker',
   'rightnow',
@@ -294,7 +305,12 @@ export default function HomeScreen() {
     const out: FeedRow[] = [];
     if (spotlightPool.length > 0) out.push({ type: 'spotlight', heroes: spotlightPool });
     out.push({ type: 'publishers' });
+    // `undefined` is PENDING, `null` is resolved-but-none — the data layer
+    // already draws that distinction, so hold the slot for the first and skip
+    // it for the second. Without this the card arrives late and moves the whole
+    // feed under the reader's thumb.
     if (matchup) out.push({ type: 'matchup', matchup });
+    else if (matchup === undefined) out.push({ type: 'matchupPending' });
     out.push({ type: 'daily' });
     if (heroCount > 0) out.push({ type: 'ticker', heroCount, newlyAddedCount: newlyAdded.length });
     if (
@@ -404,10 +420,19 @@ export default function HomeScreen() {
       // delay would start from that later moment — reading as rows popping in
       // raggedly after the entrance, which is exactly the "disjointed" feel.
       if (!cascadeWindow || index >= STAGGER.cap) return undefined;
-      // Base delay ≈ when the boot stage is half-dissolved, so the rows are
-      // seen rising into place as the open completes — one continuous motion.
-      return FadeInDown.delay(DUR.base + index * STAGGER.step)
-        .duration(480)
+      // NO base delay. There used to be one (DUR.base), chosen so the rows rose
+      // into place as the boot stage half-dissolved — sound reasoning about the
+      // wrong clock, because nothing coordinated it with the SKELETON's fade.
+      // The skeleton starts dissolving the moment the data lands and is gone in
+      // 320ms; the first row did not begin arriving until 220ms. That left a
+      // window with a 31%-opacity ghost of the skeleton over an empty screen,
+      // and a skeleton dying alone reads as a second, broken skeleton.
+      //
+      // Starting at zero is what makes the comment below the list true: the
+      // placeholders resolve INTO the content because both are on screen at
+      // once. Total ink never dips.
+      return FadeInDown.delay(index * STAGGER.step)
+        .duration(SKELETON_DISSOLVE_MS)
         .springify()
         .damping(SPRING_SETTLE.damping)
         .stiffness(SPRING_SETTLE.stiffness);
@@ -454,6 +479,14 @@ export default function HomeScreen() {
             );
           case 'matchup':
             return <TodaysMatchup matchup={item.matchup} onOpen={handleOpenPath} />;
+          case 'matchupPending':
+            // Literally the skeleton's own block, so the slot cannot drift from
+            // what was promised a moment earlier.
+            return (
+              <SkeletonProvider>
+                <MatchupSkeleton />
+              </SkeletonProvider>
+            );
           case 'ticker':
             return (
               <PulseTicker heroCount={item.heroCount} newlyAddedCount={item.newlyAddedCount} />
@@ -642,14 +675,16 @@ export default function HomeScreen() {
       )}
       {/* The skeleton dissolves IN PLACE over the incoming feed (exiting fade
           on unmount) instead of hard-swapping — placeholders resolve into
-          content, matching the anti-flash loading language everywhere else. */}
+          content, matching the anti-flash loading language everywhere else.
+          Its fade is the SAME length as a row's entrance, so it covers the
+          arrival rather than clearing before it. */}
       {!initialLoaded && (
         <Animated.View
           style={StyleSheet.absoluteFill}
-          exiting={FadeOut.duration(DUR.enter)}
+          exiting={FadeOut.duration(SKELETON_DISSOLVE_MS)}
           pointerEvents="none"
         >
-          <HomeSkeleton insets={insets} />
+          <HomeSkeleton insetTop={topInset} />
         </Animated.View>
       )}
     </View>
