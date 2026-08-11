@@ -278,6 +278,23 @@ for (const file of [...walkTs(join(ROOT, 'src')), ...walkTs(join(ROOT, 'app'))].
   }
 }
 
+// ── 4¾. no Flame-Bold ───────────────────────────────────────────────────────
+// Headings use `Flame-Regular`. The bold cut's strokes are thick enough that
+// the counters close up at heading sizes and the word reads as a shape rather
+// than as letters — worse the larger it gets, which is exactly where headings
+// live. The face is no longer registered in either root layout or embedded by
+// the expo-font plugin, so a reference to it silently falls back to the system
+// font; this catches it as a failure instead. (The .ttf stays in assets for
+// the social content factory, which renders images, not app UI.)
+for (const file of [...walkTs(join(ROOT, 'src')), ...walkTs(join(ROOT, 'app'))].map(rel).sort()) {
+  const lines = readFileSync(join(ROOT, file), 'utf8').split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes('Flame-Bold')) {
+      fail(file, i + 1, 'flame-bold', 'use Flame-Regular — the bold cut is too heavy to read');
+    }
+  }
+}
+
 // ── 5. the design-scale ratchet ─────────────────────────────────────────────
 // The other four rules are absolutes: a violation is a bug, so it fails. Scale
 // drift is different — there are ~1,000 radius call sites and 52 distinct font

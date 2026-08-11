@@ -87,11 +87,7 @@ const config: ExpoConfig = {
     [
       'expo-font',
       {
-        fonts: [
-          './assets/fonts/FlameSans-Regular.ttf',
-          './assets/fonts/Flame-Regular.ttf',
-          './assets/fonts/Flame-Bold.ttf',
-        ],
+        fonts: ['./assets/fonts/FlameSans-Regular.ttf', './assets/fonts/Flame-Regular.ttf'],
       },
     ],
     [

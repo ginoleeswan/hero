@@ -214,7 +214,6 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     'FlameSans-Regular': require('../assets/fonts/FlameSans-Regular.ttf'),
     'Flame-Regular': require('../assets/fonts/Flame-Regular.ttf'),
-    'Flame-Bold': require('../assets/fonts/Flame-Bold.ttf'),
     Nunito_400Regular,
     Nunito_700Bold,
     Nunito_800ExtraBold,

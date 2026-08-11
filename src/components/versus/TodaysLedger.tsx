@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.6 },
   n: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 12,
     lineHeight: 16,
     width: 18,
