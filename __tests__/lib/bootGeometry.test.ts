@@ -99,6 +99,23 @@ describe('boot reveal geometry', () => {
   // shares of the running time, so a driver that front-loads progress (or an
   // act quietly moved to the end of the ramp) shows up as a failure instead of
   // as "it feels choppy".
+  it('accelerates all the way in rather than approaching at a constant rate', () => {
+    // LUNGE_BITE > 1 is what makes the strike a strike. Constant approach speed
+    // (pure exponential, bite = 1) is a dolly move; a thrown object keeps
+    // accelerating. Checked as growth-per-unit-progress rising across the
+    // lunge, which is the property, rather than by asserting the constant.
+    for (const screen of SCREENS) {
+      const ramp = revealRamp(screen.h);
+      const step = 0.02;
+      let prevRate = 0;
+      for (let p = LUNGE_AT + step; p <= SEAT_AT - step; p += step) {
+        const rate = markGrow(p + step, ramp) - markGrow(p, ramp);
+        expect(rate).toBeGreaterThan(prevRate);
+        prevRate = rate;
+      }
+    }
+  });
+
   it('spends its running time on the acts you can actually see', () => {
     for (const screen of SCREENS) {
       const ramp = revealRamp(screen.h);

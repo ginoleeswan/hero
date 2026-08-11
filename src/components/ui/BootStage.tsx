@@ -54,6 +54,7 @@ import Animated, {
   withDelay,
   withTiming,
   withRepeat,
+  withSpring,
   cancelAnimation,
   runOnJS,
   Easing,
@@ -66,7 +67,7 @@ import {
   WORDMARK_VIEW_H,
 } from '../../constants/logo';
 import { COLORS } from '../../constants/colors';
-import { DUR } from '../../lib/nativeMotion';
+import { DUR, SPRING_SETTLE } from '../../lib/nativeMotion';
 // The reveal's geometry lives next door so its one hard rule — the curtain may
 // not drop before the ink covers the screen — can be unit-tested.
 import {
@@ -86,10 +87,14 @@ const SPLASH_NAVY = '#293C43'; // must equal app.config.ts splash backgroundColo
 
 const WORD_H = SPLASH_LOCKUP.wordW / WORDMARK_ASPECT;
 
-const AMBIENT_DELAY_MS = 200; // hold the flat splash match for a beat
-const AMBIENT_MS = 700; // depth + ember waking up behind the mark
+const AMBIENT_DELAY_MS = 150; // hold the flat splash match for a beat
+const AMBIENT_MS = 560; // depth + ember waking up behind the mark
 const BREATHE_MS = 2600; // full in-out breath
-const EXIT_MS = 1400; // recoil, lunge, and the mask settling over your face
+// A hit EVERY launch is a different brief from a good first impression: it has
+// to be over before anyone could wish it were. 1400ms was paced for the first
+// time you ever see it. What survives the twentieth is attack — a tight intake,
+// a fast strike, and a payoff that still gets its full share.
+const EXIT_MS = 1150; // recoil, lunge, and the mask settling over your face
 
 // The exit's driver is LINEAR, and that is deliberate to the point of being
 // the most important decision in the file. Every act of this sequence is
@@ -123,7 +128,7 @@ const REVEAL_CAP_MS = 1400; // max wait for the feed's first paint after boot
 // Measured against a different clock from REVEAL_CAP_MS: this one runs from
 // MOUNT, the cap runs from boot resolving. The reveal window is therefore
 // [mount + HOLD_MS, bootResolved + REVEAL_CAP_MS].
-const HOLD_MS = AMBIENT_DELAY_MS + AMBIENT_MS - 50;
+const HOLD_MS = AMBIENT_DELAY_MS + AMBIENT_MS - 60;
 
 // ...and a beat AFTER the signal, always. `signalFirstPaint` fires from the
 // feed's first layout, which is the single busiest moment of the launch: the
@@ -256,20 +261,49 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   // of the sequence. Fired from an animated reaction because the moment is
   // defined by the animation's progress, not by any JS timer — and never under
   // Reduce Motion, where there is no flight to land.
-  const hapticFired = useSharedValue(0);
-  const fireContactHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+  //
+  // TWO beats, not one. A single tap at contact is an event; a soft load at the
+  // bottom of the draw-back followed by a rigid strike is a gesture, and the
+  // difference between the two is most of why one feels designed and the other
+  // feels like a notification. The pair also tells your hand what your eye is
+  // being told at exactly the same instants.
+  const beats = useSharedValue(0);
+  const fireLoadHaptic = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {});
   }, []);
+  const fireContactHaptic = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {});
+  }, []);
+
+  // The app does not ramp into place, it LANDS. A scale driven off `exit` is a
+  // ramp no matter how it is eased — it arrives at 1.0 with the velocity the
+  // curve happens to have and stops. Kicking a spring at the contact frame
+  // instead gives the arrival its own physics: it overshoots a hair and settles,
+  // which is the beat the whole sequence has been setting up. This is the
+  // dopamine, and it is worth its own shared value.
+  // Seeded from `booting`: on a warm launch where boot has already resolved the
+  // stage never mounts, nothing ever kicks the spring, and a 0 here would
+  // strand the app at 93% for the rest of the session.
+  const land = useSharedValue(booting ? 0 : 1);
+  const kickLanding = useCallback(() => {
+    land.value = withSpring(1, SPRING_SETTLE);
+  }, [land]);
+
   useAnimatedReaction(
     () => exit.value,
     (now, prev) => {
-      if (reduceMotion || hapticFired.value) return;
-      if (now >= SEAT_AT && prev !== null && prev < SEAT_AT) {
-        hapticFired.value = 1;
+      if (reduceMotion || prev === null) return;
+      if (beats.value < 1 && now >= LUNGE_AT && prev < LUNGE_AT) {
+        beats.value = 1;
+        runOnJS(fireLoadHaptic)();
+      }
+      if (beats.value < 2 && now >= SEAT_AT && prev < SEAT_AT) {
+        beats.value = 2;
         runOnJS(fireContactHaptic)();
+        runOnJS(kickLanding)();
       }
     },
-    [reduceMotion, fireContactHaptic],
+    [reduceMotion, fireLoadHaptic, fireContactHaptic, kickLanding],
   );
 
   // The mark: breathes at rest, recoils, then lunges toward the viewer while
@@ -393,14 +427,19 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   // scale settle is timed to the window in which it is actually visible through
   // the eye, so the push-through reads as the app rushing up to meet you.
   const appStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: interpolate(exit.value, [SEAT_AT - 0.1, 1], [0.94, 1], Extrapolation.CLAMP) },
-    ],
+    // No CLAMP on the top end: the spring is allowed to carry it a hair past
+    // 1.0 and settle back. That overshoot is the landing, and clamping it away
+    // would leave the same motion with the satisfaction filed off.
+    transform: [{ scale: interpolate(land.value, [0, 1], [0.93, 1]) }],
   }));
 
   return (
     <View style={styles.root}>
-      <Animated.View style={[styles.app, revealDone || reduceMotion ? styles.appAtRest : appStyle]}>
+      {/* appStyle outlives the stage on purpose. The landing spring is kicked at
+          contact and is still settling when the reveal ends ~440ms later, so
+          swapping to a static style at revealDone would snap the last percent
+          off the overshoot — the pop, replaced by a pop. */}
+      <Animated.View style={[styles.app, reduceMotion ? styles.appAtRest : appStyle]}>
         <SignalFirstPaintContext.Provider value={signalFirstPaint}>
           {children}
         </SignalFirstPaintContext.Provider>

@@ -272,6 +272,31 @@ half-frame of skeleton.
   so `LUNGE_AT = 0.2` means "the draw-back takes a fifth of the sequence" and
   can be checked against a stopwatch.
 
+  **Paced for the twentieth launch, not the first.** A hit every time is a
+  different brief from a good first impression: it has to be over before anyone
+  could wish it were. `EXIT_MS` is 1150 and the hold 650 — 1.8s from mount,
+  down from 2.25s — and the shortening came out of the approach, not the
+  payoff. `LUNGE_BITE` (>1) makes the mask accelerate all the way in rather
+  than approach at a constant rate: constant speed is a dolly move, a thrown
+  object keeps gaining. Tested as growth-per-unit-progress rising across the
+  lunge, so it is the property that is pinned rather than the constant.
+
+  **The app LANDS, it does not ramp.** A scale driven off `exit` arrives at 1.0
+  with whatever velocity the curve happens to have and stops. `land` is a
+  separate shared value kicked with a spring at the contact frame, so the
+  arrival has its own physics — 4% overshoot, then settle. That beat is what
+  the whole sequence has been setting up, and `interpolate` is deliberately
+  left unclamped at the top so the overshoot survives. The style also outlives
+  the stage: the spring is still settling ~440ms after the reveal ends, and
+  swapping to a static style at `revealDone` would snap the last of it off.
+  `land` is seeded from `booting`, because on a warm launch the stage never
+  mounts, nothing kicks the spring, and a 0 would strand the app at 93%.
+
+  **Two haptic beats, not one.** Soft at the bottom of the draw-back, rigid at
+  contact. A single tap is an event; a load followed by a strike is a gesture,
+  and that is most of the difference between feeling designed and feeling like
+  a notification.
+
   **`SEAT_AT` splits the running time, and the split is a design decision.**
   Everything before it is approach; everything after is the only part the
   audience came for. At 0.72 the approach ran 728ms and the payoff got 248ms.
