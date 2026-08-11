@@ -405,9 +405,23 @@ half-frame of skeleton.
   4% keystone, 420 projects 20%) is real and was worth answering — it just
   turned out to be answering the wrong question.
 
-  If the depth cue is wanted back it has to come from a **2D affine
-  approximation** — a skew plus an axis-differential scale — which cannot
-  change how the layer is rasterised. A smaller angle is not a fix.
+  **What it gets instead is squash and stretch**, and that is not a
+  consolation prize. A skew was the obvious substitute and is the wrong one: a
+  rotation reads as a turn because of the KEYSTONE, an affine transform cannot
+  produce one, so a 2D "turn" is only `scaleX × cos(θ)` — a horizontal squash
+  wearing a rotation's name — and an actual skew on a symmetrical mask reads as
+  italic, which looks like a rendering fault rather than depth.
+
+  `markSquash` compresses the mask as it loads and elongates it as it strikes:
+  wide-and-short into the draw-back, snapping through uniform to
+  narrow-and-tall on the launch, recovered by `SQUASH_DONE`. A few percent —
+  weight, not cartoon — with the two axes moving opposite ways by similar
+  amounts so volume is roughly conserved, which is what makes it read as a body
+  rather than a glitch. Tested, along with the rule that matters: it is uniform
+  from `SQUASH_DONE` onward, well before `SEAT_AT`, so every frame the
+  flat-geometry coverage rule applies to is uniformly scaled. That is the trap
+  the tilt fell into, avoided the same way — resolve before the rule starts
+  applying, and pin it.
 
   **`assets/splash.png` and `imageWidth` are NATIVE.** They are baked into the
   binary and cannot ship over the air, so a change to the lockup needs a new
