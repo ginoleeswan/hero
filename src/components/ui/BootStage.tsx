@@ -78,7 +78,9 @@ import {
   revealRamp,
   markBox,
   markRest,
+  markTilt,
   LUNGE_AT,
+  MARK_PERSPECTIVE,
   MARK_VIEWBOX,
   SEAT_AT,
 } from '../../lib/bootGeometry';
@@ -86,6 +88,9 @@ import {
 const SPLASH_NAVY = '#293C43'; // must equal app.config.ts splash backgroundColor
 
 const WORD_H = SPLASH_LOCKUP.wordW / WORDMARK_ASPECT;
+
+/** Reused rather than allocated per frame in the Reduce Motion branch. */
+const ZERO_TILT = { x: 0, y: 0 };
 
 const AMBIENT_DELAY_MS = 150; // hold the flat splash match for a beat
 const AMBIENT_MS = 560; // depth + ember waking up behind the mark
@@ -312,13 +317,11 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
   // starts at exactly zero — a fixed-point scale would be geometrically purer
   // and visually worse, because the mark would begin drifting on frame one.
   //
-  // There is no 3D tilt here any more, and its absence is deliberate. It made
-  // the flight read as movement through space rather than as an image being
-  // enlarged, which is worth having — but a perspective transform changes how
-  // iOS rasterises the layer, and the mask has now been reported clipped on
-  // device twice. Correct beats characterful: the tilt comes back once the
-  // geometry is confirmed right on hardware, not before. Everything here is a
-  // plain 2D translate and scale, which cannot clip.
+  // The tilt is what makes this a flight rather than a zoom — see markTilt for
+  // why the perspective distance is 420 and not the 1000 it started at. It is
+  // live only while the mask is small: markTilt returns level at SEAT_AT, so
+  // every large-scale frame, and every frame in which the curtain is moving, is
+  // a plain 2D translate and scale.
   const markStyle = useAnimatedStyle(() => {
     const grow = flies ? markGrow(exit.value, ramp) : 1;
     const breath = 1 + breathe.value * 0.012 * (1 - exit.value);
@@ -326,6 +329,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     const eye = eyeCentre(grow * breath, screenW, markCY);
     // ...and how hard it is drawn toward the centre of the screen.
     const pull = flies ? centringPull(exit.value) : 0;
+    const tilt = flies ? markTilt(exit.value) : ZERO_TILT;
     return {
       // Flying: the rim is off the display by the end, so this fade only has
       // to hide the last sliver of it — kept late and short so the screen
@@ -338,8 +342,11 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
         ? interpolate(exit.value, [0, 0.92, 1], [1, 1, 0], Extrapolation.CLAMP)
         : 1 - exit.value,
       transform: [
+        { perspective: MARK_PERSPECTIVE },
         { translateX: pull * (screenW / 2 - eye.x) },
         { translateY: pull * (screenH / 2 - eye.y) },
+        { rotateX: `${tilt.x}deg` },
+        { rotateY: `${tilt.y}deg` },
         { scale: restScale * grow * breath },
       ],
     };
