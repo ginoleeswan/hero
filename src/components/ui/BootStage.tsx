@@ -80,6 +80,7 @@ import {
   revealRamp,
   markBox,
   markRest,
+  markSquash,
   LUNGE_AT,
   MARK_VIEWBOX,
   SEAT_AT,
@@ -88,6 +89,9 @@ import {
 const SPLASH_NAVY = '#293C43'; // must equal app.config.ts splash backgroundColor
 
 const WORD_H = SPLASH_LOCKUP.wordW / WORDMARK_ASPECT;
+
+/** Reused rather than allocated per frame in the Reduce Motion branch. */
+const UNIT_SQUASH = { x: 1, y: 1 };
 
 const AMBIENT_DELAY_MS = 150; // hold the flat splash match for a beat
 const AMBIENT_MS = 560; // depth + ember waking up behind the mark
@@ -342,6 +346,8 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     const eye = eyeCentre(grow * breath, screenW, markCY);
     // ...and how hard it is drawn toward the centre of the screen.
     const pull = flies ? centringPull(exit.value) : 0;
+    const uniform = restScale * grow * breath;
+    const squash = flies ? markSquash(exit.value) : UNIT_SQUASH;
     return {
       // Flying: the rim is off the display by the end, so this fade only has
       // to hide the last sliver of it — kept late and short so the screen
@@ -356,7 +362,11 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
       transform: [
         { translateX: pull * (screenW / 2 - eye.x) },
         { translateY: pull * (screenH / 2 - eye.y) },
-        { scale: restScale * grow * breath },
+        // Per-axis, so the mask can load and launch with some weight in it.
+        // `markSquash` is 1/1 from SQUASH_DONE onward, so this is a uniform
+        // scale everywhere the coverage rule applies.
+        { scaleX: uniform * squash.x },
+        { scaleY: uniform * squash.y },
       ],
     };
   });

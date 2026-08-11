@@ -249,3 +249,59 @@ export function eyeCentre(grow: number, screenW: number, markCY: number) {
 // If the depth cue is wanted back it must come from a 2D affine approximation
 // — a skew plus an axis-differential scale — which cannot change how the layer
 // is rasterised. A smaller angle is not a fix.
+
+// ── Squash and stretch ─────────────────────────────────────────────────────
+//
+// What the mask gets INSTEAD of a tilt, and it is not a consolation prize.
+//
+// A rotation reads as a turn because of the keystone — the far edge shrinking.
+// An affine transform cannot produce one, so a 2D "turn" is only
+// scaleX x cos(theta): a horizontal squash wearing a rotation's name. An actual
+// skew on a symmetrical mask reads as italic, which looks like a rendering
+// fault rather than depth. Neither is worth having.
+//
+// Squash and stretch is. The mask compresses as it loads and elongates as it
+// strikes — the oldest principle in character animation, and it reads as weight
+// rather than as a trick. Plain scaleX/scaleY, which cannot change how the
+// layer is rasterised.
+//
+// It resolves to uniform by SQUASH_DONE, well before SEAT_AT, so every frame
+// the coverage rule applies to is uniformly scaled and the flat-geometry maths
+// stays honest. Same discipline the tilt was held to; this one can keep it,
+// because it is not asking the renderer for anything unusual.
+export const SQUASH_DONE = 0.45;
+/** Peak compression on the load, as a fraction. 4% is weight; 10% is cartoon. */
+const LOAD = 0.035;
+/** Peak elongation on the strike. Slightly under the load — it recovers. */
+const THROW = 0.03;
+/** How far past LUNGE_AT the stretch peaks. */
+const THROW_AT = 0.1;
+
+/**
+ * Per-axis scale multipliers at exit progress `p`. Both are 1 at rest and 1
+ * again from SQUASH_DONE onward, so the mask is only ever non-uniform while it
+ * is loading and launching.
+ */
+export function markSquash(p: number): { x: number; y: number } {
+  'worklet';
+  const ss = (from: number, to: number, a: number, b: number) => {
+    const v = (p - a) / (b - a);
+    return from + (to - from) * (v * v * (3 - 2 * v));
+  };
+  if (p <= 0 || p >= SQUASH_DONE) return { x: 1, y: 1 };
+  if (p <= LUNGE_AT) {
+    // Loading: wider and shorter, the way anything settles under its own weight
+    // before it moves.
+    return { x: ss(1, 1 + LOAD, 0, LUNGE_AT), y: ss(1, 1 - LOAD, 0, LUNGE_AT) };
+  }
+  const peak = LUNGE_AT + THROW_AT;
+  if (p <= peak) {
+    // Launching: it snaps through uniform and out the other side, narrower and
+    // taller, elongated along the direction it is travelling.
+    return {
+      x: ss(1 + LOAD, 1 - THROW, LUNGE_AT, peak),
+      y: ss(1 - LOAD, 1 + THROW, LUNGE_AT, peak),
+    };
+  }
+  return { x: ss(1 - THROW, 1, peak, SQUASH_DONE), y: ss(1 + THROW, 1, peak, SQUASH_DONE) };
+}

@@ -6,11 +6,13 @@ import {
   revealRamp,
   markBox,
   markRest,
+  markSquash,
   EYE_H,
   INK_PT,
   LUNGE_AT,
   RECOIL,
   SEAT_AT,
+  SQUASH_DONE,
 } from '../../src/lib/bootGeometry';
 import { LOGO_EYE_LEFT, LOGO_INK, SPLASH_LOCKUP } from '../../src/constants/logo';
 
@@ -179,6 +181,56 @@ describe('boot reveal geometry', () => {
       expect(curtainOpacity(markGrow(1, ramp), ramp)).toBe(0);
       expect(ramp.max).toBeGreaterThan(ramp.cover);
     }
+  });
+
+  // ── squash and stretch ──────────────────────────────────────────────────
+  //
+  // The coverage rule is computed from a UNIFORM scale. A non-uniform one
+  // during any frame the curtain can move would quietly invalidate it — the
+  // same trap the 3D tilt fell into, avoided the same way: resolve to uniform
+  // before the rule starts applying, and test that it does.
+  it('is uniform everywhere the coverage rule applies', () => {
+    expect(SQUASH_DONE).toBeLessThan(SEAT_AT);
+    for (const screen of SCREENS) {
+      const ramp = revealRamp(screen.h);
+      for (let p = 0; p <= 1.0001; p += 0.005) {
+        if (curtainOpacity(markGrow(p, ramp), ramp) === 1) continue;
+        expect(markSquash(p)).toEqual({ x: 1, y: 1 });
+      }
+    }
+    expect(markSquash(SQUASH_DONE)).toEqual({ x: 1, y: 1 });
+    expect(markSquash(1)).toEqual({ x: 1, y: 1 });
+  });
+
+  it('loads wide-and-short, launches narrow-and-tall, and recovers', () => {
+    const load = markSquash(LUNGE_AT);
+    expect(load.x).toBeGreaterThan(1);
+    expect(load.y).toBeLessThan(1);
+
+    const launch = markSquash(LUNGE_AT + 0.1);
+    expect(launch.x).toBeLessThan(1);
+    expect(launch.y).toBeGreaterThan(1);
+
+    // Weight, not cartoon: everything stays within a few percent, and volume
+    // is roughly conserved — the axes move opposite ways by similar amounts,
+    // which is what makes it read as a body rather than as a glitch.
+    for (let p = 0; p <= SQUASH_DONE; p += 0.005) {
+      const s = markSquash(p);
+      expect(Math.abs(s.x - 1)).toBeLessThan(0.06);
+      expect(Math.abs(s.y - 1)).toBeLessThan(0.06);
+      expect(Math.abs(s.x * s.y - 1)).toBeLessThan(0.005);
+    }
+  });
+
+  it('has no corner in it', () => {
+    const EPS = 1e-4;
+    for (const boundary of [LUNGE_AT, LUNGE_AT + 0.1, SQUASH_DONE]) {
+      const before = markSquash(boundary - EPS);
+      const after = markSquash(boundary + EPS);
+      expect(Math.abs(after.x - before.x)).toBeLessThan(0.001);
+      expect(Math.abs(after.y - before.y)).toBeLessThan(0.001);
+    }
+    expect(markSquash(0)).toEqual({ x: 1, y: 1 });
   });
 
   it('scales the eye from a hole in the resting mark', () => {
