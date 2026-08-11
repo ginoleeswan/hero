@@ -49,21 +49,31 @@ export function revealRamp(screenH: number) {
     // to reach the far edge from wherever the eye had got to, which cost real
     // magnification and therefore real sharpness.)
     cover: (0.55 * screenH) / INK_ABOVE_EYE,
-    // Where the eye hole alone is taller than the display: past this there is
-    // nothing on screen but app.
-    max: (screenH / EYE_H) * 1.02,
+    // Where the eye hole alone is taller than the display, times an overshoot.
+    // The story is not "you pass through a doorway" but "the mask reaches you
+    // and you PUT IT ON": it keeps coming after the eye has swallowed the
+    // screen, past where your head would be. Free at this point — the rim left
+    // the display around `cover`, so the extra magnification lands entirely on
+    // ink that is off screen — and it is what makes the end feel like an arrival
+    // instead of a zoom that ran out.
+    max: (screenH / EYE_H) * 1.5,
   };
 }
 
-// Progress breakpoints of the scale ramp. The mark holds still through the
-// first stretch: the wordmark is leaving then, and two things moving at once
-// read as a scramble rather than a handover.
+// Progress breakpoints of the scale ramp, and the RECOIL: the mark pulls back
+// a hair before it lunges. Anticipation is what separates a lunge from a zoom —
+// everything that moves like it has a body loads up before it strikes. It
+// happens while the wordmark is leaving, so act one of the exit is "the screen
+// draws breath" and act two is the strike; the mark never grows while the
+// wordmark is still on screen, because two things moving at once read as a
+// scramble rather than a handover.
+export const RECOIL = 0.955;
 export const GROW_AT = [0, 0.18, 0.45, 0.62, 1] as const;
 
 /** The mark's scale multiplier at eased exit progress `p`. */
 export function markGrow(p: number, ramp: { cover: number; max: number }): number {
   'worklet';
-  const to = [1, 1, 3.2, ramp.cover, ramp.max];
+  const to = [1, RECOIL, 3.2, ramp.cover, ramp.max];
   const last = to.length - 1;
   if (p <= 0) return to[0];
   if (p >= 1) return to[last];

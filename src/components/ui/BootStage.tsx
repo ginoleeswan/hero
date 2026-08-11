@@ -1,7 +1,8 @@
 // src/components/ui/BootStage.tsx — native boot choreography.
 //
-// The whole screen is one idea: THE MASK IS THE DOOR. You are looking at the
-// Mythique mask; it comes toward you, and you go through its eye.
+// The whole screen is one idea: YOU PUT THE MASK ON. You are looking at the
+// Mythique mask; it recoils, lunges at you, and settles over your face — and
+// the app is what the world looks like through its eye.
 //
 //   1. Still  — the first frame is the native splash, not a lookalike of it.
 //               Both are drawn from the same lockup (SPLASH_LOCKUP): mark high,
@@ -11,12 +12,14 @@
 //               halo fade in behind the mark, which breathes.
 //   2. Open   — gated on the home feed's first paint (useSignalFirstPaint), and
 //               never before HOLD_MS so a fast boot still gets the moment:
-//               the wordmark sinks away, then the mark accelerates toward the
-//               viewer, pinning its LEFT EYE to the centre of the screen. Once
-//               the mark is large enough that its ink covers the display, the
-//               navy curtain behind it is dropped — so what shows through the
-//               eye hole is the app. The eye keeps opening until it is bigger
-//               than the screen and you are through it.
+//               the wordmark sinks away while the mask draws back (RECOIL),
+//               then it lunges — tipping in perspective so it moves through
+//               space rather than inflating in place — with its LEFT EYE drawn
+//               to the centre of the screen. Once its ink covers the display,
+//               the navy curtain behind it drops (with a single haptic tap: the
+//               mask making contact) and what shows through the eye hole is the
+//               app. The eye keeps opening past the screen — the mask passing
+//               your head as you put it on.
 //
 // The aperture is real geometry, not a mask layer: LOGO_MASK_PATH's eyes are
 // holes in the filled path, so anything drawn under the mark shows through
@@ -39,10 +42,12 @@ import {
 } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedReaction,
   useReducedMotion,
   interpolate,
   Extrapolation,
@@ -70,6 +75,7 @@ import {
   centringPull,
   markGrow,
   revealRamp,
+  GROW_AT,
   INK_CX,
   INK_CY,
   MARK_REST,
@@ -84,7 +90,7 @@ const WORD_H = SPLASH_LOCKUP.wordW / WORDMARK_ASPECT;
 const AMBIENT_DELAY_MS = 200; // hold the flat splash match for a beat
 const AMBIENT_MS = 700; // depth + ember waking up behind the mark
 const BREATHE_MS = 2600; // full in-out breath
-const EXIT_MS = 1050; // the fly-through
+const EXIT_MS = 1100; // recoil, lunge, and the mask settling over your face
 const REVEAL_CAP_MS = 1400; // max wait for the feed's first paint after boot
 
 // The FLOOR: the reveal may not begin before the composition has been held long
@@ -210,11 +216,42 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
 
   const flies = !reduceMotion;
 
-  // The mark: breathes at rest, then accelerates toward the viewer while its
-  // left eye is drawn to the centre of the screen. The translation is a lerp
-  // toward the eye's target rather than a true fixed-point scale, so it starts
-  // at exactly zero — a fixed-point scale would be geometrically purer and
-  // visually worse, because the mark would begin drifting on frame one.
+  // One sharp tap at the breakthrough — the exact progress at which the ink
+  // covers the screen and the curtain starts to drop (GROW_AT[3] is where the
+  // ramp hands `cover` over). Felt, it is the mask making contact with your
+  // face; heard through the fingers it marks the single most important frame
+  // of the sequence. Fired from an animated reaction because the moment is
+  // defined by the animation's progress, not by any JS timer — and never under
+  // Reduce Motion, where there is no flight to land.
+  const hapticFired = useSharedValue(0);
+  const fireContactHaptic = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+  }, []);
+  useAnimatedReaction(
+    () => exit.value,
+    (now, prev) => {
+      if (reduceMotion || hapticFired.value) return;
+      if (now >= GROW_AT[3] && prev !== null && prev < GROW_AT[3]) {
+        hapticFired.value = 1;
+        runOnJS(fireContactHaptic)();
+      }
+    },
+    [reduceMotion, fireContactHaptic],
+  );
+
+  // The mark: breathes at rest, recoils, then lunges toward the viewer while
+  // its left eye is drawn to the centre of the screen. The translation is a
+  // lerp toward the eye's target rather than a true fixed-point scale, so it
+  // starts at exactly zero — a fixed-point scale would be geometrically purer
+  // and visually worse, because the mark would begin drifting on frame one.
+  //
+  // The tilt is what makes this a FLIGHT rather than a zoom. Uniform scaling
+  // reads as an image being enlarged; a small rotation under perspective reads
+  // as an object moving through space. It leans back during the recoil, tips
+  // hardest mid-lunge, and levels out as it reaches your face — a mask being
+  // seated straight, not a card spinning. Kept out of bootGeometry because it
+  // is aesthetic: no coverage rule depends on it (at its ~7° peak the ink
+  // budget of `cover` absorbs the foreshortening many times over).
   const markStyle = useAnimatedStyle(() => {
     const grow = flies ? markGrow(exit.value, ramp) : 1;
     const scale = MARK_REST * grow * (1 + breathe.value * 0.012 * (1 - exit.value));
@@ -222,14 +259,23 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
     const eye = eyeCentre(scale, screenW, markCY);
     // ...and how hard it is drawn toward the centre of the screen.
     const pull = flies ? centringPull(exit.value) : 0;
+    const tiltX = flies
+      ? interpolate(exit.value, [0, 0.18, 0.45, 0.75], [0, -2.5, 5, 0], Extrapolation.CLAMP)
+      : 0;
+    const tiltY = flies
+      ? interpolate(exit.value, [0, 0.18, 0.45, 0.75], [0, 2, -7, 0], Extrapolation.CLAMP)
+      : 0;
     return {
       // The rim is off the display by the end, so this fade only has to hide
       // the last sliver of it; kept late and short so the screen never spends
       // long under a translucent beige wash.
-      opacity: interpolate(exit.value, [0, 0.88, 1], [1, 1, 0], Extrapolation.CLAMP),
+      opacity: interpolate(exit.value, [0, 0.9, 1], [1, 1, 0], Extrapolation.CLAMP),
       transform: [
+        { perspective: 1000 },
         { translateX: pull * (screenW / 2 - eye.x) },
         { translateY: pull * (screenH / 2 - eye.y) },
+        { rotateX: `${tiltX}deg` },
+        { rotateY: `${tiltY}deg` },
         { scale },
       ],
     };

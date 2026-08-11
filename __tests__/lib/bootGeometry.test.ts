@@ -5,7 +5,9 @@ import {
   markGrow,
   revealRamp,
   EYE_H,
+  GROW_AT,
   MARK_REST,
+  RECOIL,
   UNIT,
 } from '../../src/lib/bootGeometry';
 import { LOGO_EYE_LEFT, LOGO_INK, SPLASH_LOCKUP } from '../../src/constants/logo';
@@ -46,15 +48,25 @@ describe('boot reveal geometry', () => {
     expect(LOGO_INK.w * UNIT * MARK_REST).toBeCloseTo(SPLASH_LOCKUP.markW, 6);
   });
 
-  it('grows monotonically from rest to the ramp maximum', () => {
+  it('recoils once, then grows monotonically to the ramp maximum', () => {
     for (const screen of SCREENS) {
       const ramp = revealRamp(screen.h);
       expect(markGrow(0, ramp)).toBe(1);
+      expect(markGrow(GROW_AT[1], ramp)).toBeCloseTo(RECOIL, 6);
       expect(markGrow(1, ramp)).toBeCloseTo(ramp.max, 6);
-      let prev = 0;
-      for (let p = 0; p <= 1.0001; p += 0.01) {
+      // The anticipation dip is the ONLY non-monotonic stretch: shrinking
+      // during the recoil window, never below RECOIL, and strictly growing
+      // from the moment the lunge starts.
+      let prev = 1;
+      for (let p = 0; p <= GROW_AT[1] + 1e-9; p += 0.005) {
         const g = markGrow(p, ramp);
-        expect(g).toBeGreaterThanOrEqual(prev);
+        expect(g).toBeLessThanOrEqual(prev + 1e-9);
+        expect(g).toBeGreaterThanOrEqual(RECOIL - 1e-9);
+        prev = g;
+      }
+      for (let p = GROW_AT[1]; p <= 1.0001; p += 0.005) {
+        const g = markGrow(p, ramp);
+        expect(g).toBeGreaterThanOrEqual(prev - 1e-9);
         prev = g;
       }
     }

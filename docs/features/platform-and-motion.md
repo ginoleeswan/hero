@@ -163,8 +163,9 @@ half-frame of skeleton.
   spanning the whole cold start (fonts → auth settle), so the boot animation
   never restarts.
 - `src/components/ui/BootStage.tsx` — the **native** boot surface
-  (`app/_layout.tsx`). One idea: **the mask is the door, and you go through its
-  eye.**
+  (`app/_layout.tsx`). One idea: **you put the mask on** — it recoils, lunges,
+  and settles over your face, and the app is what the world looks like through
+  its eye.
 
   **Still.** The first frame is not a lookalike of the native splash, it is the
   same picture: `assets/splash.png` and the JS stage are both drawn from
@@ -177,10 +178,20 @@ half-frame of skeleton.
 
   **Open.** Gated on the Explore feed's first paint (`useSignalFirstPaint`),
   capped at `REVEAL_CAP_MS`, floored at `HOLD_MS`. The wordmark sinks and fades
-  while the mark holds still — two things moving at once read as a scramble
-  rather than a handover. Then the mark accelerates toward the viewer with its
-  **left eye** pulled to the centre of the screen, the navy curtain behind it
-  drops, and the eye keeps opening until it is larger than the display.
+  while the mask **recoils** (`RECOIL`, ~4.5%) — anticipation is what separates
+  a lunge from a zoom; everything that moves like it has a body loads up before
+  it strikes, and it doubles as the handover beat so the mask never grows while
+  the wordmark is still on screen. Then it lunges, tipping a few degrees under
+  `perspective` so it moves through space instead of inflating in place
+  (levelling out as it reaches you — a mask being seated straight, not a card
+  spinning), with its **left eye** pulled to the centre of the screen. The
+  curtain drops with **one medium haptic tap** — the mask making contact, fired
+  from an animated reaction at the exact progress the ramp hands `cover` over
+  (`GROW_AT[3]`), because the moment is defined by the animation, not a timer.
+  The eye keeps opening to 1.5× the display: the overshoot is the mask passing
+  your head as you put it on, and it is free — the rim leaves the screen at
+  `cover`, so the extra magnification lands entirely on ink that is off
+  screen.
 
   **Why an eye and not the centre.** The bridge between the eyes is solid, so
   scaling about the mark's centre parks a growing beige column over the middle
