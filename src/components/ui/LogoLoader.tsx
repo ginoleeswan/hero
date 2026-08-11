@@ -9,6 +9,7 @@ import Animated, {
   withRepeat,
   withSequence,
   Easing,
+  useReducedMotion,
 } from 'react-native-reanimated';
 import { COLORS } from '../../constants/colors';
 
@@ -16,8 +17,15 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 export function LogoLoader() {
   const progress = useSharedValue(0);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
+    if (reduced) {
+      // The end state, not the start: a fully drawn, fully filled mark. Parked
+      // at 0 this is an invisible logo, which is a loader that loads nothing.
+      progress.value = 1;
+      return;
+    }
     progress.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
@@ -26,7 +34,7 @@ export function LogoLoader() {
       -1,
       false,
     );
-  }, [progress]);
+  }, [progress, reduced]);
 
   const animatedProps = useAnimatedProps(() => {
     // Stroke draws in over first 60% of cycle

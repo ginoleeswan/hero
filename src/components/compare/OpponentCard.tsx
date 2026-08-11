@@ -7,6 +7,7 @@ import Animated, {
   withSequence,
   withTiming,
   cancelAnimation,
+  useReducedMotion,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../HeroImage';
@@ -90,9 +91,12 @@ function OpponentCardBase({
   }
 
   const pulse = useSharedValue(0.65);
+  const reduced = useReducedMotion();
   useEffect(() => {
-    if (loaded) {
+    if (loaded || reduced) {
       cancelAnimation(pulse);
+      // Rest at full, never wherever the breath happened to be cancelled.
+      pulse.value = 1;
       return;
     }
     pulse.value = withRepeat(
@@ -101,7 +105,7 @@ function OpponentCardBase({
       false,
     );
     return () => cancelAnimation(pulse);
-  }, [loaded, pulse]);
+  }, [loaded, pulse, reduced]);
 
   const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
 

@@ -6,6 +6,7 @@ import Animated, {
   withTiming,
   withSequence,
   Easing,
+  useReducedMotion,
 } from 'react-native-reanimated';
 import { useEffect } from 'react';
 import { COLORS } from '../../constants/colors';
@@ -28,8 +29,13 @@ export function ClashSkeleton({
   const { width } = useWindowDimensions();
   const isWide = width >= 900;
   const pulse = useSharedValue(0.5);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
+    if (reduced) {
+      pulse.value = 1;
+      return;
+    }
     // SHIMMER_MS, not a local number: this is the same opacity pulse the
     // shared SkeletonProvider runs, and two skeletons breathing at different
     // tempos in one session is a coherence tell.
@@ -41,7 +47,7 @@ export function ClashSkeleton({
       -1,
       false,
     );
-  }, [pulse]);
+  }, [pulse, reduced]);
 
   const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
   const cardSize = isWide ? 150 : Math.min(190, (Math.min(width, 540) - 46) / 2);
