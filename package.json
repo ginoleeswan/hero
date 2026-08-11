@@ -18,6 +18,7 @@
     "docs:links": "node scripts/docs/check-doc-links.mjs",
     "check:ui": "node scripts/ui/check-ui-invariants.mjs",
     "contrast:matrix": "node scripts/ui/contrast-matrix.mjs",
+    "build:splash": "node scripts/brand/build-splash.mjs",
     "social": "node scripts/social/studio.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
