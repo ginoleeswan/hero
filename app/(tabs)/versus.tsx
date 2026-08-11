@@ -1,8 +1,20 @@
-// app/(tabs)/versus.tsx — the native Arena hub ("Battle Deck"). A navy game-
-// lobby stage holds today's showdown (two holo cards → vote → reveal) plus the
-// build-your-own / surprise-me actions, over a deck section of the greatest
-// rivalries. Shares useVersusHub with the web hub (versus.web.tsx) so the data
-// layer never drifts.
+// app/(tabs)/versus.tsx — the native Arena hub, in three acts.
+//
+// Three people open this tab: the one keeping a STREAK, the one who wants a
+// SPECIFIC fight, and the one who wants to be HANDED one. The screen answers
+// those three in that order and nothing appears twice.
+//
+//   1. Today   — the showdown (vote → reveal in place), then what is left of
+//                today's three as state rather than as three more links.
+//   2. Make a fight — everything that starts one, ordered by how much say you
+//                want: build it, take one that is ready, or let the app choose.
+//   3. Fight a villain — the most-opposed board.
+//
+// It used to be six blocks of near-equal weight in which the debate and the
+// team battle each appeared TWICE — once as content and once as a chip that
+// opened the same route. Grouping by intent removed both duplicates and two
+// whole sections. Shares useVersusHub with the web hub (versus.web.tsx) so the
+// data layer never drifts.
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -16,10 +28,10 @@ import { useVersusHub } from '../../src/hooks/useVersusHub';
 import { pickRandomPair } from '../../src/lib/versus';
 import { stashFighters, type FighterArt } from '../../src/lib/compareHandoff';
 import { ShowdownCards } from '../../src/components/versus/ShowdownCards';
-import { RivalriesRail } from '../../src/components/versus/RivalriesRail';
 import { HallOfInfamy } from '../../src/components/home/HallOfInfamy';
 import { YesterdayStrip } from '../../src/components/versus/YesterdayStrip';
-import { TodaysDailies } from '../../src/components/game/TodaysDailies';
+import { TodaysLedger } from '../../src/components/versus/TodaysLedger';
+import { MakeAFight } from '../../src/components/versus/MakeAFight';
 import { VersusSkeleton } from '../../src/components/skeletons/VersusSkeleton';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
@@ -48,6 +60,12 @@ export default function VersusScreen() {
   const openArena = (a: FighterArt, b: FighterArt) => {
     stashFighters(a, b);
     router.push(`/compare/${a.id}/${b.id}`);
+  };
+
+  const openTeamBattle = () => {
+    if (!teamBattle) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(`/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}`);
   };
 
   const surprise = () => {
@@ -106,7 +124,10 @@ export default function VersusScreen() {
                   style={styles.takesLink}
                 >
                   <Text style={styles.takesLinkText}>
-                    {takesCount} {takesCount === 1 ? 'take' : 'takes'} — join the debate
+                    {/* Never open by advertising that nobody bothered. */}
+                    {takesCount > 0
+                      ? `${takesCount} ${takesCount === 1 ? 'take' : 'takes'} — see the debate`
+                      : 'Be first to call it'}
                   </Text>
                   <Ionicons name="chevron-forward" size={13} color={COLORS.goldAccent} />
                 </Pressable>
@@ -160,48 +181,33 @@ export default function VersusScreen() {
             </Pressable>
           </View>
 
-          {/* ── Today's Dailies — streak + the three daily surfaces ── */}
-          <View style={styles.dailiesWrap}>
-            <TodaysDailies
+          {/* ── What's left today — state, not a third way to reach the same
+                 three screens. The debate line records what YOU did; repeating
+                 the pairing already shown above it would be an echo. ── */}
+          <View style={styles.ledgerWrap}>
+            <TodaysLedger
               onPuzzle={() => router.push('/play')}
               onDebate={() => (matchup ? openArena(matchup.heroA, matchup.heroB) : undefined)}
-              onTeamBattle={
-                teamBattle
-                  ? () =>
-                      router.push(
-                        `/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}` as Parameters<
-                          typeof router.push
-                        >[0],
-                      )
-                  : undefined
+              onTeamBattle={teamBattle ? openTeamBattle : undefined}
+              debateNote={matchup ? 'Tap a card above to call it' : 'Loading'}
+              teamNote={
+                teamBattle ? `${teamBattle.teamA.name} vs ${teamBattle.teamB.name}` : 'Eight a side'
               }
             />
           </View>
         </LinearGradient>
 
-        {/* ── Featured team battle ── */}
-        {teamBattle && (
-          <Pressable
-            style={styles.teamCard}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push(`/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}`);
-            }}
-          >
-            <Text style={styles.teamEyebrow}>Team Battle</Text>
-            <Text style={styles.teamTitle} numberOfLines={1}>
-              {teamBattle.teamA.name} vs {teamBattle.teamB.name}
-            </Text>
-            <Text style={styles.teamCta}>Tap to see the clash →</Text>
-          </Pressable>
-        )}
+        {/* ── Act 2 — everything that starts a fight, in one place ── */}
+        <MakeAFight
+          onBuild={() => router.push('/compare/pick')}
+          onDraft={() => router.push('/versus/team/draft')}
+          onSurprise={surprise}
+          canSurprise={canSurprise}
+          rivalries={rivalries}
+          onOpenRivalry={openArena}
+        />
 
-        {/* ── Deck section: greatest rivalries ── */}
-        <View style={styles.deckSec}>
-          <RivalriesRail rivalries={rivalries} onOpen={openArena} />
-        </View>
-
-        {/* ── Public Enemies: villains the most heroes line up against ── */}
+        {/* ── Act 3 — the most-opposed board ── */}
         <HallOfInfamy villains={mostFeared} onPress={(id) => router.push(`/character/${id}`)} />
       </ScrollView>
     </View>
@@ -253,7 +259,7 @@ const styles = StyleSheet.create({
   },
 
   actions: { flexDirection: 'row', gap: 12, marginTop: 26, alignSelf: 'stretch' },
-  dailiesWrap: { alignSelf: 'stretch', marginTop: 14 },
+  ledgerWrap: { alignSelf: 'stretch', marginTop: 14 },
   act: {
     flex: 1,
     flexDirection: 'row',
@@ -280,31 +286,4 @@ const styles = StyleSheet.create({
   actText: { flex: 1 },
   actTitle: { fontFamily: 'Flame-Regular', fontSize: 14, color: COLORS.beige },
   actSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: 'rgba(245,235,220,0.55)' },
-
-  teamCard: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 18,
-    borderRadius: 18,
-    backgroundColor: 'rgba(206,155,51,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(206,155,51,0.4)',
-  },
-  teamEyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 2,
-    color: COLORS.goldAccent,
-    textTransform: 'uppercase',
-    marginBottom: 6,
-  },
-  teamTitle: { fontFamily: 'Flame-Regular', fontSize: 20, lineHeight: 25, color: COLORS.beige },
-  teamCta: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: 'rgba(245,235,220,0.8)',
-    marginTop: 6,
-  },
-
-  deckSec: { backgroundColor: COLORS.deepNavy, paddingTop: 28 },
 });

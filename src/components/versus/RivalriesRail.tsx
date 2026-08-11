@@ -63,17 +63,23 @@ function RivalryCard({ r, onPress }: { r: Rivalry; onPress: () => void }) {
 export function RivalriesRail({
   rivalries,
   onOpen,
+  /** Suppress the built-in heading when the surrounding section supplies one —
+   *  two headings for one rail is exactly the duplication this hub had. */
+  headless = false,
 }: {
   rivalries: Rivalry[];
   onOpen: (a: FighterArt, b: FighterArt) => void;
+  headless?: boolean;
 }) {
   if (rivalries.length === 0) return null;
   return (
     <View>
-      <View style={styles.head}>
-        <Text style={styles.heading}>Greatest Rivalries</Text>
-        <Text style={styles.sub}>the grudge matches fans want to see</Text>
-      </View>
+      {headless ? null : (
+        <View style={styles.head}>
+          <Text style={styles.heading}>Greatest Rivalries</Text>
+          <Text style={styles.sub}>the grudge matches fans want to see</Text>
+        </View>
+      )}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
