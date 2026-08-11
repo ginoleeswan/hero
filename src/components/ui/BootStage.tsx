@@ -426,7 +426,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
           {/* The mark sits ABOVE the curtain, so the holes in its path are the
               aperture: whatever is under it shows through the eyes. */}
           <Animated.View
-            style={[styles.abs, { left: markLeft, top: markTop }, markStyle]}
+            style={[styles.markBox, { left: markLeft, top: markTop }, markStyle]}
             pointerEvents="none"
           >
             <Svg width={MARK_SVG} height={MARK_SVG} viewBox="0 0 1024 1024">
@@ -439,7 +439,7 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
               no font to load and no metrics to disagree about. */}
           <Animated.View
             style={[
-              styles.abs,
+              styles.wordBox,
               {
                 left: screenW / 2 - SPLASH_LOCKUP.wordW / 2,
                 top: boxTop + SPLASH_LOCKUP.wordCY - WORD_H / 2,
@@ -470,6 +470,28 @@ const styles = StyleSheet.create({
   app: { flex: 1 },
   appAtRest: { opacity: 1 },
   flat: { backgroundColor: SPLASH_NAVY },
-  abs: { position: 'absolute' },
+  // Both of these MUST carry an explicit width and height.
+  //
+  // An absolutely-positioned box with only `left`/`top` is sized by Yoga from
+  // what is left of the parent, and the mark's box is deliberately positioned
+  // at a NEGATIVE left (its 512pt square is centred on a 160pt mark, so it
+  // hangs off the screen on both sides). On a 393pt-wide screen that left the
+  // box 452pt of room for the 512pt it asked for, and react-native-svg clips
+  // to its own viewport — so the mask lost the last 9pt of its ink.
+  //
+  // The clip is the smaller half. A clamped box also moves its own CENTRE,
+  // which is the origin every transform here scales about — 29.7pt left of
+  // where the placement maths put it. Scale multiplies that error: 12pt of
+  // displacement at rest, 139pt at the breakthrough, 362pt at the end, which
+  // is most of the width of the screen. The eye is pinned to the centre of the
+  // display by arithmetic that assumes a 512pt box, so with a 452pt box it
+  // never lands there at all, and the whole reveal drifts further off as it
+  // grows.
+  //
+  // Anything a transform multiplies has to be exactly right BEFORE the
+  // transform touches it. A rounding-level layout mistake does not stay
+  // rounding-level on the other side of a 31x scale.
+  markBox: { position: 'absolute', width: MARK_SVG, height: MARK_SVG },
+  wordBox: { position: 'absolute', width: SPLASH_LOCKUP.wordW, height: WORD_H },
   halo: { position: 'absolute', width: HALO_W, height: HALO_H },
 });

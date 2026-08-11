@@ -292,6 +292,19 @@ half-frame of skeleton.
   raster exactly, and drawing type on the very first frame means gating on font
   load. As paths there is nothing to load and nothing to disagree about.
 
+  **The mark's and wordmark's boxes carry explicit `width`/`height`, and must.**
+  An absolutely-positioned box with only `left`/`top` is sized by Yoga from
+  what is left of the parent — and the mark's 512pt square is centred on a
+  160pt mark, so it is deliberately positioned at a negative `left` and hangs
+  off both edges. On a 393pt screen Yoga handed it 452pt, which clipped the
+  last 9pt of ink (react-native-svg clips to its viewport) _and_ moved the
+  box's centre 29.7pt — the origin every transform scales about. Scale
+  multiplies that: 12pt of displacement at rest, 139pt at the breakthrough,
+  362pt at the end. The eye is pinned to the screen's centre by arithmetic
+  that assumes a 512pt box, so it never landed there, and the drift grew with
+  the mask. Anything a transform multiplies has to be exactly right before the
+  transform touches it.
+
   **`assets/splash.png` and `imageWidth` are NATIVE.** They are baked into the
   binary and cannot ship over the air, so a change to the lockup needs a new
   build — until then the OS shows the old splash and the JS stage shows the new
