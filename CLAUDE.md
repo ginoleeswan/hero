@@ -185,6 +185,8 @@ Tests live in `__tests__/` mirroring the source tree. Run with `yarn test:ci`.
   `contentContainerStyle={{ paddingHorizontal: H_PAD }}`.
   The rail's first card then aligns with the page inset, but content scrolls
   all the way to the physical screen edge.
+- **An absolutely-positioned box that a transform SCALES must declare its own `width`/`height`.** A box with only `left`/`top` is sized by Yoga from what is left of the parent. Harmless for a badge pinned inside its parent; destructive for anything a transform then multiplies. A box positioned at a negative `left` (because it is a large square centred on a small mark) gets silently clamped, which both clips its content and moves its centre — the origin the transform scales about. In `BootStage` that was a 29.7pt origin shift plus a 9pt clip, which the reveal magnified into 362pt of drift and most of a mask shorn off. Anything a transform multiplies has to be exactly right _before_ the transform touches it.
+
 - **Clamped Flame text needs `lineHeight ≥ 1.22× fontSize`.** The Flame font's ink spans ~119% of its em box (tall caps + deep descenders). Any `Text` with `numberOfLines` set to a `Flame-Regular`/`Flame-Bold` style clips its descenders (`g`/`y`/`p`) if `lineHeight` is tighter — RNW turns `numberOfLines` into `-webkit-line-clamp` + `overflow: hidden`, so the descender gets cut. Non-clamped Flame text overflows visibly and is fine at any line-height.
 
 ## Platform-specific files (`.web.tsx` / `.tsx`)
