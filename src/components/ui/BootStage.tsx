@@ -388,7 +388,23 @@ export function BootStage({ booting, children }: { booting: boolean; children: R
       </Animated.View>
 
       {!revealDone && (
-        <View style={StyleSheet.absoluteFill} pointerEvents={booting ? 'auto' : 'none'}>
+        <View
+          style={StyleSheet.absoluteFill}
+          pointerEvents={booting ? 'auto' : 'none'}
+          // The stage is one image with one name. It used to announce itself
+          // for free, because the wordmark was live <Text> — outlining it to a
+          // path for the splash handoff silenced the entire screen, so a
+          // VoiceOver user got an unlabelled void for the length of the boot.
+          // Nothing inside is worth reading on its own (a mark, a wordmark and
+          // two gradients), so the whole thing is a single labelled element.
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel="Mythique"
+          // ...and modal, so focus cannot wander into the app underneath while
+          // the curtain is still over it. The stage unmounts at revealDone, so
+          // this releases itself.
+          accessibilityViewIsModal
+        >
           <Animated.View style={[StyleSheet.absoluteFill, curtainStyle]} pointerEvents="none">
             <View style={[StyleSheet.absoluteFill, styles.flat]} />
             <Animated.View style={[StyleSheet.absoluteFill, depthStyle]}>

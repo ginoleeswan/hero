@@ -305,6 +305,15 @@ half-frame of skeleton.
   the mask. Anything a transform multiplies has to be exactly right before the
   transform touches it.
 
+  **The stage is one labelled element for VoiceOver.** It used to announce
+  itself for free, because the wordmark was live `<Text>`; outlining it to a
+  path for the splash handoff silenced the whole screen and left screen-reader
+  users an unlabelled void for the length of the boot. Nothing inside is worth
+  reading on its own — a mark, a wordmark and two gradients — so the stage
+  carries `accessibilityRole="image"` with the label `Mythique`, and
+  `accessibilityViewIsModal` so focus cannot wander into the app behind the
+  curtain. It unmounts at `revealDone`, which releases the modal.
+
   **`assets/splash.png` and `imageWidth` are NATIVE.** They are baked into the
   binary and cannot ship over the air, so a change to the lockup needs a new
   build — until then the OS shows the old splash and the JS stage shows the new
