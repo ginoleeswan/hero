@@ -11,8 +11,11 @@ import Animated, {
   useAnimatedStyle,
   withRepeat,
   withTiming,
+  useReducedMotion,
+  cancelAnimation,
   withSequence,
 } from 'react-native-reanimated';
+import { useScreenFocused } from '../../hooks/useScreenFocused';
 import { HeroImage } from '../HeroImage';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { TitlePosterRail } from './TitlePosterRail';
@@ -66,8 +69,19 @@ export interface RightNowBandProps {
  *  throbbing dot over week-old cards reads as an abandoned app. */
 function PulseDot({ animate }: { animate: boolean }) {
   const v = useSharedValue(1);
+  // A dot that throbs forever is the single most literal thing Reduce Motion
+  // exists to suppress — more so than any transition, because it never ends.
+  // Every other loop in this app checked it; this one did not.
+  const reduced = useReducedMotion();
+  // ...and it holds still on another tab. NativeTabs keeps Explore mounted, so
+  // without this it blinks in an unwatched screen for as long as the app runs.
+  const focused = useScreenFocused();
+  const live = animate && !reduced && focused;
   useEffect(() => {
-    if (!animate) {
+    if (!live) {
+      // Rest at full opacity, never mid-blink: cancelling on blur would freeze
+      // a live indicator at 30% and leave it looking broken on return.
+      cancelAnimation(v);
       v.value = 1;
       return;
     }
@@ -76,9 +90,10 @@ function PulseDot({ animate }: { animate: boolean }) {
       -1,
       false,
     );
-  }, [v, animate]);
+    return () => cancelAnimation(v);
+  }, [v, live]);
   const style = useAnimatedStyle(() => ({ opacity: v.value }));
-  return <Animated.View style={[bandStyles.pulse, !animate && bandStyles.pulseIdle, style]} />;
+  return <Animated.View style={[bandStyles.pulse, !live && bandStyles.pulseIdle, style]} />;
 }
 
 function CampaignHero({
