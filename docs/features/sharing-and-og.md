@@ -37,23 +37,40 @@ Two decisions worth keeping: the VS poster's split uses the **stat scorecard**
 (`winsA`/`winsB`), not the live crowd tally — a freshly shared matchup has ~1
 vote and "100% · 1 fan voted" makes a poor poster. And on web the poster is
 **drawn from data**, not DOM-snapshotted (the snapshot path renders blank);
-native snapshots the rendered card via the ref. Share copy is pure string logic
-in `src/lib/share.ts` (`vsShareLine`), shared with the bot-facing meta.
+native snapshots the rendered card via the ref. Share copy AND share links are
+pure string logic in `src/lib/share.ts`, shared with the bot-facing meta.
+
+### Every share carries a link
+
+This is a rule now because it was not one, and almost nothing obeyed it. The
+character page — the flagship, and the most-shared surface in the app — sent
+`Check out <name> on Hero`: no URL, so the character card `api/og` already
+rendered had nothing to unfurl from, and "Hero" is the repo slug rather than the
+product. The arena's text fallback and the daily game's emoji grid were linkless
+too; the grid is a Wordle format whose entire growth loop IS the third line.
+
+So: **`shareLink.*` for the URL, a `*ShareLine` for the copy, `nativeShare()` to
+compose the payload.** That last one matters — iOS takes `message` and `url` as
+two activity items (Messages renders the sentence and unfurls the link), while
+Android has no `url` field at all and silently drops it, which is half of why
+these shares were empty. `ShareHeaderButton` wraps the whole pattern for the
+house/event/title headers so there is one call site, not three.
 
 ## The crawler surface (`api/`)
 
 `vercel.json` rewrites by user-agent: **social link-preview crawlers**
 (Facebook, Twitter, WhatsApp, Slack, Discord, Telegram…) on `/character/:id`,
-`/social-web/:id` and `/compare/:a/:b` go to `api/share-meta.ts`; **AI and
+`/social-web/:id`, `/house/:slug`, `/event/:slug`, `/title/:id` and
+`/compare/:a/:b` go to `api/share-meta.ts`; **AI and
 search bots** (Googlebot, Bingbot, GPTBot, ClaudeBot, PerplexityBot…) on
 character/title/team/compare/category/universe/franchise routes go to
 `api/bot-page.ts`. Everyone else falls through to the SPA shell.
 
 | Function | Runtime | Does |
 | --- | --- | --- |
-| `api/share-meta.ts` | Node | Page-specific OG tags (character / universe / vs, with live tally via `get_matchup_tally`); humans get a meta-refresh to the real page |
+| `api/share-meta.ts` | Node | Page-specific OG tags (character / universe / vs / debate / house / event / title, with live tally via `get_matchup_tally`); humans get a meta-refresh to the real page |
 | `api/bot-page.ts` | Node | Server-rendered HTML for AI/search bots (`api/_lib/botPage.ts`) |
-| `api/og/index.tsx` | **Edge** | 1200×630 `@vercel/og` card renderer: character card, VS card, universe poster, daily-debate card, brand card; any failure redirects to static `public/og.png` |
+| `api/og/index.tsx` | **Edge** | 1200×630 `@vercel/og` card renderer: character, VS, universe poster, daily-debate, house, event, title, brand card; any failure redirects to static `public/og.png` |
 | `api/battle.ts` | Node | `/battle/:a/:b` — instant-paint ad-landing vote page (`api/_lib/battlePage.ts`): portraits, live tally via anon `get_matchup_tally_v2`, vote buttons, CTA into `/compare` with UTM tags passed through; any failure 302s to the compare page |
 | `api/health.ts` | Node | Zero-import liveness probe (asserted by `yarn smoke`) — see its header comment for why it exists |
 
@@ -124,3 +141,36 @@ Supabase key. Start at `scripts/social/README.md`; visual rules are in
 - `docs/superpowers/specs/2026-07-07-social-studio-design.md` — the studio GUI.
 - `docs/superpowers/specs/2026-07-27-event-attribution-design.md` — event-level
   attribution follow-on.
+
+## The card inventory, and how a card gets reached
+
+A card that nothing links to is not a feature. `debateCard` — the richest one in
+the renderer, with both portraits, the live split bar and the crowned take —
+shipped and then sat unreachable for its whole life: no route, no rewrite and no
+share in the product ever produced a `type=debate` URL, so the only thing that
+ever rendered it was the admin health preview. Three page types (`/house`,
+`/event`, `/title`) had no card at all and unfurled as the generic brand card;
+`api/bot-page.ts` serves those routes but emits no `og:` tags, so it was never
+going to cover them.
+
+| Card | URL | Reached from |
+| --- | --- | --- |
+| character | `?hero=` | character page share |
+| vs | `?a=&b=` | arena share (text fallback), any `/compare` link |
+| debate | `?type=debate&a=&b=` | "Today's Battle" share → `/compare/a/b?debate=1` |
+| universe | `?type=universe&hero=` | `ShareUniverseButton` |
+| house | `?type=house&slug=` | house page header share |
+| event | `?type=event&slug=` | event dossier header share |
+| title | `?type=title&title=` | title page header share |
+| brand | no params | every fallback, and `public/og.png` |
+
+The debate rewrite is keyed on the `?debate=1` query and **must stay ordered
+before** the plain vs rule in `vercel.json` — first match wins, so reversing them
+silently downgrades every daily share to the plain head-to-head card.
+
+Two of the new cards carry the thing that makes their page worth reading rather
+than a generic layout: the house card draws real member faces (the members ARE
+the house; a crest is decoration) tinted by the house's own `sigil_tint`, and the
+event card draws the readership curve as an inline SVG polyline, because "no
+calendar told us this was on, the readership did" is the page's whole argument
+and the shape of the spike is the evidence for it.

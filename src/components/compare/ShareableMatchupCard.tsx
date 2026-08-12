@@ -9,6 +9,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHARE_CARD, INK_TEXT } from '../../constants/colors';
 import { MythiqueMark } from '../ui/MythiqueMark';
+import { SITE_DOMAIN } from '../../lib/share';
 import { CardTexture } from '../ui/CardTexture';
 
 const BG_COLORS = SHARE_CARD.bg.map((s) => s.color) as [string, string, string];
@@ -119,7 +120,7 @@ export function ShareableMatchupCard({
             {`“${verdict}”`}
           </Text>
         ) : null}
-        <Text style={s.cta}>Settle the debate · mythique</Text>
+        <Text style={s.cta}>{`Settle the debate · ${SITE_DOMAIN}`}</Text>
       </View>
     </View>
   );

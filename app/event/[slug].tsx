@@ -14,6 +14,8 @@ import { EmptyState } from '../../src/components/ui/EmptyState';
 import { EventDossierSkeleton } from '../../src/components/skeletons/EventSkeleton';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
+import { ShareHeaderButton } from '../../src/components/ui/ShareHeaderButton';
+import { eventShareLine, shareLink } from '../../src/lib/share';
 
 // The root stack hides headers globally — `title` alone renders nothing, and
 // event pages are shared/deep-linked, so they need a visible back affordance.
@@ -39,7 +41,23 @@ export default function EventPage() {
 
   return (
     <View style={s.screen}>
-      <Stack.Screen options={{ ...headerOptions, title: dossier?.event.headline ?? 'Event' }} />
+      <Stack.Screen
+        options={{
+          ...headerOptions,
+          title: dossier?.event.headline ?? 'Event',
+          // Only once the dossier is here: a share button that sends a link to
+          // a page still loading is a link to nothing worth reading.
+          headerRight: dossier
+            ? () => (
+                <ShareHeaderButton
+                  message={eventShareLine(dossier.event.headline, dossier.event.ongoing)}
+                  url={shareLink.event(dossier.event.slug)}
+                  label="Share this event"
+                />
+              )
+            : undefined,
+        }}
+      />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
         {/* Bleed the ink stage under the status bar — the page opens on ink. */}
         <View style={{ height: insets.top, backgroundColor: COLORS.deepNavy }} />

@@ -5,10 +5,12 @@
 // web card / compare arena never drift. Logged-out fans vote with no sign-up
 // wall — their pick is an on-device reveal. The card taps through to the arena.
 import { useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Share, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../HeroImage';
 import { COLORS, INK_TEXT } from '../../constants/colors';
+import { nativeShare, shareLink, vsShareLine } from '../../lib/share';
 import { crowdSplit, statLead, type MatchupSide } from '../../lib/home/matchupVote';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 import type { TodaysMatchup as Matchup } from '../../lib/matchup';
@@ -80,6 +82,19 @@ export function TodaysMatchup({
   // One floor, shared with every other crowd bar — see crowdSplit. One vote is
   // usually the viewer's own, and reflecting it back as a 100% bar is a verdict
   // the app cannot support.
+  const share = useCallback(() => {
+    Haptics.selectionAsync();
+    Share.share(
+      nativeShare(
+        vsShareLine(heroA.name, heroB.name, tally?.votesA ?? 0, tally?.votesB ?? 0),
+        shareLink.debate(heroA.id, heroB.id),
+        Platform.OS === 'ios',
+      ),
+    ).catch(() => {
+      // dismissed sheet — not an error worth surfacing
+    });
+  }, [heroA.id, heroA.name, heroB.id, heroB.name, tally]);
+
   const { pctA, pctB, usingVotes, votes } = crowdSplit(tally, winsA, winsB);
   const caption = usingVotes
     ? `${votes} fans voted today`
@@ -150,9 +165,25 @@ export function TodaysMatchup({
             <Text style={m.verdict} numberOfLines={3}>
               “{matchup.verdict}”
             </Text>
-            <Pressable onPress={() => onOpen(`/compare/${heroA.id}/${heroB.id}`)} style={m.linkRow}>
-              <Text style={m.link}>See full breakdown →</Text>
-            </Pressable>
+            {/* Sharing only appears once you have voted, because until then
+                there is no result to send — and the debate OG card the link
+                unfurls is a picture of exactly this: the split and the take. */}
+            <View style={m.linkRow}>
+              <Pressable onPress={() => onOpen(`/compare/${heroA.id}/${heroB.id}`)}>
+                <Text style={m.link}>See full breakdown →</Text>
+              </Pressable>
+              <View style={m.linkDivider} />
+              <Pressable
+                onPress={share}
+                accessibilityRole="button"
+                accessibilityLabel="Share today's battle"
+                hitSlop={8}
+                style={m.shareBtn}
+              >
+                <Ionicons name="share-outline" size={14} color={COLORS.orange} />
+                <Text style={m.link}>Share</Text>
+              </Pressable>
+            </View>
           </>
         )}
       </View>
@@ -306,6 +337,8 @@ const m = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 12,
   },
-  linkRow: { alignSelf: 'center' },
+  linkRow: { alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 12 },
+  linkDivider: { width: 1, height: 12, backgroundColor: 'rgba(255,255,255,0.18)' },
+  shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   link: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange, letterSpacing: 0.3 },
 });

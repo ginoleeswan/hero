@@ -88,6 +88,77 @@ export function vsMeta(a: HeroLite, b: HeroLite, votesA: number, votesB: number)
   };
 }
 
+/**
+ * Today's curated debate. Same page as `vsMeta`, but the OG card is the richer
+ * `type=debate` one — portraits, the live split bar and the crowned take.
+ *
+ * That card was written, shipped and then reachable from nowhere: no route, no
+ * rewrite and no share in the product ever produced a `type=debate` URL, so the
+ * only thing that ever rendered it was the admin health preview. The daily
+ * matchup's share button emits `?debate=1` and the rewrite ahead of the plain
+ * vs rule sends it here.
+ */
+export function debateMeta(a: HeroLite, b: HeroLite, votesA: number, votesB: number): ShareMeta {
+  return {
+    title: `Today's battle: ${a.name} vs ${b.name} — Mythique`,
+    description: vsShareLine(a.name, b.name, votesA, votesB),
+    path: `/compare/${a.id}/${b.id}`,
+    image: `${SITE_URL}/api/og?type=debate&a=${encodeURIComponent(a.id)}&b=${encodeURIComponent(
+      b.id,
+    )}`,
+  };
+}
+
+export type HouseLite = {
+  slug: string;
+  name: string;
+  universe: string | null;
+  memberCount: number;
+};
+
+export function houseMeta(house: HouseLite): ShareMeta {
+  const where = house.universe ? `${house.universe} · ` : '';
+  const n = house.memberCount;
+  const who = n > 0 ? `${n} charted ${n === 1 ? 'member' : 'members'}` : 'The charted line';
+  return {
+    title: `House ${house.name} — Mythique`,
+    description: `${where}${who} — the bloodline, the marriages and the feuds of House ${house.name}.`,
+    path: `/house/${house.slug}`,
+    image: `${SITE_URL}/api/og?type=house&slug=${encodeURIComponent(house.slug)}`,
+  };
+}
+
+export type EventLite = { slug: string; headline: string; blurb: string | null; ongoing: boolean };
+
+export function eventMeta(event: EventLite): ShareMeta {
+  return {
+    title: `${event.headline} — Mythique`,
+    description:
+      event.blurb ??
+      `${event.ongoing ? 'Happening now. ' : ''}No calendar told us this was on — the readership did. The window, the spike and everything that dropped inside it.`,
+    path: `/event/${event.slug}`,
+    image: `${SITE_URL}/api/og?type=event&slug=${encodeURIComponent(event.slug)}`,
+  };
+}
+
+export type TitleLite = {
+  id: string;
+  title: string;
+  year: number | null;
+  mediaType: string | null;
+};
+
+export function titleMeta(t: TitleLite): ShareMeta {
+  const kind = t.mediaType === 'tv' ? 'series' : t.mediaType === 'game' ? 'game' : 'film';
+  const year = t.year ? ` (${t.year})` : '';
+  return {
+    title: `${t.title}${year} — Mythique`,
+    description: `Every character in the ${kind}, who plays them, where to watch it, and how it connects to the rest of the catalogue.`,
+    path: `/title/${t.id}`,
+    image: `${SITE_URL}/api/og?type=title&title=${encodeURIComponent(t.id)}`,
+  };
+}
+
 /** Site-wide fallback (also used when a hero lookup fails — never a broken unfurl). */
 export function siteMeta(): ShareMeta {
   return {

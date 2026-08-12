@@ -28,10 +28,13 @@ function formatRevenue(n: number | null): string | null {
 export function FilmBackdropHeader({
   film,
   onBack,
+  onShare,
   bottomClearance,
 }: {
   film: HeroTitle;
   onBack: () => void;
+  /** Native only — renders a share button mirroring the back chevron. */
+  onShare?: () => void;
   /** Native passes extra room when a rounded seam cap overlaps this header's
    *  bottom — the cap consumes SEAM.overlap of whatever padding is here. */
   bottomClearance?: number;
@@ -108,6 +111,20 @@ export function FilmBackdropHeader({
           accessibilityLabel="Go back"
         >
           <Ionicons name="chevron-back" size={20} color={COLORS.beige} />
+        </TouchableOpacity>
+      ) : null}
+
+      {/* Share, mirroring the back button. Web shares via the address bar. */}
+      {Platform.OS !== 'web' && onShare ? (
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={onShare}
+          style={[styles.backBtn, styles.shareBtn, { top: insets.top + 12 }]}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={`Share ${film.title}`}
+        >
+          <Ionicons name="share-outline" size={19} color={COLORS.beige} />
         </TouchableOpacity>
       ) : null}
 
@@ -207,6 +224,7 @@ const styles = StyleSheet.create({
   backdropPlaceholder: {
     backgroundColor: COLORS.navy,
   },
+  shareBtn: { left: undefined, right: 16 },
   backBtn: {
     position: 'absolute',
     left: 16,
