@@ -171,7 +171,11 @@ export default function HomeScreen() {
     forYou,
     browseCovers,
   } = useExploreData();
-  const spotlight = spotlightAll.slice(0, SPOTLIGHT_POOL);
+  // Memoised, and it matters more than a slice normally would: this array is a
+  // dependency of the `rows` memo below, so an unstable identity here defeats
+  // that memo entirely — the whole feed was being rebuilt on EVERY render, and
+  // the FlatList and the spotlight carousel handed a new data array each time.
+  const spotlight = useMemo(() => spotlightAll.slice(0, SPOTLIGHT_POOL), [spotlightAll]);
   const heroCount = heroCountRaw ?? 0;
   const [navigating, setNavigating] = useState(false);
 

@@ -275,3 +275,21 @@ export function pageGutter(width: number): number {
   if (width < 640) return 16;
   return Math.max(32, Math.round((width - CONTENT_MAX_WIDTH) / 2));
 }
+
+/**
+ * The tab bar's SELECTED tint.
+ *
+ * The bar is one `systemChromeMaterialDark` blur serving four screens, and the
+ * darkest of them (the Arena's near-black stage) sets the floor. The old value
+ * — `#e8621a`, a one-off never in this palette — measures 4.08:1 to 4.64:1
+ * across how that material actually renders over the Arena stage: at or below
+ * the 4.5 floor, failing on the one item that is supposed to be the most
+ * legible thing in the bar. It read acceptably on Explore only because the
+ * beige page behind the blur lifts the material there.
+ *
+ * A tint is not a fill. `COLORS.orange` is tuned to carry large areas of
+ * colour; a 24pt glyph and a 10pt label need more separation than a card does,
+ * so this is the brand orange lifted for small marks — 5.49:1 to 7.15:1 across
+ * the same range, and still plainly the same orange at tab-bar size.
+ */
+export const TAB_ACTIVE = '#F5854A';

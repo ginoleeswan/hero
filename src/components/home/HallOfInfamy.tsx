@@ -56,16 +56,28 @@ function FearedCard({
   );
 }
 
-/** Explore carousel — the villains the most heroes count as an enemy. */
+/**
+ * The villains the most heroes count as an enemy.
+ *
+ * The same rail reads as two different things depending on where it sits. On
+ * Explore it is a browse rail and the cards open the character page, which is
+ * what a browse surface promises. On the Arena — a tab whose entire job is
+ * starting fights — that promise is wrong, so `eyebrow` and the caller's
+ * `onPress` retarget it at the opponent picker: tap a villain, pick who fights
+ * them. Same content, and on each canvas it does what its neighbours do.
+ */
 export function HallOfInfamy({
   villains,
   onPress,
   tone = 'paper',
+  eyebrow = 'Public Enemies',
 }: {
   villains: FearedVillain[];
-  onPress: (id: string) => void;
+  onPress: (id: string, name: string) => void;
   /** 'ink' for dark backgrounds (the Arena stage). */
   tone?: 'paper' | 'ink';
+  /** Names what tapping a card DOES here — it differs by surface. */
+  eyebrow?: string;
 }) {
   if (villains.length === 0) return null;
   const ink = tone === 'ink';
@@ -74,13 +86,13 @@ export function HallOfInfamy({
       <View style={c.header}>
         <View style={c.accentBar} />
         <View style={c.headerText}>
-          <Text style={[c.label, ink && c.labelInk]}>Public Enemies</Text>
+          <Text style={[c.label, ink && c.labelInk]}>{eyebrow}</Text>
           <Text style={[c.title, ink && c.titleInk]}>Most Feared</Text>
         </View>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={c.row}>
         {villains.map((v, i) => (
-          <FearedCard key={v.id} villain={v} rank={i + 1} onPress={() => onPress(v.id)} />
+          <FearedCard key={v.id} villain={v} rank={i + 1} onPress={() => onPress(v.id, v.name)} />
         ))}
       </ScrollView>
     </View>

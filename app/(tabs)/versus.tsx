@@ -203,10 +203,20 @@ export default function VersusScreen() {
         />
 
         {/* ── Act 3 — the most-opposed board ── */}
+        {/* ── Act 3 — a third way to start a fight, not a browse rail ──
+              These cards opened the character page, which is what the same
+              component does on Explore and exactly wrong here: a tab that
+              spends two acts starting fights ended on a row that quietly
+              stopped. Tapping a villain now opens the opponent picker with
+              them held on one side — "who fights Darkseid?" — which is the
+              question the board was already asking. */}
         <HallOfInfamy
           villains={mostFeared}
-          onPress={(id) => router.push(`/character/${id}`)}
+          onPress={(id, name) =>
+            router.push(`/compare/${id}/pick?name=${encodeURIComponent(name)}`)
+          }
           tone="ink"
+          eyebrow="Fight a villain"
         />
       </ScrollView>
     </View>
