@@ -16,9 +16,8 @@
 // whole sections. Shares useVersusHub with the web hub (versus.web.tsx) so the
 // data layer never drifts.
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -141,25 +140,11 @@ export default function VersusScreen() {
               ) : null
             ) : matchup ? (
               <>
-                <ShowdownCards matchup={matchup} />
-                {/* THE link into the arena, and the only one. The showdown
-                    block used to carry "See full breakdown →" and this sat
-                    directly beneath it — two gold chevroned links, stacked,
-                    going to the same screen. Never open by advertising that
-                    nobody bothered, so with no takes it names the act. */}
-                <Pressable
-                  onPress={() => openArena(matchup.heroA, matchup.heroB)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Open the arena"
-                  style={styles.takesLink}
-                >
-                  <Text style={styles.takesLinkText}>
-                    {takesCount > 0
-                      ? `${takesCount} ${takesCount === 1 ? 'take' : 'takes'} — see the debate`
-                      : 'Open the arena — add the first take'}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={13} color={COLORS.goldAccent} />
-                </Pressable>
+                <ShowdownCards
+                  matchup={matchup}
+                  takesCount={takesCount}
+                  onOpenArena={() => openArena(matchup.heroA, matchup.heroB)}
+                />
               </>
             ) : null}
             {showdownPhase === 'crossfade' ? (
@@ -249,17 +234,5 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     maxWidth: 320,
   },
-  takesLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 14,
-  },
-  takesLinkText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12.5,
-    color: COLORS.goldAccent,
-  },
-
   ledgerWrap: { alignSelf: 'stretch', marginTop: 6 },
 });

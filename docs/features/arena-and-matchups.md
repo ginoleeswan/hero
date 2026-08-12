@@ -238,10 +238,19 @@ bar shows the pair's all-time record, labelled as such, with the day's call coun
 underneath — one vote is usually your own, and reflecting it back as a full-width
 100% bar is a verdict the app has no business claiming.
 
-**One link into the arena.** The showdown block used to carry "See full
-breakdown →" with the takes link directly beneath it — two gold chevroned links,
-stacked, going to the same screen. `ShowdownCards` no longer takes `onOpen`; the
-screen owns the single link.
+**One link into the arena, and it appears with the reveal.** The showdown block
+used to carry "See full breakdown →" with the takes link directly beneath it —
+two gold chevroned links, stacked, going to the same screen. It is now a single
+chip inside `ShowdownCards`, rendered only once you have voted: a permanent line
+inviting you to "add the first take" on a fight you had not called was the wrong
+order, and it was one of three centred sentences competing for the same axis
+under the cards. The ledger's Debate tile still reaches the arena before a vote.
+
+**Yesterday is a ticket, not a sentence.** The split is drawn as a bar in the
+fighters' accents with the loser's side faded, the winner is the only name
+present, and "you called it" is a marker rather than a clause — left-aligned,
+because a record reads from the left and the centred prose was competing with
+the CTA above it.
 
 **The mode control has one inset, not two.** It had `padding: 4` on the track
 and `gap: 6` between the segments, so the selected thumb sat 4pt from the outer
