@@ -47,6 +47,10 @@ either — DB access goes through `src/lib/db/`.
 - `deleteAccount` calls the `delete-user` edge function
   (`supabase/functions/delete-user/`) with the user's own token, then signs
   out. The UI lives in `/settings` (`app/settings.tsx` + `.web.tsx`).
+- **Settings carries a Legal section (both platforms) and a version line
+  (native).** `/privacy` and `/terms` were linked from exactly one place — the
+  signup form — so a signed-in user (and an App Store reviewer, guideline
+  5.1.1) had no way back to either, on the screen where accounts get deleted.
 
 ## AuthGate and redirects
 

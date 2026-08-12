@@ -11,7 +11,7 @@ import type { Hero } from '../../lib/db/heroes';
 import { SPOTLIGHT } from './homeGeometry';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-// One clock for the carousel AND its progress fill — a bar timed against a
+// One clock for the carousel AND its progress fill — a pill timed against a
 // different number than the advance is a clock that lies.
 const AUTOPLAY_MS = 6000;
 

@@ -12,7 +12,6 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
@@ -75,7 +74,12 @@ export function SpotlightSlide({
   // centered identity + a prominent CTA. The portrait's face stays crisp; the
   // dark base guarantees the light text reads over any art.
   return (
-    <Pressable onPress={onPress} style={[styles.container, { height }]}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.container, { height }]}
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${hero.name}`}
+    >
       <Animated.View style={[StyleSheet.absoluteFill, styles.imageWrap, imageStyle]}>
         <HeroImage
           id={hero.id}
@@ -98,16 +102,16 @@ export function SpotlightSlide({
       />
 
       <View style={styles.meta}>
-        {/* The chevron is the billboard's only visible statement that it is a
-            DOOR — ported from the web spotlight, which always had one. Baseline
-            row, not an inline glyph: Flame's line box would center the icon on
-            the cap height and it would float. */}
-        <View style={styles.nameRow}>
-          <Text style={styles.name} numberOfLines={1}>
-            {hero.name}
-          </Text>
-          <Ionicons name="chevron-forward" size={22} color={COLORS.orange} style={styles.chevron} />
-        </View>
+        {/* No chevron, deliberately (it was briefly ported from the web
+            spotlight). On native a full-bleed content card IS the affordance —
+            the App Store's Today cards and Apple TV's billboard carry none —
+            and the glyph was noise on the most composed frame in the app. Web
+            keeps its chevron because an editorial headline under a cursor is a
+            different convention. The audience for whom tappability is not
+            visible gets it properly instead: the accessibility name below. */}
+        <Text style={styles.name} numberOfLines={1}>
+          {hero.name}
+        </Text>
         {!!sub && (
           <Text style={styles.sub} numberOfLines={1}>
             {sub}
@@ -133,14 +137,7 @@ const styles = StyleSheet.create({
     right: 20,
     alignItems: 'center',
   },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    maxWidth: '100%',
-  },
   name: {
-    flexShrink: 1,
     fontFamily: 'Flame-Regular',
     fontSize: 38,
     color: COLORS.beige,
@@ -152,7 +149,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 12,
   },
-  chevron: { marginLeft: 2, marginTop: 4 },
   sub: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12.5,
