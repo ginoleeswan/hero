@@ -4,6 +4,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
+import { STAGE_SWITCH } from '../../constants/houseGeometry';
 
 export type StageView = 'line' | 'house';
 
@@ -63,9 +64,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignSelf: 'flex-start',
     gap: 4,
-    padding: 4,
+    padding: STAGE_SWITCH.trackPadding,
     borderRadius: 999,
-    borderWidth: 1,
+    borderWidth: STAGE_SWITCH.trackBorder,
     borderColor: '#eadfcb',
     backgroundColor: '#fffaf0',
     flexWrap: 'wrap',
@@ -75,12 +76,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 7,
     borderRadius: 999,
-    paddingVertical: 7,
+    paddingVertical: STAGE_SWITCH.optionPaddingVertical,
     paddingHorizontal: 13,
     cursor: 'pointer',
   } as object,
   optionHover: { backgroundColor: '#f2e7d2' } as object,
   optionActive: { backgroundColor: COLORS.navy },
-  label: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: '#8d8375' },
+  // Explicit line box: the skeleton has to know this control's height, and left
+  // implicit it was whatever Nunito's own metrics gave.
+  label: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    lineHeight: STAGE_SWITCH.labelLine,
+    color: '#8d8375',
+  },
   labelActive: { color: '#fdf6e8' },
 });

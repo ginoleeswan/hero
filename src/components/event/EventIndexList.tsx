@@ -9,6 +9,7 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { EventCurve } from './EventCurve';
+import { EVENT_STAGE, EVENT_INDEX } from '../../constants/eventGeometry';
 import { formatWindow } from '../../hooks/useEventDossier';
 import type { EventIndex } from '../../lib/db/events.dossier';
 
@@ -31,7 +32,7 @@ export function EventIndexList({
   viewportHeight,
   onEventPress,
 }: EventIndexListProps) {
-  const pad = wide ? 40 : 18;
+  const pad = wide ? EVENT_STAGE.padWide : EVENT_STAGE.pad;
   const measure = Math.min(maxContentWidth ?? contentWidth, contentWidth);
   const inner = { width: '100%' as const, maxWidth: measure, alignSelf: 'center' as const };
   // The curve bleeds to the band's edges rather than sitting inset. Boxed inside
@@ -44,10 +45,26 @@ export function EventIndexList({
   return (
     <View>
       <View style={s.stage}>
-        <View style={[inner, { paddingHorizontal: pad, paddingTop: wide ? 44 : 28 }]}>
+        <View
+          style={[
+            inner,
+            {
+              paddingHorizontal: pad,
+              paddingTop: wide ? EVENT_STAGE.paddingTopWide : EVENT_STAGE.paddingTop,
+            },
+          ]}
+        >
           <Text style={s.eyebrow}>The record</Text>
           <Text style={s.title}>Events we caught</Text>
-          <Text style={s.method}>
+          {/* Fixed three-line box on phone, so the placeholder can mirror it
+              exactly rather than approximate the font's own wrapping. */}
+          <Text
+            style={[
+              s.method,
+              wide ? null : { height: EVENT_INDEX.methodLine * EVENT_INDEX.methodLines },
+            ]}
+            numberOfLines={wide ? undefined : EVENT_INDEX.methodLines}
+          >
             No calendar tells us a convention has started. Each one is watched through its own
             Wikipedia article, and appears here when the readership says so.
           </Text>
@@ -101,7 +118,7 @@ export function EventIndexList({
                       to={e.liveTo}
                       accent={accent}
                       width={bleed}
-                      height={wide ? 64 : 76}
+                      height={wide ? EVENT_INDEX.rowCurveHWide : EVENT_INDEX.rowCurveH}
                     />
                   </View>
 
@@ -142,27 +159,39 @@ export function EventIndexList({
 }
 
 const s = StyleSheet.create({
-  stage: { backgroundColor: SURFACE.ink, paddingBottom: 28 },
+  // Explicit line boxes throughout — see EVENT_INDEX. Left to the font's own
+  // metrics they were unknowable to the placeholder that has to mirror them.
+  stage: { backgroundColor: SURFACE.ink, paddingBottom: EVENT_INDEX.stagePaddingBottom },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
+    lineHeight: EVENT_INDEX.eyebrowLine,
     letterSpacing: 2.4,
     textTransform: 'uppercase',
     color: COLORS.orange,
-    marginBottom: 10,
+    marginBottom: EVENT_INDEX.eyebrowGap,
   },
   // Flame needs lineHeight >= 1.22x fontSize.
-  title: { fontFamily: 'Flame-Regular', fontSize: 36, lineHeight: 45, color: COLORS.beige },
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 36,
+    lineHeight: EVENT_INDEX.titleLine,
+    color: COLORS.beige,
+  },
   method: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: EVENT_INDEX.methodLine,
     color: INK_TEXT.faint,
     maxWidth: 520,
-    marginTop: 10,
+    marginTop: EVENT_INDEX.methodGap,
   },
   seam: { height: 1, backgroundColor: SEAM_COLOR },
-  paper: { backgroundColor: SURFACE.paper, paddingTop: 30, paddingBottom: 64 },
+  paper: {
+    backgroundColor: SURFACE.paper,
+    paddingTop: EVENT_INDEX.paperPaddingTop,
+    paddingBottom: EVENT_INDEX.paperPaddingBottom,
+  },
   empty: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 15,
@@ -171,13 +200,18 @@ const s = StyleSheet.create({
     maxWidth: 460,
   },
   row: {
-    paddingVertical: 22,
-    borderBottomWidth: 1,
+    paddingVertical: EVENT_INDEX.rowPaddingVertical,
+    borderBottomWidth: EVENT_INDEX.rowBorder,
     borderBottomColor: 'rgba(11,24,32,0.10)',
-    gap: 8,
+    gap: EVENT_INDEX.rowGap,
   },
   rowHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  rowTitle: { fontFamily: 'Flame-Regular', fontSize: 24, lineHeight: 30, color: COLORS.deepNavy },
+  rowTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 24,
+    lineHeight: EVENT_INDEX.rowTitleLine,
+    color: COLORS.deepNavy,
+  },
   livePip: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 10 },
   livePipText: {
     fontFamily: 'Nunito_700Bold',
@@ -189,14 +223,16 @@ const s = StyleSheet.create({
   rowWindow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
+    lineHeight: EVENT_INDEX.rowWindowLine,
     letterSpacing: 1.3,
     textTransform: 'uppercase',
     color: PAPER_TEXT.muted,
   },
-  rowCurve: { marginTop: 10, marginBottom: 10 },
+  rowCurve: { marginTop: EVENT_INDEX.rowCurveGap, marginBottom: EVENT_INDEX.rowCurveGap },
   rowStat: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
+    lineHeight: EVENT_INDEX.rowStatLine,
     color: PAPER_TEXT.muted,
   },
   rowStatNum: { fontFamily: 'Nunito_700Bold' },

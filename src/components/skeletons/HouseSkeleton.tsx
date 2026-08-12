@@ -17,6 +17,7 @@ import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { COLORS, SURFACE_GRADIENT, SEAM_COLOR } from '../../constants/colors';
 import { HouseBanner, BANNER_NATIVE_CLEARANCE } from '../family/HouseBanner';
+import { HOUSE_BODY_NATIVE, HOUSE_BODY_WEB, STAGE_SWITCH } from '../../constants/houseGeometry';
 import type { HouseChrome } from '../../hooks/useHouse';
 
 /** Placeholder fill for the ink band, where the beige base would glow. */
@@ -76,11 +77,20 @@ export function HouseSkeleton({
         >
           <View style={[styles.stageCol, twoColumn && styles.stageColWide] as object}>
             <ConsoleSkeleton />
+            {/* The stage switch sits between the console and the chart on both
+                platforms, and neither placeholder drew it. */}
+            <StageSwitchSkeleton />
             <ChartSkeleton height={stageHeight ?? (wide ? 460 : 360)} wide={wide} />
           </View>
-          <View style={[styles.rail, twoColumn && styles.railWide] as object}>
-            <RosterSkeleton />
-          </View>
+          {/* The roster rail is a two-column affordance ONLY. Native picks names
+              in a sheet over the console and mobile web gates the rail behind
+              the same breakpoint, so drawing it here promised ~350pt of list
+              that never arrives — the biggest single jump on this page. */}
+          {twoColumn ? (
+            <View style={[styles.rail, styles.railWide] as object}>
+              <RosterSkeleton />
+            </View>
+          ) : null}
         </View>
       </View>
     </SkeletonProvider>
@@ -190,6 +200,21 @@ function ChartSkeleton({ height, wide }: { height: number; wide: boolean }) {
   );
 }
 
+/**
+ * The stage switch. Drawn as its own chrome — the real track's border, fill and
+ * pill radius with two grey options inside — rather than as a shimmering bar,
+ * the same idiom the empty seat and the search field already use here: a
+ * control that is present but not yet populated reads better as itself.
+ */
+function StageSwitchSkeleton() {
+  return (
+    <View style={styles.switchTrack}>
+      <View style={[styles.switchOption, styles.switchOptionActive] as object} />
+      <View style={styles.switchOption} />
+    </View>
+  );
+}
+
 /** The roster rail: heading, the find-a-name field, then the line itself. */
 function RosterSkeleton() {
   return (
@@ -252,16 +277,46 @@ const styles = StyleSheet.create({
   bandFacts: { flexDirection: 'row', gap: 18, marginTop: 10 },
 
   // ── Workspace ───────────────────────────────────────────────────────────────
+  // The two platforms lay their body out differently and this used to draw the
+  // web one on both: a 20pt gutter against native's 16, 24pt of top pad against
+  // 16, and a 22pt stack gap against 18.
   workspace: {
     width: '100%',
     alignSelf: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 56,
-    gap: 22,
+    ...Platform.select({
+      web: {
+        paddingHorizontal: HOUSE_BODY_WEB.pad,
+        paddingTop: HOUSE_BODY_WEB.paddingTop,
+        paddingBottom: HOUSE_BODY_WEB.paddingBottom,
+        gap: HOUSE_BODY_WEB.gap,
+      },
+      default: { padding: HOUSE_BODY_NATIVE.pad, gap: HOUSE_BODY_NATIVE.gap },
+    }),
+  } as object,
+  workspaceWide: { flexDirection: 'row', alignItems: 'flex-start', gap: HOUSE_BODY_WEB.gapWide },
+  stageCol: {
+    minWidth: 0,
+    gap: Platform.OS === 'web' ? HOUSE_BODY_WEB.stackGap : HOUSE_BODY_NATIVE.gap,
   },
-  workspaceWide: { flexDirection: 'row', alignItems: 'flex-start', gap: 28 },
-  stageCol: { gap: 18, minWidth: 0 },
+
+  // The switch's own chrome, at its real resting height.
+  switchTrack: {
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    gap: 4,
+    padding: STAGE_SWITCH.trackPadding,
+    borderRadius: 999,
+    borderWidth: STAGE_SWITCH.trackBorder,
+    borderColor: '#eadfcb',
+    backgroundColor: '#fffaf0',
+  },
+  switchOption: {
+    width: 96,
+    height: STAGE_SWITCH.labelLine + STAGE_SWITCH.optionPaddingVertical * 2,
+    borderRadius: 999,
+    backgroundColor: '#f2e7d2',
+  },
+  switchOptionActive: { backgroundColor: '#e3d7c2' },
   stageColWide: { flex: 1 },
   rail: { width: '100%' },
   railWide: { width: 306, flexGrow: 0, flexShrink: 0 },

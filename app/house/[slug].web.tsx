@@ -24,6 +24,7 @@ import { HouseGenerations } from '../../src/components/family/HouseGenerations';
 import { StageSwitch, type StageView } from '../../src/components/family/StageSwitch';
 import { useHouse } from '../../src/hooks/useHouse';
 import { HouseSkeleton } from '../../src/components/skeletons/HouseSkeleton';
+import { HOUSE_BODY_WEB } from '../../src/constants/houseGeometry';
 
 /** Below this the rail can't hold a name and a tree at once — stack instead. */
 const TWO_COLUMN = 1000;
@@ -270,15 +271,15 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MAX_WIDTH,
     alignSelf: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 56,
-    gap: 22,
+    paddingHorizontal: HOUSE_BODY_WEB.pad,
+    paddingTop: HOUSE_BODY_WEB.paddingTop,
+    paddingBottom: HOUSE_BODY_WEB.paddingBottom,
+    gap: HOUSE_BODY_WEB.gap,
   },
-  workspaceWide: { flexDirection: 'row', alignItems: 'flex-start', gap: 28 },
+  workspaceWide: { flexDirection: 'row', alignItems: 'flex-start', gap: HOUSE_BODY_WEB.gapWide },
   // No `flex: 1` in the stacked case — flex-basis 0 inside an auto-height column
   // collapses the stage to nothing.
-  stage: { gap: 18, minWidth: 0, scrollMarginTop: 84 } as object,
+  stage: { gap: HOUSE_BODY_WEB.stackGap, minWidth: 0, scrollMarginTop: 84 } as object,
   stageWide: { flex: 1 },
   rail: { width: '100%' },
   railSticky: {
