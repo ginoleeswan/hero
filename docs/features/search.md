@@ -160,6 +160,10 @@ rails and read by scrolling; Search is a directory, scanned. The rails here are
 for things with an inherent order (your history) or a handful of items (four
 publishers) — not for a closed set you want to survey.
 
+**There is no orange wash at the top either.** A `rgba(231,115,51,0.13)`
+gradient 260pt tall sat behind the heading to warm it; with the heading gone it
+had nothing to sit behind and read as a tint over the status bar.
+
 **There is no "Search" title.** The tab is called Search, the placeholder says
 what to type, and on iOS 26 the field is pinned to the BOTTOM — so a 38pt
 heading at the top spent the screen's best space naming the room from the far

@@ -640,13 +640,6 @@ export default function SearchScreen() {
   return (
     <View style={styles.root} collapsable={false}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['rgba(231,115,51,0.13)', 'transparent']}
-        locations={[0, 0.6]}
-        style={styles.glow}
-        pointerEvents="none"
-      />
-
       <Stack.Header transparent style={{ color: COLORS.beige, shadowColor: 'transparent' }} />
       <Stack.SearchBar
         ref={searchRef}
@@ -760,7 +753,6 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: SEARCH_NAVY },
-  glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 260 },
   bottomScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   listWrap: { flex: 1 },
   list: { flex: 1, backgroundColor: 'transparent' },

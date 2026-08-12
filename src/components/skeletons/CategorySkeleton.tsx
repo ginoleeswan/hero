@@ -8,13 +8,17 @@ import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { COLORS } from '../../constants/colors';
 import { SEAM } from '../../design';
+import {
+  CATEGORY_GRID,
+  CATEGORY_CARD_W,
+  CATEGORY_CARD_H,
+  CATEGORY_STAGE,
+} from '../../constants/categoryGeometry';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;
-const GAP = 8;
-const H_PAD = 16;
-const CARD_WIDTH = (SCREEN_WIDTH - H_PAD * 2 - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
-const CARD_HEIGHT = Math.round(CARD_WIDTH * 1.35);
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { columns: NUM_COLUMNS, gap: GAP, hPad: H_PAD } = CATEGORY_GRID;
+const CARD_WIDTH = CATEGORY_CARD_W;
+const CARD_HEIGHT = CATEGORY_CARD_H;
 
 // Navy-tinted placeholder fill so skeletons read on the dark stage.
 const STAGE_TINT = 'rgba(245,235,220,0.10)';
@@ -37,22 +41,23 @@ export function CategorySkeleton({ topPadding = 0 }: { topPadding?: number }) {
     <SkeletonProvider>
       <View style={styles.root}>
         {/* Navy stage */}
+        {/* No eyebrow bar. The screen stopped rendering one when the count
+            moved onto the tagline's line, and a placeholder for a thing that no
+            longer exists is 23pt the grid has to jump when content lands. */}
         <View style={[styles.stage, { paddingTop: topPadding }]}>
           <Skeleton
-            width={140}
-            height={11}
-            borderRadius={4}
-            color={STAGE_TINT}
-            style={styles.eyebrow}
-          />
-          <Skeleton
             width="50%"
-            height={30}
+            height={CATEGORY_STAGE.titleLine}
             borderRadius={6}
             color={STAGE_TINT}
-            style={styles.title}
           />
-          <Skeleton width="72%" height={13} borderRadius={4} color={STAGE_TINT} />
+          <Skeleton
+            width="72%"
+            height={CATEGORY_STAGE.taglineLine}
+            borderRadius={4}
+            color={STAGE_TINT}
+            style={styles.tagline}
+          />
         </View>
 
         {/* Beige sheet → grid */}
@@ -68,9 +73,12 @@ export function CategorySkeleton({ topPadding = 0 }: { topPadding?: number }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.navy },
-  stage: { backgroundColor: COLORS.navy, paddingHorizontal: H_PAD, paddingBottom: 26 },
-  eyebrow: { marginBottom: 12 },
-  title: { marginBottom: 10 },
+  stage: {
+    backgroundColor: COLORS.navy,
+    paddingHorizontal: H_PAD,
+    paddingBottom: CATEGORY_STAGE.paddingBottom,
+  },
+  tagline: { marginTop: CATEGORY_STAGE.taglineGap },
   sheet: {
     flex: 1,
     backgroundColor: COLORS.beige,
@@ -78,7 +86,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: SEAM.radius,
     borderCurve: 'continuous',
     marginTop: -SEAM.overlap,
-    paddingTop: 26,
+    // The real screen's cap is a `capHeight` box pulled up by SEAM.overlap, so
+    // its first grid row sits (capHeight - overlap) below the stage. Match that
+    // exactly rather than approximately.
+    paddingTop: CATEGORY_STAGE.capHeight - SEAM.overlap,
     paddingHorizontal: H_PAD,
   },
   row: { flexDirection: 'row', gap: GAP, marginBottom: GAP },
