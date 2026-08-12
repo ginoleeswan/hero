@@ -122,13 +122,20 @@ export type HouseLite = {
   memberCount: number;
 };
 
+/** "House Targaryen" is how the catalogue stores the name, so prepending the
+ *  word again gave "House House Targaryen". Take the name as it comes and
+ *  derive the bare surname for the places that supply their own "House". */
+export function houseBareName(name: string): string {
+  return name.replace(/^house\s+/i, '');
+}
+
 export function houseMeta(house: HouseLite): ShareMeta {
   const where = house.universe ? `${house.universe} · ` : '';
   const n = house.memberCount;
   const who = n > 0 ? `${n} charted ${n === 1 ? 'member' : 'members'}` : 'The charted line';
   return {
-    title: `House ${house.name} — Mythique`,
-    description: `${where}${who} — the bloodline, the marriages and the feuds of House ${house.name}.`,
+    title: `${house.name} — Mythique`,
+    description: `${where}${who} — the bloodline, the marriages and the feuds of ${house.name}.`,
     path: `/house/${encodeURIComponent(house.slug)}`,
     image: `${SITE_URL}/api/og?type=house&slug=${encodeURIComponent(house.slug)}`,
   };

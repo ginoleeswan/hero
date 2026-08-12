@@ -43,6 +43,7 @@ import { COLORS, SHARE_CARD, shareCardBgCss } from '../../src/constants/colors';
 import { MARK_ASPECT, mythiqueMarkDataUri } from '../../src/constants/brandMark';
 import { cardTextureDataUri } from '../../src/constants/cardTexture';
 import { cloudinarySized, tmdbSized } from '../_lib/imageUrl';
+import { houseBareName } from '../_lib/shareMeta';
 
 export const config = { runtime: 'edge' };
 
@@ -374,7 +375,14 @@ function portraitImg(
         src={src}
         width={width}
         height={630}
-        style={{ objectFit: 'cover', transform: mirror ? 'scaleX(-1)' : 'none' }}
+        // `transform: 'none'` is NOT a no-op here — satori rejects it outright
+        // ("Failed to parse declaration"), and because ImageResponse streams,
+        // the 200 image/png header has already gone out when it throws. The
+        // catch below never runs, so the failure surfaces as an EMPTY body
+        // rather than the brand-card redirect. Every card that draws a hero
+        // portrait un-mirrored — character, VS, universe, debate, house — was
+        // serving a blank image. Omit the property instead of setting it.
+        style={{ objectFit: 'cover', ...(mirror ? { transform: 'scaleX(-1)' } : null) }}
         alt=""
       />
       {feather ? <div style={feather} /> : null}
@@ -1077,7 +1085,7 @@ function houseCard(house: OgHouse, faces: OgFace[]) {
             maxWidth: 640,
           }}
         >
-          {house.name}
+          {houseBareName(house.name)}
         </div>
         {house.words ? (
           <div

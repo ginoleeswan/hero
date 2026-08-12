@@ -4,6 +4,7 @@ import {
   debateMeta,
   eventMeta,
   houseMeta,
+  houseBareName,
   titleMeta,
   escapeHtml,
   siteMeta,
@@ -151,5 +152,27 @@ describe('buildMetaHtml escaping', () => {
     expect(titleMeta({ id: 'a/b', title: 'T', year: null, mediaType: null }).path).toBe(
       '/title/a%2Fb',
     );
+  });
+});
+
+// Houses are stored as "House Targaryen", so prepending the word produced
+// "House House Targaryen" in the unfurl title — caught by probing production.
+describe('house naming', () => {
+  it('does not double the word House', () => {
+    const m = houseMeta({
+      slug: 'targaryen',
+      name: 'House Targaryen',
+      universe: 'GoT',
+      memberCount: 9,
+    });
+    expect(m.title).toBe('House Targaryen — Mythique');
+    expect(m.title).not.toContain('House House');
+    expect(m.description).not.toContain('House House');
+  });
+
+  it('strips the prefix for surfaces that supply their own "House"', () => {
+    expect(houseBareName('House Targaryen')).toBe('Targaryen');
+    expect(houseBareName('house stark')).toBe('stark');
+    expect(houseBareName('Wayne Family')).toBe('Wayne Family');
   });
 });
