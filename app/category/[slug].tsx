@@ -50,6 +50,12 @@ import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { SEAM } from '../../src/design';
+import {
+  CATEGORY_GRID,
+  CATEGORY_CARD_W,
+  CATEGORY_CARD_H,
+  CATEGORY_STAGE,
+} from '../../src/constants/categoryGeometry';
 
 // Publishers (marvel/dc/image/dark-horse) are NOT here — they're universes now,
 // served by /universe/[slug] (this same screen, resolved via the registry). Only
@@ -94,11 +100,11 @@ const CATEGORY_TAGLINES: Record<CategorySlug, string> = {
   mythology: 'Gods, monsters, and legends out of myth.',
 };
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;
-const GAP = 8;
-const H_PAD = 16; // shared horizontal inset for the stage, sheet, and grid
-const CARD_WIDTH = (SCREEN_WIDTH - H_PAD * 2 - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
-const CARD_HEIGHT = Math.round(CARD_WIDTH * 1.35);
+// Shared with CategorySkeleton so the placeholder cannot drift from the real
+// layout — see constants/categoryGeometry.
+const { columns: NUM_COLUMNS, gap: GAP, hPad: H_PAD } = CATEGORY_GRID;
+const CARD_WIDTH = CATEGORY_CARD_W;
+const CARD_HEIGHT = CATEGORY_CARD_H;
 // Native search bar sits below the nav bar in the header; the navy stage pads
 // down past both so its content clears the floating header + search field.
 const SEARCH_BAR_PAD = 16;
@@ -643,7 +649,7 @@ const styles = StyleSheet.create({
   stage: {
     backgroundColor: COLORS.navy,
     paddingHorizontal: H_PAD,
-    paddingBottom: 36,
+    paddingBottom: CATEGORY_STAGE.paddingBottom,
     overflow: 'hidden', // clip the brand gradient wash to the stage
   },
   stageLogo: { alignSelf: 'flex-start' },
@@ -652,15 +658,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 32,
     color: COLORS.beige,
-    lineHeight: 40,
+    lineHeight: CATEGORY_STAGE.titleLine,
   },
   taglineCount: { fontFamily: 'Nunito_700Bold', color: COLORS.goldAccent },
   tagline: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    lineHeight: 18,
+    lineHeight: CATEGORY_STAGE.taglineLine,
     color: 'rgba(245,235,220,0.6)',
-    marginTop: 8,
+    marginTop: CATEGORY_STAGE.taglineGap,
     maxWidth: 320,
   },
 
@@ -672,7 +678,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: SEAM.radius,
     borderCurve: 'continuous',
     marginTop: -SEAM.overlap,
-    height: 30,
+    height: CATEGORY_STAGE.capHeight,
   },
 
   // Grid
