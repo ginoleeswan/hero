@@ -56,3 +56,61 @@ describe('statLead', () => {
     expect(statLead(3, 3, 'Thor', 'Hulk')).toBe('Evenly matched on the tape');
   });
 });
+
+import { crowdSplit, frozenResult, CROWD_FLOOR } from '../../../src/lib/home/matchupVote';
+
+// Four surfaces drew the crowd bar with their own copy of this rule, so fixing
+// one of them fixed exactly one of them. These lock the shared version.
+describe('crowdSplit', () => {
+  const tally = (total: number, a: number, b: number) => ({ total, votesA: a, votesB: b });
+
+  it('shows the all-time record until a real crowd exists', () => {
+    // One vote is almost always the viewer's own; reflecting it back as a
+    // full-width 100% bar is a verdict the app cannot support.
+    const r = crowdSplit(tally(1, 1, 0), 4, 2);
+    expect(r.usingVotes).toBe(false);
+    expect(r.votes).toBe(1);
+    expect(r).toMatchObject(statSplitOf(4, 2));
+  });
+
+  it('switches to today at the floor, not before it', () => {
+    expect(crowdSplit(tally(CROWD_FLOOR - 1, 9, 0), 1, 1).usingVotes).toBe(false);
+    expect(crowdSplit(tally(CROWD_FLOOR, 10, 0), 1, 1).usingVotes).toBe(true);
+  });
+
+  it('treats a missing tally as no votes rather than as a zero split', () => {
+    const r = crowdSplit(null, 3, 3);
+    expect(r.usingVotes).toBe(false);
+    expect(r.votes).toBe(0);
+    expect(r.pctA).toBe(50);
+  });
+
+  function statSplitOf(a: number, b: number) {
+    return statSplit(a, b);
+  }
+});
+
+describe('frozenResult', () => {
+  it('calls a dead heat a dead heat', () => {
+    // `finalVotesA >= finalVotesB` crowned whichever side sorted first, so a tie
+    // rendered as "Team Hulk won 50/50".
+    const r = frozenResult(5, 5, 'a');
+    expect(r.tied).toBe(true);
+    expect(r.yourSideWon).toBeNull();
+  });
+
+  it('nobody wins a tie, whichever side you picked', () => {
+    expect(frozenResult(5, 5, 'b').yourSideWon).toBeNull();
+    expect(frozenResult(5, 5, null).yourSideWon).toBeNull();
+  });
+
+  it('reports your side correctly on a real result', () => {
+    expect(frozenResult(7, 3, 'a')).toMatchObject({ tied: false, aWon: true, yourSideWon: true });
+    expect(frozenResult(7, 3, 'b')).toMatchObject({ aWon: true, yourSideWon: false });
+    expect(frozenResult(3, 7, 'b')).toMatchObject({ aWon: false, yourSideWon: true });
+  });
+
+  it('has no opinion when you did not vote', () => {
+    expect(frozenResult(7, 3, null).yourSideWon).toBeNull();
+  });
+});

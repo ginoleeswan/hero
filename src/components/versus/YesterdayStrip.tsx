@@ -15,7 +15,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { RADIUS } from '../../design';
-import { statSplit } from '../../lib/home/matchupVote';
+import { statSplit, frozenResult } from '../../lib/home/matchupVote';
 import type { YesterdayDebateStrip } from '../../hooks/useVersusHub';
 
 export function YesterdayStrip({ yesterday }: { yesterday: YesterdayDebateStrip }) {
@@ -23,13 +23,11 @@ export function YesterdayStrip({ yesterday }: { yesterday: YesterdayDebateStrip 
   const { pctA, pctB } = statSplit(finalVotesA, finalVotesB);
   // A dead heat is its own result, and the better story. Crowning the side that
   // happened to sort first ("Team Hulk won 50/50") states a contradiction in
-  // five words — and it is the outcome most likely to be looked at twice.
-  const tied = finalVotesA === finalVotesB;
-  const aWon = finalVotesA > finalVotesB;
+  // five words — and it is the outcome most likely to be looked at twice. The
+  // rule lives in frozenResult so the web sibling cannot drift off it again.
+  const { tied, aWon, yourSideWon } = frozenResult(finalVotesA, finalVotesB, yourPick);
   const winnerName = aWon ? heroAName : heroBName;
   const winnerPct = Math.max(pctA, pctB);
-
-  const yourSideWon = tied || yourPick === null ? null : (yourPick === 'a') === aWon;
 
   return (
     <View style={s.wrap}>

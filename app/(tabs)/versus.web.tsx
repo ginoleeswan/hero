@@ -3,12 +3,13 @@
 // build-your-own / surprise-me actions, over a darker deck section of the
 // greatest rivalries. Native uses the sibling versus.tsx; both share useVersusHub
 // so the data layer never drifts. Entered from the TopBar Arena tab.
+import { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';
 import { useVersusHub } from '../../src/hooks/useVersusHub';
-import { pickRandomPair } from '../../src/lib/versus';
+import { pickRandomPair, spreadRivalries } from '../../src/lib/versus';
 import { stashFighters, type FighterArt } from '../../src/lib/compareHandoff';
 import { withViewTransition } from '../../src/lib/viewTransition';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
@@ -57,6 +58,9 @@ export default function VersusHubWeb() {
   const canSurprise = iconicPool.length >= 2;
 
   const rows = useDiscoveryRows();
+  // Same rail, same problem: get_top_rivalries orders by summed fame, so the
+  // most famous fighter leads several cards in a row. See spreadRivalries.
+  const spreadRail = useMemo(() => spreadRivalries(rows.rivalries), [rows.rivalries]);
   const openTeam = (aId: string, bId: string) =>
     withViewTransition(() =>
       router.push(`/versus/team/${aId}-vs-${bId}` as Parameters<typeof router.push>[0]),
@@ -225,7 +229,7 @@ export default function VersusHubWeb() {
                 >
                   {/* Cap at 10 on the desktop grid (two full 5-up rows) so the
                     section never trails off with a 2-card orphan row. */}
-                  {(isDesktop ? rows.rivalries.slice(0, 10) : rows.rivalries).map((m) => (
+                  {(isDesktop ? spreadRail.slice(0, 10) : spreadRail).map((m) => (
                     <MatchupCard
                       key={`${m.a.id}-${m.b.id}`}
                       a={heroSide(m.a)}

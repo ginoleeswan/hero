@@ -9,7 +9,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { HeroImage } from '../HeroImage';
 import { COLORS, INK_TEXT } from '../../constants/colors';
-import { statSplit, statLead, type MatchupSide } from '../../lib/home/matchupVote';
+import { crowdSplit, statLead, type MatchupSide } from '../../lib/home/matchupVote';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 import type { TodaysMatchup as Matchup } from '../../lib/matchup';
 import { MATCHUP_CARD } from './homeGeometry';
@@ -77,14 +77,12 @@ export function TodaysMatchup({
     [revealed, castVote],
   );
 
-  // The bar shows the crowd split once anyone has voted; before that it falls
-  // back to the stat scorecard so the reveal is never an empty 50/50.
-  const usingVotes = !!tally && tally.total > 0;
-  const { pctA, pctB } = usingVotes
-    ? statSplit(tally!.votesA, tally!.votesB)
-    : statSplit(winsA, winsB);
+  // One floor, shared with every other crowd bar — see crowdSplit. One vote is
+  // usually the viewer's own, and reflecting it back as a 100% bar is a verdict
+  // the app cannot support.
+  const { pctA, pctB, usingVotes, votes } = crowdSplit(tally, winsA, winsB);
   const caption = usingVotes
-    ? `${tally!.total} ${tally!.total === 1 ? 'fan' : 'fans'} voted`
+    ? `${votes} fans voted today`
     : statLead(winsA, winsB, heroA.name, heroB.name);
 
   return (

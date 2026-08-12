@@ -15,13 +15,11 @@ import { COLORS, INK_TEXT } from '../../constants/colors';
 import { RADIUS } from '../../design';
 import { HeroImage } from '../HeroImage';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
-import { statSplit } from '../../lib/home/matchupVote';
+import { crowdSplit } from '../../lib/home/matchupVote';
 import type { TodaysMatchup, MatchupHero } from '../../lib/matchup';
 
 const ACCENT_A = COLORS.orange;
 const ACCENT_B = COLORS.blue;
-/** Votes needed before today's split is shown as today's split. */
-const CROWD_FLOOR = 10;
 const CARD_W = 150;
 const CARD_H = 200;
 const COIN = 56;
@@ -106,11 +104,9 @@ export function ShowdownCards({
   // as a full-width 100% bar reads as a verdict the app has no business
   // claiming. Under the floor the bar shows the pair's all-time record (real
   // data, plainly labelled) and the caption says how many have called it today.
-  const votes = tally?.total ?? 0;
-  const usingVotes = votes >= CROWD_FLOOR;
-  const { pctA, pctB } = usingVotes
-    ? statSplit(tally!.votesA, tally!.votesB)
-    : statSplit(winsA, winsB);
+  // The floor lives in crowdSplit: four surfaces drew this bar with their own
+  // copy of the rule, so fixing one of them fixed exactly one of them.
+  const { pctA, pctB, usingVotes, votes } = crowdSplit(tally, winsA, winsB);
   const caption = usingVotes ? `${votes} fans voted today` : 'All-time record';
   const todayNote = usingVotes
     ? null
