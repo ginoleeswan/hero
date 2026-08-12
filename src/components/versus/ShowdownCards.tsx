@@ -1,12 +1,18 @@
 // src/components/versus/ShowdownCards.tsx — native Battle-Deck showdown. Two
 // tilted holographic fighter cards flank a gold VS coin; tapping a card casts
-// your vote and reveals the split in place. The link into the arena lives in
-// the screen, not here — this block had one and the screen had another,
-// stacked, both gold, both chevroned. Mirrors the web ShowdownStage (src/components/web/versus) so the two
-// platforms read as one design; both share useMatchupVote.
+// your vote and reveals the split in place, followed by the ONE way into the
+// arena. That link used to be duplicated — this block had "See full breakdown"
+// and the screen had a takes link directly beneath it, stacked, both gold, both
+// chevroned — and then it was permanent, inviting you to add the first take on
+// a fight you had not called. It now appears with the reveal, because voting is
+// the price of admission to the debate. Mirrors the web ShowdownStage
+// (src/components/web/versus) so the two platforms read as one design; both
+// share useMatchupVote.
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT } from '../../constants/colors';
+import { RADIUS } from '../../design';
 import { HeroImage } from '../HeroImage';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 import { statSplit } from '../../lib/home/matchupVote';
@@ -83,7 +89,15 @@ function HoloCard({
   );
 }
 
-export function ShowdownCards({ matchup }: { matchup: TodaysMatchup }) {
+export function ShowdownCards({
+  matchup,
+  takesCount,
+  onOpenArena,
+}: {
+  matchup: TodaysMatchup;
+  takesCount: number;
+  onOpenArena: () => void;
+}) {
   const { heroA, heroB, winsA, winsB } = matchup;
   const { revealed, pickedId, tally, castVote } = useMatchupVote(heroA.id, heroB.id);
 
@@ -145,6 +159,26 @@ export function ShowdownCards({ matchup }: { matchup: TodaysMatchup }) {
             </Text>
           </View>
           {todayNote ? <Text style={styles.todayNote}>{todayNote}</Text> : null}
+
+          {/* AFTER the vote, not before. This was a permanent line of centred
+              text under the cards inviting you to "add the first take" on a
+              fight you had not called yet — the wrong order, and one of three
+              stacked sentences competing for the same axis. Voting is the
+              price of admission to the debate, so the way in appears once you
+              have paid it. (The ledger's Debate tile still reaches it.) */}
+          <Pressable
+            onPress={onOpenArena}
+            accessibilityRole="button"
+            accessibilityLabel="Open the arena"
+            style={({ pressed }) => [styles.arenaChip, pressed && styles.chipPressed]}
+          >
+            <Text style={styles.arenaChipText}>
+              {takesCount > 0
+                ? `${takesCount} ${takesCount === 1 ? 'take' : 'takes'} — see the debate`
+                : 'See the debate'}
+            </Text>
+            <Ionicons name="chevron-forward" size={12} color={COLORS.goldAccent} />
+          </Pressable>
         </View>
       )}
     </View>
@@ -248,6 +282,25 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     color: INK_TEXT.faint,
+  },
+  arenaChip: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: RADIUS.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(206,155,51,0.45)',
+    backgroundColor: 'rgba(206,155,51,0.1)',
+  },
+  chipPressed: { opacity: 0.65 },
+  arenaChipText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    color: COLORS.goldAccent,
   },
   todayNote: {
     marginTop: 8,

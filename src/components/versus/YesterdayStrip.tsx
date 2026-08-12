@@ -1,9 +1,20 @@
-// src/components/versus/YesterdayStrip.tsx — one-line recap of yesterday's
-// frozen debate split + its crowned top take, shown under the daily debate
-// card. Shared shape (YesterdayDebateStrip) comes from useVersusHub; the web
-// arena renders the sibling in components/web/versus.
+// src/components/versus/YesterdayStrip.tsx — yesterday's frozen result, as a
+// ticket rather than a sentence.
+//
+// It was a centred line of prose ("Yesterday: Team Joker won 100/0 · Your side
+// won") stacked under two more centred lines of prose. Three sentences at
+// near-identical weight is not a hierarchy — it is a paragraph, and the reader
+// has to actually read all of it to find out that none of it needed reading.
+//
+// A result has a natural shape: a split, a winner, and whether you were on it.
+// Drawing the split as a bar states it faster than "100/0" does, the winner is
+// the only name that needs to be there, and "you called it" is a marker rather
+// than a clause. Left-aligned, because a ticket is a record and records are
+// read from the left; the centred prose was competing with the CTA above it for
+// the same axis.
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS, INK_TEXT } from '../../constants/colors';
+import { RADIUS } from '../../design';
 import { statSplit } from '../../lib/home/matchupVote';
 import type { YesterdayDebateStrip } from '../../hooks/useVersusHub';
 
@@ -14,28 +25,37 @@ export function YesterdayStrip({ yesterday }: { yesterday: YesterdayDebateStrip 
   // happened to sort first ("Team Hulk won 50/50") states a contradiction in
   // five words — and it is the outcome most likely to be looked at twice.
   const tied = finalVotesA === finalVotesB;
-  const winnerName = finalVotesA > finalVotesB ? heroAName : heroBName;
+  const aWon = finalVotesA > finalVotesB;
+  const winnerName = aWon ? heroAName : heroBName;
   const winnerPct = Math.max(pctA, pctB);
-  const loserPct = Math.min(pctA, pctB);
 
-  const yourSideWon =
-    tied || yourPick === null ? null : (yourPick === 'a') === finalVotesA > finalVotesB;
+  const yourSideWon = tied || yourPick === null ? null : (yourPick === 'a') === aWon;
 
   return (
     <View style={s.wrap}>
-      <Text style={s.line}>
-        {tied
-          ? `Yesterday: dead heat — ${heroAName} and ${heroBName} split it ${pctA}/${pctB}`
-          : `Yesterday: Team ${winnerName} won ${winnerPct}/${loserPct}`}
-        {yourSideWon !== null ? (
-          <Text style={yourSideWon ? s.won : s.lost}>
-            {yourSideWon ? '  · Your side won' : '  · Your side lost'}
+      {/* The split, drawn. Two bars in the fighters' own accents, the winner's
+          side full-strength — the number beside it is corroboration, not the
+          only way to find out who took it. */}
+      <View style={s.bar}>
+        <View style={[s.fillA, { flex: Math.max(pctA, 1) }, !tied && !aWon && s.faded]} />
+        <View style={[s.fillB, { flex: Math.max(pctB, 1) }, !tied && aWon && s.faded]} />
+      </View>
+
+      <View style={s.body}>
+        <Text style={s.eyebrow}>Yesterday</Text>
+        <Text style={s.result} numberOfLines={1}>
+          {tied ? 'Dead heat' : `${winnerName} took it · ${winnerPct}%`}
+        </Text>
+        {topTake ? (
+          <Text style={s.quote} numberOfLines={1}>
+            “{topTake.body}”
           </Text>
         ) : null}
-      </Text>
-      {topTake ? (
-        <Text style={s.quote} numberOfLines={2}>
-          “{topTake.body}” — {topTake.displayName ?? 'Anonymous hero'}
+      </View>
+
+      {yourSideWon !== null ? (
+        <Text style={[s.badge, yourSideWon ? s.won : s.lost]}>
+          {yourSideWon ? 'You called it' : 'You missed it'}
         </Text>
       ) : null}
     </View>
@@ -44,25 +64,39 @@ export function YesterdayStrip({ yesterday }: { yesterday: YesterdayDebateStrip 
 
 const s = StyleSheet.create({
   wrap: {
-    marginTop: 14,
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 20,
+    gap: 11,
+    alignSelf: 'stretch',
+    marginTop: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: RADIUS.md,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(41,60,67,0.42)',
   },
-  line: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 12.5,
-    color: 'rgba(245,235,220,0.7)',
-    textAlign: 'center',
+  // Vertical, so it reads as the edge of the ticket rather than as a progress
+  // bar for something on this screen — yesterday is finished.
+  bar: { width: 4, height: 34, borderRadius: RADIUS.xs, overflow: 'hidden' },
+  fillA: { backgroundColor: COLORS.orange },
+  fillB: { backgroundColor: COLORS.blue },
+  faded: { opacity: 0.3 },
+  body: { flex: 1, gap: 1 },
+  eyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: INK_TEXT.faint,
   },
-  won: { fontFamily: 'Nunito_700Bold', color: COLORS.green },
-  lost: { fontFamily: 'Nunito_700Bold', color: INK_TEXT.faint },
-  quote: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 12.5,
-    lineHeight: 17,
-    color: 'rgba(245,235,220,0.55)',
-    textAlign: 'center',
-    maxWidth: 340,
+  result: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.beige },
+  quote: { fontFamily: 'FlameSans-Regular', fontSize: 12, color: INK_TEXT.faint },
+  badge: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
+  won: { color: COLORS.green },
+  lost: { color: INK_TEXT.faint },
 });

@@ -177,6 +177,14 @@ today's debate. Grouping by intent removed both duplicates and two whole
 sections (the featured team-battle card, the standalone rivalries deck),
 because their content moved to where the intent already lived.
 
+**`TodaysLedger` is one row of three tiles.** As three full-width lines it spent
+~165pt on three booleans and pushed "Make a fight" — the act this tab exists for
+— most of a screen down. Side by side it reads as one glance ("two open, one
+settled") rather than three sequential reads, and costs about 90pt less. The
+per-line notes are the deliberate cost: a ~125pt tile cannot carry "Sinister Six
+vs Young Avengers" legibly, and padding it out to fit would give back the space
+the change exists to save. They survive in the accessibility label.
+
 **`TodaysLedger` is state, not navigation.** Each daily is a line with its own
 subject and an Open/Settled marker, plus the streak. The debate line records
 what _you_ did rather than repeating a pairing shown a few hundred points above
@@ -230,10 +238,29 @@ bar shows the pair's all-time record, labelled as such, with the day's call coun
 underneath — one vote is usually your own, and reflecting it back as a full-width
 100% bar is a verdict the app has no business claiming.
 
-**One link into the arena.** The showdown block used to carry "See full
-breakdown →" with the takes link directly beneath it — two gold chevroned links,
-stacked, going to the same screen. `ShowdownCards` no longer takes `onOpen`; the
-screen owns the single link.
+**One link into the arena, and it appears with the reveal.** The showdown block
+used to carry "See full breakdown →" with the takes link directly beneath it —
+two gold chevroned links, stacked, going to the same screen. It is now a single
+chip inside `ShowdownCards`, rendered only once you have voted: a permanent line
+inviting you to "add the first take" on a fight you had not called was the wrong
+order, and it was one of three centred sentences competing for the same axis
+under the cards. The ledger's Debate tile still reaches the arena before a vote.
+
+**Yesterday is a ticket, not a sentence.** The split is drawn as a bar in the
+fighters' accents with the loser's side faded, the winner is the only name
+present, and "you called it" is a marker rather than a clause — left-aligned,
+because a record reads from the left and the centred prose was competing with
+the CTA above it.
+
+**The mode control has one inset, not two.** It had `padding: 4` on the track
+and `gap: 6` between the segments, so the selected thumb sat 4pt from the outer
+edge and 3pt from the middle — a gutter wider than the inset it nested in, which
+is what made it read as lopsided from any angle. A segmented control has no
+gutter: the segments abut and the thumb's only margin is the track's padding.
+With both fully rounded the curves are then concentric by construction (track
+r = h/2, thumb r = (h − 2i)/2 = track r − i). The label carries an explicit
+`lineHeight` because the thumb's height is padding plus that number, and leaving
+it to the font's default makes the control's geometry a property of the font.
 
 `RivalriesRail` takes `headless` so a section that supplies its own label does
 not get a second heading. The rail still brings its own inset and must sit

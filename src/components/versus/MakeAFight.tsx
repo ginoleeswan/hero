@@ -43,6 +43,8 @@ const H_PAD = 16;
 // (the showdown's HoloCard, the rivalry rail's split portraits) is portrait for
 // the same reason; these were the exception.
 const SQUAD_H = 132;
+/** The segmented control's single inset — see `modes`. */
+const TRACK_INSET = 3;
 const SLOT_RATIO = 4 / 5;
 
 export function MakeAFight({
@@ -263,7 +265,7 @@ function Primary({
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 28 },
+  wrap: { marginTop: 22 },
   // Everything except the rail is inset; the rail brings its own inset and
   // must reach the physical screen edge (see CLAUDE.md's rail rule).
   inset: { paddingHorizontal: H_PAD },
@@ -271,19 +273,46 @@ const styles = StyleSheet.create({
   title: { ...SECTION, color: COLORS.beige },
   rule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(245,235,220,0.14)' },
 
+  // The thumb sits in the track with ONE inset, on all four sides.
+  //
+  // It used to have `padding: 4` on the track and `gap: 6` between the
+  // segments, so the selected thumb was 4pt from the outer edge and 3pt from
+  // the middle — a gutter wider than the inset it was nested in, which is what
+  // made the control read as slightly lopsided however you looked at it. A
+  // segmented control has no gutter: the segments abut and the thumb's only
+  // margin is the track's padding. With the track and thumb both fully rounded
+  // the curves are then concentric by construction (track r = h/2, thumb
+  // r = (h − 2i)/2 = track r − i), which is the other half of why this now
+  // settles instead of shimmering.
   modes: {
     flexDirection: 'row',
-    gap: 6,
-    padding: 4,
+    padding: TRACK_INSET,
     borderRadius: RADIUS.pill,
     backgroundColor: 'rgba(41,60,67,0.5)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(245,235,220,0.14)',
     marginBottom: 20,
   },
-  mode: { flex: 1, paddingVertical: 9, borderRadius: RADIUS.pill, alignItems: 'center' },
-  modeOn: { backgroundColor: COLORS.beige },
-  modeText: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: INK_TEXT.muted },
+  mode: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // A real thumb sits ON the track rather than being painted into it.
+  modeOn: {
+    backgroundColor: COLORS.beige,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.28)',
+  },
+  // Explicit line-height: the thumb's height is padding + this, so leaving it
+  // to the font's default makes the control's geometry a property of the font.
+  modeText: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 13,
+    lineHeight: 18,
+    color: INK_TEXT.muted,
+  },
   modeTextOn: { color: COLORS.deepNavy },
 
   slots: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
