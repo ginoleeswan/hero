@@ -277,25 +277,19 @@ export function pageGutter(width: number): number {
 }
 
 /**
- * The tab bar's SELECTED tint.
+ * The tab bar's selected tint in DARK appearance. The light-appearance half is
+ * `ORANGE_INK`, and `app/(tabs)/_layout.tsx` pairs them with `DynamicColorIOS`
+ * so the tint resolves from the same trait collection iOS uses to choose the
+ * bar's material.
  *
- * The bar carries a `rgba(11,24,32,0.86)` scrim precisely so this can be one
- * fixed colour: the material alone is translucent enough that the backdrop
- * swings from cream (over Profile's beige page) to near-black (over the Arena
- * stage) and back again mid-scroll over bright cover art. No orange clears 4.5
- * against that whole range — the best any of them manages on its worse side is
- * about 3.5, because the two backdrops sit on opposite sides of the hue's
- * luminance. With the scrim the backdrop has a ceiling near #2d383f. The old value
- * — `#e8621a`, a one-off never in this palette — measures 4.08:1 to 4.64:1
- * across how that material actually renders over the Arena stage: at or below
- * the 4.5 floor, failing on the one item that is supposed to be the most
- * legible thing in the bar. It read acceptably on Explore only because the
- * beige page behind the blur lifts the material there.
+ * That pairing is the whole point: a fixed orange cannot work, because the
+ * bar's backdrop swings from cream in light appearance to near-black in dark
+ * and no orange clears 4.5:1 on both — the best manages about 3.5 on its worse
+ * side, since the two sit on opposite sides of the hue's luminance.
  *
  * A tint is not a fill. `COLORS.orange` is tuned to carry large areas of
- * colour; a 24pt glyph and a 10pt label need more separation than a card does,
- * so this is the brand orange lifted for small marks — 4.77:1 against the
- * scrim's worst case and 7.15:1 over the Arena stage, and still plainly the
- * same orange at tab-bar size.
+ * colour, and it measures 2.20–3.04:1 on a light bar; a 24pt glyph and a 10pt
+ * label need more separation than a card does. This is that orange lifted for
+ * small marks on dark: 4.77–6.24:1 across the dark materials.
  */
 export const TAB_ACTIVE = '#F5854A';
