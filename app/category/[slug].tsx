@@ -284,11 +284,18 @@ export default function CategoryScreen() {
   // The header floats (transparent), so pad the navy stage down to clear it.
   const headerHeight = insets.top + (Platform.OS === 'ios' ? 44 : 56);
 
-  // Gold eyebrow above the stage title — carries the count / filter context.
-  const eyebrow = (() => {
-    if (search.trim()) return `${total} RESULT${total !== 1 ? 'S' : ''}`;
-    const base = `${total.toLocaleString()} ${total === 1 ? 'CHARACTER' : 'CHARACTERS'}`;
-    if (filters.publisher === 'marvel') return `${base} · MARVEL`;
+  // The set's size, and the only place the page says a filter is narrowing it.
+  //
+  // This was a gold uppercase eyebrow on its own line ABOVE the title, which
+  // read as decoration and cost ~26pt for one number. It is not decoration: it
+  // is the status line — it becomes "12 results" while searching and picks up
+  // "· Marvel" when the publisher facet is on, so deleting it to save the space
+  // would leave a filtered page looking exactly like an unfiltered one. It now
+  // shares the tagline's line instead: same information, one line less.
+  const countLine = (() => {
+    if (search.trim()) return `${total} result${total !== 1 ? 's' : ''}`;
+    const base = `${total.toLocaleString()} character${total === 1 ? '' : 's'}`;
+    if (filters.publisher === 'marvel') return `${base} · Marvel`;
     if (filters.publisher === 'dc') return `${base} · DC`;
     return base;
   })();
@@ -324,7 +331,6 @@ export default function CategoryScreen() {
               style={StyleSheet.absoluteFill}
             />
           )}
-          <Text style={styles.eyebrow}>{eyebrow}</Text>
           {brandLogo ? (
             <View style={styles.stageLogo}>
               <BrandLogoView
@@ -340,7 +346,14 @@ export default function CategoryScreen() {
               {title}
             </Text>
           )}
-          {tagline && <Text style={styles.tagline}>{tagline}</Text>}
+          {/* Count first — it is the part that moves. The tagline is a fixed
+              description and can follow it on the same line; while a search is
+              running it is dropped entirely, because "12 results" is the answer
+              and the category's blurb is not what you are reading for. */}
+          <Text style={styles.tagline} numberOfLines={2}>
+            <Text style={styles.taglineCount}>{countLine}</Text>
+            {tagline && !search.trim() ? ` · ${tagline}` : ''}
+          </Text>
         </View>
 
         {/* Beige sheet rises up and overlaps the navy stage, then the grid. */}
@@ -366,7 +379,7 @@ export default function CategoryScreen() {
       </>
     ),
 
-    [eyebrow, tagline, title, headerHeight, brand, brandLogo, houses],
+    [countLine, search, tagline, title, headerHeight, brand, brandLogo, houses],
   );
 
   const visible = visibleFacets(categorySlug);
@@ -633,20 +646,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden', // clip the brand gradient wash to the stage
   },
   stageLogo: { alignSelf: 'flex-start' },
-  eyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 2.4,
-    textTransform: 'uppercase',
-    color: COLORS.goldAccent,
-    marginBottom: 6,
-  },
+
   stageTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 32,
     color: COLORS.beige,
     lineHeight: 40,
   },
+  taglineCount: { fontFamily: 'Nunito_700Bold', color: COLORS.goldAccent },
   tagline: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
