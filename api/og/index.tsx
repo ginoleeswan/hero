@@ -42,6 +42,7 @@ import { ImageResponse } from '@vercel/og';
 import { COLORS, SHARE_CARD, shareCardBgCss } from '../../src/constants/colors';
 import { MARK_ASPECT, mythiqueMarkDataUri } from '../../src/constants/brandMark';
 import { cardTextureDataUri } from '../../src/constants/cardTexture';
+import { cloudinarySized, tmdbSized } from '../_lib/imageUrl';
 
 export const config = { runtime: 'edge' };
 
@@ -902,52 +903,14 @@ function universeCard(hero: OgHero, img: string | null, uni: OgUniverse) {
   );
 }
 
-/**
- * Ask Cloudinary for a card-sized derivative instead of the original.
- *
- * The stored portraits are full-resolution — Wonder Woman's is 623KB — and
- * satori has to fetch and decode every image inline while it streams the
- * response. At that size the render dies partway through, and because the
- * function has already emitted `200 image/png`, the failure surfaces as an
- * EMPTY body rather than reaching the catch that redirects to the static
- * brand card. Every character and VS unfurl was serving a blank image.
- *
- * Cards are 1200x630 and no portrait occupies more than 440 of it, so 720px
- * is generous. Non-Cloudinary sources pass through untouched.
- */
-const sized = (url: string, w = 720) =>
-  url.includes('/upload/') ? url.replace('/upload/', `/upload/w_${w},q_auto/`) : url;
-
-/**
- * The same problem, for TMDB — and it applies to the title card by default.
- *
- * TMDB serves fixed size buckets and the catalogue stores backdrops at `w1280`,
- * which is comfortably inside the range that killed the renderer above. TMDB
- * isn't Cloudinary, so `sized()` passed those URLs through untouched: the title
- * card would have shipped asking satori to fetch and decode a full-width
- * backdrop AND a full-size poster inline, on every unfurl.
- *
- * The buckets are path segments, so downsizing is a swap: w780 is still twice
- * the 400px the backdrop is drawn at after cropping, and w500 comfortably
- * covers a 300px poster.
- *
- * The host is matched by PARSING the URL, not by `includes('image.tmdb.org')`.
- * A substring test matches anywhere in the string, so `https://evil.test/?x=
- * image.tmdb.org` passes it — and this function's answer decides whether a URL
- * is treated as a known image host whose paths we rewrite. Parse, compare the
- * hostname, and leave anything else exactly as it came.
- */
-const tmdbSized = (url: string, bucket: 'w780' | 'w500' | 'w342') => {
-  try {
-    const u = new URL(url);
-    if (u.hostname !== 'image.tmdb.org') return url;
-    u.pathname = u.pathname.replace(/^\/t\/p\/(w\d+|original)\//, `/t/p/${bucket}/`);
-    return u.toString();
-  } catch {
-    // Not a parseable absolute URL — hand it back untouched.
-    return url;
-  }
-};
+// Image narrowing lives in api/_lib/imageUrl.ts so it can be unit-tested; this
+// module can't be (it imports @vercel/og). See that file for why both helpers
+// exist — a source image large enough to kill satori mid-stream produces an
+// EMPTY body, not a fallback, because the 200 header has already gone out.
+//
+// Cards are 1200x630 and no portrait occupies more than 440 of it, so 720px is
+// generous. Non-Cloudinary sources pass through untouched.
+const sized = (url: string, w = 720) => cloudinarySized(url, w);
 
 const art = (h: OgHero) => {
   const u = h.portrait_url || h.image_url;
