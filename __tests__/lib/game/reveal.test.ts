@@ -9,6 +9,7 @@ import {
   type RevealHero,
 } from '../../../src/lib/game/reveal';
 import { buildShareGrid } from '../../../src/lib/game/shareGrid';
+import { shareLink } from '../../../src/lib/share';
 
 const hero = (overrides: Partial<RevealHero> = {}): RevealHero => ({
   id: 'superman',
@@ -93,17 +94,23 @@ describe('buildClues / visibleClues', () => {
 describe('buildShareGrid', () => {
   it('renders a single result row with header + score', () => {
     expect(buildShareGrid({ number: 7, attempts: 3, solved: true, maxGuesses: 6 })).toBe(
-      'Guess the Hero #7  3/6\n🟥🟥🟩',
+      `Mythique \u00b7 Guess the Hero #7  3/6\n🟥🟥🟩\n${shareLink.daily()}`,
     );
   });
   it('shows X/N and all misses when lost', () => {
     expect(buildShareGrid({ number: 7, attempts: 6, solved: false, maxGuesses: 6 })).toBe(
-      'Guess the Hero #7  X/6\n🟥🟥🟥🟥🟥🟥',
+      `Mythique \u00b7 Guess the Hero #7  X/6\n🟥🟥🟥🟥🟥🟥\n${shareLink.daily()}`,
     );
   });
   it('a first-guess win is a lone green square', () => {
     expect(buildShareGrid({ number: 1, attempts: 1, solved: true, maxGuesses: 6 })).toBe(
-      'Guess the Hero #1  1/6\n🟩',
+      `Mythique \u00b7 Guess the Hero #1  1/6\n🟩\n${shareLink.daily()}`,
     );
+  });
+  // The link is the format's growth loop, not decoration — assert it is there.
+  it('always ends on the canonical daily link', () => {
+    const out = buildShareGrid({ number: 3, attempts: 2, solved: true, maxGuesses: 6 });
+    expect(out.split('\n')).toHaveLength(3);
+    expect(out.endsWith(shareLink.daily())).toBe(true);
   });
 });

@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
   Linking,
   TouchableOpacity,
+  Share,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,6 +37,7 @@ import { ReviewsSection } from '../../src/components/film/ReviewsSection';
 import { PageEndCap } from '../../src/components/web/PageEndCap';
 import { SEAM } from '../../src/design';
 import { TITLE_STAGE } from '../../src/constants/titleGeometry';
+import { nativeShare, shareLink, titleShareLine } from '../../src/lib/share';
 
 function fmtMoney(n: number | null | undefined): string | null {
   if (!n || n <= 0) return null;
@@ -397,6 +399,17 @@ export default function TitleScreen() {
         <FilmBackdropHeader
           film={film}
           onBack={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
+          onShare={() => {
+            Share.share(
+              nativeShare(
+                titleShareLine(film.title, film.year),
+                shareLink.title(film.id),
+                Platform.OS === 'ios',
+              ),
+            ).catch(() => {
+              // dismissed sheet
+            });
+          }}
           bottomClearance={TITLE_STAGE.paddingBottom}
         />
         {/* Rounded beige cap at the ink→paper seam — the app's idiom; the

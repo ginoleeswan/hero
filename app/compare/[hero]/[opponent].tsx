@@ -21,6 +21,7 @@ import { useMatchupShareImage } from '../../../src/hooks/useMatchupShareImage';
 import { useMatchupVote } from '../../../src/hooks/useMatchupVote';
 import { CommunityVotes } from '../../../src/components/compare/CommunityVotes';
 import { getFighterArt } from '../../../src/lib/compareHandoff';
+import { nativeShare, shareLink, vsShareLine } from '../../../src/lib/share';
 import { COLORS } from '../../../src/constants/colors';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
@@ -131,9 +132,15 @@ export default function NativeCompareScreen() {
     // share sheet or the snapshot is unavailable.
     const outcome = await shareImage();
     if (outcome === 'shared' || outcome === 'downloaded') return;
-    Share.share({
-      message: `${nameA} vs ${nameB} — ${verdict ?? ''}. Settle it on mythique.`,
-    }).catch(() => {});
+    // The fallback used to carry no link at all, so the VS card api/og already
+    // renders had no URL to unfurl from and the recipient had nothing to tap.
+    Share.share(
+      nativeShare(
+        vsShareLine(nameA, nameB, tally?.votesA ?? 0, tally?.votesB ?? 0),
+        shareLink.versus(hero, opponent),
+        Platform.OS === 'ios',
+      ),
+    ).catch(() => {});
   };
 
   // Back returns to wherever the matchup was launched from — the hero's page on

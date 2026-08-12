@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHARE_CARD, INK_TEXT } from '../../constants/colors';
 import { MythiqueMark } from '../ui/MythiqueMark';
 import { CardTexture } from '../ui/CardTexture';
+import { SITE_DOMAIN } from '../../lib/share';
 
 const BG_COLORS = SHARE_CARD.bg.map((s) => s.color) as [string, string, string];
 const BG_LOCATIONS = SHARE_CARD.bg.map((s) => s.at) as [number, number, number];
@@ -111,7 +112,7 @@ export function ShareableUniverseCard({
             ))}
           </View>
         )}
-        <Text style={s.cta}>Discover yours · mythique</Text>
+        <Text style={s.cta}>{`Discover yours · ${SITE_DOMAIN}`}</Text>
       </View>
     </View>
   );

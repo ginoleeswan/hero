@@ -6,6 +6,11 @@
 //   /api/og?type=debate&a=<id>&b=<id> — daily-debate card (portraits, live
 //                         split bar, top take, wordmark) — the asset scripts/
 //                         social/daily-debate.mjs fetches for the growth loop
+//   /api/og?type=house&slug=<slug>  — house card (name, words, member faces,
+//                         the house's own sigil tint as a floor wash)
+//   /api/og?type=event&slug=<slug>  — event card (headline + the readership
+//                         curve that detected it, which IS the page's argument)
+//   /api/og?type=title&title=<id>   — film/TV card (backdrop, poster, rating)
 //   /api/og (no params) — site-wide brand card (snapshotted to public/og.png
 //                         by scripts/fetch-og-site.mjs)
 //
@@ -37,6 +42,7 @@ import { ImageResponse } from '@vercel/og';
 import { COLORS, SHARE_CARD, shareCardBgCss } from '../../src/constants/colors';
 import { MARK_ASPECT, mythiqueMarkDataUri } from '../../src/constants/brandMark';
 import { cardTextureDataUri } from '../../src/constants/cardTexture';
+import { cloudinarySized, tmdbSized } from '../_lib/imageUrl';
 
 export const config = { runtime: 'edge' };
 
@@ -897,26 +903,546 @@ function universeCard(hero: OgHero, img: string | null, uni: OgUniverse) {
   );
 }
 
-/**
- * Ask Cloudinary for a card-sized derivative instead of the original.
- *
- * The stored portraits are full-resolution — Wonder Woman's is 623KB — and
- * satori has to fetch and decode every image inline while it streams the
- * response. At that size the render dies partway through, and because the
- * function has already emitted `200 image/png`, the failure surfaces as an
- * EMPTY body rather than reaching the catch that redirects to the static
- * brand card. Every character and VS unfurl was serving a blank image.
- *
- * Cards are 1200x630 and no portrait occupies more than 440 of it, so 720px
- * is generous. Non-Cloudinary sources pass through untouched.
- */
-const sized = (url: string, w = 720) =>
-  url.includes('/upload/') ? url.replace('/upload/', `/upload/w_${w},q_auto/`) : url;
+// Image narrowing lives in api/_lib/imageUrl.ts so it can be unit-tested; this
+// module can't be (it imports @vercel/og). See that file for why both helpers
+// exist — a source image large enough to kill satori mid-stream produces an
+// EMPTY body, not a fallback, because the 200 header has already gone out.
+//
+// Cards are 1200x630 and no portrait occupies more than 440 of it, so 720px is
+// generous. Non-Cloudinary sources pass through untouched.
+const sized = (url: string, w = 720) => cloudinarySized(url, w);
 
 const art = (h: OgHero) => {
   const u = h.portrait_url || h.image_url;
   return u ? sized(u) : null;
 };
+
+// ── House ────────────────────────────────────────────────────────────────────
+type OgHouse = {
+  slug: string;
+  name: string;
+  universe: string | null;
+  seat: string | null;
+  words: string | null;
+  sigil_tint: string | null;
+  memberCount: number;
+};
+type OgFace = { id: string; name: string; art: string | null };
+
+async function fetchHouse(slug: string): Promise<OgHouse | null> {
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/houses?slug=eq.${encodeURIComponent(slug)}` +
+        `&select=slug,name,universe,seat,words,sigil_tint,house_members(count)`,
+      { headers: { apikey: SUPABASE_KEY } },
+    );
+    if (!r.ok) return null;
+    const rows = (await r.json()) as (Omit<OgHouse, 'memberCount'> & {
+      house_members: { count: number }[] | null;
+    })[];
+    const row = rows[0];
+    if (!row) return null;
+    return { ...row, memberCount: row.house_members?.[0]?.count ?? 0 };
+  } catch {
+    return null;
+  }
+}
+
+/** A few faces from the house. Members ARE the house — a crest is decoration. */
+async function fetchHouseFaces(slug: string, limit = 5): Promise<OgFace[]> {
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/house_members?house_slug=eq.${encodeURIComponent(slug)}` +
+        `&select=heroes(id,name,portrait_url,image_url)&limit=${limit}`,
+      { headers: { apikey: SUPABASE_KEY } },
+    );
+    if (!r.ok) return [];
+    const rows = (await r.json()) as {
+      heroes: { id: string; name: string; portrait_url: string | null; image_url: string | null };
+    }[];
+    return rows
+      .map((x) => x.heroes)
+      .filter(Boolean)
+      .map((h) => ({
+        id: h.id,
+        name: h.name,
+        art: h.portrait_url || h.image_url ? sized(h.portrait_url || h.image_url!, 240) : null,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function faceRow(faces: OgFace[], size: number, tint: string) {
+  return (
+    <div style={{ display: 'flex', marginTop: 40 }}>
+      {faces.map((f, i) => (
+        <div
+          key={f.id}
+          style={{
+            display: 'flex',
+            width: size,
+            height: size,
+            borderRadius: size,
+            overflow: 'hidden',
+            border: `3px solid ${tint}`,
+            backgroundColor: INK,
+            marginLeft: i === 0 ? 0 : -size * 0.22,
+          }}
+        >
+          {f.art ? (
+            <img src={f.art} width={size} height={size} style={{ objectFit: 'cover' }} alt="" />
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function houseCard(house: OgHouse, faces: OgFace[]) {
+  const tint = house.sigil_tint || GOLD;
+  const facts = [
+    `${house.memberCount} ${house.memberCount === 1 ? 'member' : 'members'}`,
+    house.seat,
+    house.universe,
+  ].filter(Boolean) as string[];
+  // Every other card in this set is anchored by a large portrait bleeding off
+  // one edge. A text-only house card would have been the odd one out in a
+  // timeline, so the best-known member carries the right edge and the rest of
+  // the line becomes the face row — which is also the truer picture: the
+  // members ARE the house.
+  const [lead, ...rest] = faces;
+  const leadArt = lead?.art ?? null;
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        background: BG,
+      }}
+    >
+      {textureLayer}
+      {leadArt ? (
+        <div style={{ display: 'flex', position: 'absolute', top: 0, right: 0 }}>
+          {portraitImg(leadArt, 420, 'left')}
+        </div>
+      ) : null}
+      {/* The house's own tint as a floor wash — the one thing that makes a
+          Targaryen card and a Wayne card read as different houses at a glance. */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 260,
+          background: `linear-gradient(0deg, ${tint}38, transparent)`,
+        }}
+      />
+      {/* The portrait is absolutely positioned, so it is out of flow and cannot
+          push this column aside: the clearance has to be padding. Without it a
+          long house name runs under the artwork instead of wrapping before it. */}
+      <div
+        style={{
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: leadArt ? '0 452px 0 78px' : '0 78px',
+        }}
+      >
+        {wordmark(30, false)}
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 24,
+            color: tint,
+            letterSpacing: 3,
+            marginTop: 22,
+          }}
+        >
+          THE HOUSE OF
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'Flame',
+            fontSize: 74,
+            color: BEIGE,
+            lineHeight: 1.22,
+            marginTop: 4,
+            maxWidth: 640,
+          }}
+        >
+          {house.name}
+        </div>
+        {house.words ? (
+          <div
+            style={{
+              display: 'flex',
+              fontFamily: 'Flame',
+              fontSize: 30,
+              color: MUTED,
+              lineHeight: 1.3,
+              marginTop: 12,
+              maxWidth: 620,
+            }}
+          >
+            &#8220;{house.words}&#8221;
+          </div>
+        ) : null}
+        {rest.length > 0 ? faceRow(rest, 84, tint) : null}
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 26,
+            color: MUTED,
+            marginTop: rest.length > 0 ? 24 : 44,
+          }}
+        >
+          {facts.join('  ·  ')}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Event ────────────────────────────────────────────────────────────────────
+type OgEvent = {
+  slug: string;
+  headline: string;
+  blurb: string | null;
+  accent: string | null;
+  spikeRatio: number | null;
+  peak: number | null;
+  ongoing: boolean;
+  views: number[];
+};
+
+async function fetchEvent(slug: string): Promise<OgEvent | null> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_event_dossier`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_slug: slug }),
+    });
+    if (!r.ok) return null;
+    const j = (await r.json()) as { event?: Record<string, unknown> } | null;
+    const e = j?.event;
+    if (!e || typeof e.slug !== 'string' || typeof e.headline !== 'string') return null;
+    const series = Array.isArray(e.views_daily) ? e.views_daily : [];
+    return {
+      slug: e.slug,
+      headline: e.headline,
+      blurb: typeof e.blurb === 'string' ? e.blurb : null,
+      accent: typeof e.accent === 'string' ? e.accent : null,
+      spikeRatio: typeof e.spike_ratio === 'number' ? e.spike_ratio : null,
+      peak: typeof e.peak === 'number' ? e.peak : null,
+      ongoing: e.ongoing === true,
+      views: series
+        .map((p: unknown) =>
+          p && typeof p === 'object' && typeof (p as { views?: unknown }).views === 'number'
+            ? (p as { views: number }).views
+            : 0,
+        )
+        .slice(-60),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The readership curve, as an inline SVG polyline.
+ *
+ * The event page's whole argument is "no calendar told us this was on — the
+ * readership did", and the shape of the spike IS the evidence. A card that
+ * dropped it would be a headline with no proof on it.
+ */
+function curveSvg(views: number[], accent: string, w: number, h: number) {
+  // `accent` is catalogue data being interpolated into markup, so it is
+  // constrained to a colour literal rather than trusted. Anything else falls
+  // back to gold — a wrong-coloured curve is a cosmetic loss, a quote here
+  // would break out of the attribute.
+  const safe = /^#[0-9a-fA-F]{3,8}$/.test(accent) ? accent : GOLD;
+  const max = Math.max(...views, 1);
+  const n = views.length;
+  const pts = views
+    .map((v, i) => `${((i / Math.max(n - 1, 1)) * w).toFixed(1)},${(h - (v / max) * h).toFixed(1)}`)
+    .join(' ');
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<polygon points="0,${h} ${pts} ${w},${h}" fill="${safe}" fill-opacity="0.18"/>` +
+    `<polyline points="${pts}" fill="none" stroke="${safe}" stroke-width="4" ` +
+    `stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function eventCard(event: OgEvent) {
+  const accent = event.accent || GOLD;
+  const stats = [
+    event.spikeRatio !== null ? { v: `${event.spikeRatio}×`, l: 'usual readership' } : null,
+    event.peak ? { v: event.peak.toLocaleString(), l: 'peak day' } : null,
+  ].filter(Boolean) as { v: string; l: string }[];
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        padding: '0 78px',
+        background: BG,
+      }}
+    >
+      {textureLayer}
+      {event.views.length > 1 ? (
+        <img
+          src={curveSvg(event.views, accent, 1200, 240)}
+          width={1200}
+          height={240}
+          alt=""
+          style={{ position: 'absolute', left: 0, bottom: 0 }}
+        />
+      ) : null}
+      {/* Ink falls over the top of the curve so type never fights the plot —
+          the same scrim EventDossier draws on the page itself. Without it the
+          stat rail sits directly on the plotted line, which is the one place a
+          card carrying a measurement cannot afford to look careless. */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 280,
+          background: `linear-gradient(0deg, transparent, ${INK}cc 62%, ${INK} 100%)`,
+        }}
+      />
+      {wordmark(30, false)}
+      <div
+        style={{
+          display: 'flex',
+          fontFamily: 'FlameSans',
+          fontSize: 24,
+          color: accent,
+          letterSpacing: 3,
+          marginTop: 22,
+        }}
+      >
+        {event.ongoing ? 'HAPPENING NOW' : 'DETECTED EVENT'}
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          fontFamily: 'Flame',
+          fontSize: 80,
+          color: BEIGE,
+          lineHeight: 1.22,
+          marginTop: 4,
+        }}
+      >
+        {event.headline}
+      </div>
+      {stats.length > 0 ? (
+        <div style={{ display: 'flex', marginTop: 34 }}>
+          {stats.map((s, i) => (
+            <div
+              key={s.l}
+              style={{ display: 'flex', flexDirection: 'column', marginLeft: i === 0 ? 0 : 64 }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  fontFamily: 'Flame',
+                  fontSize: 54,
+                  color: i === 0 ? accent : BEIGE,
+                }}
+              >
+                {s.v}
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  fontFamily: 'FlameSans',
+                  fontSize: 20,
+                  color: MUTED,
+                  letterSpacing: 2,
+                  marginTop: 4,
+                }}
+              >
+                {s.l.toUpperCase()}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ── Title ────────────────────────────────────────────────────────────────────
+type OgTitle = {
+  id: string;
+  title: string;
+  year: number | null;
+  mediaType: string | null;
+  posterUrl: string | null;
+  backdropUrl: string | null;
+  voteAverage: number | null;
+};
+
+async function fetchTitle(id: string): Promise<OgTitle | null> {
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/titles?id=eq.${encodeURIComponent(id)}` +
+        `&select=id,title,year,media_type,poster_url,backdrop_url,vote_average`,
+      { headers: { apikey: SUPABASE_KEY } },
+    );
+    if (!r.ok) return null;
+    const rows = (await r.json()) as {
+      id: string;
+      title: string;
+      year: number | null;
+      media_type: string | null;
+      poster_url: string | null;
+      backdrop_url: string | null;
+      vote_average: number | null;
+    }[];
+    const t = rows[0];
+    if (!t) return null;
+    return {
+      id: t.id,
+      title: t.title,
+      year: t.year,
+      mediaType: t.media_type,
+      // Downsized at the source, so neither branch of the card can forget.
+      posterUrl: t.poster_url ? tmdbSized(t.poster_url, 'w500') : null,
+      backdropUrl: t.backdrop_url ? tmdbSized(t.backdrop_url, 'w780') : null,
+      voteAverage: t.vote_average,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function titleCard(t: OgTitle) {
+  const kicker = t.mediaType === 'tv' ? 'TV SERIES' : t.mediaType === 'game' ? 'GAME' : 'FILM';
+  const facts = [
+    t.year ? String(t.year) : null,
+    t.voteAverage != null ? `★ ${t.voteAverage.toFixed(1)}` : null,
+  ].filter(Boolean) as string[];
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        background: BG,
+      }}
+    >
+      {/* The backdrop is the asset — it fills the card and the scrim carries
+          the type, the same way the title page's own stage does. */}
+      {t.backdropUrl ? (
+        <img
+          src={t.backdropUrl}
+          width={1200}
+          height={630}
+          alt=""
+          style={{ position: 'absolute', top: 0, left: 0, objectFit: 'cover' }}
+        />
+      ) : null}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 1200,
+          height: 630,
+          background: `linear-gradient(90deg, ${INK}f2 0%, ${INK}d9 46%, ${INK}40 100%)`,
+        }}
+      />
+      {textureLayer}
+      <div
+        style={{
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '0 56px',
+        }}
+      >
+        {wordmark(28, false)}
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 22,
+            color: GOLD,
+            letterSpacing: 3,
+            marginTop: 20,
+          }}
+        >
+          {kicker}
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'Flame',
+            fontSize: 76,
+            color: BEIGE,
+            lineHeight: 1.22,
+            marginTop: 4,
+          }}
+        >
+          {t.title}
+        </div>
+        {facts.length > 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              fontFamily: 'FlameSans',
+              fontSize: 26,
+              color: MUTED,
+              marginTop: 16,
+            }}
+          >
+            {facts.join('  ·  ')}
+          </div>
+        ) : null}
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 24,
+            color: GOLD,
+            marginTop: 34,
+          }}
+        >
+          Who&#8217;s in it, and who they play.
+        </div>
+      </div>
+      {t.posterUrl ? (
+        <div style={{ display: 'flex', alignItems: 'center', paddingRight: 64 }}>
+          <img
+            src={t.posterUrl}
+            width={300}
+            height={450}
+            alt=""
+            style={{ objectFit: 'cover', borderRadius: 16 }}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export default async function handler(req: Request) {
   try {
@@ -926,9 +1452,20 @@ export default async function handler(req: Request) {
     const aId = searchParams.get('a');
     const bId = searchParams.get('b');
     const type = searchParams.get('type');
+    const slug = searchParams.get('slug');
+    const titleId = searchParams.get('title');
     const isDebate = type === 'debate';
     let card;
-    if (type === 'universe' && heroId) {
+    if (type === 'house' && slug) {
+      const [house, faces] = await Promise.all([fetchHouse(slug), fetchHouseFaces(slug)]);
+      if (house) card = houseCard(house, faces);
+    } else if (type === 'event' && slug) {
+      const event = await fetchEvent(slug);
+      if (event) card = eventCard(event);
+    } else if (type === 'title' && titleId) {
+      const t = await fetchTitle(titleId);
+      if (t) card = titleCard(t);
+    } else if (type === 'universe' && heroId) {
       const [hero, uni] = await Promise.all([fetchHero(heroId), fetchUniverse(heroId)]);
       // A character with no mapped world falls through to their normal card
       // rather than shipping an empty poster.

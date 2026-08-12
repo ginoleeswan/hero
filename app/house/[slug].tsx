@@ -17,6 +17,8 @@ import { HouseGenerations } from '../../src/components/family/HouseGenerations';
 import { StageSwitch, type StageView } from '../../src/components/family/StageSwitch';
 import { useHouse } from '../../src/hooks/useHouse';
 import { HOUSE_BODY_NATIVE } from '../../src/constants/houseGeometry';
+import { ShareHeaderButton } from '../../src/components/ui/ShareHeaderButton';
+import { houseShareLine, shareLink } from '../../src/lib/share';
 import { HouseSkeleton } from '../../src/components/skeletons/HouseSkeleton';
 import { OverscrollBleed } from '../../src/components/ui/OverscrollBleed';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
@@ -144,7 +146,19 @@ export default function HousePage() {
 
   return (
     <View style={styles.root}>
-      <Stack.Screen options={{ ...headerOptions, title: house.name }} />
+      <Stack.Screen
+        options={{
+          ...headerOptions,
+          title: house.name,
+          headerRight: () => (
+            <ShareHeaderButton
+              message={houseShareLine(house.name, house.universe)}
+              url={shareLink.house(house.slug)}
+              label="Share this house"
+            />
+          ),
+        }}
+      />
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}

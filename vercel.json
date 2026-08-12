@@ -36,6 +36,39 @@
       "destination": "/api/bot-page?kind=character&id=:id"
     },
     {
+      "source": "/house/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|WhatsApp|Slackbot|Discordbot|TelegramBot|LinkedInBot|Pinterestbot|redditbot|Applebot).*"
+        }
+      ],
+      "destination": "/api/share-meta?kind=house&slug=:slug"
+    },
+    {
+      "source": "/event/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|WhatsApp|Slackbot|Discordbot|TelegramBot|LinkedInBot|Pinterestbot|redditbot|Applebot).*"
+        }
+      ],
+      "destination": "/api/share-meta?kind=event&slug=:slug"
+    },
+    {
+      "source": "/title/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|WhatsApp|Slackbot|Discordbot|TelegramBot|LinkedInBot|Pinterestbot|redditbot|Applebot).*"
+        }
+      ],
+      "destination": "/api/share-meta?kind=title&id=:id"
+    },
+    {
       "source": "/title/:id",
       "has": [
         {
@@ -56,6 +89,18 @@
         }
       ],
       "destination": "/api/bot-page?kind=team&id=:id"
+    },
+    {
+      "source": "/compare/:hero/:opponent",
+      "has": [
+        { "type": "query", "key": "debate" },
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|WhatsApp|Slackbot|Discordbot|TelegramBot|LinkedInBot|Pinterestbot|redditbot|Applebot).*"
+        }
+      ],
+      "destination": "/api/share-meta?kind=debate&a=:hero&b=:opponent"
     },
     {
       "source": "/compare/:hero/:opponent",

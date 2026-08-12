@@ -34,6 +34,7 @@ import * as Haptics from 'expo-haptics';
 import { NotFoundView, LoadErrorView } from '../../src/components/NotFoundView';
 import { heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { loginHref } from '../../src/lib/loginRedirect';
+import { characterShareLine, nativeShare, shareLink } from '../../src/lib/share';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas';
 import { groupTitlesByMedia } from '../../src/lib/db/titles';
 import { PortrayedBySection } from '../../src/components/PortrayedBySection';
@@ -845,16 +846,26 @@ export default function CharacterScreen() {
     sectionOrder.current = presentSections.map((s) => s.key);
   }, [presentSections]);
 
+  // The flagship page's share, and it used to send `Check out <name> on Hero`:
+  // no link, so the character OG card that api/og already renders never had a
+  // URL to hang off, and "Hero" is the repo slug rather than the product.
   const handleShare = useCallback(async () => {
     const name = data?.stats.name ?? heroRow?.name ?? paramName;
-    if (!name) return;
+    if (!name || !id) return;
     Haptics.selectionAsync();
+    const publisher = heroRow?.publisher ?? null;
     try {
-      await Share.share({ message: `Check out ${name} on Hero` });
+      await Share.share(
+        nativeShare(
+          characterShareLine(name, publisher),
+          shareLink.character(id),
+          Platform.OS === 'ios',
+        ),
+      );
     } catch {
       // user dismissed the sheet or sharing is unavailable — nothing to do
     }
-  }, [data, heroRow?.name, paramName]);
+  }, [data, heroRow?.name, heroRow?.publisher, paramName, id]);
 
   // Header shared by both failure states: a back chevron over the beige canvas.
   const failureHeader = (
