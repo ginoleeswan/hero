@@ -77,5 +77,11 @@ export function useMatchupShareImage(input: MatchupShareInput): {
 
 const styles = StyleSheet.create({
   // Kept rendered (so capture has a real node) but pushed far off-screen.
-  offscreen: { position: 'absolute', left: -100000, top: 0, opacity: 0 },
+  // NO `opacity: 0` here. react-native-view-shot captures what the layer renders, and
+  // a layer at zero opacity renders nothing — the snapshot comes back blank
+  // while still being a full-size PNG, so it looks like a real file in the
+  // share sheet and is empty when opened. Pushing the node far off-screen is
+  // what hides it; the opacity was belt-and-braces that silently broke the
+  // thing it was protecting.
+  offscreen: { position: 'absolute', left: -100000, top: 0 },
 });
