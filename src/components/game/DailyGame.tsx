@@ -7,7 +7,7 @@
 // clue is free; each wrong guess pins a fresh clue "sticker" beside the card
 // and sharpens the art. Tap a name from the line-up to guess. Fits one screen
 // and bleeds edge-to-edge behind the floating nav, like Explore.
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,8 @@ import { useScreenChrome } from '../../hooks/useScreenChrome';
 import { MysteryPortrait } from './MysteryPortrait';
 import { ClueSticker } from './ClueSticker';
 import { StatsSheet } from './StatsSheet';
+import { NotificationOptIn } from '../notifications/NotificationOptIn';
+import { useNotificationOptIn, useStreakReminderSync } from '../../hooks/useNotificationOptIn';
 import { useDailyHero } from '../../hooks/useDailyHero';
 
 // The floating web nav is 64px tall; the dark stage bleeds up under it, so the
@@ -144,6 +146,15 @@ export function DailyGame() {
   const [statsOpen, setStatsOpen] = useState(false);
 
   const won = status === 'won';
+
+  // Notifications. The offer is raised at the one moment that earns it — a
+  // daily just won, with a streak on screen — and the reminder is kept in step
+  // with play state on every change so it is cancelled as eagerly as it is set.
+  const optIn = useNotificationOptIn();
+  useStreakReminderSync({ streak: streak.current, playedToday: finished });
+  useEffect(() => {
+    if (won) void optIn.considerAfterWin(streak.current);
+  }, [won, streak.current, optIn]);
   const guessedIds = new Set(guesses.map((g) => g.id));
 
   const onShare = useCallback(async () => {
@@ -517,6 +528,13 @@ export function DailyGame() {
         percentile={percentile}
         copied={copied}
         onShare={onShare}
+      />
+
+      <NotificationOptIn
+        visible={optIn.offering}
+        streak={streak.current}
+        onAllow={() => void optIn.allow()}
+        onDismiss={() => void optIn.dismiss()}
       />
     </View>
   );
