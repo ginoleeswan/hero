@@ -207,6 +207,24 @@ same size means the catch fired and you are looking at the fallback, zero bytes
 means it died mid-stream, anything else rendered. Neither failure is visible
 from the status code.
 
+## The off-screen poster must not be transparent
+
+The matchup poster and the profile universe card are snapshotted on-device from
+a node rendered off-screen (`useMatchupShareImage` / `useUniverseShareImage` →
+`react-native-view-shot`). That node is hidden by position — `left: -100000` —
+and **must not also carry `opacity: 0`**. view-shot captures what the layer
+renders, and a layer at zero opacity renders nothing.
+
+It fails in the worst possible way: the capture still produces a full-size PNG
+that weighs roughly what a real card weighs, so the OS share sheet shows a
+plausible file with a plausible size and it is blank only once someone opens it.
+Nothing in the app can detect it, and no test will either — it was found by a
+person looking at a share sheet.
+
+Same family as the empty-body mode above: a failure that returns something
+well-formed rather than erroring. When a share asset is generated rather than
+fetched, look at the asset, not the return value.
+
 ## Two share glyphs, by class
 
 Three different icons for one action had accumulated. There are two classes of
