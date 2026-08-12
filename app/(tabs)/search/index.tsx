@@ -4,7 +4,11 @@
 //   rows as the Android/web fallback.
 // • One publisher-aware fetch path: empty query → top heroes for the selected
 //   publisher (DB-side); non-empty → alias/typo-tolerant search_heroes RPC.
-// • Idle extras: "Search" heading, recent searches, Recently Viewed rail.
+// • Idle is a BROWSE surface, ordered history → widest door → narrowest:
+//   Recently Viewed (works signed out), recent queries, the category pods,
+//   then the publisher tiles. No "Search" heading — the tab is named Search and
+//   the field is pinned to the bottom on iOS 26, so a title at the top named
+//   the room from the far end of it.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
@@ -26,6 +30,7 @@ import * as Haptics from 'expo-haptics';
 import type { SearchBarCommands } from 'react-native-screens';
 import { useQueryClient } from '@tanstack/react-query';
 import { COLORS, INK_TEXT } from '../../../src/constants/colors';
+import { RADIUS } from '../../../src/design';
 import { PortraitCard } from '../../../src/components/search/PortraitCard';
 import { UniverseResultRow } from '../../../src/components/search/UniverseResultRow';
 import { TeamResultRow } from '../../../src/components/search/TeamResultRow';
@@ -113,9 +118,12 @@ export default function SearchScreen() {
     setQuery(term);
   }, []);
 
+  // No auth gate. The local mirror in viewHistory answers for signed-out
+  // readers, and browsing this catalogue has never required an account — a rail
+  // called "Recently Viewed" that stayed empty for exactly the people doing the
+  // most anonymous browsing was the screen refusing to remember what it showed.
   useEffect(() => {
-    if (!user?.id) return;
-    getRecentlyViewed(user.id)
+    getRecentlyViewed(user?.id)
       .then(setRecentlyViewed)
       .catch(() => {});
   }, [user?.id]);
@@ -328,6 +336,19 @@ export default function SearchScreen() {
   );
 
   const showIdleExtras = !query.trim();
+  // What the two toolbar glyphs are currently doing, in words.
+  const filtersOn = publisherFilter !== 'All' || alignmentFilter !== 'All';
+  const activeFilterLabel = [
+    publisherFilter !== 'All' ? publisherFilter : null,
+    alignmentFilter !== 'All' ? alignmentFilter : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const clearFilters = useCallback(() => {
+    Haptics.selectionAsync();
+    setPublisherFilter('All');
+    setAlignmentFilter('All');
+  }, []);
   // The beat between the first keystroke and the debounced query settling:
   // idle extras are already hidden but results haven't been asked for yet.
   // Without this the screen blanks for the debounce window.
@@ -360,9 +381,14 @@ export default function SearchScreen() {
 
   const listHeader = (
     <>
-      <Text style={styles.screenTitle}>Search</Text>
+      {/* NO "Search" title. The tab is called Search, the field's placeholder
+          already says what to type, and on iOS 26 that field is pinned to the
+          BOTTOM — so a 38pt heading at the top spent the most valuable space on
+          the screen naming the room you are standing in, at the opposite end
+          from the thing you came to use. It was a leftover from the
+          top-anchored era. */}
 
-      {!IS_IOS && (
+      {!IS_IOS && !showIdleExtras && (
         <View style={styles.chipStack}>
           <FilterChips
             value={publisherFilter}
@@ -377,6 +403,36 @@ export default function SearchScreen() {
             idPrefix="align"
           />
         </View>
+      )}
+
+      {/* A filter you cannot see the state of is worse than no filter. On iOS
+          the controls are two unlabelled glyphs in the toolbar, so a narrowed
+          result set looked identical to a complete one — this says so, and
+          gives back the one tap that undoes it. */}
+      {!showIdleExtras && filtersOn && (
+        <Pressable
+          onPress={clearFilters}
+          accessibilityRole="button"
+          accessibilityLabel={`Filtered by ${activeFilterLabel}. Tap to clear.`}
+          style={({ pressed }) => [styles.filterState, pressed && styles.filterStatePressed]}
+        >
+          <Ionicons name="funnel" size={12} color={COLORS.orange} />
+          <Text style={styles.filterStateText}>{activeFilterLabel}</Text>
+          <Ionicons name="close-circle" size={14} color="rgba(245,235,220,0.55)" />
+        </Pressable>
+      )}
+
+      {showIdleExtras && recentlyViewed.length > 0 && (
+        <AccentRail
+          label="Recently Viewed"
+          items={recentlyViewed}
+          onPick={(id) => {
+            const h = recentlyViewed.find((r) => r.id === id);
+            if (h) handlePress(h);
+          }}
+          onPeek={openPeek}
+          accent
+        />
       )}
 
       {showIdleExtras && recent.length > 0 && (
@@ -405,21 +461,22 @@ export default function SearchScreen() {
         </View>
       )}
 
-      {showIdleExtras && recentlyViewed.length > 0 && (
-        <AccentRail
-          label="Recently Viewed"
-          items={recentlyViewed}
-          onPick={(id) => {
-            const h = recentlyViewed.find((r) => r.id === id);
-            if (h) handlePress(h);
-          }}
-          onPeek={openPeek}
-          accent
-        />
-      )}
-
+      {/* Browse before Universes. The pods carry real character art and are the
+          doorway most people actually take; the four brand tiles are a
+          narrower question ("which publisher") asked by fewer readers, and
+          they were sitting on top of the better answer. History first, then
+          the widest door, then the narrow one. */}
       {showIdleExtras && (
         <>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>Browse</Text>
+          </View>
+          {/* CategoryPodGrid owns its 16px gutter (tiles sized from the screen
+              width), so cancel the list's content padding to align it edge-to-edge. */}
+          <View style={styles.browseGrid}>
+            <CategoryPodGrid covers={browseCovers} onPress={handleCategoryPress} />
+          </View>
+
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Universes</Text>
           </View>
@@ -432,15 +489,6 @@ export default function SearchScreen() {
                 router.push(`/universe/${slug}` as Parameters<typeof router.push>[0]);
               }}
             />
-          </View>
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>Browse</Text>
-          </View>
-          {/* CategoryPodGrid owns its 16px gutter (tiles sized from the screen
-              width), so cancel the list's content padding to align it edge-to-edge. */}
-          <View style={styles.browseGrid}>
-            <CategoryPodGrid covers={browseCovers} onPress={handleCategoryPress} />
           </View>
         </>
       )}
@@ -561,10 +609,33 @@ export default function SearchScreen() {
   ) : isIdle ? null : isFetching ? null : topResult ? null : (
     <View style={styles.center}>
       <View style={styles.emptyIconWrap}>
-        <Ionicons name="search-outline" size={30} color={COLORS.orange} />
+        <Ionicons
+          name={filtersOn ? 'funnel-outline' : 'search-outline'}
+          size={30}
+          color={COLORS.orange}
+        />
       </View>
       <Text style={styles.emptyHeadline}>No characters found</Text>
-      <Text style={styles.emptySub}>Try a different search or filter</Text>
+      {/* "Try a different search or filter" was said whether or not a filter
+          existed — useless advice in the common case, and in the case where a
+          filter WAS narrowing the search it pointed at two unlabelled glyphs
+          rather than fixing it. A filter is by far the likeliest cause of an
+          empty result for a name that exists, so when one is on, say which and
+          undo it in a tap. */}
+      {filtersOn ? (
+        <>
+          <Text style={styles.emptySub}>{activeFilterLabel} is narrowing this search.</Text>
+          <Pressable
+            onPress={clearFilters}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.emptyCta, pressed && styles.filterStatePressed]}
+          >
+            <Text style={styles.emptyCtaText}>Search everything</Text>
+          </Pressable>
+        </>
+      ) : (
+        <Text style={styles.emptySub}>Try a shorter name, or a different spelling.</Text>
+      )}
     </View>
   );
 
@@ -616,6 +687,15 @@ export default function SearchScreen() {
       />
 
       {/* Native filter menus (iOS) on the right — fills the header bar. */}
+      {/* Always mounted, deliberately, even though these filter nothing while
+          idle (the idle screen suppresses the hero list — see `listData`).
+          Mounting and unmounting a Stack.Toolbar means reconfiguring the native
+          header on the first keystroke, and the native header on this screen
+          has a history: `placement="stacked"` once severed the toolbar channel
+          the iOS 26 search-role tab uses and left the field completely dead.
+          Two small glyphs on an idle screen is not worth reopening that. The
+          Android chips below ARE hidden when idle — they are ordinary views in
+          the list header, two full rows of them, and carry no such risk. */}
       {IS_IOS && (
         <Stack.Toolbar placement="right">
           <Stack.Toolbar.Menu icon="books.vertical" title="Publisher">
@@ -722,13 +802,33 @@ const styles = StyleSheet.create({
   bottomScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   listWrap: { flex: 1 },
   list: { flex: 1, backgroundColor: 'transparent' },
-  content: { paddingHorizontal: H_PAD, paddingTop: 4 },
-  screenTitle: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 30,
+  content: { paddingHorizontal: H_PAD, paddingTop: 14 },
+  filterState: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginBottom: 10,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: RADIUS.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(231,115,51,0.4)',
+    backgroundColor: 'rgba(231,115,51,0.1)',
+  },
+  filterStatePressed: { opacity: 0.6 },
+  emptyCta: {
+    marginTop: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.beige,
+  },
+  emptyCtaText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 15, color: COLORS.deepNavy },
+  filterStateText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
     color: COLORS.beige,
-    marginTop: 2,
-    marginBottom: 12,
   },
   chipStack: { marginHorizontal: -H_PAD, paddingBottom: 2 },
   browseGrid: { marginHorizontal: -H_PAD, paddingBottom: 4 },

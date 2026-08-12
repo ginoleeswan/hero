@@ -13,16 +13,18 @@ export const RECENTLY_VIEWED_LIMIT = 16;
 const EMPTY: FavouriteHero[] = [];
 
 /**
- * The signed-in user's recently-viewed characters, React Query cached under one
- * shared key. Every consumer paints from cache on mount — the palette used to
- * refetch (two sequential round trips) on each open, which is why the rail
- * popped in late. Returns EMPTY (stable) when logged out or still loading.
+ * Recently-viewed characters, React Query cached under one shared key. Every
+ * consumer paints from cache on mount — the palette used to refetch (two
+ * sequential round trips) on each open, which is why the rail popped in late.
+ *
+ * Enabled with or without a userId: the local mirror answers for signed-out
+ * readers, so the rail is no longer an account-holders-only feature. The key
+ * still carries the id so the two states cannot serve each other's list.
  */
 export function useRecentlyViewed(userId: string | undefined): FavouriteHero[] {
   const { data } = useQuery({
     queryKey: viewHistoryKeys.recent(userId ?? ''),
-    queryFn: () => getRecentlyViewed(userId!, RECENTLY_VIEWED_LIMIT),
-    enabled: !!userId,
+    queryFn: () => getRecentlyViewed(userId, RECENTLY_VIEWED_LIMIT),
   });
-  return userId ? (data ?? EMPTY) : EMPTY;
+  return data ?? EMPTY;
 }

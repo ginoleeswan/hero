@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { recordView, getRecentlyViewed } from '../../../src/lib/db/viewHistory';
 
 // Variables accessed inside jest.mock() factory must be prefixed with "mock"
@@ -38,7 +39,11 @@ const { __chains: chains, __mockFrom: mockFrom } = jest.requireMock(
   __mockFrom: jest.Mock;
 };
 
-beforeEach(() => {
+// AsyncStorage is mapped to its official jest mock by jest.config. Cleared
+// between tests so one test's local view mirror cannot answer the next one's
+// read — the mirror is now part of every path through this module.
+beforeEach(async () => {
+  await AsyncStorage.clear();
   jest.clearAllMocks();
   mockResolvers = {};
   Object.values(chains).forEach((c) => {
@@ -108,8 +113,69 @@ describe('getRecentlyViewed', () => {
     expect(result[1].id).toBe('70');
   });
 
-  it('throws when history query errors', async () => {
+  // Deliberately NOT a throw any more. The local mirror can still answer, and
+  // letting a failed server read take the rail down with it would lose the one
+  // source that was never going to fail.
+  it('degrades to the local mirror when the history query errors', async () => {
+    await recordView(null, '620');
     mockResolvers['user_view_history'] = { data: null, error: { message: 'DB error' } };
-    await expect(getRecentlyViewed('user-1')).rejects.toMatchObject({ message: 'DB error' });
+    mockResolvers['heroes'] = {
+      data: [{ id: '620', name: 'Spider-Man', image_url: null, portrait_url: null }],
+      error: null,
+    };
+    await expect(getRecentlyViewed('user-1')).resolves.toEqual([
+      { id: '620', name: 'Spider-Man', image_url: null, portrait_url: null },
+    ]);
+  });
+});
+
+// The point of the whole change: browsing has never required an account, so
+// neither should remembering what you browsed.
+describe('signed-out history', () => {
+  it('records and returns views with no user', async () => {
+    await recordView(null, '620');
+    await recordView(undefined, '70');
+    expect(mockFrom).not.toHaveBeenCalledWith('user_view_history');
+    mockResolvers['heroes'] = {
+      data: [
+        { id: '70', name: 'Batman', image_url: null, portrait_url: null },
+        { id: '620', name: 'Spider-Man', image_url: null, portrait_url: null },
+      ],
+      error: null,
+    };
+    const result = await getRecentlyViewed(null);
+    expect(result.map((h) => h.id)).toEqual(['70', '620']);
+  });
+
+  it('moves a re-viewed hero back to the front rather than duplicating it', async () => {
+    await recordView(null, '620');
+    await recordView(null, '70');
+    await recordView(null, '620');
+    mockResolvers['heroes'] = {
+      data: [
+        { id: '70', name: 'Batman', image_url: null, portrait_url: null },
+        { id: '620', name: 'Spider-Man', image_url: null, portrait_url: null },
+      ],
+      error: null,
+    };
+    const result = await getRecentlyViewed(null);
+    expect(result.map((h) => h.id)).toEqual(['620', '70']);
+  });
+
+  it('puts local views ahead of the server list and never repeats one', async () => {
+    await recordView(null, '620');
+    mockResolvers['user_view_history'] = {
+      data: [{ hero_id: '70' }, { hero_id: '620' }],
+      error: null,
+    };
+    mockResolvers['heroes'] = {
+      data: [
+        { id: '70', name: 'Batman', image_url: null, portrait_url: null },
+        { id: '620', name: 'Spider-Man', image_url: null, portrait_url: null },
+      ],
+      error: null,
+    };
+    const result = await getRecentlyViewed('user-1');
+    expect(result.map((h) => h.id)).toEqual(['620', '70']);
   });
 });

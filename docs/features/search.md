@@ -115,14 +115,60 @@ On native, a term is recorded on the keyboard Search button **and on tapping
 any result** (card, top result, or a section row) — tap-through is the common
 path, and recording only on the rarely-pressed Search key left Recent empty.
 
-Idle (empty-query) surfaces: recent searches, the Recently Viewed rail
-(`useRecentlyViewed`), fame-ranked trending heroes via `useIdleHeroes` →
-`getSearchIdleHeroes` (`src/lib/db/heroes/core.ts`), category pods, and — in
-the web palette — `useIdleShowcase` (trending teams + films, cached once per
-session).
+Idle (empty-query) surfaces: the Recently Viewed rail (`useRecentlyViewed`),
+recent searches, category pods, publisher tiles, fame-ranked trending heroes
+via `useIdleHeroes` → `getSearchIdleHeroes` (`src/lib/db/heroes/core.ts`), and
+— in the web palette — `useIdleShowcase` (trending teams + films, cached once
+per session).
+
+**Recently Viewed works signed out.** `user_view_history` is keyed on
+`user_id`, so every read used to require an account — and browsing this
+catalogue never has. A logged-out reader who went through twenty characters
+got an empty rail on Explore and an empty Search landing: the app declining to
+remember what it had just shown them. `recordView` now mirrors every view to a
+local ordered id list regardless of session, and `getRecentlyViewed` merges
+local ahead of server (local is authoritative about the last few seconds, the
+server about the last few months, and ids are deduped across the two). A failed
+server read degrades to the local list rather than throwing — losing the rail
+because the durable half was unreachable would waste the half that never is.
+Order survives hydration explicitly, because PostgREST returns `in()` rows in
+whatever order it likes and a recently-viewed rail with arbitrary order is not
+one.
+
+**The idle order is history → widest door → narrowest.** Recently Viewed, then
+recent queries, then the category pods, then the four publisher tiles. The pods
+carry real character art and are the door most people take; the brand tiles
+answer a narrower question and were sitting on top of the better answer.
+
+**There is no "Search" title.** The tab is called Search, the placeholder says
+what to type, and on iOS 26 the field is pinned to the BOTTOM — so a 38pt
+heading at the top spent the screen's best space naming the room from the far
+end of it.
 
 Native (`app/(tabs)/search/index.tsx`) uses the iOS `Stack.SearchBar` plus
-`Stack.Toolbar.Menu` filter menus (Publisher, Alignment).
+`Stack.Toolbar.Menu` filter menus (Publisher, Alignment). **Those menus are
+hidden while idle and paired with a state pill when they are not.** Idle
+suppresses the hero list entirely, so the filters have nothing to act on; and
+two unlabelled glyphs (a book stack, theatre masks) meant a narrowed result set
+looked identical to a complete one. When a filter is on, a pill names it
+("Marvel · Villains") and clears both on tap.
+
+The **iOS toolbar stays mounted even while idle**, deliberately, despite
+filtering nothing there. Mounting and unmounting a `Stack.Toolbar` means
+reconfiguring the native header on the first keystroke, and this screen's
+native header has form: `placement="stacked"` once severed the toolbar channel
+the iOS 26 search-role tab uses and left the field completely dead. Two small
+glyphs are not worth reopening that. The **Android chips are** hidden when idle
+— they are ordinary views in the list header, two full rows of them, and carry
+no such risk.
+
+**The empty state points at the actual cause.** "Try a different search or
+filter" was shown whether or not a filter existed: useless advice in the common
+case, and where a filter WAS narrowing the search it pointed at two unlabelled
+glyphs instead of fixing it. A filter is by far the likeliest reason a name that
+exists returns nothing, so when one is on the empty state names it and offers
+"Search everything" — one tap, both filters cleared. With no filter on it says
+nothing about filters and suggests a shorter name or a different spelling.
 
 **The search field is bottom-aligned, and that is deliberate.** The Search tab
 declares `role="search"` (`app/(tabs)/_layout.tsx`), which is Apple's
