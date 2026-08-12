@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Redirect } from 'expo-router';
+import Constants from 'expo-constants';
 import { useAuth } from '../src/hooks/useAuth';
 import { useProfile } from '../src/hooks/useProfile';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
@@ -128,6 +129,7 @@ export default function SettingsScreen() {
     return result;
   };
 
+  const appVersion = Constants.expoConfig?.version ?? null;
   const email = user?.email ?? '';
   const provider = user?.app_metadata?.provider ?? 'email';
   const isEmailUser = provider === 'email' || !user?.app_metadata?.provider;
@@ -239,10 +241,31 @@ export default function SettingsScreen() {
           />
         </SectionShell>
 
+        {/* App Review reaches settings first. The privacy policy and terms
+            existed as routes but were only linked from the SIGNUP form — a
+            signed-in user (and a reviewer) had no way back to either, on the
+            screen where accounts get deleted. Guideline 5.1.1 wants the policy
+            reachable in-app, not just at registration. */}
+        <SectionShell title="Legal">
+          <SettingRow
+            icon="shield-checkmark-outline"
+            label="Privacy policy"
+            onPress={() => router.push('/privacy')}
+            chevron
+          />
+          <SettingRow
+            icon="document-text-outline"
+            label="Terms of use"
+            onPress={() => router.push('/terms')}
+            chevron
+          />
+        </SectionShell>
+
         <Text style={styles.disclaimer}>
           Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or
           any other publisher.
         </Text>
+        {appVersion ? <Text style={styles.version}>Mythique {appVersion}</Text> : null}
       </ScrollView>
 
       <ChangePasswordModal
@@ -257,6 +280,13 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
+  version: {
+    textAlign: 'center',
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: PAPER_TEXT.faint,
+    marginTop: 6,
+  },
   scroll: {
     paddingHorizontal: 16,
     paddingTop: 8,
