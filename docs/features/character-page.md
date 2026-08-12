@@ -319,3 +319,23 @@ Historical specs under `docs/superpowers/` (status lines may be stale):
 - `docs/superpowers/specs/2026-07-06-social-web-graph-design.md`, `2026-07-06-social-web-explorer-v2-design.md`, `2026-07-06-social-web-explorer-v3-enrichments-design.md`
 - `docs/superpowers/specs/2026-07-27-relationship-blurbs-design.md`
 - `docs/superpowers/specs/2026-07-16-web-motion-polish-plan.md` (view-transition morphs)
+
+## The header bar's two sides do not tint the same way
+
+`HEADER_TINT` (`app/character/[id].tsx`) colours both sides of the floating
+header — the back chevron via `headerTintColor`, and the share glyph explicitly,
+because **a custom `headerRight` child does not inherit the header tint**.
+
+Two consequences, both learned the hard way:
+
+- **The glyph must be told a colour.** Remove `tintColor` and it does not fall
+  back to the chevron's colour; it falls back to SymbolView's own default, which
+  renders dark against the portrait this header floats over.
+- **iOS may ignore `headerTintColor` for the native chevron.** Inside the glass
+  header it draws that chevron in its own material colour, so setting the tint
+  to an accent coloured only the half we own — an orange share glyph opposite a
+  white chevron. The tint is therefore beige, matching what iOS actually draws,
+  and the bar reads as one control set rather than two.
+
+A nav-bar control is chrome. Colour there competes with the artwork it floats
+over, and the accent belongs to the content below.

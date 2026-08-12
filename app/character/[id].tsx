@@ -85,7 +85,14 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 // `headerTintColor`; the share glyph has to be told explicitly, because a
 // custom `headerRight` child does not inherit the header tint. Sharing the
 // constant is what stops them drifting apart again.
-const HEADER_TINT = COLORS.orange;
+//
+// Beige, not orange. iOS renders the native back chevron in its own material
+// colour inside the glass header rather than the tint we hand it, so an orange
+// share glyph sat opposite a white chevron on the same bar — two accents where
+// the bar has one job. The app's on-ink voice is beige everywhere else (the
+// arena's header share already used it), and a nav-bar control is chrome, not
+// an accent: colour here competes with the artwork it floats over.
+const HEADER_TINT = COLORS.beige;
 const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.66);
 // The identity (name + vitals) sits ON the portrait over a dark scrim; the beige
 // content sheet then rises over the hero with a rounded lip, overlapping this far.
