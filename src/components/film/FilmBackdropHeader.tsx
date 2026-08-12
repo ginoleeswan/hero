@@ -25,7 +25,17 @@ function formatRevenue(n: number | null): string | null {
   return `$${n.toLocaleString()}`;
 }
 
-export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: () => void }) {
+export function FilmBackdropHeader({
+  film,
+  onBack,
+  bottomClearance,
+}: {
+  film: HeroTitle;
+  onBack: () => void;
+  /** Native passes extra room when a rounded seam cap overlaps this header's
+   *  bottom — the cap consumes SEAM.overlap of whatever padding is here. */
+  bottomClearance?: number;
+}) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const wide = Platform.OS === 'web' && width >= 900;
@@ -47,7 +57,13 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
   const hasTags = !!certification || genres.length > 0;
 
   return (
-    <View style={[styles.root, wide && styles.rootWide]}>
+    <View
+      style={[
+        styles.root,
+        wide && styles.rootWide,
+        bottomClearance != null && { paddingBottom: bottomClearance },
+      ]}
+    >
       {/* Backdrop */}
       {film.backdropUrl ? (
         <Image
@@ -91,7 +107,7 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="chevron-back" size={20} color="#fff" />
+          <Ionicons name="chevron-back" size={20} color={COLORS.beige} />
         </TouchableOpacity>
       ) : null}
 
@@ -257,10 +273,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 2.5,
   },
+  // Beige, not #fff — the app's text-on-ink voice everywhere else.
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 28,
-    color: '#fff',
+    color: COLORS.beige,
     // Generous leading — the Flame display face has tall glyphs/descenders that
     // clip at a tight line-height.
     lineHeight: 36,

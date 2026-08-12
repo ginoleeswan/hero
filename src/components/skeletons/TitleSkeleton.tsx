@@ -7,7 +7,9 @@
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
-import { COLORS, SEAM_COLOR } from '../../constants/colors';
+import { COLORS } from '../../constants/colors';
+import { SEAM } from '../../design';
+import { TITLE_STAGE } from '../../constants/titleGeometry';
 
 // Warm-white tint so blocks read as elevated surfaces on the dark backdrop stage.
 const STAGE_TINT = 'rgba(245,235,220,0.12)';
@@ -176,6 +178,8 @@ export function TitleSkeleton({ insets }: TitleSkeletonProps) {
     <SkeletonProvider>
       <ScrollView scrollEnabled={false} showsVerticalScrollIndicator={false} style={styles.scroll}>
         <StageSkeleton insetTop={insets.top} />
+        {/* Mirrors the real page's cap between header and body. */}
+        <View style={styles.sheetCap} />
         <TitleBodySkeleton />
       </ScrollView>
     </SkeletonProvider>
@@ -184,20 +188,27 @@ export function TitleSkeleton({ insets }: TitleSkeletonProps) {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
-  // Dark backdrop stage fused to the beige body via the orange seam.
+  // Dark backdrop stage; the rounded cap seams it to the beige body.
   stage: {
     backgroundColor: COLORS.navy,
-    minHeight: 340,
+    minHeight: TITLE_STAGE.minHeight,
     justifyContent: 'flex-end',
     paddingHorizontal: 20,
-    paddingBottom: 26,
-    borderBottomWidth: 1,
-    borderBottomColor: SEAM_COLOR,
+    paddingBottom: TITLE_STAGE.paddingBottom,
   },
   stageRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 18 },
   stageMeta: { flex: 1, gap: 12, paddingBottom: 4 },
   statRail: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 2 },
 
+  sheetCap: {
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: SEAM.radius,
+    borderTopRightRadius: SEAM.radius,
+    borderCurve: 'continuous',
+    marginTop: -SEAM.overlap,
+    height: TITLE_STAGE.capHeight,
+    zIndex: 2,
+  },
   body: { backgroundColor: COLORS.beige, paddingBottom: 40 },
 
   // Stacked sections — mirror the page's section / railSection geometry.

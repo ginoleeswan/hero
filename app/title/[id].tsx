@@ -34,6 +34,8 @@ import { RecommendationsRail } from '../../src/components/film/RecommendationsRa
 import { SocialLinks } from '../../src/components/film/SocialLinks';
 import { ReviewsSection } from '../../src/components/film/ReviewsSection';
 import { PageEndCap } from '../../src/components/web/PageEndCap';
+import { SEAM } from '../../src/design';
+import { TITLE_STAGE } from '../../src/constants/titleGeometry';
 
 function fmtMoney(n: number | null | undefined): string | null {
   if (!n || n <= 0) return null;
@@ -395,7 +397,11 @@ export default function TitleScreen() {
         <FilmBackdropHeader
           film={film}
           onBack={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
+          bottomClearance={TITLE_STAGE.paddingBottom}
         />
+        {/* Rounded beige cap at the ink→paper seam — the app's idiom; the
+            header's hairline sits beneath it on native. */}
+        <View style={styles.sheetCap} />
 
         {/* Header is real (seeded stub or live row); the body waits on all its
             data, then swaps in (gated → in place, no shift). */}
@@ -500,6 +506,15 @@ const styles = StyleSheet.create({
   // seam via marginTop, which the overlay inherits identically).
   bodyRegion: { position: 'relative' },
   scroll: { flex: 1 },
+  sheetCap: {
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: SEAM.radius,
+    borderTopRightRadius: SEAM.radius,
+    borderCurve: 'continuous',
+    marginTop: -SEAM.overlap,
+    height: TITLE_STAGE.capHeight,
+    zIndex: 2,
+  },
   scrollContent: { gap: 0 },
 
   // ── Native stacked layout ──
