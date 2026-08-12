@@ -81,21 +81,31 @@ export function MakeAFight({
         <View style={styles.rule} />
       </View>
 
-      <View style={[styles.inset, styles.modes]} accessibilityRole="tablist">
-        {[
-          { on: !team, label: 'One v one', press: () => swap(false) },
-          { on: team, label: 'Team battle', press: () => swap(true) },
-        ].map((m) => (
-          <Pressable
-            key={m.label}
-            onPress={m.press}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: m.on }}
-            style={[styles.mode, m.on && styles.modeOn]}
-          >
-            <Text style={[styles.modeText, m.on && styles.modeTextOn]}>{m.label}</Text>
-          </Pressable>
-        ))}
+      {/* The track is a CHILD of the inset, never merged with it. As
+          `[styles.inset, styles.modes]` the two padding rules collided: the
+          longhand `paddingHorizontal: 16` beat the shorthand `padding: 3` on
+          the horizontal axis, so the control had 16pt of INTERNAL padding
+          left/right against 3pt top/bottom — and, because that inset was being
+          spent inside the track, no outer margin at all, leaving it flush to
+          the screen edge while the title and the fighter cards aligned at 16.
+          Both halves of "not optically balanced" came from this one line. */}
+      <View style={styles.inset}>
+        <View style={styles.modes} accessibilityRole="tablist">
+          {[
+            { on: !team, label: 'One v one', press: () => swap(false) },
+            { on: team, label: 'Team battle', press: () => swap(true) },
+          ].map((m) => (
+            <Pressable
+              key={m.label}
+              onPress={m.press}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: m.on }}
+              style={[styles.mode, m.on && styles.modeOn]}
+            >
+              <Text style={[styles.modeText, m.on && styles.modeTextOn]}>{m.label}</Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
 
       {team ? (

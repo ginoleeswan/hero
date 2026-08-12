@@ -277,19 +277,19 @@ export function pageGutter(width: number): number {
 }
 
 /**
- * The tab bar's SELECTED tint.
+ * The tab bar's selected tint in DARK appearance. The light-appearance half is
+ * `ORANGE_INK`, and `app/(tabs)/_layout.tsx` pairs them with `DynamicColorIOS`
+ * so the tint resolves from the same trait collection iOS uses to choose the
+ * bar's material.
  *
- * The bar is one `systemChromeMaterialDark` blur serving four screens, and the
- * darkest of them (the Arena's near-black stage) sets the floor. The old value
- * — `#e8621a`, a one-off never in this palette — measures 4.08:1 to 4.64:1
- * across how that material actually renders over the Arena stage: at or below
- * the 4.5 floor, failing on the one item that is supposed to be the most
- * legible thing in the bar. It read acceptably on Explore only because the
- * beige page behind the blur lifts the material there.
+ * That pairing is the whole point: a fixed orange cannot work, because the
+ * bar's backdrop swings from cream in light appearance to near-black in dark
+ * and no orange clears 4.5:1 on both — the best manages about 3.5 on its worse
+ * side, since the two sit on opposite sides of the hue's luminance.
  *
  * A tint is not a fill. `COLORS.orange` is tuned to carry large areas of
- * colour; a 24pt glyph and a 10pt label need more separation than a card does,
- * so this is the brand orange lifted for small marks — 5.49:1 to 7.15:1 across
- * the same range, and still plainly the same orange at tab-bar size.
+ * colour, and it measures 2.20–3.04:1 on a light bar; a 24pt glyph and a 10pt
+ * label need more separation than a card does. This is that orange lifted for
+ * small marks on dark: 4.77–6.24:1 across the dark materials.
  */
 export const TAB_ACTIVE = '#F5854A';
