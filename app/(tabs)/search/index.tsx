@@ -461,34 +461,40 @@ export default function SearchScreen() {
         </View>
       )}
 
-      {/* Browse before Universes. The pods carry real character art and are the
-          doorway most people actually take; the four brand tiles are a
-          narrower question ("which publisher") asked by fewer readers, and
-          they were sitting on top of the better answer. History first, then
-          the widest door, then the narrow one. */}
+      {/* Universes is a SHORTCUT, Browse is the content.
+          As a two-row tile grid, Universes forced a choice between burying it
+          under eight pods — a long scroll for a one-tap intent — and putting it
+          on top of them, which pushes the richest thing on the screen below the
+          fold. As a rail it costs one row, so it sits high AND leaves the pods
+          where they can be seen. Neither had to lose. */}
       {showIdleExtras && (
         <>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>Browse</Text>
-          </View>
-          {/* CategoryPodGrid owns its 16px gutter (tiles sized from the screen
-              width), so cancel the list's content padding to align it edge-to-edge. */}
-          <View style={styles.browseGrid}>
-            <CategoryPodGrid covers={browseCovers} onPress={handleCategoryPress} />
-          </View>
-
-          <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Universes</Text>
           </View>
-          {/* PublisherGrid owns its 16px gutter, so cancel the list's content
-              padding to align the brand tiles edge-to-edge. */}
+          {/* Owns its own 16px gutter, so cancel the list's content padding and
+              let the rail run to the physical screen edge. */}
           <View style={styles.browseGrid}>
             <PublisherGrid
+              layout="rail"
               onPress={(slug) => {
                 Haptics.selectionAsync();
                 router.push(`/universe/${slug}` as Parameters<typeof router.push>[0]);
               }}
             />
+          </View>
+
+          {/* No "Browse" label. Label a section when the content does not say
+              what it is: "Recent" marks a list of chips as YOUR history and
+              "Universes" tells you the logos are publishers, but tiles reading
+              Villains, Anime and Video Games are already their own label — and
+              "browse" names the activity of the entire screen rather than
+              these eight things. What the label was really providing is a
+              boundary, so the boundary stays as space. */}
+          {/* CategoryPodGrid owns its 16px gutter (tiles sized from the screen
+              width), so cancel the list's content padding to align it edge-to-edge. */}
+          <View style={[styles.browseGrid, styles.podsTop]}>
+            <CategoryPodGrid covers={browseCovers} onPress={handleCategoryPress} />
           </View>
         </>
       )}
@@ -832,6 +838,8 @@ const styles = StyleSheet.create({
   },
   chipStack: { marginHorizontal: -H_PAD, paddingBottom: 2 },
   browseGrid: { marginHorizontal: -H_PAD, paddingBottom: 4 },
+  // The boundary the removed 'Browse' label used to draw.
+  podsTop: { paddingTop: 18 },
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingTop: 4 },
   skelAnchor: { height: 0 },
   skelOverlay: { position: 'absolute', top: 0, left: 0, right: 0 },
