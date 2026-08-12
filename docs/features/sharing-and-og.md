@@ -174,3 +174,48 @@ the house; a crest is decoration) tinted by the house's own `sigil_tint`, and th
 event card draws the readership curve as an inline SVG polyline, because "no
 calendar told us this was on, the readership did" is the page's whole argument
 and the shape of the spike is the evidence for it.
+
+## The empty-body failure mode
+
+`api/og` wraps everything in a try/catch that redirects to `public/og.png`, so
+the header promises a share link never yields a broken image. **That promise does
+not hold once rendering starts.** `ImageResponse` streams: by the time satori
+touches the first node, `200 image/png` has already gone out. Anything that
+throws after that point cannot be caught into a redirect, and the response ends
+as **zero bytes** — which passes a status-code check, passes a content-type
+check, and shows up as a blank card only in the place nobody is looking, the
+unfurl itself.
+
+It has now happened twice, by two different routes:
+
+1. **An image too large to decode inline.** A 623KB portrait killed the render
+   mid-stream. That is what `cloudinarySized` / `tmdbSized`
+   (`api/_lib/imageUrl.ts`) exist to prevent — always narrow a source image to
+   roughly the size it is drawn at. TMDB is not Cloudinary, so it needs its own
+   helper; and match the host by PARSING the URL, never by substring.
+2. **A CSS declaration satori rejects.** `portraitImg` set
+   `transform: mirror ? 'scaleX(-1)' : 'none'`, and satori refuses the literal
+   `none` outright ("Failed to parse declaration"). Every card drawing an
+   un-mirrored portrait — character, VS, universe, debate, house — served a
+   blank image, in production, until a post-deploy probe caught it. **Omit a
+   property rather than setting it to a no-op value.**
+
+**So: probe the cards after deploying them.** A card is not verified by CI, by a
+green build, or by reading the JSX. The check that works is a request to the
+deployed function comparing the response against the brand card's byte size:
+same size means the catch fired and you are looking at the fallback, zero bytes
+means it died mid-stream, anything else rendered. Neither failure is visible
+from the status code.
+
+## Two share glyphs, by class
+
+Three different icons for one action had accumulated. There are two classes of
+affordance, so there are two glyphs:
+
+- **Nav-bar or floating, icon only** → the SF symbol `square.and.arrow.up`, with
+  an Ionicons fallback off iOS (`ShareHeaderButton`). It is what an iOS reader
+  recognises as "share" without reading a label.
+- **Inline, icon beside a word** → Ionicons `share-outline`.
+
+Anything else is drift. `share-social-outline` in particular is not a third
+option.

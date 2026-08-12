@@ -295,7 +295,7 @@ export function DailyGame() {
           <Text style={styles.statsLabel}>Stats</Text>
         </Pressable>
         <Pressable onPress={onShare} style={styles.shareBtn}>
-          <Ionicons name="share-social-outline" size={16} color="#fff" />
+          <Ionicons name="share-outline" size={16} color="#fff" />
           <Text style={styles.shareLabel}>{copied ? 'Copied!' : 'Share'}</Text>
         </Pressable>
       </View>

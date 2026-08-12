@@ -90,7 +90,7 @@ export function StatsSheet({
       ) : null}
 
       <Pressable onPress={onShare} style={styles.shareBtn}>
-        <Ionicons name="share-social-outline" size={16} color="#fff" />
+        <Ionicons name="share-outline" size={16} color="#fff" />
         <Text style={styles.shareLabel}>{copied ? 'Copied!' : 'Share result'}</Text>
       </Pressable>
     </Sheet>
