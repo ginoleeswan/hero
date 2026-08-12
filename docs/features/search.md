@@ -165,22 +165,21 @@ what to type, and on iOS 26 the field is pinned to the BOTTOM — so a 38pt
 heading at the top spent the screen's best space naming the room from the far
 end of it.
 
-Native (`app/(tabs)/search/index.tsx`) uses the iOS `Stack.SearchBar` plus
-`Stack.Toolbar.Menu` filter menus (Publisher, Alignment). **Those menus are
-hidden while idle and paired with a state pill when they are not.** Idle
-suppresses the hero list entirely, so the filters have nothing to act on; and
-two unlabelled glyphs (a book stack, theatre masks) meant a narrowed result set
-looked identical to a complete one. When a filter is on, a pill names it
-("Marvel · Villains") and clears both on tap.
+Native (`app/(tabs)/search/index.tsx`) uses the iOS `Stack.SearchBar`. **The
+filters are `FilterChips` rows in the CONTENT, on every platform, shown only
+with results.**
 
-The **iOS toolbar stays mounted even while idle**, deliberately, despite
-filtering nothing there. Mounting and unmounting a `Stack.Toolbar` means
-reconfiguring the native header on the first keystroke, and this screen's
-native header has form: `placement="stacked"` once severed the toolbar channel
-the iOS 26 search-role tab uses and left the field completely dead. Two small
-glyphs are not worth reopening that. The **Android chips are** hidden when idle
-— they are ordinary views in the list header, two full rows of them, and carry
-no such risk.
+They were an iOS-only `Stack.Toolbar` of two unlabelled glyphs — a books stack
+and theatre masks — pinned to the top-right of the native header, and that was
+three problems in one control. Nobody decodes those icons; nothing showed which
+filter was active, so a narrowed result set looked identical to a complete one;
+and once the "Search" title was removed the header collapsed to its minimum and
+carried the toolbar up against the status bar, where it read as floating debris
+rather than as part of the screen. Moving to the chips Android and web already
+used fixes all three at once — named options, visible selection, and a position
+this file controls — and removes the `Stack.Toolbar` from a native header with a
+documented history of fragility. They render only when there are results,
+because idle suppresses the hero list and there is nothing to filter.
 
 **The empty state points at the actual cause.** "Try a different search or
 filter" was shown whether or not a filter existed: useless advice in the common
