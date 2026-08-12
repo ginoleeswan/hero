@@ -1,7 +1,7 @@
 import { Platform, DynamicColorIOS, type ColorValue } from 'react-native';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { ORANGE_INK, TAB_ACTIVE } from '../../src/constants/colors';
+import { TAB_ACTIVE, TAB_ACTIVE_LIGHT } from '../../src/constants/colors';
 
 // The selected tint, and the ONLY colour this file still sets.
 //
@@ -10,14 +10,19 @@ import { ORANGE_INK, TAB_ACTIVE } from '../../src/constants/colors';
 // reason about is a brand colour we hand it, so that is the one thing left to
 // get right, and the way to get it right is to resolve it from the same signal.
 //
-// A fixed orange cannot work. The bar's backdrop swings from cream in light
-// appearance to near-black in dark, and no orange clears 4.5:1 on both — the
-// best manages about 3.5 on its worse side, because the two sit on opposite
-// sides of the hue's luminance. Measured per appearance instead: ORANGE_INK
-// (the palette's orange-as-text-on-light) is 4.24–5.87:1 on light bars, and
-// TAB_ACTIVE 4.77–6.24:1 on dark ones.
+// A fixed orange cannot work: the bar's backdrop swings from cream in light
+// appearance to near-black in dark, and no orange clears 4.5:1 on both. So it
+// resolves per appearance — TAB_ACTIVE_LIGHT on light bars, TAB_ACTIVE on dark.
+//
+// Both halves are lighter than contrast alone would choose, deliberately. The
+// dark half still clears the floor at 5.53–8.75:1; the light half does not, at
+// 2.40–3.04:1, and that is a chosen trade rather than an oversight. It is also
+// short-lived: app.config pins `userInterfaceStyle: 'dark'`, so from the next
+// native build the bar is always dark and TAB_ACTIVE is what ships.
 const TINT: ColorValue =
-  Platform.OS === 'ios' ? DynamicColorIOS({ light: ORANGE_INK, dark: TAB_ACTIVE }) : TAB_ACTIVE;
+  Platform.OS === 'ios'
+    ? DynamicColorIOS({ light: TAB_ACTIVE_LIGHT, dark: TAB_ACTIVE })
+    : TAB_ACTIVE;
 
 export default function TabLayout() {
   return (

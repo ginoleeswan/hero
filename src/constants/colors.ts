@@ -301,4 +301,20 @@ export function pageGutter(width: number): number {
  * ORANGE_INK stays until then: an over-the-air client in light mode still gets
  * a light bar, and must still get the dark orange on it.
  */
-export const TAB_ACTIVE = '#FFA06B';
+export const TAB_ACTIVE = '#FFAF7D';
+
+/**
+ * The tab bar's selected tint in LIGHT appearance — the brand orange itself.
+ *
+ * Its own constant rather than `ORANGE_INK`, which is body text on paper in a
+ * dozen files and would take all of them down with it, and rather than an
+ * adjustment to `COLORS.orange`, which is a fill everywhere else.
+ *
+ * This is deliberately below the contrast floor: 2.40–3.04:1 on a light bar,
+ * where nothing lighter than `ORANGE_INK` (4.24–4.63:1) clears 4.5. It is a
+ * chosen trade, and a short-lived one — `app.config.ts` pins
+ * `userInterfaceStyle: 'dark'`, so from the next native build the bar is always
+ * dark and `TAB_ACTIVE` is the value that ships. This half only covers
+ * over-the-air clients still running the older binary in light mode.
+ */
+export const TAB_ACTIVE_LIGHT = COLORS.orange;
