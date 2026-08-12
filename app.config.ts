@@ -17,7 +17,20 @@ const config: ExpoConfig = {
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
-  userInterfaceStyle: 'automatic',
+  // Dark, not automatic. The app is dark-first in the places that matter most
+  // — the boot stage, Explore's billboard, the Arena, every character page —
+  // and 'automatic' meant the SYSTEM chrome disagreed with it on a light-mode
+  // device: a cream tab bar under a near-black Arena, and with it a hard cap on
+  // the accent that could sit there (no orange clears 4.5:1 on a light bar and
+  // stays recognisably orange). Pinning dark makes the chrome agree with the
+  // product and frees the tab tint to be the bright orange.
+  //
+  // NATIVE: this is UIUserInterfaceStyle in Info.plist, so it takes effect on
+  // the next build, not over the air. TAB_ACTIVE is still paired with
+  // ORANGE_INK via DynamicColorIOS for exactly that reason — until the rebuild
+  // lands, an OTA client in light mode still gets a light bar and must still
+  // get the dark orange on it.
+  userInterfaceStyle: 'dark',
   owner: 'ginolee',
   updates: {
     url: 'https://u.expo.dev/129c7437-8d73-4224-bda5-74f69f85a523',
