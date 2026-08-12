@@ -346,6 +346,26 @@ for (const file of files) {
   }
 }
 
+// ── 4^15/16. every route renders something ─────────────────────────────────
+// A route file with no default export is not a compile error, not a lint
+// error, and not a test failure — expo-router only discovers it at navigation
+// time, on a device. A scripted edit truncated app/compare/pick.tsx to its
+// import block and it went through typecheck, lint, tests and CI untouched:
+// the Battle Builder had become an empty module, and the only symptom would
+// have been a red screen on tapping Fight.
+//
+// A route either declares a screen or re-exports one. Layouts and the html
+// shell are not routes.
+const ROUTE_SKIP = /(^|\/)(_layout|\+html)\.(tsx|ts)$/;
+for (const file of files) {
+  if (!file.startsWith('app/')) continue;
+  if (ROUTE_SKIP.test(file)) continue;
+  const src = readFileSync(join(ROOT, file), 'utf8');
+  if (/export\s+default/.test(src)) continue;
+  if (/export\s*\{\s*default[\s,}]/.test(src)) continue; // re-export shim
+  fail(file, 1, 'route-no-screen', 'route file exports no screen — expo-router will fail at navigation time');
+}
+
 // ── 5. the design-scale ratchet ─────────────────────────────────────────────
 // The other four rules are absolutes: a violation is a bug, so it fails. Scale
 // drift is different — there are ~1,000 radius call sites and 52 distinct font
