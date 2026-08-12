@@ -9,6 +9,7 @@ import Animated, {
   cancelAnimation,
   useReducedMotion,
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
@@ -146,7 +147,20 @@ function OpponentCardBase({
             transition={250}
             onLoad={() => setLoaded(true)}
           />
-          <View style={styles.scrim as object} />
+          {/* A GRADIENT, not a wash. This was `Platform.select`: a
+              bottom-to-top gradient on web, and on native a flat
+              rgba(20,30,34,0.34) over the whole card — which dimmed every
+              portrait by a third, face included, to darken a strip behind the
+              name. The web branch had the right idea and native fell back to a
+              solid because `backgroundImage` has no RN equivalent; the app has
+              used expo-linear-gradient for exactly this since long before.
+              Same stops on both platforms now. */}
+          <LinearGradient
+            colors={['transparent', 'rgba(20,30,34,0.12)', 'rgba(20,30,34,0.92)']}
+            locations={[0, 0.48, 1]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
           {added ? (
             <>
               {/* Gold ring + check so a picked hero stays visible in the pool and
@@ -251,16 +265,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   } as object,
   pressed: { transform: [{ scale: 0.96 }], opacity: 0.92 },
-  scrim: {
-    ...StyleSheet.absoluteFill,
-    ...Platform.select({
-      web: {
-        backgroundImage:
-          'linear-gradient(to top, rgba(20,30,34,0.92) 0%, rgba(20,30,34,0.12) 52%, transparent 100%)',
-      } as object,
-      default: { backgroundColor: 'rgba(20,30,34,0.34)' },
-    }),
-  },
+
   name: {
     position: 'absolute',
     bottom: 11,
