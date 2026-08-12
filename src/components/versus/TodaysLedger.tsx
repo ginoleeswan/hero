@@ -1,30 +1,34 @@
-// src/components/versus/TodaysLedger.tsx — what is left of today, as a bill.
+// src/components/versus/TodaysLedger.tsx — what is left of today, in one row.
 //
-// Replaces the chip card on the native Arena hub. The chips were navigation:
-// three buttons, two of which opened things already on the screen (the debate
-// chip opened the same arena as the showdown above it, the team-battle chip the
-// same route as the card below it). A person arriving does not need a third way
-// to reach today's debate — they need to know WHAT IS LEFT.
+// It replaced a card of chips that were pure navigation: three buttons, two of
+// which opened things already on the screen. A person arriving does not need a
+// third way to reach today's debate — they need to know WHAT IS LEFT. That part
+// has not changed; each tile is a piece of state that happens to be tappable.
 //
-// So each line is a piece of state with its own subject, and the debate line
-// records what you did rather than repeating the pairing already shown a few
-// hundred points above it. The numbers are real: three dailies, in the order
-// they are meant to be played.
+// What changed is the shape. As three full-width lines it was ~165pt of stacked
+// rows for three booleans, which pushed "Make a fight" — the act this tab exists
+// for — most of a screen down. Three states belong side by side: the row reads
+// as one glance ("two open, one settled") instead of three sequential reads, and
+// costs about 90pt less.
+//
+// The per-line notes are the deliberate cost. A tile roughly 125pt wide cannot
+// carry "Sinister Six vs Young Avengers" legibly, and padding it out to fit
+// would give back the space this exists to save. The notes survive where they
+// still do work: in the accessibility label, which is read aloud in full.
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useDailies } from '../../hooks/useDailies';
 import type { DailySurface } from '../../lib/db/dailies';
 import { COLORS, INK_TEXT } from '../../constants/colors';
+import { RADIUS } from '../../design';
 import { SUBHEAD } from '../../constants/arenaType';
 
-type Row = {
+type Tile = {
   key: DailySurface;
-  n: string;
   label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  /** Spoken, not drawn — the detail a 125pt tile has no room for. */
   note: string;
-  /** Shown once the line is settled — a line that has been played should say
-   *  what you did, not keep repeating the invitation to do it. */
-  doneNote: string;
   onPress: () => void;
 };
 
@@ -37,43 +41,39 @@ export function TodaysLedger({
 }: {
   onDebate: () => void;
   onPuzzle: () => void;
-  /** Omit while today's battle is still resolving — the line hides. */
+  /** Omit while today's battle is still resolving — the tile hides. */
   onTeamBattle?: () => void;
-  /** What you did, not who is fighting: the pairing is already on screen. */
   debateNote: string;
   teamNote: string;
 }) {
   const { current, today, tracked } = useDailies();
 
-  const rows: Row[] = [
+  const tiles: Tile[] = [
     {
       key: 'debate',
-      n: '01',
-      label: 'The debate',
+      label: 'Debate',
+      icon: 'chatbubbles',
       note: debateNote,
-      doneNote: 'You called it — see the crowd',
       onPress: onDebate,
     },
     {
       key: 'puzzle',
-      n: '02',
-      label: 'Guess the hero',
+      label: 'Guess',
+      icon: 'help-circle',
       note: 'Six guesses',
-      doneNote: 'Solved — see your stats',
       onPress: onPuzzle,
     },
   ];
   if (onTeamBattle) {
-    rows.push({
+    tiles.push({
       key: 'team_battle',
-      n: '03',
       label: 'Team battle',
+      icon: 'people',
       note: teamNote,
-      doneNote: 'You picked a side',
       onPress: onTeamBattle,
     });
   }
-  const left = rows.filter((r) => !today[r.key]).length;
+  const left = tiles.filter((t) => !today[t.key]).length;
 
   return (
     <View style={styles.wrap}>
@@ -90,36 +90,32 @@ export function TodaysLedger({
         </Text>
       </View>
 
-      {rows.map((r) => {
-        const done = today[r.key];
-        return (
-          <Pressable
-            key={r.key}
-            onPress={r.onPress}
-            accessibilityRole="button"
-            accessibilityLabel={`${r.label}${done ? ', done' : ', open'}`}
-            style={({ pressed }) => [styles.line, pressed && styles.pressed]}
-          >
-            <Text style={styles.n}>{r.n}</Text>
-            <View style={styles.body}>
-              <Text style={styles.label}>{r.label}</Text>
-              <Text style={styles.note} numberOfLines={1}>
-                {done ? r.doneNote : r.note}
-              </Text>
-            </View>
-            <View style={styles.state}>
-              <Text style={[styles.stateText, done && styles.stateDone]}>
-                {done ? 'Settled' : 'Open'}
-              </Text>
+      <View style={styles.row}>
+        {tiles.map((t) => {
+          const done = today[t.key];
+          return (
+            <Pressable
+              key={t.key}
+              onPress={t.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={`${t.label}. ${t.note}. ${done ? 'Settled' : 'Open'}`}
+              style={({ pressed }) => [styles.tile, done && styles.tileDone, pressed && styles.dim]}
+            >
               <Ionicons
-                name={done ? 'ellipse-outline' : 'ellipse'}
-                size={8}
+                name={done ? 'checkmark-circle' : t.icon}
+                size={19}
                 color={done ? COLORS.grey : COLORS.orange}
               />
-            </View>
-          </Pressable>
-        );
-      })}
+              <Text style={styles.label} numberOfLines={1}>
+                {t.label}
+              </Text>
+              <Text style={[styles.state, done && styles.stateDone]}>
+                {done ? 'Settled' : 'Open'}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -127,6 +123,7 @@ export function TodaysLedger({
 const styles = StyleSheet.create({
   wrap: {
     marginTop: 12,
+    paddingTop: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(245,235,220,0.14)',
   },
@@ -134,41 +131,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
-    paddingTop: 16,
-    paddingBottom: 10,
+    paddingBottom: 12,
   },
   title: { ...SUBHEAD, color: INK_TEXT.muted },
   streak: { ...SUBHEAD, color: COLORS.goldAccent },
   streakZero: { color: INK_TEXT.faint },
-  line: {
-    flexDirection: 'row',
+
+  row: { flexDirection: 'row', gap: 8 },
+  tile: {
+    flex: 1,
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 13,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(245,235,220,0.14)',
+    gap: 7,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderRadius: RADIUS.lg,
+    borderCurve: 'continuous',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(231,115,51,0.34)',
+    backgroundColor: 'rgba(231,115,51,0.07)',
   },
-  pressed: { opacity: 0.6 },
-  n: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 12,
-    lineHeight: 16,
-    width: 18,
-    color: INK_TEXT.faint,
+  // Settled tiles recede: the row is about what is LEFT, so the open ones
+  // should be the ones carrying colour.
+  tileDone: {
+    borderColor: 'rgba(245,235,220,0.14)',
+    backgroundColor: 'rgba(41,60,67,0.34)',
   },
-  body: { flex: 1 },
-  label: { fontFamily: 'FlameSans-Regular', fontSize: 15, lineHeight: 20, color: COLORS.beige },
-  note: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 12,
-    lineHeight: 16,
-    color: INK_TEXT.faint,
-  },
-  state: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  stateText: {
+  dim: { opacity: 0.6 },
+  label: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige },
+  state: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 1.4,
+    fontSize: 10,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
     color: COLORS.orange,
   },

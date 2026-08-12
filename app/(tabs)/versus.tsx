@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
   scroll: { flex: 1, backgroundColor: COLORS.deepNavy },
 
-  stage: { paddingHorizontal: 16, paddingBottom: 22, alignItems: 'center' },
+  stage: { paddingHorizontal: 16, paddingBottom: 18, alignItems: 'center' },
   // Gold, because it names the live thing; the type is the shared SUBHEAD.
   eyebrow: { ...SUBHEAD, color: COLORS.goldAccent, marginBottom: 6 },
   title: {
