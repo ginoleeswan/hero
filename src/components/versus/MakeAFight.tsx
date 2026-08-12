@@ -157,7 +157,7 @@ export function MakeAFight({
             </View>
             <Squad label="Their side" onPress={onDraft} />
           </View>
-          <View style={styles.inset}>
+          <View style={[styles.inset, styles.teamCta]}>
             <Primary label="Draft the squads" icon="people" onPress={onDraft} />
           </View>
         </Animated.View>
@@ -462,6 +462,10 @@ const styles = StyleSheet.create({
   },
 
   actions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18 },
+  // The same 18 the one-v-one actions row uses. Team mode was missing it, so
+  // its CTA sat hard against the squad boxes while the other mode breathed —
+  // a difference you feel as the toggle flips, without seeing why.
+  teamCta: { marginTop: 18 },
   primary: {
     flexDirection: 'row',
     alignItems: 'center',
