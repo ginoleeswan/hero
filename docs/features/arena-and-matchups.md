@@ -262,6 +262,18 @@ while the title and the fighter cards aligned at 16. Both halves of "not
 optically balanced" came from that one line, and an earlier pass that only
 retuned the numbers could not have fixed it.
 
+**The mode control's thumb travels.** Two separately-backgrounded pills cannot
+slide — the highlight vanishes from one segment and appears on the other, which
+is a state change rendered as a cut. One absolutely-placed thumb, translated on
+a spring, says the two options are one axis and carries the tap across into the
+content that changed beneath it. The travel is measured from the track's layout
+rather than expressed as a percentage, because RN transforms do not take
+percentages and a thumb that stops a point short of its segment is worse than
+one that never moved. Under Reduce Motion it still arrives — it is the only
+thing showing which mode is live — just without the spring. The two modes'
+content is keyed so the swap is a real mount and the new mode fades up with the
+thumb instead of replacing the old one between frames.
+
 **The mode control has one inset, not two.** It had `padding: 4` on the track
 and `gap: 6` between the segments, so the selected thumb sat 4pt from the outer
 edge and 3pt from the middle — a gutter wider than the inset it nested in, which
