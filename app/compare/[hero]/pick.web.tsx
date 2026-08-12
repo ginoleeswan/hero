@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    marginTop: -16,
+    marginTop: -28,
     paddingTop: 30,
   },
   sheetInner: {

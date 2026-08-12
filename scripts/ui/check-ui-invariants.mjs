@@ -295,6 +295,57 @@ for (const file of [...walkTs(join(ROOT, 'src')), ...walkTs(join(ROOT, 'app'))].
   }
 }
 
+// ── 4⅞. a rounded cap must overlap by at least its radius ───────────────────
+// The beige sheet's seam: a cap with rounded top corners pulled up over a dark
+// stage by a negative marginTop. Its corner cut-outs show whatever is BEHIND
+// them, and behind the cap is the list's content background — which on these
+// screens is beige. Overlap by less than the radius and the bottom of each
+// curve sits over beige rather than over the stage, so the cut-out is filled in
+// and the curve looks truncated where it meets the straight edge.
+//
+// Five screens shipped with overlaps of 14–18 against a 24 radius, and
+// character/[id] — the only one that tied the two together — was the only seam
+// that looked right. Use SEAM from constants/tokens rather than a literal pair.
+// Values may be literals, `SEAM.radius`/`SEAM.overlap`, or a numeric const
+// declared in the same file (`const SHEET_OVERLAP = 28`). Resolving them is not
+// a nicety: the moment the SEAM token existed, a literal-only check would have
+// waved through `borderTopLeftRadius: SEAM.radius` beside `marginTop: -16` —
+// the exact bug, wearing the fix as a disguise.
+const SEAM_VALUES = { 'SEAM.radius': 24, 'SEAM.overlap': 24 };
+const numeric = (raw, consts) => {
+  const t = raw.trim();
+  if (/^\d+(?:\.\d+)?$/.test(t)) return +t;
+  if (t in SEAM_VALUES) return SEAM_VALUES[t];
+  if (t in consts) return consts[t];
+  return null;
+};
+
+for (const file of files) {
+  const src = readFileSync(join(ROOT, file), 'utf8');
+  const consts = {};
+  for (const c of src.matchAll(/const\s+([A-Z][A-Z0-9_]*)\s*=\s*(\d+(?:\.\d+)?)\s*;/g)) {
+    consts[c[1]] = +c[2];
+  }
+  // Style objects are `name: { ... }`; scan each for the pair.
+  for (const m of src.matchAll(/(\w+):\s*\{([^{}]*)\}/g)) {
+    const body = m[2];
+    const rRaw = body.match(/borderTopLeftRadius:\s*([\w.]+)/);
+    const pRaw = body.match(/marginTop:\s*-\s*([\w.]+)/);
+    if (!rRaw || !pRaw) continue;
+    const radius = [numeric(rRaw[1], consts)];
+    const pull = [numeric(pRaw[1], consts)];
+    if (radius[0] === null || pull[0] === null) continue;
+    if (+pull[0] < +radius[0]) {
+      fail(
+        file,
+        lineOf(src, m.index),
+        'seam-overlap',
+        `${m[1]}: overlaps ${pull[0]} but rounds ${radius[0]} — the corner cut-out shows the sheet's own background for the last ${(+radius[0] - +pull[0]).toFixed(0)}pt`,
+      );
+    }
+  }
+}
+
 // ── 5. the design-scale ratchet ─────────────────────────────────────────────
 // The other four rules are absolutes: a violation is a bug, so it fails. Scale
 // drift is different — there are ~1,000 radius call sites and 52 distinct font

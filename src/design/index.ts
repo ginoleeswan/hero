@@ -27,7 +27,7 @@
 // font-size literals. It cannot go up. See docs/architecture/design-system.md.
 
 // ── primitives ──────────────────────────────────────────────────────────────
-export { RADIUS, SPACE, SCREEN_PAD, TRACKING } from '../constants/tokens';
+export { RADIUS, SPACE, SCREEN_PAD, TRACKING, SEAM } from '../constants/tokens';
 export { DISPLAY, BODY, LABEL, EYEBROW_TYPE, TYPE } from './type';
 export { ELEVATION, elevationFor } from './elevation';
 export { COLORS } from '../constants/colors';

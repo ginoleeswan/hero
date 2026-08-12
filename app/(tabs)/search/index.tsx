@@ -1,7 +1,7 @@
 // app/(tabs)/search/index.tsx — Search tab.
 // • Native iOS search field in the tab bar (role="search" + Stack.SearchBar).
-// • Filters: native Stack.Toolbar menu (Publisher + Alignment) on iOS; FilterChips
-//   rows as the Android/web fallback.
+// • Filters: FilterChips rows in the CONTENT, on every platform, shown only
+//   with results. They were an iOS-only Stack.Toolbar of two unlabelled glyphs.
 // • One publisher-aware fetch path: empty query → top heroes for the selected
 //   publisher (DB-side); non-empty → alias/typo-tolerant search_heroes RPC.
 // • Idle is a BROWSE surface, ordered history → widest door → narrowest:
@@ -16,7 +16,6 @@ import {
   FlatList,
   Pressable,
   StyleSheet,
-  Platform,
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
@@ -65,7 +64,6 @@ const SEARCH_NAVY = '#1a262b';
 const GRID_COLUMNS = 2;
 const H_PAD = 16;
 const GAP = 8;
-const IS_IOS = Platform.OS === 'ios';
 const PUBLISHERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
 
 const PUBLISHER_OPTIONS: FilterOption<PublisherFilter>[] = [
@@ -388,7 +386,18 @@ export default function SearchScreen() {
           from the thing you came to use. It was a leftover from the
           top-anchored era. */}
 
-      {!IS_IOS && !showIdleExtras && (
+      {/* The filters live in the CONTENT, on every platform.
+          They used to be two unlabelled glyphs in a `Stack.Toolbar` — a books
+          stack and theatre masks — pinned to the top-right of the native
+          header. Three problems in one control: nobody decodes those icons,
+          nothing showed which filter was active, and with no header title left
+          the header collapsed to its minimum and took the toolbar up against
+          the status bar, where it read as floating debris rather than as part
+          of the screen. The same `FilterChips` Android and web already used
+          fixes all three: named options, visible selection, and a position
+          this file actually controls. Shown only with results, because idle
+          suppresses the hero list and there is nothing to filter. */}
+      {!showIdleExtras && (
         <View style={styles.chipStack}>
           <FilterChips
             value={publisherFilter}
@@ -403,23 +412,6 @@ export default function SearchScreen() {
             idPrefix="align"
           />
         </View>
-      )}
-
-      {/* A filter you cannot see the state of is worse than no filter. On iOS
-          the controls are two unlabelled glyphs in the toolbar, so a narrowed
-          result set looked identical to a complete one — this says so, and
-          gives back the one tap that undoes it. */}
-      {!showIdleExtras && filtersOn && (
-        <Pressable
-          onPress={clearFilters}
-          accessibilityRole="button"
-          accessibilityLabel={`Filtered by ${activeFilterLabel}. Tap to clear.`}
-          style={({ pressed }) => [styles.filterState, pressed && styles.filterStatePressed]}
-        >
-          <Ionicons name="funnel" size={12} color={COLORS.orange} />
-          <Text style={styles.filterStateText}>{activeFilterLabel}</Text>
-          <Ionicons name="close-circle" size={14} color="rgba(245,235,220,0.55)" />
-        </Pressable>
       )}
 
       {showIdleExtras && recentlyViewed.length > 0 && (
@@ -634,7 +626,7 @@ export default function SearchScreen() {
           <Pressable
             onPress={clearFilters}
             accessibilityRole="button"
-            style={({ pressed }) => [styles.emptyCta, pressed && styles.filterStatePressed]}
+            style={({ pressed }) => [styles.emptyCta, pressed && styles.ctaPressed]}
           >
             <Text style={styles.emptyCtaText}>Search everything</Text>
           </Pressable>
@@ -693,42 +685,6 @@ export default function SearchScreen() {
       />
 
       {/* Native filter menus (iOS) on the right — fills the header bar. */}
-      {/* Always mounted, deliberately, even though these filter nothing while
-          idle (the idle screen suppresses the hero list — see `listData`).
-          Mounting and unmounting a Stack.Toolbar means reconfiguring the native
-          header on the first keystroke, and the native header on this screen
-          has a history: `placement="stacked"` once severed the toolbar channel
-          the iOS 26 search-role tab uses and left the field completely dead.
-          Two small glyphs on an idle screen is not worth reopening that. The
-          Android chips below ARE hidden when idle — they are ordinary views in
-          the list header, two full rows of them, and carry no such risk. */}
-      {IS_IOS && (
-        <Stack.Toolbar placement="right">
-          <Stack.Toolbar.Menu icon="books.vertical" title="Publisher">
-            {PUBLISHER_OPTIONS.map((o) => (
-              <Stack.Toolbar.MenuAction
-                key={o.value}
-                isOn={publisherFilter === o.value}
-                onPress={() => setPublisherFilter(o.value)}
-              >
-                {o.label}
-              </Stack.Toolbar.MenuAction>
-            ))}
-          </Stack.Toolbar.Menu>
-          <Stack.Toolbar.Menu icon="theatermasks" title="Alignment">
-            {ALIGNMENT_OPTIONS.map((o) => (
-              <Stack.Toolbar.MenuAction
-                key={o.value}
-                isOn={alignmentFilter === o.value}
-                onPress={() => setAlignmentFilter(o.value)}
-              >
-                {o.label}
-              </Stack.Toolbar.MenuAction>
-            ))}
-          </Stack.Toolbar.Menu>
-        </Stack.Toolbar>
-      )}
-
       {/* Entrance parity with Explore. Wrapping the list (rather than the
           screen root) keeps Stack.Header/SearchBar/Toolbar as direct
           children, which is how expo-router registers the native header. */}
@@ -809,20 +765,7 @@ const styles = StyleSheet.create({
   listWrap: { flex: 1 },
   list: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: H_PAD, paddingTop: 14 },
-  filterState: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginBottom: 10,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderRadius: RADIUS.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(231,115,51,0.4)',
-    backgroundColor: 'rgba(231,115,51,0.1)',
-  },
-  filterStatePressed: { opacity: 0.6 },
+  ctaPressed: { opacity: 0.6 },
   emptyCta: {
     marginTop: 14,
     paddingVertical: 10,
@@ -831,11 +774,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.beige,
   },
   emptyCtaText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 15, color: COLORS.deepNavy },
-  filterStateText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: COLORS.beige,
-  },
+
   chipStack: { marginHorizontal: -H_PAD, paddingBottom: 2 },
   browseGrid: { marginHorizontal: -H_PAD, paddingBottom: 4 },
   // The boundary the removed 'Browse' label used to draw.
