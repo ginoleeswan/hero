@@ -338,19 +338,26 @@ Both of Explore's endless animations now hold still off-screen, via
 **If you add a `withRepeat(..., -1)` anywhere, it needs both checks.**
 
 
-**The billboard's indicator is segmented and timed, on both platforms.** The
-native dots encoded position at whisper volume; a segment per slide (ported
-from the web spotlight) encodes position, count, and — because the active
-segment fills across the autoplay interval — that the billboard advances on
-its own and when. `SpotlightProgress` shares one `AUTOPLAY_MS` clock with the
-carousel, because a bar timed against a different number than the advance is a
-clock that lies. Under Reduce Motion there is no autoplay, so the active
-segment parks fully filled ("you are here") instead of promising an advance
-that never comes. The slide deliberately carries NO chevron
+**The billboard's indicator is a dot per slide, a filling pill for the active
+one.** Plain dots encoded position at whisper volume and said nothing about
+the billboard advancing on its own. A full row of segmented bars (briefly
+shipped, ported from the web spotlight) said all of it far too loudly — five
+bright bars competing with the artwork under them. The shipped form keeps the
+dots' light footing and puts the clock inside the one indicator that is
+already the loud one: the active slide's dot is a wider pill whose track fills
+orange across the autoplay interval. The dot↔pill change is a morph, not a
+swap — one shared value tracks the active index and every indicator
+interpolates its width from the distance to it, so total row width stays
+steady and nothing jitters sideways. `SpotlightProgress` shares one
+`AUTOPLAY_MS` clock with the carousel, because a fill timed against a
+different number than the advance is a clock that lies. Under Reduce Motion
+there is no autoplay, so the active pill parks fully filled ("you are here")
+instead of promising an advance that never comes. The slide deliberately
+carries NO chevron
 (one was briefly ported from web): on native a full-bleed content card is the
 affordance — the App Store's Today cards and Apple TV's billboard carry none —
 and web keeps its own because an editorial headline under a cursor is a
 different convention. The slide instead gained the accessibility name it
 always lacked (`Open <name>`), which serves the one audience for whom
-tappability is not visible. `HomeSkeleton` mirrors the segments via the shared
-`SPOTLIGHT` tokens.
+tappability is not visible. `HomeSkeleton` mirrors the dots and the active
+pill via the shared `SPOTLIGHT` tokens.
