@@ -252,6 +252,16 @@ present, and "you called it" is a marker rather than a clause — left-aligned,
 because a record reads from the left and the centred prose was competing with
 the CTA above it.
 
+**The mode control's track is a CHILD of the section inset, never merged with
+it.** As `[styles.inset, styles.modes]` the two padding rules collided: the
+longhand `paddingHorizontal: 16` beats the shorthand `padding: 3` on the
+horizontal axis, so the control ended up with 16pt of *internal* padding
+left/right against 3pt top/bottom — and, because that inset was being spent
+inside the track, no outer margin at all, leaving it flush to the screen edge
+while the title and the fighter cards aligned at 16. Both halves of "not
+optically balanced" came from that one line, and an earlier pass that only
+retuned the numbers could not have fixed it.
+
 **The mode control has one inset, not two.** It had `padding: 4` on the track
 and `gap: 6` between the segments, so the selected thumb sat 4pt from the outer
 edge and 3pt from the middle — a gutter wider than the inset it nested in, which

@@ -15,6 +15,24 @@ export default function TabLayout() {
     //   PERMANENTLY. Setting both pins a real material for both appearances,
     //   so the bar no longer depends on pairing at all.
     //
+    // • backgroundColor — a scrim, and the reason the tint can be a fixed
+    //   colour at all. `systemChromeMaterialDark` is translucent, so the bar's
+    //   backdrop is whatever content happens to be scrolled under it: cream
+    //   over Profile's beige page, near-black over the Arena stage, and light
+    //   again over a rail of bright cover art WITHIN one tab. No orange
+    //   survives that range — measured across both extremes, the best any
+    //   orange manages on its worse side is ~3.5:1, because the two backdrops
+    //   sit on opposite sides of the hue's luminance. Per-tab colours
+    //   (`selectedIconColor`, `selectedLabelStyle`) would fix Profile and not
+    //   the scroll-dependent half.
+    //
+    //   So the backdrop gets a floor instead. At 0.86 over the brightest
+    //   possible content the bar lands near #2d383f, where the tint measures
+    //   4.77:1 and the unselected items 6.74:1 — a real floor rather than a
+    //   colour that happens to work on the page you tested. The blur stays;
+    //   the bar simply stops changing colour with the artwork behind it, which
+    //   was never a designed effect.
+    //
     // • tintColor — the SELECTED item, and the one thing here that was failing
     //   its own contrast floor. See TAB_ACTIVE in constants/colors.
     //
@@ -45,6 +63,7 @@ export default function TabLayout() {
     <NativeTabs
       tintColor={TAB_ACTIVE}
       blurEffect="systemChromeMaterialDark"
+      backgroundColor="rgba(11,24,32,0.86)"
       disableTransparentOnScrollEdge
       iconColor="rgba(245,235,220,0.72)"
       labelStyle={{ color: 'rgba(245,235,220,0.72)' }}

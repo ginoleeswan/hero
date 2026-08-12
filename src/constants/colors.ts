@@ -279,8 +279,13 @@ export function pageGutter(width: number): number {
 /**
  * The tab bar's SELECTED tint.
  *
- * The bar is one `systemChromeMaterialDark` blur serving four screens, and the
- * darkest of them (the Arena's near-black stage) sets the floor. The old value
+ * The bar carries a `rgba(11,24,32,0.86)` scrim precisely so this can be one
+ * fixed colour: the material alone is translucent enough that the backdrop
+ * swings from cream (over Profile's beige page) to near-black (over the Arena
+ * stage) and back again mid-scroll over bright cover art. No orange clears 4.5
+ * against that whole range — the best any of them manages on its worse side is
+ * about 3.5, because the two backdrops sit on opposite sides of the hue's
+ * luminance. With the scrim the backdrop has a ceiling near #2d383f. The old value
  * — `#e8621a`, a one-off never in this palette — measures 4.08:1 to 4.64:1
  * across how that material actually renders over the Arena stage: at or below
  * the 4.5 floor, failing on the one item that is supposed to be the most
@@ -289,7 +294,8 @@ export function pageGutter(width: number): number {
  *
  * A tint is not a fill. `COLORS.orange` is tuned to carry large areas of
  * colour; a 24pt glyph and a 10pt label need more separation than a card does,
- * so this is the brand orange lifted for small marks — 5.49:1 to 7.15:1 across
- * the same range, and still plainly the same orange at tab-bar size.
+ * so this is the brand orange lifted for small marks — 4.77:1 against the
+ * scrim's worst case and 7.15:1 over the Arena stage, and still plainly the
+ * same orange at tab-bar size.
  */
 export const TAB_ACTIVE = '#F5854A';
