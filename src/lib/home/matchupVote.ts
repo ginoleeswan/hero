@@ -36,3 +36,62 @@ export function statLead(winsA: number, winsB: number, nameA: string, nameB: str
   if (winsA === winsB) return 'Evenly matched on the tape';
   return `${winsA > winsB ? nameA : nameB} leads ${Math.max(winsA, winsB)}–${Math.min(winsA, winsB)} on stats`;
 }
+
+/**
+ * Votes needed before today's tally is shown AS today's tally.
+ *
+ * Below this a "split" is one or two people — most often just the viewer — and
+ * drawing someone's own vote back at them as a full-width 100% bar is a verdict
+ * the app has no business claiming. Under the floor every surface falls back to
+ * the pair's all-time record, which is real data, plainly labelled.
+ */
+export const CROWD_FLOOR = 10;
+
+export interface CrowdSplit {
+  pctA: number;
+  pctB: number;
+  /** True when the bar is today's crowd rather than the all-time record. */
+  usingVotes: boolean;
+  /** Votes cast today, whether or not they are being shown as a split. */
+  votes: number;
+}
+
+/**
+ * The one place the floor is applied. Four surfaces drew this bar — the native
+ * and web daily-matchup cards, the web showdown stage, the native showdown —
+ * each with its own `tally.total > 0`, and fixing one of them fixed one of
+ * them. Route every crowd bar through here.
+ */
+export function crowdSplit(
+  tally: { total: number; votesA: number; votesB: number } | null | undefined,
+  winsA: number,
+  winsB: number,
+): CrowdSplit {
+  const votes = tally?.total ?? 0;
+  const usingVotes = votes >= CROWD_FLOOR;
+  const { pctA, pctB } = usingVotes
+    ? statSplit(tally!.votesA, tally!.votesB)
+    : statSplit(winsA, winsB);
+  return { pctA, pctB, usingVotes, votes };
+}
+
+/**
+ * Who took a frozen result, with a tie treated as a tie.
+ *
+ * `finalVotesA >= finalVotesB` crowns whichever side happened to sort first, so
+ * a dead heat rendered as "Team Hulk won 50/50" — a contradiction in five
+ * words, on the outcome most likely to be read twice.
+ */
+export function frozenResult(
+  finalVotesA: number,
+  finalVotesB: number,
+  yourPick: MatchupSide | null,
+): { tied: boolean; aWon: boolean; yourSideWon: boolean | null } {
+  const tied = finalVotesA === finalVotesB;
+  const aWon = finalVotesA > finalVotesB;
+  return {
+    tied,
+    aWon,
+    yourSideWon: tied || yourPick === null ? null : (yourPick === 'a') === aWon,
+  };
+}

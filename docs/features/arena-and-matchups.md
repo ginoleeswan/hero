@@ -232,8 +232,13 @@ candidate shares one. It is lossless — a rail of nothing but Batman rivalries
 cannot be spread, and dropping cards to fake it would make the count beside the
 rail a lie.
 
-**Today's split needs a crowd before it is a split.** `ShowdownCards` only draws
-the vote bar from today's tally at `CROWD_FLOOR` (10) votes or more. Below it the
+**Today's split needs a crowd before it is a split, on every surface.**
+`crowdSplit` (`src/lib/home/matchupVote.ts`) is the single place the floor is
+applied — FOUR surfaces drew this bar with their own copy of `tally.total > 0`
+(the native and web daily-matchup cards, the web showdown stage, the native
+showdown), so fixing one of them fixed exactly one of them. Route every crowd
+bar through it. Below `CROWD_FLOOR` (10) votes the bar shows the pair's
+all-time record. Below it the
 bar shows the pair's all-time record, labelled as such, with the day's call count
 underneath — one vote is usually your own, and reflecting it back as a full-width
 100% bar is a verdict the app has no business claiming.
@@ -245,6 +250,15 @@ chip inside `ShowdownCards`, rendered only once you have voted: a permanent line
 inviting you to "add the first take" on a fight you had not called was the wrong
 order, and it was one of three centred sentences competing for the same axis
 under the cards. The ledger's Debate tile still reaches the arena before a vote.
+
+**A tie is a tie, on both platforms.** `frozenResult`
+(`src/lib/home/matchupVote.ts`) owns the rule, because the native and web
+`YesterdayStrip`s each had their own `finalVotesA >= finalVotesB` and each
+crowned whichever side sorted first — "Team Hulk won 50/50", a contradiction in
+five words, on the outcome most likely to be read twice.
+
+**The rivalries rail is spread on both platforms** — `versus.web.tsx` runs the
+same `spreadRivalries` as the native hub.
 
 **Yesterday is a ticket, not a sentence.** The split is drawn as a bar in the
 fighters' accents with the loser's side faded, the winner is the only name

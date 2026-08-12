@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, EYEBROW, INK_TEXT } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import { useSkeletonAnim, SkeletonBlock } from '../Skeleton';
-import { statSplit, statLead, type MatchupSide } from '../../../lib/home/matchupVote';
+import { crowdSplit, statLead, type MatchupSide } from '../../../lib/home/matchupVote';
 import { type MatchupTally } from '../../../lib/db/matchupVotes';
 import { useMatchupVote } from '../../../hooks/useMatchupVote';
 import type { TodaysMatchup as Matchup } from '../../../lib/matchup';
@@ -172,12 +172,12 @@ function Result({
   animate?: boolean;
 }) {
   const { heroA, heroB, winsA, winsB } = matchup;
-  const usingVotes = !!tally && tally.total > 0;
-  const { pctA, pctB } = usingVotes
-    ? statSplit(tally!.votesA, tally!.votesB)
-    : statSplit(winsA, winsB);
+  // One floor, shared with every other crowd bar — see crowdSplit. One vote is
+  // usually the viewer's own, and reflecting it back as a 100% bar is a verdict
+  // the app cannot support.
+  const { pctA, pctB, usingVotes, votes } = crowdSplit(tally, winsA, winsB);
   const caption = usingVotes
-    ? `${tally!.total} ${tally!.total === 1 ? 'fan' : 'fans'} voted`
+    ? `${votes} fans voted today`
     : statLead(winsA, winsB, heroA.name, heroB.name);
   const [grown, setGrown] = useState(
     () =>

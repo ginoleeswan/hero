@@ -3,22 +3,25 @@
 // from useVersusHub), sized for the wider stage.
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS, INK_TEXT } from '../../../constants/colors';
-import { statSplit } from '../../../lib/home/matchupVote';
+import { statSplit, frozenResult } from '../../../lib/home/matchupVote';
 import type { YesterdayDebateStrip } from '../../../hooks/useVersusHub';
 
 export function YesterdayStrip({ yesterday }: { yesterday: YesterdayDebateStrip }) {
   const { heroAName, heroBName, finalVotesA, finalVotesB, topTake, yourPick } = yesterday;
   const { pctA, pctB } = statSplit(finalVotesA, finalVotesB);
-  const winnerName = finalVotesA >= finalVotesB ? heroAName : heroBName;
+  // Shared with the native strip: `>=` crowned whichever side sorted first, so
+  // a dead heat read "Team Hulk won 50/50".
+  const { tied, aWon, yourSideWon } = frozenResult(finalVotesA, finalVotesB, yourPick);
+  const winnerName = aWon ? heroAName : heroBName;
   const winnerPct = Math.max(pctA, pctB);
   const loserPct = Math.min(pctA, pctB);
-
-  const yourSideWon = yourPick === null ? null : (yourPick === 'a') === finalVotesA >= finalVotesB;
 
   return (
     <View style={s.wrap}>
       <Text style={s.line}>
-        Yesterday: Team {winnerName} won {winnerPct}/{loserPct}
+        {tied
+          ? `Yesterday: dead heat — ${heroAName} and ${heroBName} split it ${pctA}/${pctB}`
+          : `Yesterday: Team ${winnerName} won ${winnerPct}/${loserPct}`}
         {yourSideWon !== null ? (
           <Text style={yourSideWon ? s.won : s.lost}>
             {yourSideWon ? '  · Your side won' : '  · Your side lost'}
