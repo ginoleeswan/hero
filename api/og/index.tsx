@@ -918,6 +918,24 @@ function universeCard(hero: OgHero, img: string | null, uni: OgUniverse) {
 const sized = (url: string, w = 720) =>
   url.includes('/upload/') ? url.replace('/upload/', `/upload/w_${w},q_auto/`) : url;
 
+/**
+ * The same problem, for TMDB — and it applies to the title card by default.
+ *
+ * TMDB serves fixed size buckets and the catalogue stores backdrops at `w1280`,
+ * which is comfortably inside the range that killed the renderer above. TMDB
+ * isn't Cloudinary, so `sized()` passed those URLs through untouched: the title
+ * card would have shipped asking satori to fetch and decode a full-width
+ * backdrop AND a full-size poster inline, on every unfurl.
+ *
+ * The buckets are path segments, so downsizing is a swap: w780 is still twice
+ * the 400px the backdrop is drawn at after cropping, and w500 comfortably
+ * covers a 300px poster.
+ */
+const tmdbSized = (url: string, bucket: 'w780' | 'w500' | 'w342') =>
+  url.includes('image.tmdb.org')
+    ? url.replace(/\/t\/p\/(w\d+|original)\//, `/t/p/${bucket}/`)
+    : url;
+
 const art = (h: OgHero) => {
   const u = h.portrait_url || h.image_url;
   return u ? sized(u) : null;
@@ -1012,6 +1030,13 @@ function houseCard(house: OgHouse, faces: OgFace[]) {
     house.seat,
     house.universe,
   ].filter(Boolean) as string[];
+  // Every other card in this set is anchored by a large portrait bleeding off
+  // one edge. A text-only house card would have been the odd one out in a
+  // timeline, so the best-known member carries the right edge and the rest of
+  // the line becomes the face row — which is also the truer picture: the
+  // members ARE the house.
+  const [lead, ...rest] = faces;
+  const leadArt = lead?.art ?? null;
   return (
     <div
       style={{
@@ -1019,13 +1044,15 @@ function houseCard(house: OgHouse, faces: OgFace[]) {
         width: '100%',
         height: '100%',
         display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        padding: '0 78px',
         background: BG,
       }}
     >
       {textureLayer}
+      {leadArt ? (
+        <div style={{ display: 'flex', position: 'absolute', top: 0, right: 0 }}>
+          {portraitImg(leadArt, 420, 'left')}
+        </div>
+      ) : null}
       {/* The house's own tint as a floor wash — the one thing that makes a
           Targaryen card and a Wayne card read as different houses at a glance. */}
       <div
@@ -1038,56 +1065,68 @@ function houseCard(house: OgHouse, faces: OgFace[]) {
           background: `linear-gradient(0deg, ${tint}38, transparent)`,
         }}
       />
-      {wordmark(30, false)}
       <div
         style={{
           display: 'flex',
-          fontFamily: 'FlameSans',
-          fontSize: 24,
-          color: tint,
-          letterSpacing: 3,
-          marginTop: 22,
+          flex: 1,
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '0 0 0 78px',
         }}
       >
-        THE HOUSE OF
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          fontFamily: 'Flame',
-          fontSize: 88,
-          color: BEIGE,
-          lineHeight: 1.22,
-          marginTop: 4,
-        }}
-      >
-        {house.name}
-      </div>
-      {house.words ? (
+        {wordmark(30, false)}
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 24,
+            color: tint,
+            letterSpacing: 3,
+            marginTop: 22,
+          }}
+        >
+          THE HOUSE OF
+        </div>
         <div
           style={{
             display: 'flex',
             fontFamily: 'Flame',
-            fontSize: 32,
-            color: MUTED,
-            lineHeight: 1.3,
-            marginTop: 14,
+            fontSize: 74,
+            color: BEIGE,
+            lineHeight: 1.22,
+            marginTop: 4,
+            maxWidth: 640,
           }}
         >
-          &#8220;{house.words}&#8221;
+          {house.name}
         </div>
-      ) : null}
-      {faces.length > 0 ? faceRow(faces, 96, tint) : null}
-      <div
-        style={{
-          display: 'flex',
-          fontFamily: 'FlameSans',
-          fontSize: 26,
-          color: MUTED,
-          marginTop: faces.length > 0 ? 26 : 44,
-        }}
-      >
-        {facts.join('  ·  ')}
+        {house.words ? (
+          <div
+            style={{
+              display: 'flex',
+              fontFamily: 'Flame',
+              fontSize: 30,
+              color: MUTED,
+              lineHeight: 1.3,
+              marginTop: 12,
+              maxWidth: 620,
+            }}
+          >
+            &#8220;{house.words}&#8221;
+          </div>
+        ) : null}
+        {rest.length > 0 ? faceRow(rest, 84, tint) : null}
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 26,
+            color: MUTED,
+            marginTop: rest.length > 0 ? 24 : 44,
+          }}
+        >
+          {facts.join('  ·  ')}
+        </div>
       </div>
     </div>
   );
@@ -1188,6 +1227,20 @@ function eventCard(event: OgEvent) {
           style={{ position: 'absolute', left: 0, bottom: 0 }}
         />
       ) : null}
+      {/* Ink falls over the top of the curve so type never fights the plot —
+          the same scrim EventDossier draws on the page itself. Without it the
+          stat rail sits directly on the plotted line, which is the one place a
+          card carrying a measurement cannot afford to look careless. */}
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 280,
+          background: `linear-gradient(0deg, transparent, ${INK}cc 62%, ${INK} 100%)`,
+        }}
+      />
       {wordmark(30, false)}
       <div
         style={{
@@ -1285,8 +1338,9 @@ async function fetchTitle(id: string): Promise<OgTitle | null> {
       title: t.title,
       year: t.year,
       mediaType: t.media_type,
-      posterUrl: t.poster_url,
-      backdropUrl: t.backdrop_url,
+      // Downsized at the source, so neither branch of the card can forget.
+      posterUrl: t.poster_url ? tmdbSized(t.poster_url, 'w500') : null,
+      backdropUrl: t.backdrop_url ? tmdbSized(t.backdrop_url, 'w780') : null,
       voteAverage: t.vote_average,
     };
   } catch {

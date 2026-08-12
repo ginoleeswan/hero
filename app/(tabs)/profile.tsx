@@ -238,7 +238,14 @@ function GuestProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Support */}
+        {/* Support + settings.
+            The settings row is not a convenience. It was the ONLY route to the
+            privacy policy and terms for a signed-out reader, and there wasn't
+            one: /settings is linked from the signed-in profile alone and used
+            to redirect a signed-out visitor to Explore. The app is browsable
+            without an account by design, so App Review could arrive, never sign
+            up, and find no policy anywhere — the 5.1.1 rejection the Legal
+            section was added to prevent. */}
         <View style={styles.guestSection}>
           <TouchableOpacity style={styles.supportRow} onPress={openKofi} activeOpacity={0.7}>
             <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
@@ -246,6 +253,20 @@ function GuestProfileScreen() {
             </View>
             <Text style={styles.accountLabel}>Support this project</Text>
             <Text style={styles.accountValue}>Ko-fi</Text>
+            <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+          </TouchableOpacity>
+          <View style={styles.divider} />
+          <TouchableOpacity
+            style={styles.supportRow}
+            onPress={() => router.push('/settings')}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Settings, privacy policy and terms"
+          >
+            <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
+              <Ionicons name="settings-outline" size={16} color={COLORS.navy} />
+            </View>
+            <Text style={styles.accountLabel}>Settings &amp; legal</Text>
             <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
           </TouchableOpacity>
         </View>

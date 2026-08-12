@@ -10,9 +10,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { useAuth } from '../src/hooks/useAuth';
+import { loginHref } from '../src/lib/loginRedirect';
 import { useProfile } from '../src/hooks/useProfile';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
 import { providerMeta } from '../src/lib/profile/provider';
@@ -138,9 +139,16 @@ export default function SettingsScreen() {
   // starts as { user: null, loading: true }; wait for it to settle before
   // deciding, or a signed-in user gets bounced to Explore on the first render.
   if (authLoading) return null;
-  // <Redirect> defers the navigation dispatch internally, so it's safe to
-  // render (unlike calling router.replace during render).
-  if (!user) return <Redirect href="/explore" />;
+  // Signed out is NOT a reason to bounce off this screen. It used to be — and
+  // that quietly undid the whole point of the Legal section below, because the
+  // only link to /settings lives on the signed-in profile and a deep link here
+  // redirected to Explore. The app is browsable signed out by design, so an App
+  // Review pass that never creates an account had no route to the privacy
+  // policy at all: exactly the 5.1.1 rejection the section exists to avoid.
+  //
+  // So the screen renders for everyone; the sections that need an account are
+  // the ones that hide.
+  const signedIn = !!user;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -158,26 +166,40 @@ export default function SettingsScreen() {
           <Text style={styles.title}>Settings</Text>
         </View>
 
-        <SectionShell title="Account">
-          <SettingRow icon="mail-outline" label="Email" value={email} />
-          {!isEmailUser && (
+        {!signedIn && (
+          <SectionShell title="Account">
             <SettingRow
-              icon={providerMeta(provider).icon}
-              label="Signed in with"
-              value={providerMeta(provider).label}
-            />
-          )}
-          {isEmailUser && (
-            <SettingRow
-              icon="lock-closed-outline"
-              label="Change password"
-              onPress={() => setShowChangePassword(true)}
+              icon="log-in-outline"
+              label="Sign in or create an account"
+              tone="orange"
+              onPress={() => router.push(loginHref('/settings'))}
               chevron
             />
-          )}
-        </SectionShell>
+          </SectionShell>
+        )}
 
-        {profile?.is_admin && (
+        {signedIn && (
+          <SectionShell title="Account">
+            <SettingRow icon="mail-outline" label="Email" value={email} />
+            {!isEmailUser && (
+              <SettingRow
+                icon={providerMeta(provider).icon}
+                label="Signed in with"
+                value={providerMeta(provider).label}
+              />
+            )}
+            {isEmailUser && (
+              <SettingRow
+                icon="lock-closed-outline"
+                label="Change password"
+                onPress={() => setShowChangePassword(true)}
+                chevron
+              />
+            )}
+          </SectionShell>
+        )}
+
+        {signedIn && profile?.is_admin && (
           <SectionShell title="Admin">
             <SettingRow
               icon="stats-chart-outline"
@@ -221,25 +243,27 @@ export default function SettingsScreen() {
           />
         </SectionShell>
 
-        <SectionShell title="Account actions">
-          <SettingRow
-            icon="log-out-outline"
-            label="Sign out"
-            tone="danger"
-            onPress={handleSignOut}
-            busy={signingOut}
-            busyLabel="Signing out…"
-          />
-          <View style={styles.rowDivider} />
-          <SettingRow
-            icon="trash-outline"
-            label="Delete account"
-            tone="danger"
-            onPress={handleDeleteAccount}
-            busy={deletingAccount}
-            busyLabel="Deleting account…"
-          />
-        </SectionShell>
+        {signedIn && (
+          <SectionShell title="Account actions">
+            <SettingRow
+              icon="log-out-outline"
+              label="Sign out"
+              tone="danger"
+              onPress={handleSignOut}
+              busy={signingOut}
+              busyLabel="Signing out…"
+            />
+            <View style={styles.rowDivider} />
+            <SettingRow
+              icon="trash-outline"
+              label="Delete account"
+              tone="danger"
+              onPress={handleDeleteAccount}
+              busy={deletingAccount}
+              busyLabel="Deleting account…"
+            />
+          </SectionShell>
+        )}
 
         {/* App Review reaches settings first. The privacy policy and terms
             existed as routes but were only linked from the SIGNUP form — a
