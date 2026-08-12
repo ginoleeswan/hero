@@ -18,6 +18,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
+import { EVENT_STAGE, EVENT_PAPER } from '../../constants/eventGeometry';
 import { EventCurve } from './EventCurve';
 import type { EventDossier as Dossier, EventTrailer } from '../../lib/db/events.dossier';
 
@@ -55,10 +56,10 @@ export function EventDossier({
   const { event, trailers, surges, issues } = dossier;
   const accent = event.accent ?? COLORS.goldAccent;
   const brand = brandForEvent(event.slug);
-  const pad = wide ? 40 : 18;
+  const pad = wide ? EVENT_STAGE.padWide : EVENT_STAGE.pad;
   const measure = Math.min(maxContentWidth ?? contentWidth, contentWidth);
   const inner = { width: '100%' as const, maxWidth: measure, alignSelf: 'center' as const };
-  const curveH = wide ? 190 : 150;
+  const curveH = wide ? EVENT_STAGE.curveHWide : EVENT_STAGE.curveH;
 
   // Fluid grids. Fixed-width cells left a ragged gutter — at 390 the faces
   // filled 284 of 354px and the row stopped dead two-thirds across. Columns are
@@ -98,7 +99,15 @@ export function EventDossier({
           pointerEvents="none"
         />
 
-        <View style={[inner, { paddingHorizontal: pad, paddingTop: wide ? 44 : 28 }]}>
+        <View
+          style={[
+            inner,
+            {
+              paddingHorizontal: pad,
+              paddingTop: wide ? EVENT_STAGE.paddingTopWide : EVENT_STAGE.paddingTop,
+            },
+          ]}
+        >
           {onIndexPress ? (
             <Pressable onPress={onIndexPress} accessibilityRole="link">
               <Text style={[s.eyebrow, { color: accent }]}>
@@ -130,7 +139,18 @@ export function EventDossier({
             </Text>
           )}
 
-          <Text style={s.method}>
+          {/* Phone widths get a fixed three-line box, and the clamp to match.
+              The sentence is a constant, so its height is knowable — but only
+              if it is stated rather than left to font metrics, which is what
+              the skeleton has to mirror. Wide widths have room for the measure
+              to breathe and no skeleton to keep in step with. */}
+          <Text
+            style={[
+              s.method,
+              wide ? null : { height: EVENT_STAGE.methodLine * EVENT_STAGE.methodLines },
+            ]}
+            numberOfLines={wide ? undefined : EVENT_STAGE.methodLines}
+          >
             No calendar told us this was on. The window is inferred from readership on the
             event&rsquo;s own Wikipedia article.
           </Text>
@@ -140,7 +160,11 @@ export function EventDossier({
           <View
             style={[
               s.stats,
-              { marginTop: wide ? 26 : 20, marginBottom: curveH * (wide ? 0.44 : 0.6) },
+              {
+                marginTop: wide ? EVENT_STAGE.statsGapWide : EVENT_STAGE.statsGap,
+                marginBottom:
+                  curveH * (wide ? EVENT_STAGE.curveClearanceWide : EVENT_STAGE.curveClearance),
+              },
             ]}
           >
             {event.spikeRatio !== null && (
@@ -363,44 +387,55 @@ const s = StyleSheet.create({
   stage: { backgroundColor: SURFACE.ink, overflow: 'hidden' },
   curveLayer: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   curveScrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  // Every line box below carries an explicit lineHeight. Left implicit, the
+  // height came from whatever the font's own metrics happened to be, which the
+  // skeleton could only approximate — and a placeholder that approximates its
+  // own page's geometry is the thing EVENT_STAGE exists to stop.
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
+    lineHeight: EVENT_STAGE.eyebrowLine,
     letterSpacing: 2.4,
     textTransform: 'uppercase',
-    marginBottom: 12,
+    marginBottom: EVENT_STAGE.eyebrowGap,
   },
-  markBox: { alignItems: 'flex-start', justifyContent: 'center', minHeight: 64 },
+  markBox: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    minHeight: EVENT_STAGE.markMinHeight,
+  },
   // Flame needs lineHeight >= 1.22x fontSize.
-  title: { fontFamily: 'Flame-Regular', fontSize: 34, lineHeight: 42 },
+  title: { fontFamily: 'Flame-Regular', fontSize: 34, lineHeight: EVENT_STAGE.titleLine },
   window: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
+    lineHeight: EVENT_STAGE.windowLine,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     color: 'rgba(245,235,220,0.84)',
-    marginTop: 12,
+    marginTop: EVENT_STAGE.windowGap,
   },
   method: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: EVENT_STAGE.methodLine,
     color: INK_TEXT.faint,
     maxWidth: 520,
-    marginTop: 8,
+    marginTop: EVENT_STAGE.methodGap,
   },
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 30 },
-  stat: { gap: 2 },
-  statBig: { fontFamily: 'Flame-Regular', fontSize: 40, lineHeight: 49 },
+  stat: { gap: EVENT_STAGE.statInnerGap },
+  statBig: { fontFamily: 'Flame-Regular', fontSize: 40, lineHeight: EVENT_STAGE.statBigLine },
   statValue: {
     fontFamily: 'Flame-Regular',
     fontSize: 26,
-    lineHeight: 32,
+    lineHeight: EVENT_STAGE.statValueLine,
     color: 'rgba(245,235,220,0.9)',
   },
   statLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
+    lineHeight: EVENT_STAGE.statLabelLine,
     letterSpacing: 1.6,
     textTransform: 'uppercase',
     color: INK_TEXT.faint,
@@ -408,27 +443,31 @@ const s = StyleSheet.create({
   seam: { height: 1, backgroundColor: SEAM_COLOR },
 
   // ── paper ──
-  paper: { backgroundColor: SURFACE.paper, paddingTop: 34, paddingBottom: 64 },
-  section: { marginBottom: 42 },
+  paper: {
+    backgroundColor: SURFACE.paper,
+    paddingTop: EVENT_PAPER.paddingTop,
+    paddingBottom: EVENT_PAPER.paddingBottom,
+  },
+  section: { marginBottom: EVENT_PAPER.sectionMarginBottom },
   sectionTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 26,
-    lineHeight: 32,
+    lineHeight: EVENT_PAPER.sectionTitleLine,
     color: COLORS.deepNavy,
   },
   sectionNote: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: EVENT_PAPER.sectionNoteLine,
     color: PAPER_TEXT.muted,
-    marginTop: 2,
+    marginTop: EVENT_PAPER.sectionNoteGap,
   },
-  sectionBody: { marginTop: 18, gap: 20 },
+  sectionBody: { marginTop: EVENT_PAPER.sectionBodyGap, gap: 20 },
 
   lead: {
     width: '100%',
-    aspectRatio: 16 / 8,
-    borderRadius: 14,
+    aspectRatio: EVENT_PAPER.leadAspect,
+    borderRadius: EVENT_PAPER.leadRadius,
     borderCurve: 'continuous',
     overflow: 'hidden',
     backgroundColor: COLORS.navy,

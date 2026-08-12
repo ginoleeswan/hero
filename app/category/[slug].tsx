@@ -310,7 +310,7 @@ export default function CategoryScreen() {
   // Registered universes get a brand masthead: the logo at a fixed height, sized
   // by its badge aspect (mirrors the team screen + the web banner's compact mode,
   // which also drops the desktop portrait montage on phone widths).
-  const STAGE_LOGO_H = 56;
+  const STAGE_LOGO_H = CATEGORY_STAGE.logoHeight;
   const brandLogo = useMemo(() => {
     if (!brand?.logo || !brand?.badgeSize) return null;
     return {
@@ -320,6 +320,19 @@ export default function CategoryScreen() {
       tint: brand.logoTint,
     };
   }, [brand]);
+
+  // Everything the placeholder needs to draw THIS page's stage rather than a
+  // generic one — all of it derivable from the slug, so it is known on the
+  // first frame. A registered universe's masthead is 16pt taller than a title
+  // line and as wide as its own logo; the count/tagline line wraps to two on a
+  // category (count + middot + an editorial sentence never fit 320pt at 13pt)
+  // and stays at one on universes and franchises, which carry no tagline.
+  const skeletonStage = {
+    topPadding: headerHeight + SEARCH_BAR_PAD,
+    mastheadHeight: brandLogo?.height ?? CATEGORY_STAGE.titleLine,
+    mastheadWidth: brandLogo?.width ?? ('50%' as const),
+    taglineLines: categorySlug ? 2 : 1,
+  };
 
   const listHeader = useMemo(
     () => (
@@ -554,7 +567,7 @@ export default function CategoryScreen() {
 
       {loading ? (
         phase === 'skeleton' ? (
-          <CategorySkeleton topPadding={headerHeight + SEARCH_BAR_PAD} />
+          <CategorySkeleton {...skeletonStage} />
         ) : null
       ) : (
         <FlatList
@@ -611,7 +624,7 @@ export default function CategoryScreen() {
       {/* The grid sits settled underneath; only this layer animates. */}
       {phase === 'crossfade' ? (
         <FadeOutSkeleton>
-          <CategorySkeleton topPadding={headerHeight + SEARCH_BAR_PAD} />
+          <CategorySkeleton {...skeletonStage} />
         </FadeOutSkeleton>
       ) : null}
 
