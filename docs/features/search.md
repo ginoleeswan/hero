@@ -135,10 +135,15 @@ Order survives hydration explicitly, because PostgREST returns `in()` rows in
 whatever order it likes and a recently-viewed rail with arbitrary order is not
 one.
 
-**The idle order is history → widest door → narrowest.** Recently Viewed, then
-recent queries, then the category pods, then the four publisher tiles. The pods
-carry real character art and are the door most people take; the brand tiles
-answer a narrower question and were sitting on top of the better answer.
+**The idle order is history → shortcut → content.** Recently Viewed, recent
+queries, the Universes rail, then the browse pods.
+
+`PublisherGrid` takes `layout="rail"` here rather than its Explore grid, and
+that is what resolves the ordering question rather than answering it. As a
+two-row tile grid, Universes forced a choice between burying it under eight
+pods — a long scroll for a one-tap intent — and putting it above them, which
+pushes the richest content below the fold. As a rail it costs one row, so it
+sits high AND leaves the pods where they can be seen. Neither had to lose.
 
 **There is no "Search" title.** The tab is called Search, the placeholder says
 what to type, and on iOS 26 the field is pinned to the BOTTOM — so a 38pt

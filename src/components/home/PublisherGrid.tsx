@@ -1,5 +1,5 @@
 // src/components/home/PublisherGrid.tsx
-import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { FEATURED_PUBLISHERS, type PublisherBrand } from '../../constants/publishers';
 import { PUBLISHER_GRID } from './homeGeometry';
 import { BrandLogoView } from '../PublisherBadge';
@@ -39,7 +39,36 @@ function Tile({ publisher, onPress }: { publisher: PublisherBrand; onPress: () =
   );
 }
 
-export function PublisherGrid({ onPress }: { onPress: (slug: string) => void }) {
+/**
+ * `rail` is the same four brands at a fraction of the height.
+ *
+ * On Explore the grid is a destination — big tiles, plenty of room. On Search
+ * it is a SHORTCUT competing for space with the browse pods, and as a
+ * two-row grid it forced a choice between burying it under eight pods (a long
+ * scroll for a one-tap intent) and putting it on top of them (pushing the
+ * richest content below the fold). A rail is neither: it costs one row, so it
+ * can sit high without displacing anything.
+ */
+export function PublisherGrid({
+  onPress,
+  layout = 'grid',
+}: {
+  onPress: (slug: string) => void;
+  layout?: 'grid' | 'rail';
+}) {
+  if (layout === 'rail') {
+    return (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.rail}
+      >
+        {FEATURED_PUBLISHERS.map((p) => (
+          <RailChip key={p.slug} publisher={p} onPress={() => onPress(p.slug)} />
+        ))}
+      </ScrollView>
+    );
+  }
   return (
     <View style={styles.grid}>
       {FEATURED_PUBLISHERS.map((p) => (
@@ -49,7 +78,43 @@ export function PublisherGrid({ onPress }: { onPress: (slug: string) => void }) 
   );
 }
 
+const RAIL_LOGO_H = 22;
+
+function RailChip({ publisher, onPress }: { publisher: PublisherBrand; onPress: () => void }) {
+  const { name, color, logo, badgeSize, logoTint } = publisher;
+  const logoWidth = logo && badgeSize ? RAIL_LOGO_H * (badgeSize.width / badgeSize.height) : 0;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Browse ${name}`}
+      style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
+    >
+      {logo && badgeSize ? (
+        <BrandLogoView logo={logo} width={logoWidth} height={RAIL_LOGO_H} tint={logoTint} />
+      ) : (
+        <Text style={[styles.wordmark, { color }]} numberOfLines={1}>
+          {name}
+        </Text>
+      )}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  // Bleeds to the physical screen edge — see the horizontal-rail rule in
+  // CLAUDE.md; the inset lives on the content, not on an ancestor.
+  rail: { flexDirection: 'row', gap: GAP, paddingHorizontal: H_PAD, paddingVertical: 2 },
+  chip: {
+    height: 52,
+    minWidth: 104,
+    paddingHorizontal: 18,
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(41,60,67,0.5)',
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

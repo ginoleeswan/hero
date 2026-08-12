@@ -461,13 +461,29 @@ export default function SearchScreen() {
         </View>
       )}
 
-      {/* Browse before Universes. The pods carry real character art and are the
-          doorway most people actually take; the four brand tiles are a
-          narrower question ("which publisher") asked by fewer readers, and
-          they were sitting on top of the better answer. History first, then
-          the widest door, then the narrow one. */}
+      {/* Universes is a SHORTCUT, Browse is the content.
+          As a two-row tile grid, Universes forced a choice between burying it
+          under eight pods — a long scroll for a one-tap intent — and putting it
+          on top of them, which pushes the richest thing on the screen below the
+          fold. As a rail it costs one row, so it sits high AND leaves the pods
+          where they can be seen. Neither had to lose. */}
       {showIdleExtras && (
         <>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>Universes</Text>
+          </View>
+          {/* Owns its own 16px gutter, so cancel the list's content padding and
+              let the rail run to the physical screen edge. */}
+          <View style={styles.browseGrid}>
+            <PublisherGrid
+              layout="rail"
+              onPress={(slug) => {
+                Haptics.selectionAsync();
+                router.push(`/universe/${slug}` as Parameters<typeof router.push>[0]);
+              }}
+            />
+          </View>
+
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Browse</Text>
           </View>
@@ -475,20 +491,6 @@ export default function SearchScreen() {
               width), so cancel the list's content padding to align it edge-to-edge. */}
           <View style={styles.browseGrid}>
             <CategoryPodGrid covers={browseCovers} onPress={handleCategoryPress} />
-          </View>
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>Universes</Text>
-          </View>
-          {/* PublisherGrid owns its 16px gutter, so cancel the list's content
-              padding to align the brand tiles edge-to-edge. */}
-          <View style={styles.browseGrid}>
-            <PublisherGrid
-              onPress={(slug) => {
-                Haptics.selectionAsync();
-                router.push(`/universe/${slug}` as Parameters<typeof router.push>[0]);
-              }}
-            />
           </View>
         </>
       )}
