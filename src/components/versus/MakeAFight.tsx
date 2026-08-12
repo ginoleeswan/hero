@@ -22,7 +22,14 @@
 // meant to offer. The toggle swaps the pair for two squads, saying without a
 // word that one-v-one and team battle are siblings: the same act at scale.
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, type LayoutChangeEvent } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  useReducedMotion,
+  FadeIn,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -45,6 +52,9 @@ const H_PAD = 16;
 const SQUAD_H = 132;
 /** The segmented control's single inset — see `modes`. */
 const TRACK_INSET = 3;
+// Enough overshoot to feel thrown rather than dragged, damped enough that it
+// settles in one pass — a thumb that wobbles twice reads as a loose part.
+const THUMB_SPRING = { damping: 18, stiffness: 220, mass: 0.7 } as const;
 const SLOT_RATIO = 4 / 5;
 
 export function MakeAFight({
@@ -68,11 +78,34 @@ export function MakeAFight({
 }) {
   const [team, setTeam] = useState(false);
 
+  // ── the sliding thumb ────────────────────────────────────────────────────
+  // Two separately-backgrounded pills cannot slide: the highlight simply
+  // disappears from one segment and appears on the other, which is a state
+  // change rendered as a cut. One thumb that travels tells you the two options
+  // are one axis, and carries the tap across so the eye follows it into the
+  // content that changed underneath.
+  //
+  // Measured rather than percentage-based, because RN transforms do not take
+  // percentages and the travel has to be exact — a thumb that stops a point
+  // short of its segment is worse than one that never moved.
+  const [trackW, setTrackW] = useState(0);
+  const thumbW = trackW > 0 ? (trackW - TRACK_INSET * 2) / 2 : 0;
+  const slide = useSharedValue(0);
+  const reduced = useReducedMotion();
+
   const swap = (next: boolean) => {
     if (next === team) return;
     Haptics.selectionAsync();
     setTeam(next);
+    // Reduce Motion still needs the thumb to ARRIVE — it is the only thing
+    // showing which mode is live — so it moves, just without the spring.
+    slide.value = reduced ? (next ? 1 : 0) : withSpring(next ? 1 : 0, THUMB_SPRING);
   };
+
+  const onTrackLayout = (e: LayoutChangeEvent) => setTrackW(e.nativeEvent.layout.width);
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: slide.value * thumbW }],
+  }));
 
   return (
     <View style={styles.wrap}>
@@ -90,26 +123,33 @@ export function MakeAFight({
           the screen edge while the title and the fighter cards aligned at 16.
           Both halves of "not optically balanced" came from this one line. */}
       <View style={styles.inset}>
-        <View style={styles.modes} accessibilityRole="tablist">
+        <View style={styles.modes} accessibilityRole="tablist" onLayout={onTrackLayout}>
+          {thumbW > 0 ? (
+            <Animated.View style={[styles.thumb, { width: thumbW }, thumbStyle]} />
+          ) : null}
           {[
-            { on: !team, label: 'One v one', press: () => swap(false) },
-            { on: team, label: 'Team battle', press: () => swap(true) },
+            { on: !team, label: 'One v one', icon: 'person' as const, press: () => swap(false) },
+            { on: team, label: 'Team battle', icon: 'people' as const, press: () => swap(true) },
           ].map((m) => (
             <Pressable
               key={m.label}
               onPress={m.press}
               accessibilityRole="tab"
               accessibilityState={{ selected: m.on }}
-              style={[styles.mode, m.on && styles.modeOn]}
+              style={styles.mode}
             >
+              <Ionicons name={m.icon} size={14} color={m.on ? COLORS.deepNavy : INK_TEXT.muted} />
               <Text style={[styles.modeText, m.on && styles.modeTextOn]}>{m.label}</Text>
             </Pressable>
           ))}
         </View>
       </View>
 
+      {/* Keyed so the swap is a real mount, which is what lets the new mode fade
+          up rather than replacing the old one between frames. The thumb is
+          already travelling; the content should arrive with it, not before it. */}
       {team ? (
-        <>
+        <Animated.View key="team" entering={reduced ? undefined : FadeIn.duration(200)}>
           <View style={[styles.inset, styles.slots]}>
             <Squad label="Your side" onPress={onDraft} />
             <View style={styles.medallion}>
@@ -120,9 +160,9 @@ export function MakeAFight({
           <View style={styles.inset}>
             <Primary label="Draft the squads" icon="people" onPress={onDraft} />
           </View>
-        </>
+        </Animated.View>
       ) : (
-        <>
+        <Animated.View key="solo" entering={reduced ? undefined : FadeIn.duration(200)}>
           <View style={[styles.inset, styles.slots]}>
             <Fighter fighter={pair?.[0]} cant={-3.2} onPress={() => onChoose('a')} />
             <View style={styles.medallion}>
@@ -146,7 +186,7 @@ export function MakeAFight({
           <Text style={[styles.inset, styles.hint]}>
             Tap a fighter to swap that side · shuffle to deal another
           </Text>
-        </>
+        </Animated.View>
       )}
 
       {rivalries.length > 0 ? (
@@ -305,13 +345,21 @@ const styles = StyleSheet.create({
   },
   mode: {
     flex: 1,
+    flexDirection: 'row',
+    gap: 6,
     paddingVertical: 9,
-    borderRadius: RADIUS.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // A real thumb sits ON the track rather than being painted into it.
-  modeOn: {
+  // One thumb, absolutely placed and translated — not a background that
+  // teleports between two segments. A real thumb also sits ON the track
+  // rather than being painted into it, hence the shadow.
+  thumb: {
+    position: 'absolute',
+    left: TRACK_INSET,
+    top: TRACK_INSET,
+    bottom: TRACK_INSET,
+    borderRadius: RADIUS.pill,
     backgroundColor: COLORS.beige,
     boxShadow: '0 1px 3px rgba(0,0,0,0.28)',
   },
