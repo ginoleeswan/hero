@@ -145,6 +145,21 @@ pods — a long scroll for a one-tap intent — and putting it above them, which
 pushes the richest content below the fold. As a rail it costs one row, so it
 sits high AND leaves the pods where they can be seen. Neither had to lose.
 
+**Label a section only when the content does not say what it is.** "Recent"
+marks a list of chips as YOUR history; "Universes" tells you the logos are
+publishers. Tiles reading Villains, Anime and Video Games are already their own
+label, and "Browse" named the activity of the whole screen rather than those
+eight things — so that header is gone and the boundary it was really providing
+is space.
+
+**The pods stay a GRID, deliberately.** A horizontal rail would show two or
+three of eight categories and hide the rest behind a gesture, on a screen whose
+job is showing someone their options when they do not yet know what they want.
+It would also blur the two tabs into each other: Explore is a magazine built of
+rails and read by scrolling; Search is a directory, scanned. The rails here are
+for things with an inherent order (your history) or a handful of items (four
+publishers) — not for a closed set you want to survey.
+
 **There is no "Search" title.** The tab is called Search, the placeholder says
 what to type, and on iOS 26 the field is pinned to the BOTTOM — so a 38pt
 heading at the top spent the screen's best space naming the room from the far

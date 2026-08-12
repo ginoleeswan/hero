@@ -484,12 +484,16 @@ export default function SearchScreen() {
             />
           </View>
 
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>Browse</Text>
-          </View>
+          {/* No "Browse" label. Label a section when the content does not say
+              what it is: "Recent" marks a list of chips as YOUR history and
+              "Universes" tells you the logos are publishers, but tiles reading
+              Villains, Anime and Video Games are already their own label — and
+              "browse" names the activity of the entire screen rather than
+              these eight things. What the label was really providing is a
+              boundary, so the boundary stays as space. */}
           {/* CategoryPodGrid owns its 16px gutter (tiles sized from the screen
               width), so cancel the list's content padding to align it edge-to-edge. */}
-          <View style={styles.browseGrid}>
+          <View style={[styles.browseGrid, styles.podsTop]}>
             <CategoryPodGrid covers={browseCovers} onPress={handleCategoryPress} />
           </View>
         </>
@@ -834,6 +838,8 @@ const styles = StyleSheet.create({
   },
   chipStack: { marginHorizontal: -H_PAD, paddingBottom: 2 },
   browseGrid: { marginHorizontal: -H_PAD, paddingBottom: 4 },
+  // The boundary the removed 'Browse' label used to draw.
+  podsTop: { paddingTop: 18 },
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingTop: 4 },
   skelAnchor: { height: 0 },
   skelOverlay: { position: 'absolute', top: 0, left: 0, right: 0 },
