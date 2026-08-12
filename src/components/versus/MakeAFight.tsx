@@ -35,7 +35,15 @@ import type { FighterArt } from '../../lib/compareHandoff';
 import type { Rivalry } from '../../lib/db/heroes';
 
 const H_PAD = 16;
-const SLOT_H = 132;
+// The EMPTY squad placeholders are short — nothing to see, so nothing to give
+// room to. The dealt fighters are PORTRAIT, because that is the shape hero art
+// is drawn in: `cover` + a top anchor inside a landscape box crops a portrait
+// to a wide band across the top of the figure, which on most of the catalogue
+// lands between the hairline and the chin. Every other fighter card in the app
+// (the showdown's HoloCard, the rivalry rail's split portraits) is portrait for
+// the same reason; these were the exception.
+const SQUAD_H = 132;
+const SLOT_RATIO = 4 / 5;
 
 export function MakeAFight({
   pair,
@@ -281,7 +289,7 @@ const styles = StyleSheet.create({
   slots: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   slot: {
     width: '42%',
-    height: SLOT_H,
+    aspectRatio: SLOT_RATIO,
     borderRadius: RADIUS.xl,
     borderCurve: 'continuous',
     overflow: 'hidden',
@@ -328,7 +336,7 @@ const styles = StyleSheet.create({
   },
   squad: {
     width: '42%',
-    height: SLOT_H,
+    height: SQUAD_H,
     borderRadius: RADIUS.xl,
     borderCurve: 'continuous',
     borderWidth: 1,

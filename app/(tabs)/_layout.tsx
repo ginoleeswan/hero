@@ -1,5 +1,6 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { TAB_ACTIVE } from '../../src/constants/colors';
 
 export default function TabLayout() {
   return (
@@ -13,6 +14,9 @@ export default function TabLayout() {
     //   custom FlatLists) UIKit applies that scroll-edge appearance
     //   PERMANENTLY. Setting both pins a real material for both appearances,
     //   so the bar no longer depends on pairing at all.
+    //
+    // • tintColor — the SELECTED item, and the one thing here that was failing
+    //   its own contrast floor. See TAB_ACTIVE in constants/colors.
     //
     // • iconColor / labelStyle — legibility. These once looked like the cause
     //   of the transparency bug and were removed; that was wrong. What
@@ -39,7 +43,7 @@ export default function TabLayout() {
     //   spotlight — that was stale parallax state in explore.tsx. They are
     //   kept because they are correct on their own terms, not as a fix.)
     <NativeTabs
-      tintColor="#e8621a"
+      tintColor={TAB_ACTIVE}
       blurEffect="systemChromeMaterialDark"
       disableTransparentOnScrollEdge
       iconColor="rgba(245,235,220,0.72)"

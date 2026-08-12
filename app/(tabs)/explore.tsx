@@ -171,7 +171,11 @@ export default function HomeScreen() {
     forYou,
     browseCovers,
   } = useExploreData();
-  const spotlight = spotlightAll.slice(0, SPOTLIGHT_POOL);
+  // Memoised, and it matters more than a slice normally would: this array is a
+  // dependency of the `rows` memo below, so an unstable identity here defeats
+  // that memo entirely — the whole feed was being rebuilt on EVERY render, and
+  // the FlatList and the spotlight carousel handed a new data array each time.
+  const spotlight = useMemo(() => spotlightAll.slice(0, SPOTLIGHT_POOL), [spotlightAll]);
   const heroCount = heroCountRaw ?? 0;
   const [navigating, setNavigating] = useState(false);
 
@@ -598,8 +602,22 @@ export default function HomeScreen() {
       ) : (
         <PaperSurface lip={index === firstBeigeIndex}>{content}</PaperSurface>
       );
-      const entering = cascadeFor(index);
-      return entering ? <Animated.View entering={entering}>{surfaced}</Animated.View> : surfaced;
+      // ALWAYS the same element type here. This was:
+      //
+      //   return entering ? <Animated.View entering={entering}>{s}</Animated.View> : s;
+      //
+      // and `entering` goes undefined when the cascade window closes, 1900ms
+      // after the feed lands. React does not diff across a change of element
+      // type — it unmounts the subtree and mounts a fresh one — so at that
+      // exact moment every row in the first batch was destroyed and rebuilt.
+      // The spotlight carousel renders nothing for a frame while its visible
+      // range resolves, then its portrait fades back in over expo-image's
+      // transition: a flash, on the same image, right as the entrance landed.
+      //
+      // Passing `entering={undefined}` is harmless — an entering animation only
+      // runs on mount, and the point of this line is that the wrapper stays
+      // mounted.
+      return <Animated.View entering={cascadeFor(index)}>{surfaced}</Animated.View>;
     },
     [
       topInset,

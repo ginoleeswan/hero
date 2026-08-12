@@ -242,9 +242,20 @@ not get a second heading. The rail still brings its own inset and must sit
 The takes link never opens with a zero: `0 takes — join the debate` advertises
 that nobody bothered, so with none yet it reads _Be first to call it_.
 
-Still open: act three's rows go to the character page rather than starting a
-fight, because `app/compare/pick.tsx` takes no params and cannot open with a
-fighter preselected. That is a new capability, not a layout change.
+**Act three starts a fight too.** Its rows went to the character page — which
+is what `HallOfInfamy` does on Explore, and exactly wrong on a tab that spends
+two acts starting fights and then ends on a row that quietly stops. They now
+open `/compare/[hero]/pick` with the villain held on one side ("who fights
+Darkseid?"), which is the question the board was already asking. The component
+takes an `eyebrow` prop so each surface names what tapping a card does.
+
+**The fighter slots are portrait; the empty squad placeholders are not.** Hero
+art is drawn portrait, so `cover` plus a top anchor inside a landscape box crops
+it to a wide band across the top of the figure — on most of the catalogue,
+somewhere between the hairline and the chin. Every other fighter card in the app
+(the showdown's `HoloCard`, the rivalry rail's split portraits) is portrait for
+that reason; these were the exception. The squad placeholders stay short because
+there is nothing in them to see.
 
 ## History
 
