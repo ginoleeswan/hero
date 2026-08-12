@@ -290,9 +290,15 @@ export function pageGutter(width: number): number {
  * A tint is not a fill. `COLORS.orange` is tuned to carry large areas of
  * colour, and it measures 2.20–3.04:1 on a light bar; a 24pt glyph and a 10pt
  * label need more separation than a card does. This is that orange lifted for
- * small marks on dark: 4.56–7.21:1 across the dark materials, and lifted
- * further than strictly needed because on a DARK bar lighter and legible pull
- * the same way — the light half has no such room, which is the whole reason
- * the two halves are different colours rather than one compromise.
+ * small marks on dark: 4.97–7.86:1 across the dark materials, and lifted well
+ * past the floor because on a DARK bar lighter and legible pull the same way.
+ * Note that even there the brand orange itself does not clear it (3.27:1 at
+ * worst), which is why this is a lifted relative rather than `COLORS.orange`.
+ *
+ * With `userInterfaceStyle: 'dark'` in app.config the bar is always dark, so
+ * this is the value that actually ships — but only from the next NATIVE build,
+ * since that setting is Info.plist. The `DynamicColorIOS` pairing with
+ * ORANGE_INK stays until then: an over-the-air client in light mode still gets
+ * a light bar, and must still get the dark orange on it.
  */
-export const TAB_ACTIVE = '#FF9459';
+export const TAB_ACTIVE = '#FFA06B';
