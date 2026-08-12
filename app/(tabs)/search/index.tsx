@@ -609,10 +609,33 @@ export default function SearchScreen() {
   ) : isIdle ? null : isFetching ? null : topResult ? null : (
     <View style={styles.center}>
       <View style={styles.emptyIconWrap}>
-        <Ionicons name="search-outline" size={30} color={COLORS.orange} />
+        <Ionicons
+          name={filtersOn ? 'funnel-outline' : 'search-outline'}
+          size={30}
+          color={COLORS.orange}
+        />
       </View>
       <Text style={styles.emptyHeadline}>No characters found</Text>
-      <Text style={styles.emptySub}>Try a different search or filter</Text>
+      {/* "Try a different search or filter" was said whether or not a filter
+          existed — useless advice in the common case, and in the case where a
+          filter WAS narrowing the search it pointed at two unlabelled glyphs
+          rather than fixing it. A filter is by far the likeliest cause of an
+          empty result for a name that exists, so when one is on, say which and
+          undo it in a tap. */}
+      {filtersOn ? (
+        <>
+          <Text style={styles.emptySub}>{activeFilterLabel} is narrowing this search.</Text>
+          <Pressable
+            onPress={clearFilters}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.emptyCta, pressed && styles.filterStatePressed]}
+          >
+            <Text style={styles.emptyCtaText}>Search everything</Text>
+          </Pressable>
+        </>
+      ) : (
+        <Text style={styles.emptySub}>Try a shorter name, or a different spelling.</Text>
+      )}
     </View>
   );
 
@@ -664,10 +687,16 @@ export default function SearchScreen() {
       />
 
       {/* Native filter menus (iOS) on the right — fills the header bar. */}
-      {/* Hidden while idle: the idle screen suppresses the hero list entirely
-          (see `listData`), so these filter nothing, and a control at full
-          prominence that cannot affect anything on screen is noise. */}
-      {IS_IOS && !showIdleExtras && (
+      {/* Always mounted, deliberately, even though these filter nothing while
+          idle (the idle screen suppresses the hero list — see `listData`).
+          Mounting and unmounting a Stack.Toolbar means reconfiguring the native
+          header on the first keystroke, and the native header on this screen
+          has a history: `placement="stacked"` once severed the toolbar channel
+          the iOS 26 search-role tab uses and left the field completely dead.
+          Two small glyphs on an idle screen is not worth reopening that. The
+          Android chips below ARE hidden when idle — they are ordinary views in
+          the list header, two full rows of them, and carry no such risk. */}
+      {IS_IOS && (
         <Stack.Toolbar placement="right">
           <Stack.Toolbar.Menu icon="books.vertical" title="Publisher">
             {PUBLISHER_OPTIONS.map((o) => (
@@ -773,7 +802,7 @@ const styles = StyleSheet.create({
   bottomScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   listWrap: { flex: 1 },
   list: { flex: 1, backgroundColor: 'transparent' },
-  content: { paddingHorizontal: H_PAD, paddingTop: 4 },
+  content: { paddingHorizontal: H_PAD, paddingTop: 14 },
   filterState: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -788,6 +817,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(231,115,51,0.1)',
   },
   filterStatePressed: { opacity: 0.6 },
+  emptyCta: {
+    marginTop: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.beige,
+  },
+  emptyCtaText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 15, color: COLORS.deepNavy },
   filterStateText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,

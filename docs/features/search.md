@@ -153,6 +153,23 @@ two unlabelled glyphs (a book stack, theatre masks) meant a narrowed result set
 looked identical to a complete one. When a filter is on, a pill names it
 ("Marvel · Villains") and clears both on tap.
 
+The **iOS toolbar stays mounted even while idle**, deliberately, despite
+filtering nothing there. Mounting and unmounting a `Stack.Toolbar` means
+reconfiguring the native header on the first keystroke, and this screen's
+native header has form: `placement="stacked"` once severed the toolbar channel
+the iOS 26 search-role tab uses and left the field completely dead. Two small
+glyphs are not worth reopening that. The **Android chips are** hidden when idle
+— they are ordinary views in the list header, two full rows of them, and carry
+no such risk.
+
+**The empty state points at the actual cause.** "Try a different search or
+filter" was shown whether or not a filter existed: useless advice in the common
+case, and where a filter WAS narrowing the search it pointed at two unlabelled
+glyphs instead of fixing it. A filter is by far the likeliest reason a name that
+exists returns nothing, so when one is on the empty state names it and offers
+"Search everything" — one tap, both filters cleared. With no filter on it says
+nothing about filters and suggests a shorter name or a different spelling.
+
 **The search field is bottom-aligned, and that is deliberate.** The Search tab
 declares `role="search"` (`app/(tabs)/_layout.tsx`), which is Apple's
 recommended shape for a tabbed app on iOS 26: the search tab draws as its own
