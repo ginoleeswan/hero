@@ -1185,6 +1185,11 @@ async function fetchEvent(slug: string): Promise<OgEvent | null> {
  * dropped it would be a headline with no proof on it.
  */
 function curveSvg(views: number[], accent: string, w: number, h: number) {
+  // `accent` is catalogue data being interpolated into markup, so it is
+  // constrained to a colour literal rather than trusted. Anything else falls
+  // back to gold — a wrong-coloured curve is a cosmetic loss, a quote here
+  // would break out of the attribute.
+  const safe = /^#[0-9a-fA-F]{3,8}$/.test(accent) ? accent : GOLD;
   const max = Math.max(...views, 1);
   const n = views.length;
   const pts = views
@@ -1192,8 +1197,8 @@ function curveSvg(views: number[], accent: string, w: number, h: number) {
     .join(' ');
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
-    `<polygon points="0,${h} ${pts} ${w},${h}" fill="${accent}" fill-opacity="0.18"/>` +
-    `<polyline points="${pts}" fill="none" stroke="${accent}" stroke-width="4" ` +
+    `<polygon points="0,${h} ${pts} ${w},${h}" fill="${safe}" fill-opacity="0.18"/>` +
+    `<polyline points="${pts}" fill="none" stroke="${safe}" stroke-width="4" ` +
     `stroke-linejoin="round" stroke-linecap="round"/></svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }

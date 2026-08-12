@@ -2,6 +2,9 @@ import {
   buildMetaHtml,
   characterMeta,
   debateMeta,
+  eventMeta,
+  houseMeta,
+  titleMeta,
   escapeHtml,
   siteMeta,
   vsMeta,
@@ -118,5 +121,35 @@ describe('nativeShare', () => {
       message: 'hello',
       url: 'https://x.test',
     });
+  });
+});
+
+// CodeQL caught this on the PR that added the slug-bearing builders, and it was
+// right: `url` went into `href="..."` unescaped. Character/vs paths carry
+// opaque generated ids, but a house or event slug is human-readable catalogue
+// text — one containing a quote closes the attribute and injects markup into
+// the page every link-preview crawler is handed.
+describe('buildMetaHtml escaping', () => {
+  it('a quote in the path cannot break out of href', () => {
+    const html = buildMetaHtml({
+      title: 'T',
+      description: 'D',
+      path: '/house/x"><script>alert(1)</script>',
+      image: 'https://mythique.app/og.png',
+    });
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&quot;');
+  });
+
+  it('the slug-bearing builders percent-encode their segments too', () => {
+    expect(houseMeta({ slug: 'a"b', name: 'A', universe: null, memberCount: 1 }).path).toBe(
+      '/house/a%22b',
+    );
+    expect(eventMeta({ slug: 'a b', headline: 'H', blurb: null, ongoing: false }).path).toBe(
+      '/event/a%20b',
+    );
+    expect(titleMeta({ id: 'a/b', title: 'T', year: null, mediaType: null }).path).toBe(
+      '/title/a%2Fb',
+    );
   });
 });

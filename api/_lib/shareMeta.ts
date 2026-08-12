@@ -32,7 +32,13 @@ export type ShareMeta = {
 export function buildMetaHtml(m: ShareMeta): string {
   const t = escapeHtml(m.title);
   const d = escapeHtml(m.description);
-  const url = `${SITE_URL}${m.path}`;
+  // Escaped, not raw. `path` carries slugs now, not just opaque generated ids —
+  // a house or event slug is human-readable text from the catalogue, and one
+  // containing a quote would close the `href="` attribute and inject markup
+  // into the page we hand every link-preview crawler. The builders below also
+  // percent-encode their segments; this is the backstop that does not depend
+  // on each new builder remembering to.
+  const url = escapeHtml(`${SITE_URL}${m.path}`);
   const img = escapeHtml(m.image);
   return `<!doctype html>
 <html lang="en"><head>
@@ -63,7 +69,7 @@ export function characterMeta(hero: HeroLite): ShareMeta {
   return {
     title: `${hero.name} — Mythique`,
     description: `${uni}Powers, stats, allies, enemies and every appearance of ${hero.name} on Mythique.`,
-    path: `/character/${hero.id}`,
+    path: `/character/${encodeURIComponent(hero.id)}`,
     image: `${SITE_URL}/api/og?hero=${encodeURIComponent(hero.id)}`,
   };
 }
@@ -74,7 +80,7 @@ export function universeMeta(hero: HeroLite, connections: number): ShareMeta {
   return {
     title: `${hero.name}'s universe — Mythique`,
     description: `${uni}${count}the nemeses, allies, teammates and bloodline that make up ${hero.name}'s world.`,
-    path: `/social-web/${hero.id}`,
+    path: `/social-web/${encodeURIComponent(hero.id)}`,
     image: `${SITE_URL}/api/og?type=universe&hero=${encodeURIComponent(hero.id)}`,
   };
 }
@@ -83,7 +89,7 @@ export function vsMeta(a: HeroLite, b: HeroLite, votesA: number, votesB: number)
   return {
     title: `${a.name} vs ${b.name} — Mythique`,
     description: vsShareLine(a.name, b.name, votesA, votesB),
-    path: `/compare/${a.id}/${b.id}`,
+    path: `/compare/${encodeURIComponent(a.id)}/${encodeURIComponent(b.id)}`,
     image: `${SITE_URL}/api/og?a=${encodeURIComponent(a.id)}&b=${encodeURIComponent(b.id)}`,
   };
 }
@@ -102,7 +108,7 @@ export function debateMeta(a: HeroLite, b: HeroLite, votesA: number, votesB: num
   return {
     title: `Today's battle: ${a.name} vs ${b.name} — Mythique`,
     description: vsShareLine(a.name, b.name, votesA, votesB),
-    path: `/compare/${a.id}/${b.id}`,
+    path: `/compare/${encodeURIComponent(a.id)}/${encodeURIComponent(b.id)}`,
     image: `${SITE_URL}/api/og?type=debate&a=${encodeURIComponent(a.id)}&b=${encodeURIComponent(
       b.id,
     )}`,
@@ -123,7 +129,7 @@ export function houseMeta(house: HouseLite): ShareMeta {
   return {
     title: `House ${house.name} — Mythique`,
     description: `${where}${who} — the bloodline, the marriages and the feuds of House ${house.name}.`,
-    path: `/house/${house.slug}`,
+    path: `/house/${encodeURIComponent(house.slug)}`,
     image: `${SITE_URL}/api/og?type=house&slug=${encodeURIComponent(house.slug)}`,
   };
 }
@@ -136,7 +142,7 @@ export function eventMeta(event: EventLite): ShareMeta {
     description:
       event.blurb ??
       `${event.ongoing ? 'Happening now. ' : ''}No calendar told us this was on — the readership did. The window, the spike and everything that dropped inside it.`,
-    path: `/event/${event.slug}`,
+    path: `/event/${encodeURIComponent(event.slug)}`,
     image: `${SITE_URL}/api/og?type=event&slug=${encodeURIComponent(event.slug)}`,
   };
 }
@@ -154,7 +160,7 @@ export function titleMeta(t: TitleLite): ShareMeta {
   return {
     title: `${t.title}${year} — Mythique`,
     description: `Every character in the ${kind}, who plays them, where to watch it, and how it connects to the rest of the catalogue.`,
-    path: `/title/${t.id}`,
+    path: `/title/${encodeURIComponent(t.id)}`,
     image: `${SITE_URL}/api/og?type=title&title=${encodeURIComponent(t.id)}`,
   };
 }
