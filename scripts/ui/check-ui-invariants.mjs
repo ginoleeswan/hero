@@ -306,20 +306,41 @@ for (const file of [...walkTs(join(ROOT, 'src')), ...walkTs(join(ROOT, 'app'))].
 // Five screens shipped with overlaps of 14–18 against a 24 radius, and
 // character/[id] — the only one that tied the two together — was the only seam
 // that looked right. Use SEAM from constants/tokens rather than a literal pair.
+// Values may be literals, `SEAM.radius`/`SEAM.overlap`, or a numeric const
+// declared in the same file (`const SHEET_OVERLAP = 28`). Resolving them is not
+// a nicety: the moment the SEAM token existed, a literal-only check would have
+// waved through `borderTopLeftRadius: SEAM.radius` beside `marginTop: -16` —
+// the exact bug, wearing the fix as a disguise.
+const SEAM_VALUES = { 'SEAM.radius': 24, 'SEAM.overlap': 24 };
+const numeric = (raw, consts) => {
+  const t = raw.trim();
+  if (/^\d+(?:\.\d+)?$/.test(t)) return +t;
+  if (t in SEAM_VALUES) return SEAM_VALUES[t];
+  if (t in consts) return consts[t];
+  return null;
+};
+
 for (const file of files) {
   const src = readFileSync(join(ROOT, file), 'utf8');
+  const consts = {};
+  for (const c of src.matchAll(/const\s+([A-Z][A-Z0-9_]*)\s*=\s*(\d+(?:\.\d+)?)\s*;/g)) {
+    consts[c[1]] = +c[2];
+  }
   // Style objects are `name: { ... }`; scan each for the pair.
   for (const m of src.matchAll(/(\w+):\s*\{([^{}]*)\}/g)) {
     const body = m[2];
-    const radius = body.match(/borderTopLeftRadius:\s*(\d+(?:\.\d+)?)/);
-    const pull = body.match(/marginTop:\s*-(\d+(?:\.\d+)?)/);
-    if (!radius || !pull) continue;
-    if (+pull[1] < +radius[1]) {
+    const rRaw = body.match(/borderTopLeftRadius:\s*([\w.]+)/);
+    const pRaw = body.match(/marginTop:\s*-\s*([\w.]+)/);
+    if (!rRaw || !pRaw) continue;
+    const radius = [numeric(rRaw[1], consts)];
+    const pull = [numeric(pRaw[1], consts)];
+    if (radius[0] === null || pull[0] === null) continue;
+    if (+pull[0] < +radius[0]) {
       fail(
         file,
         lineOf(src, m.index),
         'seam-overlap',
-        `${m[1]}: overlaps ${pull[1]} but rounds ${radius[1]} — the corner cut-out shows the sheet's own background for the last ${(+radius[1] - +pull[1]).toFixed(0)}pt`,
+        `${m[1]}: overlaps ${pull[0]} but rounds ${radius[0]} — the corner cut-out shows the sheet's own background for the last ${(+radius[0] - +pull[0]).toFixed(0)}pt`,
       );
     }
   }
