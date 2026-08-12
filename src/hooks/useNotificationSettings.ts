@@ -23,6 +23,7 @@ import {
   type OsPermission,
 } from '../lib/notifications';
 import { notificationsActive } from '../lib/notifications/policy';
+import { registerDeviceToken, unregisterDeviceToken } from '../lib/notifications/deviceToken';
 
 export function useNotificationSettings(input?: { streak?: number; playedToday?: boolean }) {
   const [os, setOs] = useState<OsPermission>('undetermined');
@@ -53,6 +54,9 @@ export function useNotificationSettings(input?: { streak?: number; playedToday?:
           // a reminder scheduled an hour ago still arrives after the switch.
           const p = await savePrefs({ enabledAt: null });
           await cancelAllScheduled();
+          // Drop the server's route to this device too. Cancelling local
+          // schedules alone would leave the daily push arriving from the cron.
+          await unregisterDeviceToken();
           setPrefs(p);
           return;
         }
@@ -67,6 +71,9 @@ export function useNotificationSettings(input?: { streak?: number; playedToday?:
         }
         const p = await savePrefs({ enabledAt: Date.now() });
         setPrefs(p);
+        // Best-effort: the local reminder works without a token, so a failed
+        // registration must not fail the toggle.
+        void registerDeviceToken();
         await syncStreakReminder({
           streak: input?.streak ?? 0,
           playedToday: input?.playedToday ?? false,
