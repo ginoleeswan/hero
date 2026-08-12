@@ -119,6 +119,13 @@ reducer helpers in `src/lib/battleBuilderState.ts` (`MAX_SIDE = 5`, N-vs-N,
 sides need not match). It surfaces live synergy per side, the active captain's
 teammates as suggestions, and preset rosters via `usePresetTeams`.
 
+**`OpponentCard`'s scrim is a gradient on both platforms.** It exists to darken
+a strip behind the hero's name; on web it always was a bottom-to-top gradient,
+but the native branch of a `Platform.select` fell back to a flat
+`rgba(20,30,34,0.34)` over the whole card — every portrait dimmed by a third,
+face included, on screens whose job is picking a fighter by looking at them.
+Both platforms now render the same `expo-linear-gradient` stops.
+
 On native the screen is a **draft board**: a pinned tray (both sides as slot
 rows, the armed side tinted with a "+" in its next open slot) above a dominant
 catalogue grid. Four rules hold it together, each earned by the design it
