@@ -24,6 +24,7 @@ import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPee
 import { stashFighters } from '../../../src/lib/compareHandoff';
 import { COLORS, PAPER_TEXT } from '../../../src/constants/colors';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
+import { SEAM } from '../../../src/design';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const H_PAD = 16;
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
 
   // Navy stage — top padding is applied inline (header height + glow room).
-  stage: { backgroundColor: COLORS.navy, paddingBottom: 34 },
+  stage: { backgroundColor: COLORS.navy, paddingBottom: 42 },
   intent: { minHeight: 22, marginTop: 14, alignItems: 'center', justifyContent: 'center' },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
@@ -251,9 +252,9 @@ const styles = StyleSheet.create({
   // Beige sheet
   sheetTop: {
     backgroundColor: COLORS.beige,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    marginTop: -16,
+    borderTopLeftRadius: SEAM.radius,
+    borderTopRightRadius: SEAM.radius,
+    marginTop: -SEAM.overlap,
     paddingTop: 22,
     paddingHorizontal: H_PAD,
   },

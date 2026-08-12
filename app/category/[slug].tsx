@@ -49,6 +49,7 @@ import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { EmptyState } from '../../src/components/ui/EmptyState';
+import { SEAM } from '../../src/design';
 
 // Publishers (marvel/dc/image/dark-horse) are NOT here — they're universes now,
 // served by /universe/[slug] (this same screen, resolved via the registry). Only
@@ -642,7 +643,7 @@ const styles = StyleSheet.create({
   stage: {
     backgroundColor: COLORS.navy,
     paddingHorizontal: H_PAD,
-    paddingBottom: 28,
+    paddingBottom: 36,
     overflow: 'hidden', // clip the brand gradient wash to the stage
   },
   stageLogo: { alignSelf: 'flex-start' },
@@ -667,10 +668,10 @@ const styles = StyleSheet.create({
   // into the grid. (Search + sort/filter now live in the native header.)
   sheetTop: {
     backgroundColor: COLORS.beige,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: SEAM.radius,
+    borderTopRightRadius: SEAM.radius,
     borderCurve: 'continuous',
-    marginTop: -16,
+    marginTop: -SEAM.overlap,
     height: 30,
   },
 

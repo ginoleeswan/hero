@@ -295,6 +295,36 @@ for (const file of [...walkTs(join(ROOT, 'src')), ...walkTs(join(ROOT, 'app'))].
   }
 }
 
+// ── 4⅞. a rounded cap must overlap by at least its radius ───────────────────
+// The beige sheet's seam: a cap with rounded top corners pulled up over a dark
+// stage by a negative marginTop. Its corner cut-outs show whatever is BEHIND
+// them, and behind the cap is the list's content background — which on these
+// screens is beige. Overlap by less than the radius and the bottom of each
+// curve sits over beige rather than over the stage, so the cut-out is filled in
+// and the curve looks truncated where it meets the straight edge.
+//
+// Five screens shipped with overlaps of 14–18 against a 24 radius, and
+// character/[id] — the only one that tied the two together — was the only seam
+// that looked right. Use SEAM from constants/tokens rather than a literal pair.
+for (const file of files) {
+  const src = readFileSync(join(ROOT, file), 'utf8');
+  // Style objects are `name: { ... }`; scan each for the pair.
+  for (const m of src.matchAll(/(\w+):\s*\{([^{}]*)\}/g)) {
+    const body = m[2];
+    const radius = body.match(/borderTopLeftRadius:\s*(\d+(?:\.\d+)?)/);
+    const pull = body.match(/marginTop:\s*-(\d+(?:\.\d+)?)/);
+    if (!radius || !pull) continue;
+    if (+pull[1] < +radius[1]) {
+      fail(
+        file,
+        lineOf(src, m.index),
+        'seam-overlap',
+        `${m[1]}: overlaps ${pull[1]} but rounds ${radius[1]} — the corner cut-out shows the sheet's own background for the last ${(+radius[1] - +pull[1]).toFixed(0)}pt`,
+      );
+    }
+  }
+}
+
 // ── 5. the design-scale ratchet ─────────────────────────────────────────────
 // The other four rules are absolutes: a violation is a bug, so it fails. Scale
 // drift is different — there are ~1,000 radius call sites and 52 distinct font

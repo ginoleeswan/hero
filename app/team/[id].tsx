@@ -24,6 +24,7 @@ import { COLORS } from '../../src/constants/colors';
 import { brandForPublisher } from '../../src/constants/publishers';
 import { teamLogo } from '../../src/constants/teamBrands';
 import type { Hero } from '../../src/lib/db/heroes';
+import { SEAM } from '../../src/design';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;
@@ -372,10 +373,10 @@ const styles = StyleSheet.create({
   stageLogo: { alignSelf: 'flex-start' },
   sheetTop: {
     backgroundColor: COLORS.beige,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: SEAM.radius,
+    borderTopRightRadius: SEAM.radius,
     borderCurve: 'continuous',
-    marginTop: -16,
+    marginTop: -SEAM.overlap,
     height: 30,
   },
   // Zero-height anchor + a viewport-tall overlay box, so the dissolving roster

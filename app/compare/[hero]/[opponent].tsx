@@ -29,6 +29,7 @@ import { MatchupBadge } from '../../../src/components/compare/MatchupBadge';
 import { useRelationship } from '../../../src/lib/query/heroQueries';
 import { relationshipBadge } from '../../../src/lib/db/heroes';
 import { TakesSection } from '../../../src/components/takes/TakesSection';
+import { SEAM } from '../../../src/design';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 12;
@@ -348,9 +349,9 @@ const styles = StyleSheet.create({
   sheet: {
     flexGrow: 1,
     backgroundColor: COLORS.beige,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    marginTop: -14,
+    borderTopLeftRadius: SEAM.radius,
+    borderTopRightRadius: SEAM.radius,
+    marginTop: -SEAM.overlap,
     paddingTop: 24,
   },
   communityWrap: {

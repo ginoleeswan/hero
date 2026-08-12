@@ -801,7 +801,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    marginTop: -14,
+    marginTop: -24,
     paddingTop: 24,
     paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
   } as object,

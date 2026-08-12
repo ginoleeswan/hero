@@ -60,3 +60,18 @@ export const TRACKING = {
   wider: 1.2,
   widest: 2,
 } as const;
+
+/**
+ * The beige sheet's seam — the rounded cap that rises over a dark stage on the
+ * character, category, team and compare screens.
+ *
+ * `overlap` MUST be >= `radius`. The cap's corner cut-outs show whatever is
+ * BEHIND them, and behind the cap is the list's content background, which on
+ * these screens is beige. Overlap the dark stage by less than the radius and
+ * the bottom of each corner curve sits over beige instead of over the stage —
+ * so the cut-out is filled in, and the curve looks truncated where it meets the
+ * straight edge rather than running cleanly to it. Five screens shipped with
+ * overlaps of 14–18 against a 24 radius; `character/[id]` was the only one that
+ * tied the two together, and it was the only seam that looked right.
+ */
+export const SEAM = { radius: 24, overlap: 24 } as const;

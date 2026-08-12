@@ -7,6 +7,7 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { COLORS } from '../../constants/colors';
+import { SEAM } from '../../design';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;
@@ -73,10 +74,10 @@ const styles = StyleSheet.create({
   sheet: {
     flex: 1,
     backgroundColor: COLORS.beige,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: SEAM.radius,
+    borderTopRightRadius: SEAM.radius,
     borderCurve: 'continuous',
-    marginTop: -16,
+    marginTop: -SEAM.overlap,
     paddingTop: 26,
     paddingHorizontal: H_PAD,
   },
