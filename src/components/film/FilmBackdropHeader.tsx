@@ -10,6 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { HeroTitle } from '../../lib/db/titles';
 import { titleExtras } from '../../lib/db/titles';
@@ -124,7 +125,15 @@ export function FilmBackdropHeader({
           accessibilityRole="button"
           accessibilityLabel={`Share ${film.title}`}
         >
-          <Ionicons name="share-outline" size={19} color={COLORS.beige} />
+          <SymbolView
+            name="square.and.arrow.up"
+            weight="semibold"
+            tintColor={COLORS.beige}
+            size={20}
+            resizeMode="scaleAspectFit"
+            style={styles.shareIcon}
+            fallback={<Ionicons name="share-social-outline" size={19} color={COLORS.beige} />}
+          />
         </TouchableOpacity>
       ) : null}
 
@@ -225,6 +234,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
   },
   shareBtn: { left: undefined, right: 16 },
+  shareIcon: { width: 20, height: 20 },
   backBtn: {
     position: 'absolute',
     left: 16,

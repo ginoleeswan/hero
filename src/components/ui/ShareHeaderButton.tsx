@@ -9,6 +9,7 @@
 // share sheet.
 import { Pressable, Share, Platform, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SymbolView } from 'expo-symbols';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../constants/colors';
 import { RADIUS } from '../../design';
@@ -45,13 +46,27 @@ export function ShareHeaderButton({
         [styles.btn, floating && styles.floating, pressed && styles.pressed] as object
       }
     >
-      <Ionicons name="share-outline" size={20} color={tint} />
+      {/* The SYSTEM share glyph, not a generic one. The character page and the
+          arena already use square.and.arrow.up here — it is what an iOS reader
+          recognises as "share" without reading a label, and three different
+          glyphs for one action across a nav bar is the kind of thing that reads
+          as several apps stitched together. Ionicons is the Android fallback. */}
+      <SymbolView
+        name="square.and.arrow.up"
+        weight="semibold"
+        tintColor={tint}
+        size={21}
+        resizeMode="scaleAspectFit"
+        style={styles.icon}
+        fallback={<Ionicons name="share-social-outline" size={20} color={tint} />}
+      />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   btn: { alignItems: 'center', justifyContent: 'center', width: 36, height: 36 },
+  icon: { width: 21, height: 21 },
   // A disc, so RADIUS.pill rather than a hand-computed half-of-36.
   floating: { borderRadius: RADIUS.pill, backgroundColor: 'rgba(0,0,0,0.45)' },
   pressed: { opacity: 0.7 },
