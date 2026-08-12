@@ -930,11 +930,24 @@ const sized = (url: string, w = 720) =>
  * The buckets are path segments, so downsizing is a swap: w780 is still twice
  * the 400px the backdrop is drawn at after cropping, and w500 comfortably
  * covers a 300px poster.
+ *
+ * The host is matched by PARSING the URL, not by `includes('image.tmdb.org')`.
+ * A substring test matches anywhere in the string, so `https://evil.test/?x=
+ * image.tmdb.org` passes it — and this function's answer decides whether a URL
+ * is treated as a known image host whose paths we rewrite. Parse, compare the
+ * hostname, and leave anything else exactly as it came.
  */
-const tmdbSized = (url: string, bucket: 'w780' | 'w500' | 'w342') =>
-  url.includes('image.tmdb.org')
-    ? url.replace(/\/t\/p\/(w\d+|original)\//, `/t/p/${bucket}/`)
-    : url;
+const tmdbSized = (url: string, bucket: 'w780' | 'w500' | 'w342') => {
+  try {
+    const u = new URL(url);
+    if (u.hostname !== 'image.tmdb.org') return url;
+    u.pathname = u.pathname.replace(/^\/t\/p\/(w\d+|original)\//, `/t/p/${bucket}/`);
+    return u.toString();
+  } catch {
+    // Not a parseable absolute URL — hand it back untouched.
+    return url;
+  }
+};
 
 const art = (h: OgHero) => {
   const u = h.portrait_url || h.image_url;
@@ -1065,13 +1078,16 @@ function houseCard(house: OgHouse, faces: OgFace[]) {
           background: `linear-gradient(0deg, ${tint}38, transparent)`,
         }}
       />
+      {/* The portrait is absolutely positioned, so it is out of flow and cannot
+          push this column aside: the clearance has to be padding. Without it a
+          long house name runs under the artwork instead of wrapping before it. */}
       <div
         style={{
           display: 'flex',
           flex: 1,
           flexDirection: 'column',
           justifyContent: 'center',
-          padding: '0 0 0 78px',
+          padding: leadArt ? '0 452px 0 78px' : '0 78px',
         }}
       >
         {wordmark(30, false)}
