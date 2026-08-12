@@ -23,6 +23,10 @@ import {
 } from '@expo-google-fonts/nunito';
 import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 import { useAuth } from '../src/hooks/useAuth';
+import {
+  configureNotificationHandler,
+  useNotificationRouting,
+} from '../src/hooks/useNotificationRouting';
 import { usePresenceHeartbeat } from '../src/hooks/usePresenceHeartbeat';
 import { BootStage } from '../src/components/ui/BootStage';
 import AnalyticsProvider from '../src/components/Analytics';
@@ -166,6 +170,10 @@ function AuthGate({ fontsReady }: { fontsReady: boolean }) {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  // A tapped notification has to land where it promised. Mounted here, inside
+  // the router context, so both the running-app tap and the cold-start launch
+  // are handled — the second is the one that only shows up on a real device.
+  useNotificationRouting();
   // Global (not local) — AuthGate is not the route component, so it reads the
   // login screen's ?returnTo from the app-wide param bag.
   const { returnTo } = useGlobalSearchParams<{ returnTo?: string | string[] }>();
@@ -209,6 +217,9 @@ function AuthGate({ fontsReady }: { fontsReady: boolean }) {
     </BootStage>
   );
 }
+
+// Global, once: how an arriving notification behaves while the app is open.
+configureNotificationHandler();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
