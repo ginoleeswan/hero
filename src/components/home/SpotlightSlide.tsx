@@ -12,6 +12,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
@@ -97,9 +98,16 @@ export function SpotlightSlide({
       />
 
       <View style={styles.meta}>
-        <Text style={styles.name} numberOfLines={1}>
-          {hero.name}
-        </Text>
+        {/* The chevron is the billboard's only visible statement that it is a
+            DOOR — ported from the web spotlight, which always had one. Baseline
+            row, not an inline glyph: Flame's line box would center the icon on
+            the cap height and it would float. */}
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>
+            {hero.name}
+          </Text>
+          <Ionicons name="chevron-forward" size={22} color={COLORS.orange} style={styles.chevron} />
+        </View>
         {!!sub && (
           <Text style={styles.sub} numberOfLines={1}>
             {sub}
@@ -125,7 +133,14 @@ const styles = StyleSheet.create({
     right: 20,
     alignItems: 'center',
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: '100%',
+  },
   name: {
+    flexShrink: 1,
     fontFamily: 'Flame-Regular',
     fontSize: 38,
     color: COLORS.beige,
@@ -137,6 +152,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 12,
   },
+  chevron: { marginLeft: 2, marginTop: 4 },
   sub: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12.5,

@@ -5,11 +5,15 @@ import { useReducedMotion, type SharedValue } from 'react-native-reanimated';
 import Carousel from 'react-native-reanimated-carousel';
 import * as Haptics from 'expo-haptics';
 import { SpotlightSlide } from './SpotlightSlide';
+import { SpotlightProgress } from './SpotlightProgress';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 import { SPOTLIGHT } from './homeGeometry';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+// One clock for the carousel AND its progress fill — a bar timed against a
+// different number than the advance is a clock that lies.
+const AUTOPLAY_MS = 6000;
 
 export function spotlightHeight(insetTop: number): number {
   // A tall billboard (Apple TV / Disney+) so the portrait reads big.
@@ -48,7 +52,7 @@ export function SpotlightCarousel({
         data={heroes}
         loop={heroes.length > 1}
         autoPlay={heroes.length > 1 && !reduced}
-        autoPlayInterval={6000}
+        autoPlayInterval={AUTOPLAY_MS}
         scrollAnimationDuration={750}
         onSnapToItem={(i: number) => {
           setActive(i);
@@ -66,10 +70,8 @@ export function SpotlightCarousel({
         )}
       />
       {heroes.length > 1 && (
-        <View style={styles.dots} pointerEvents="none">
-          {heroes.map((h, i) => (
-            <View key={h.id} style={[styles.dot, i === active && styles.dotActive]} />
-          ))}
+        <View style={styles.progress} pointerEvents="none">
+          <SpotlightProgress count={heroes.length} active={active} intervalMs={AUTOPLAY_MS} />
         </View>
       )}
 
@@ -85,22 +87,13 @@ const LIP_HEIGHT = 24;
 
 const styles = StyleSheet.create({
   wrap: { backgroundColor: COLORS.deepNavy },
-  dots: {
+  progress: {
     position: 'absolute',
     bottom: SPOTLIGHT.dotsBottom,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: SPOTLIGHT.dotGap,
+    left: 24,
+    right: 24,
+    alignItems: 'center',
   },
-  dot: {
-    width: SPOTLIGHT.dotSize,
-    height: SPOTLIGHT.dotSize,
-    borderRadius: 2.5,
-    backgroundColor: 'rgba(245,235,220,0.4)',
-  },
-  dotActive: { width: SPOTLIGHT.dotActiveWidth, backgroundColor: COLORS.orange },
   lip: {
     position: 'absolute',
     left: 0,
