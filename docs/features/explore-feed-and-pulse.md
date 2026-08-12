@@ -346,7 +346,11 @@ its own and when. `SpotlightProgress` shares one `AUTOPLAY_MS` clock with the
 carousel, because a bar timed against a different number than the advance is a
 clock that lies. Under Reduce Motion there is no autoplay, so the active
 segment parks fully filled ("you are here") instead of promising an advance
-that never comes. The slide's name also carries a chevron now — the
-billboard's only visible statement that it is a door, which web always had and
-native never did. `HomeSkeleton` mirrors the segments via the shared
+that never comes. The slide deliberately carries NO chevron
+(one was briefly ported from web): on native a full-bleed content card is the
+affordance — the App Store's Today cards and Apple TV's billboard carry none —
+and web keeps its own because an editorial headline under a cursor is a
+different convention. The slide instead gained the accessibility name it
+always lacked (`Open <name>`), which serves the one audience for whom
+tappability is not visible. `HomeSkeleton` mirrors the segments via the shared
 `SPOTLIGHT` tokens.

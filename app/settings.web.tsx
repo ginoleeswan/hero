@@ -298,6 +298,23 @@ export default function WebSettingsScreen() {
           />
         </SectionShell>
 
+        {/* Same Legal section as native — the policy and terms were reachable
+            only from the signup form on both platforms. */}
+        <SectionShell title="Legal">
+          <SettingRow
+            icon="shield-checkmark-outline"
+            label="Privacy policy"
+            onPress={() => router.push('/privacy')}
+            chevron
+          />
+          <SettingRow
+            icon="document-text-outline"
+            label="Terms of use"
+            onPress={() => router.push('/terms')}
+            chevron
+          />
+        </SectionShell>
+
         <Text style={styles.disclaimer}>
           Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or
           any other publisher.
