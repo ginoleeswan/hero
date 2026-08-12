@@ -16,6 +16,7 @@ import { HousePicker, type PickerMode } from '../../src/components/family/HouseP
 import { HouseGenerations } from '../../src/components/family/HouseGenerations';
 import { StageSwitch, type StageView } from '../../src/components/family/StageSwitch';
 import { useHouse } from '../../src/hooks/useHouse';
+import { HOUSE_BODY_NATIVE } from '../../src/constants/houseGeometry';
 import { HouseSkeleton } from '../../src/components/skeletons/HouseSkeleton';
 import { OverscrollBleed } from '../../src/components/ui/OverscrollBleed';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
@@ -245,7 +246,7 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 40,
   },
-  body: { padding: 16, gap: 18 },
+  body: { padding: HOUSE_BODY_NATIVE.pad, gap: HOUSE_BODY_NATIVE.gap },
   blank: {
     backgroundColor: 'white',
     borderRadius: 20,
