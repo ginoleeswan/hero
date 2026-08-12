@@ -11,12 +11,14 @@ import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { COLORS, SEAM_COLOR } from '../../constants/colors';
+import { ISSUE_STAGE } from '../../constants/issueGeometry';
+import { SEAM } from '../../design';
 
 // Placeholder fill for the dark header — beige at 10% reads as "not yet here".
 const ON_DARK = 'rgba(245,235,220,0.10)';
 
-// n.header: minHeight 430, paddingBottom 28, content gap 18, paddingHorizontal 20.
-const HEADER_MIN_H = 430;
+// Shared with the real page via ISSUE_STAGE — see constants/issueGeometry.
+const HEADER_MIN_H = ISSUE_STAGE.minHeight;
 // cast.frame: 104 × 142, radius 12, laid out in styles.castStrip (gap 12, pad 20).
 const CAST_W = 104;
 const CAST_H = 142;
@@ -39,6 +41,7 @@ export function IssueSkeleton({ contentTop }: { contentTop: number }) {
           <Skeleton width="62%" height={13} borderRadius={4} color={ON_DARK} />
         </View>
 
+        <View style={styles.sheetCap} />
         <View style={styles.paper}>
           <View style={styles.synSection}>
             <Skeleton width={84} height={13} borderRadius={4} style={styles.heading} />
@@ -69,12 +72,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 18,
     paddingHorizontal: 20,
-    paddingBottom: 28,
+    paddingBottom: ISSUE_STAGE.paddingBottom,
     backgroundColor: COLORS.deepNavy,
     borderBottomWidth: 1,
     borderBottomColor: SEAM_COLOR,
   },
-  paper: { backgroundColor: COLORS.beige },
+  sheetCap: {
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: SEAM.radius,
+    borderTopRightRadius: SEAM.radius,
+    borderCurve: 'continuous',
+    marginTop: -SEAM.overlap,
+    height: ISSUE_STAGE.capHeight,
+  },
+  paper: { backgroundColor: COLORS.beige, marginTop: -6 },
   synSection: { paddingHorizontal: 20, paddingTop: 22 },
   heading: { marginBottom: 12 },
   line: { marginBottom: 10 },

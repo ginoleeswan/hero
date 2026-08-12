@@ -20,6 +20,8 @@ import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import { ComicCoverRail } from '../../src/components/home/ComicCoverRail';
 import { brandForPublisher } from '../../src/constants/publishers';
 import { COLORS, SURFACE, SEAM_COLOR, PAPER_TEXT } from '../../src/constants/colors';
+import { SEAM } from '../../src/design';
+import { ISSUE_STAGE } from '../../src/constants/issueGeometry';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { NotFoundView } from '../../src/components/NotFoundView';
 import { IssueSkeleton } from '../../src/components/skeletons/IssueSkeleton';
@@ -526,7 +528,7 @@ export default function IssueScreen() {
   const narrowCoverW = Math.min(190, width * 0.48);
   const narrowBody = (
     <>
-      <View style={[n.header, { minHeight: 430 }]}>
+      <View style={[n.header, { minHeight: ISSUE_STAGE.minHeight }]}>
         {issue.coverUrl ? (
           <Image
             source={{ uri: issue.coverUrl }}
@@ -553,7 +555,7 @@ export default function IssueScreen() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="chevron-back" size={20} color="#fff" />
+          <Ionicons name="chevron-back" size={20} color={COLORS.beige} />
         </Pressable>
         <View style={[n.content, { paddingTop: isWeb ? 80 : insets.top + 60 }]}>
           <View style={{ width: narrowCoverW, height: Math.round(narrowCoverW * 1.5) }}>
@@ -563,6 +565,10 @@ export default function IssueScreen() {
         </View>
       </View>
 
+      {/* The rounded beige cap every other detail page seams with — this page
+          had a flat 1px hairline instead, the only ink→paper edge in the app
+          without the lip. Overlap ≥ radius per the SEAM invariant. */}
+      <View style={styles.sheetCap} />
       <View style={styles.paper}>
         {issue.description ? (
           <View style={n.synSection}>
@@ -729,10 +735,10 @@ const n = StyleSheet.create({
     width: '100%',
     overflow: 'hidden',
     justifyContent: 'flex-end',
-    paddingBottom: 28,
+    // The beige cap below overlaps the bottom SEAM.overlap of this header, so
+    // the masthead's real clearance is this minus that. 44 keeps ~20pt.
+    paddingBottom: ISSUE_STAGE.paddingBottom,
     backgroundColor: COLORS.deepNavy,
-    borderBottomWidth: 1,
-    borderBottomColor: SEAM_COLOR,
   },
   backBtn: {
     position: 'absolute',
@@ -767,9 +773,10 @@ const ms = StyleSheet.create({
   },
   // Soft shadow so the white title reads over a light/bright blurred cover —
   // lets the header stay colourful instead of a flat dark void.
+  // Beige, not #fff — the app's text-on-ink voice everywhere else.
   title: {
     fontFamily: 'Flame-Regular',
-    color: '#fff',
+    color: COLORS.beige,
     textShadowColor: 'rgba(0,0,0,0.55)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 14,
@@ -790,7 +797,7 @@ const ms = StyleSheet.create({
   storyCentered: { textAlign: 'center' },
   statRail: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginTop: 4 },
   statCentered: { justifyContent: 'center' },
-  statDivider: { width: 1, height: 13, backgroundColor: 'rgba(255,255,255,0.28)' },
+  statDivider: { width: 1, height: 13, backgroundColor: 'rgba(245,235,220,0.28)' },
   statText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13.5,
@@ -912,7 +919,15 @@ const styles = StyleSheet.create({
     ...Platform.select({ web: { minHeight: '100lvh' } as object, default: { flex: 1 } }),
   } as object,
   webPage: { width: '100%', backgroundColor: COLORS.beige },
-  paper: { backgroundColor: COLORS.beige },
+  sheetCap: {
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: SEAM.radius,
+    borderTopRightRadius: SEAM.radius,
+    borderCurve: 'continuous',
+    marginTop: -SEAM.overlap,
+    height: ISSUE_STAGE.capHeight,
+  },
+  paper: { backgroundColor: COLORS.beige, marginTop: -6 },
   section: { paddingTop: 22, paddingBottom: 10 },
   sectionLabel: {
     fontFamily: 'Flame-Regular',
