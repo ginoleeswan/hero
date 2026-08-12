@@ -65,13 +65,14 @@ function SpotlightSkeleton({ insetTop }: { insetTop: number }) {
           style={styles.spotlightSub}
         />
       </View>
+      {/* Mirrors SpotlightProgress: a segment per slide, first one "filled". */}
       <View style={styles.spotlightDots}>
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton
             key={i}
-            width={i === 0 ? SPOTLIGHT.dotActiveWidth : SPOTLIGHT.dotSize}
-            height={SPOTLIGHT.dotSize}
-            borderRadius={SPOTLIGHT.dotSize / 2}
+            width={(SPOTLIGHT.segMaxW - SPOTLIGHT.segGap * 4) / 5}
+            height={SPOTLIGHT.segH}
+            borderRadius={SPOTLIGHT.segH / 2}
             color={i === 0 ? ON_DARK : ON_DARK_SOFT}
           />
         ))}
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: SPOTLIGHT.dotGap,
+    gap: SPOTLIGHT.segGap,
   },
   publisherGrid: {
     flexDirection: 'row',

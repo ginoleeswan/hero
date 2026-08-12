@@ -336,3 +336,17 @@ Both of Explore's endless animations now hold still off-screen, via
   indicator is never left frozen at 30% looking broken.
 
 **If you add a `withRepeat(..., -1)` anywhere, it needs both checks.**
+
+
+**The billboard's indicator is segmented and timed, on both platforms.** The
+native dots encoded position at whisper volume; a segment per slide (ported
+from the web spotlight) encodes position, count, and — because the active
+segment fills across the autoplay interval — that the billboard advances on
+its own and when. `SpotlightProgress` shares one `AUTOPLAY_MS` clock with the
+carousel, because a bar timed against a different number than the advance is a
+clock that lies. Under Reduce Motion there is no autoplay, so the active
+segment parks fully filled ("you are here") instead of promising an advance
+that never comes. The slide's name also carries a chevron now — the
+billboard's only visible statement that it is a door, which web always had and
+native never did. `HomeSkeleton` mirrors the segments via the shared
+`SPOTLIGHT` tokens.

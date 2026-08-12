@@ -27,9 +27,12 @@ export const SPOTLIGHT = {
   metaBottom: 40,
   /** SpotlightCarousel.dots */
   dotsBottom: 22,
-  dotSize: 5,
-  dotActiveWidth: 14,
-  dotGap: 6,
+  // Segmented progress (ported from the web billboard): each slide is a bar,
+  // the active one fills over the autoplay interval. Encodes position, count
+  // AND time-to-advance — the dots this replaced only whispered position.
+  segH: 3,
+  segGap: 5,
+  segMaxW: 210,
   /** The dark stage rides up into the billboard's fade (explore's podsOverlap). */
   overlap: 14,
 } as const;
