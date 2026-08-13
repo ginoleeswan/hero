@@ -215,3 +215,41 @@ app that week. So the ask is spent deliberately:
 A raised ask is recorded as spent whether or not the sheet appeared, because
 there is no way to tell. Treating a swallowed ask as unspent and retrying is how
 an app burns all three slots in a fortnight.
+
+## Favourites as a follow
+
+Hearting a character used to do two things: put them in a list, and personalise
+the title of one daily push (`send-daily-push` already looks up
+`user_favourites` for the debated pair). Neither is what a reader would call
+following anyone.
+
+The Activity inbox now carries a **`favourite-appearance`** item: a character
+you favourited has turned up in something newly on screen.
+
+**Derived from what the feed already has.** No new table, no new query, no
+migration — the trending slate and the reader's favourites are both fetched and
+cached for Explore already. `src/lib/notifications/appearances.ts` intersects
+them, which also means it keeps working from the persisted cache offline, unlike
+the rest of the inbox.
+
+The rules that keep it quiet, all tested:
+
+- **A 45-day window on the release date.** Without it, a sync that backfills the
+  slate announces a decade of films at once and the reader blames the app —
+  correctly.
+- **No date, no item.** Silence beats a guess: missing one appearance costs
+  nothing, announcing a 1998 film as new costs the feature being switched off.
+- **Nothing before the marker.** Adding a favourite must not dump that hero's
+  back catalogue into the inbox.
+- **One per hero, newest kept.** A character in three things at once is a
+  franchise launch; three notifications about the same person on one morning
+  reads as a malfunction.
+- **`shownAppearances` is bounded** (200). It is the only part of the marker
+  that grows with use, and it is rewritten on every open.
+
+### Still to do
+
+This is the in-app half. Sending it as a **push** needs the appearance query to
+run server-side in `send-daily-push` — which needs the Supabase connector
+pointed at the right project, and APNs credentials, neither of which is
+configured yet.

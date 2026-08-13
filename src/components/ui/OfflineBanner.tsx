@@ -4,6 +4,7 @@ import { Text } from './Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { useIsOffline } from '../../hooks/useIsOffline';
+import { persistenceEnabled } from '../../lib/query/persist';
 
 /**
  * A quiet, persistent "you're offline" pill.
@@ -53,7 +54,13 @@ export function OfflineBanner() {
     >
       <View style={styles.row}>
         <Ionicons name="cloud-offline-outline" size={15} color={COLORS.beige} />
-        <Text style={styles.text}>You&rsquo;re offline</Text>
+        {/* The copy has to match what the platform can actually do. On native
+            the query cache is persisted, so pages already opened still work and
+            the banner is an explanation. On web there is no persister, so the
+            same sentence would be a promise the app cannot keep. */}
+        <Text style={styles.text}>
+          {persistenceEnabled ? 'Offline — showing saved pages' : 'You\u2019re offline'}
+        </Text>
       </View>
     </Animated.View>
   );

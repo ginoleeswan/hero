@@ -18,6 +18,9 @@ import {
   type InboxSeen,
 } from '../lib/notifications/inbox';
 import { type StreakState } from '../lib/game/streak';
+import { getUserFavouriteHeroes } from '../lib/db/favourites';
+import { getTrendingTitles } from '../lib/db/trending';
+import { favouriteAppearances } from '../lib/notifications/appearances';
 
 const SEEN_KEY = 'inbox_seen_v1';
 /** The daily game's own streak store — read, never written, from here. */
@@ -97,6 +100,26 @@ export function useNotificationInbox() {
 
       const lostStreak = broken && streak ? streak.max : null;
       const now = Date.now();
+
+      // Favourite appearances. Both halves are already fetched and cached for
+      // Explore, so this adds no round trip the app was not making — and it
+      // keeps working from the persisted cache when there is no signal.
+      let appearances: ReturnType<typeof favouriteAppearances> = [];
+      if (user) {
+        try {
+          const [favs, titles] = await Promise.all([
+            getUserFavouriteHeroes(user.id),
+            getTrendingTitles('on_screen'),
+          ]);
+          appearances = favouriteAppearances({
+            titles,
+            favouriteIds: new Set(favs.map((f) => f.id)),
+            now,
+          });
+        } catch {
+          // A follow item is a bonus, never the reason the inbox fails to open.
+        }
+      }
       const built = buildInbox({
         seen: currentSeen,
         now,
@@ -108,6 +131,7 @@ export function useNotificationInbox() {
           createdAt: t.createdAt,
         })),
         yesterday: yesterdayInput,
+        favouriteAppearances: appearances,
         streak: lostStreak ? { previous: lostStreak, broken: true } : null,
       });
 
@@ -141,6 +165,12 @@ export function useNotificationInbox() {
       myTakes: takeCounts,
       yesterdayDate,
       brokenStreak,
+      // The appearance ids actually on screen. Recorded here, not when they are
+      // built, for the same reason the marker itself is: a background prefetch
+      // must not mark something the reader never saw.
+      shownAppearances: items
+        .filter((i) => i.kind === 'favourite-appearance')
+        .map((i) => i.id.replace(/^appearance:/, '')),
     });
     setSeen(next);
     try {
@@ -148,7 +178,7 @@ export function useNotificationInbox() {
     } catch {
       /* the list still reads correctly this session */
     }
-  }, [seen, takeCounts, yesterdayDate, brokenStreak]);
+  }, [seen, takeCounts, yesterdayDate, brokenStreak, items]);
 
   return {
     items,

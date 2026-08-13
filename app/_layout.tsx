@@ -33,8 +33,7 @@ import { noteAppOpened } from '../src/lib/review';
 import { usePresenceHeartbeat } from '../src/hooks/usePresenceHeartbeat';
 import { BootStage } from '../src/components/ui/BootStage';
 import AnalyticsProvider from '../src/components/Analytics';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from '../src/lib/query/queryClient';
+import { PersistedQueryProvider } from '../src/lib/query/PersistedQueryProvider';
 import { startAppFocusTracking } from '../src/lib/query/appFocus';
 import { startAppOnlineTracking } from '../src/lib/query/appOnline';
 import { OfflineBanner } from '../src/components/ui/OfflineBanner';
@@ -275,7 +274,7 @@ export default function RootLayout() {
     // providers inherit them instead of null.
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <QueryClientProvider client={queryClient}>
+        <PersistedQueryProvider>
           <StatusBar style="dark" />
           <AnalyticsProvider />
           <PresenceHeartbeat />
@@ -284,7 +283,7 @@ export default function RootLayout() {
           <AuthGate fontsReady={fontsReady} />
           <OfflineBanner />
           <UpdateReadyPill />
-        </QueryClientProvider>
+        </PersistedQueryProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );
