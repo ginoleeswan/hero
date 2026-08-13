@@ -4,7 +4,7 @@
 // grid. A team is "heroes whose teams[] contains the team name", so it reuses
 // the same paginated/faceted query path (useTeamHeroes → getTeamPage).
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, FlatList, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, FlatList, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,13 +26,13 @@ import { brandForPublisher } from '../../src/constants/publishers';
 import { teamLogo } from '../../src/constants/teamBrands';
 import type { Hero } from '../../src/lib/db/heroes';
 import { SEAM } from '../../src/design';
+import { categoryGrid } from '../../src/constants/categoryGeometry';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;
+// The roster grid is the category grid — same inset, same gap, same 1.35 card.
+// It restated all four numbers, including its own frozen `>= 768 ? 4 : 3`, so
+// the two could drift apart while looking identical. One source now.
 const GAP = 8;
 const H_PAD = 16;
-const CARD_WIDTH = (SCREEN_WIDTH - H_PAD * 2 - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
-const CARD_HEIGHT = Math.round(CARD_WIDTH * 1.35);
 
 const headerOptions = {
   headerShown: true,
@@ -47,6 +47,8 @@ export default function TeamScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: winW } = useWindowDimensions();
+  const grid = categoryGrid(winW);
 
   // Team summary via React Query (cached, deduped) — resolves the header identity
   // and the membership term that drives useTeamHeroes below.
@@ -265,7 +267,10 @@ export default function TeamScreen() {
         style={styles.list}
         data={heroes}
         keyExtractor={(h) => String(h.id)}
-        numColumns={NUM_COLUMNS}
+        // FlatList will not change numColumns in place — the key remounts it
+        // when a resize crosses a column boundary.
+        key={grid.columns}
+        numColumns={grid.columns}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         ListHeaderComponent={listHeader}
@@ -275,7 +280,7 @@ export default function TeamScreen() {
         onEndReachedThreshold={0.4}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.card}
+            style={[styles.card, { width: grid.cardW, height: grid.cardH }]}
             activeOpacity={0.82}
             onPress={() => handlePress(item)}
             onLongPress={() => setPeek(item)}
@@ -383,11 +388,9 @@ const styles = StyleSheet.create({
   // Zero-height anchor + a viewport-tall overlay box, so the dissolving roster
   // skeleton starts at the seam under the stage and covers the visible grid.
   skelAnchor: { height: 0 },
-  skelOverlay: { position: 'absolute', top: 0, left: 0, right: 0, height: SCREEN_HEIGHT },
+  skelOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   row: { gap: GAP, marginBottom: GAP, paddingHorizontal: H_PAD },
   card: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,

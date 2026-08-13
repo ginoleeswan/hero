@@ -15,7 +15,7 @@
 // The fix is on both sides: the real components now state every line box
 // explicitly instead of inheriting whatever the font's metrics gave, and both
 // sides read those numbers from one module.
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { SEAM_COLOR, SURFACE } from '../../constants/colors';
@@ -28,7 +28,10 @@ const INK_TINT = 'rgba(245,235,220,0.10)';
 
 // The lead trailer's backdrop is `aspectRatio: 16/8` at the gutter's width, so
 // the placeholder is derived from the same ratio rather than guessed.
-const LEAD_H = Math.round((Dimensions.get('window').width - PAD * 2) / EVENT_PAPER.leadAspect);
+function useLeadHeight() {
+  const { width } = useWindowDimensions();
+  return Math.round((width - PAD * 2) / EVENT_PAPER.leadAspect);
+}
 
 /**
  * A bar of ink centred in the line box the real text will occupy. The BOX is
@@ -167,6 +170,7 @@ export function EventIndexSkeleton() {
 
 /** app/event/[slug].tsx — the dossier: masthead + stat rail over paper sections. */
 export function EventDossierSkeleton() {
+  const leadHeight = useLeadHeight();
   return (
     <SkeletonProvider>
       <View>
@@ -235,7 +239,7 @@ export function EventDossierSkeleton() {
             width="64%"
             style={styles.sectionNote}
           />
-          <Skeleton width="100%" height={LEAD_H} borderRadius={EVENT_PAPER.leadRadius} />
+          <Skeleton width="100%" height={leadHeight} borderRadius={EVENT_PAPER.leadRadius} />
         </View>
       </View>
     </SkeletonProvider>

@@ -16,35 +16,26 @@
 //  • The count/tagline line wraps to two lines on every category (the count,
 //    a middot, and an editorial sentence do not fit 320pt at 13pt), and to one
 //    on universes and franchises, which have no tagline.
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { COLORS } from '../../constants/colors';
 import { SEAM } from '../../design';
-import {
-  CATEGORY_GRID,
-  CATEGORY_CARD_W,
-  CATEGORY_CARD_H,
-  CATEGORY_STAGE,
-  CATEGORY_INK,
-} from '../../constants/categoryGeometry';
+import { categoryGrid, CATEGORY_STAGE, CATEGORY_INK } from '../../constants/categoryGeometry';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const { columns: NUM_COLUMNS, gap: GAP, hPad: H_PAD } = CATEGORY_GRID;
-const CARD_WIDTH = CATEGORY_CARD_W;
-const CARD_HEIGHT = CATEGORY_CARD_H;
+const H_PAD = 16;
+const GAP = 8;
 
 // Navy-tinted placeholder fill so skeletons read on the dark stage.
 const STAGE_TINT = 'rgba(245,235,220,0.10)';
 
-// Enough rows to fill the viewport below the header; extra rows clip cleanly.
-const GRID_ROWS = Math.ceil(SCREEN_HEIGHT / (CARD_HEIGHT + GAP));
-
 function GridRowSkeleton() {
+  const { width } = useWindowDimensions();
+  const grid = categoryGrid(width);
   return (
     <View style={styles.row}>
-      {Array.from({ length: NUM_COLUMNS }).map((_, i) => (
-        <Skeleton key={i} width={CARD_WIDTH} height={CARD_HEIGHT} borderRadius={10} />
+      {Array.from({ length: grid.columns }).map((_, i) => (
+        <Skeleton key={i} width={grid.cardW} height={grid.cardH} borderRadius={10} />
       ))}
     </View>
   );
@@ -83,6 +74,11 @@ export function CategorySkeleton({
   taglineLines?: number;
 }) {
   const isLogo = mastheadHeight !== CATEGORY_STAGE.titleLine;
+  // Enough rows to fill the viewport below the header; extra rows clip cleanly.
+  // Live, because on a rotated iPad both the card height and the viewport
+  // change — a frozen count would leave a band of empty beige under the grid.
+  const { width, height } = useWindowDimensions();
+  const gridRows = Math.ceil(height / (categoryGrid(width).cardH + GAP));
   return (
     <SkeletonProvider>
       <View style={styles.root}>
@@ -124,7 +120,7 @@ export function CategorySkeleton({
 
         {/* Beige sheet → grid */}
         <View style={styles.sheet}>
-          {Array.from({ length: GRID_ROWS }).map((_, i) => (
+          {Array.from({ length: gridRows }).map((_, i) => (
             <GridRowSkeleton key={i} />
           ))}
         </View>

@@ -9,22 +9,28 @@
 //
 // The rule is the one HomeSkeleton already follows via PUBLISHER_GRID: if a
 // placeholder claims to mirror a layout, it has to read from the same source.
-import { Dimensions } from 'react-native';
+import { gridColumns } from './layout';
 import { line } from './typeScale';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-export const CATEGORY_GRID = {
-  columns: SCREEN_WIDTH >= 768 ? 4 : 3,
-  gap: 8,
-  /** Shared horizontal inset for the stage, the sheet and the grid. */
-  hPad: 16,
-} as const;
-
-export const CATEGORY_CARD_W =
-  (SCREEN_WIDTH - CATEGORY_GRID.hPad * 2 - CATEGORY_GRID.gap * (CATEGORY_GRID.columns - 1)) /
-  CATEGORY_GRID.columns;
-export const CATEGORY_CARD_H = Math.round(CATEGORY_CARD_W * 1.35);
+/**
+ * The grid, for a given window width.
+ *
+ * This was `SCREEN_WIDTH >= 768 ? 4 : 3` evaluated once at import — someone had
+ * already thought about tablets, but the answer was computed before the app had
+ * ever been rotated, so on an iPad it kept its launch value forever. Worse for
+ * this file than for most: the screen and its skeleton BOTH read it, and the
+ * whole point of the file is that they agree.
+ *
+ * Columns now come from a target card width, so the grid grows smoothly through
+ * the intermediate widths a Split View drag passes through.
+ */
+export function categoryGrid(width: number) {
+  const hPad = 16;
+  const gap = 8;
+  const columns = gridColumns(width, 120, 3, 7);
+  const cardW = (width - hPad * 2 - gap * (columns - 1)) / columns;
+  return { columns, gap, hPad, cardW, cardH: Math.round(cardW * 1.35) };
+}
 
 /**
  * The navy stage's vertical rhythm. `titleLine` and `taglineLine` are the real

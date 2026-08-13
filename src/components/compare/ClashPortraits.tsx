@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +15,6 @@ import { VsBadge } from './VsBadge';
 import { HeroMonogram } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SEAM_WIDTH = 28;
 const BADGE_SIZE = 46;
 
@@ -28,8 +27,13 @@ export interface ClashPortraitsProps {
    *  yet (both lit, no cues) — used while stats load behind the handoff paint. */
   winner: 'A' | 'B' | 'tie' | 'neutral';
   height?: number;
-  /** Total width of the clash stage. Defaults to the full screen width. */
-  width?: number;
+  /**
+   * Total width of the clash stage. Required — it used to default to the
+   * window width read once at import, which on an iPad meant a stage sized for
+   * whichever way the device happened to be held at launch. The caller knows
+   * its own box; there is no safe default.
+   */
+  width: number;
   /** Tap the left portrait to replace hero A. */
   onSwapA?: () => void;
   /** Tap the right portrait to replace hero B. */
@@ -47,7 +51,7 @@ export function ClashPortraits({
   nameB,
   winner,
   height = 280,
-  width = SCREEN_WIDTH,
+  width,
   onSwapA,
   onSwapB,
   onViewProfileA,

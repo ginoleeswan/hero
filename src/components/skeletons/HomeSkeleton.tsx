@@ -13,7 +13,7 @@
 // the daily-banner height had been lifted from a tile inside the banner rather
 // than the banner itself. A comment can't enforce agreement; a shared import
 // can, so a change to the real layout moves these placeholders with it.
-import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
@@ -22,14 +22,12 @@ import { spotlightHeight } from '../home/SpotlightCarousel';
 import {
   DAILY_BANNER,
   FEED_H_PAD,
-  HERO_ROW,
+  heroRow,
   MATCHUP_CARD,
   PAPER_SEAM_RADIUS,
-  PUBLISHER_GRID,
+  publisherGrid,
   SPOTLIGHT,
 } from '../home/homeGeometry';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Placeholder fills for the dark stage. Beige at 8% was almost invisible on
 // deepNavy — the billboard read as a broken void rather than a placeholder.
@@ -40,8 +38,9 @@ const ON_DARK_SOFT = 'rgba(245,235,220,0.07)';
 // furniture is sketched in at its real offsets: the name block and the pager
 // dots, both positioned from SPOTLIGHT.
 function SpotlightSkeleton({ insetTop }: { insetTop: number }) {
+  const { width, height } = useWindowDimensions();
   return (
-    <View style={{ height: spotlightHeight(insetTop) }}>
+    <View style={{ height: spotlightHeight(width, height, insetTop) }}>
       {/* The real slide is a full-bleed portrait under a bottom scrim, so the
           placeholder carries the same weight distribution — light at the crown
           where the face sits, sinking into the stage where the scrim takes over. */}
@@ -51,14 +50,9 @@ function SpotlightSkeleton({ insetTop }: { insetTop: number }) {
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.spotlightMeta}>
+        <Skeleton width={Math.round(width * 0.52)} height={34} borderRadius={8} color={ON_DARK} />
         <Skeleton
-          width={Math.round(SCREEN_WIDTH * 0.52)}
-          height={34}
-          borderRadius={8}
-          color={ON_DARK}
-        />
-        <Skeleton
-          width={Math.round(SCREEN_WIDTH * 0.28)}
+          width={Math.round(width * 0.28)}
           height={12}
           borderRadius={4}
           color={ON_DARK_SOFT}
@@ -82,14 +76,16 @@ function SpotlightSkeleton({ insetTop }: { insetTop: number }) {
 }
 
 function PublisherGridSkeleton() {
+  const { width } = useWindowDimensions();
+  const g = publisherGrid(width);
   return (
-    <View style={styles.publisherGrid}>
+    <View style={[styles.publisherGrid, { paddingHorizontal: g.hPad }]}>
       {Array.from({ length: 4 }).map((_, i) => (
         <Skeleton
           key={i}
-          width={PUBLISHER_GRID.tileWidth}
-          height={PUBLISHER_GRID.tileMinHeight}
-          borderRadius={PUBLISHER_GRID.radius}
+          width={g.tileWidth}
+          height={g.tileMinHeight}
+          borderRadius={g.radius}
           color={ON_DARK}
         />
       ))}
@@ -148,6 +144,8 @@ function DailyBannerSkeleton() {
 }
 
 function PortraitRowSkeleton() {
+  const { width, height } = useWindowDimensions();
+  const row = heroRow(width, height);
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -163,8 +161,8 @@ function PortraitRowSkeleton() {
         {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton
             key={i}
-            width={HERO_ROW.cardWidth}
-            height={HERO_ROW.cardHeight}
+            width={row.cardWidth}
+            height={row.cardHeight}
             borderRadius={64}
             style={styles.portraitCard}
           />
@@ -241,12 +239,11 @@ const styles = StyleSheet.create({
   publisherGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: PUBLISHER_GRID.gap,
-    paddingHorizontal: PUBLISHER_GRID.hPad,
+    gap: 10,
     // The real grid rides up into the spotlight's fade (explore's podsOverlap).
     marginTop: -SPOTLIGHT.overlap,
-    paddingTop: PUBLISHER_GRID.paddingTop,
-    paddingBottom: PUBLISHER_GRID.paddingBottom,
+    paddingTop: 12,
+    paddingBottom: 6,
   },
   darkSection: { paddingTop: 12, paddingBottom: 4 },
   headerLeft: { gap: 2, paddingHorizontal: FEED_H_PAD, marginBottom: 10 },
@@ -268,7 +265,7 @@ const styles = StyleSheet.create({
   seeAllSkeleton: { marginBottom: 4 },
   portraitRow: {
     paddingHorizontal: FEED_H_PAD,
-    gap: HERO_ROW.cardGap,
+    gap: 12,
     paddingVertical: 8,
   },
   portraitCard: { borderCurve: 'continuous' },

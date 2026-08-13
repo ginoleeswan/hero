@@ -1,20 +1,31 @@
 // src/components/home/CoverGallery.tsx — native "Origins" gallery wall.
 // First-appearance comic covers; taps open the character.
-import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressScale } from '../ui/PressScale';
 import { COLORS, ORANGE_INK } from '../../constants/colors';
 import type { FirstAppearanceCover } from '../../lib/db/heroes';
+import { railCardWidth } from '../../constants/layout';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_W = Math.round(SCREEN_WIDTH * 0.4);
-const CARD_H = Math.round(CARD_W * 1.5); // ~2:3 comic cover
+/**
+ * The card's size, live.
+ *
+ * Was computed once from Dimensions.get('window') at import — correct on a
+ * phone, frozen at launch orientation on an iPad. Above the tablet threshold
+ * it becomes a fixed 200pt rather than 40% of the window, so a wide
+ * screen shows more cards instead of enormous ones.
+ */
+function useCardSize() {
+  const { width } = useWindowDimensions();
+  const w = railCardWidth(width, 0.4, 200);
+  return { width: w, height: Math.round(w * 1.5) };
+}
 
 function CoverCard({ cover, onPress }: { cover: FirstAppearanceCover; onPress: () => void }) {
   return (
-    <PressScale onPress={onPress} scale={0.95} style={g.card}>
+    <PressScale onPress={onPress} scale={0.95} style={[g.card, useCardSize()]}>
       <Image
         source={{ uri: cover.first_issue_image_url ?? undefined }}
         contentFit="cover"
@@ -92,8 +103,6 @@ const g = StyleSheet.create({
   title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.navy, lineHeight: 28 },
   row: { gap: 12, paddingHorizontal: 15, paddingBottom: 4 },
   card: {
-    width: CARD_W,
-    height: CARD_H,
     borderRadius: 10,
     borderCurve: 'continuous',
     overflow: 'hidden',

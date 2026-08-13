@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Dimensions,
+  useWindowDimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
   ScrollView,
@@ -12,11 +12,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDE = 20;
 const GAP = 12;
-const CARD_W = Math.round(SCREEN_WIDTH * 0.82);
-const SNAP = CARD_W + GAP;
 
 // A swipeable deck of "did you know" facts. Dark pull-quote cards that pop
 // against the beige page — the one deliberately playful moment in the otherwise
@@ -32,6 +29,13 @@ export function DidYouKnowDeck({
   contentInset?: number;
 }) {
   const [active, setActive] = useState(0);
+  // A fact card at 82% of the window is a readable column on a phone and a
+  // 980pt slab on a landscape iPad — well past the measure at which a line of
+  // text stops being readable. Capped, so a wide screen shows the next card
+  // peeking instead.
+  const { width } = useWindowDimensions();
+  const CARD_W = Math.min(Math.round(width * 0.82), 520);
+  const SNAP = CARD_W + GAP;
   if (facts.length === 0) return null;
 
   const single = facts.length === 1;
@@ -64,7 +68,7 @@ export function DidYouKnowDeck({
           onMomentumScrollEnd={onEnd}
         >
           {facts.map((f, i) => (
-            <View key={i} style={styles.slot}>
+            <View key={i} style={{ width: CARD_W }}>
               <FactCard index={i} total={facts.length} text={f} />
             </View>
           ))}
@@ -103,7 +107,6 @@ function FactCard({ index, total, text }: { index: number; total: number; text: 
 const styles = StyleSheet.create({
   wrap: { gap: 14 },
   track: { paddingHorizontal: SIDE, gap: GAP },
-  slot: { width: CARD_W },
   singleWrap: { marginHorizontal: SIDE },
   card: {
     flex: 1,

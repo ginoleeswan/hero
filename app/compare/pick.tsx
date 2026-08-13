@@ -20,7 +20,14 @@
 // "Armed" side = where taps land. Tap a tray row to arm it; the armed row gets
 // its faction tint, a "+" in its next open slot, and the dice (random fill).
 import { useMemo, useState } from 'react';
-import { View, FlatList, Pressable, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import {
+  View,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 import { Text, TextInput } from '../../src/components/ui/Text';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -47,11 +54,21 @@ import { MAX_SIDE, type PickedHero, type Side } from '../../src/lib/battleBuilde
 import type { PublisherFilter, AlignmentFilter } from '../../src/lib/db/heroes/types';
 import { useDebouncedValue } from '../../src/hooks/useDebouncedValue';
 
-const { width: SCREEN_W } = Dimensions.get('window');
 const H_PAD = 16;
 const GAP = 10;
-const CARD_W = (SCREEN_W - H_PAD * 2 - GAP * 2) / 3;
-const CARD_H = Math.round(CARD_W * 1.4);
+/**
+ * The picker's card, live and count-driven.
+ *
+ * A fixed 3-across grid meant 3 enormous cards on an iPad. The count comes
+ * from a target card width so a wider window offers more candidates at a size
+ * you can actually scan, which is the whole job of a picker.
+ */
+function usePickGrid() {
+  const { width } = useWindowDimensions();
+  const columns = Math.max(3, Math.min(8, Math.round((width - H_PAD * 2) / 130)));
+  const w = (width - H_PAD * 2 - GAP * (columns - 1)) / columns;
+  return { columns, width: w, height: Math.round(w * 1.4) };
+}
 // The opponent grid renders at most this many cards — past it, you refine the
 // search rather than scroll. Pagination is capped to match: fetching a page
 // whose rows the slice below would discard is pure waste on the user's data.
@@ -78,6 +95,7 @@ function pickRandom<T extends { id: string }>(pool: T[], n: number): T[] {
 }
 
 export default function BattleBuilderScreen() {
+  const grid = usePickGrid();
   const router = useRouter();
   // `mode=team` only changes what the screen SAYS. The mechanics are already
   // identical — both sides hold up to MAX_SIDE, and resolveBattleRoute sends a
@@ -288,7 +306,9 @@ export default function BattleBuilderScreen() {
           data={heroes}
           extraData={b}
           keyExtractor={(it) => it.id}
-          numColumns={3}
+          // FlatList will not change numColumns in place; the key remounts it.
+          key={grid.columns}
+          numColumns={grid.columns}
           columnWrapperStyle={s.gridRow}
           contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
           keyboardShouldPersistTaps="handled"
@@ -297,7 +317,7 @@ export default function BattleBuilderScreen() {
             searchQ.isPending ? (
               <View style={s.skeletonGrid}>
                 {Array.from({ length: 12 }).map((_, i) => (
-                  <CardSkeleton key={i} width={CARD_W} height={CARD_H} />
+                  <CardSkeleton key={i} width={grid.width} height={grid.height} />
                 ))}
               </View>
             ) : null
@@ -315,8 +335,8 @@ export default function BattleBuilderScreen() {
                 added={placed}
                 onPress={() => (placed ? remove(item.id) : add(item))}
                 onLongPress={() => setPeek(item)}
-                width={CARD_W}
-                height={CARD_H}
+                width={grid.width}
+                height={grid.height}
               />
             );
           }}

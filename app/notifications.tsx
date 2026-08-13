@@ -14,6 +14,7 @@ import { DISPLAY, LABEL, RADIUS, SPACE } from '../src/design';
 import { EmptyState } from '../src/components/ui/EmptyState';
 import { useNotificationInbox } from '../src/hooks/useNotificationInbox';
 import type { InboxItem, InboxKind } from '../src/lib/notifications/inbox';
+import { READING_MAX_WIDTH } from '../src/components/ui/PageColumn';
 
 const ICON: Record<InboxKind, keyof typeof Ionicons.glyphMap> = {
   'take-agreed': 'chatbubble-ellipses',
@@ -121,7 +122,12 @@ const s = StyleSheet.create({
   },
   back: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   title: { ...DISPLAY.md, color: COLORS.black },
-  scroll: { paddingHorizontal: SPACE.md },
+  scroll: {
+    paddingHorizontal: SPACE.md,
+    width: '100%',
+    maxWidth: READING_MAX_WIDTH,
+    alignSelf: 'center',
+  },
   loader: { marginTop: 40 },
   card: {
     backgroundColor: '#fffaf0',

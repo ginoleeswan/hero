@@ -61,7 +61,14 @@ import { useDebouncedValue, flushWhenBlank } from '../../../src/hooks/useDebounc
 import type { FavouriteHero } from '../../../src/types';
 
 const SEARCH_NAVY = '#1a262b';
-const GRID_COLUMNS = 2;
+/**
+ * Search results are wide cards (portrait + name + meta), so they want a bigger
+ * target than a poster grid: two across on a phone, more as the window grows.
+ * Fixed at two, a landscape iPad showed two ~580pt result cards — a list
+ * pretending to be a grid.
+ */
+const gridColumns = (width: number) =>
+  Math.max(2, Math.min(5, Math.round((width - H_PAD * 2) / 240)));
 const H_PAD = 16;
 const GAP = 8;
 const PUBLISHERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
@@ -96,7 +103,8 @@ export default function SearchScreen() {
   const [navigating, setNavigating] = useState(false);
   const [peek, setPeek] = useState<PeekHero | null>(null);
 
-  const cardWidth = (width - H_PAD * 2 - GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
+  const columns = gridColumns(width);
+  const cardWidth = (width - H_PAD * 2 - GAP * (columns - 1)) / columns;
   const debouncedQuery = useDebouncedValue(query, 250, flushWhenBlank);
   // Declared up here rather than beside the other derived flags because
   // `loadMore` needs it: when idle the screen is a browse surface and the hero
@@ -365,12 +373,17 @@ export default function SearchScreen() {
   const gridLoading = settling || (!isIdle && isPending);
   const gridPhase = useSkeletonTransition(gridLoading);
   const skelCardHeight = Math.round(cardWidth * 1.48);
-  // 8 cards over 2 columns = 4 rows, plus the grid's own 4px lead-in.
-  const skelGridHeight = skelCardHeight * 4 + GAP * 3 + 4;
+  // Two full rows of placeholders, whatever the column count is. This was
+  // "8 cards over 2 columns = 4 rows" — true only while the grid was fixed at
+  // two, so on a wider window the reserved height no longer matched what the
+  // wrap actually produced and the page jumped when results landed.
+  const skelCards = columns * 2;
+  const skelRows = Math.ceil(skelCards / columns);
+  const skelGridHeight = skelCardHeight * skelRows + GAP * (skelRows - 1) + 4;
   const skelGrid = (
     <SkeletonProvider>
       <View style={styles.skelGrid}>
-        {Array.from({ length: 8 }).map((_, i) => (
+        {Array.from({ length: skelCards }).map((_, i) => (
           <Skeleton key={i} width={cardWidth} height={skelCardHeight} borderRadius={10} />
         ))}
       </View>
@@ -690,7 +703,10 @@ export default function SearchScreen() {
           style={styles.list}
           data={listData}
           keyExtractor={(h) => h.id}
-          numColumns={GRID_COLUMNS}
+          // FlatList will not change numColumns in place; the key remounts it
+          // when a resize crosses a column boundary.
+          key={columns}
+          numColumns={columns}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}

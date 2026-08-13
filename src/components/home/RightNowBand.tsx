@@ -3,7 +3,7 @@
 // chapter: a live pulse + freshness cue, a cinematic campaign hero, the trending
 // title shelves (badged), and a personalized "In Your Universe" strip.
 import { useEffect } from 'react';
-import { View, StyleSheet, Pressable, FlatList, Dimensions } from 'react-native';
+import { View, StyleSheet, Pressable, FlatList, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -35,8 +35,7 @@ import type { NewComic } from '../../lib/db/comics';
 import type { DebutIssue } from '../../lib/db/anniversaries';
 import { computeFreshness } from '../../lib/home/freshness';
 import type { PulseEvent } from '../../lib/home/pulse';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { railCardWidth } from '../../constants/layout';
 
 type HeroPress = (item: {
   id: string;
@@ -108,6 +107,7 @@ function CampaignHero({
   onTitlePress: (titleId: string) => void;
   disabled?: boolean;
 }) {
+  const { width: winW } = useWindowDimensions();
   const accent = campaign.accent ?? COLORS.orange;
   const top = campaign.characters[0];
   const avatarChars = campaign.characters.slice(0, 5);
@@ -122,7 +122,7 @@ function CampaignHero({
   };
   return (
     <Pressable
-      style={hero.wrap}
+      style={[hero.wrap, { height: Math.round(Math.min(winW, 720) * 0.62) }]}
       onPress={openCover}
       disabled={disabled || (!campaign.title_id && !top)}
     >
@@ -197,6 +197,7 @@ function PersonalStrip({
   onHeroPress: HeroPress;
   disabled?: boolean;
 }) {
+  const posterSize = usePosterSize();
   return (
     <View style={ps.wrap}>
       <View style={bandStyles.shelfHeader}>
@@ -215,7 +216,11 @@ function PersonalStrip({
         removeClippedSubviews
         initialNumToRender={5}
         renderItem={({ item }) => (
-          <Pressable style={ps.card} onPress={() => onHeroPress(item)} disabled={disabled}>
+          <Pressable
+            style={[ps.card, posterSize]}
+            onPress={() => onHeroPress(item)}
+            disabled={disabled}
+          >
             <HeroImage
               id={item.id}
               name={item.name}
@@ -389,7 +394,6 @@ const bandStyles = StyleSheet.create({
 
 const hero = StyleSheet.create({
   wrap: {
-    height: Math.round(SCREEN_WIDTH * 0.62),
     marginHorizontal: 15,
     marginBottom: 18,
     borderRadius: 18,
@@ -439,13 +443,22 @@ const hero = StyleSheet.create({
   },
 });
 
-const POSTER_H = Math.round(Math.round(SCREEN_WIDTH * 0.28) * 1.5);
+/**
+ * The poster's size, live and capped.
+ *
+ * 28% of the window is a 90pt thumbnail on a phone and a 334pt poster on a
+ * landscape iPad, which would make the small "also showing" strip out-shout the
+ * campaign hero above it.
+ */
+function usePosterSize() {
+  const { width } = useWindowDimensions();
+  const h = Math.round(railCardWidth(width, 0.28, 150) * 1.5);
+  return { width: Math.round(h * 0.62), height: h };
+}
 const ps = StyleSheet.create({
   wrap: { marginTop: 4 },
   strip: { gap: 8, paddingHorizontal: 15, paddingBottom: 4 },
   card: {
-    width: Math.round(POSTER_H * 0.62),
-    height: POSTER_H,
     borderRadius: 10,
     borderCurve: 'continuous',
     overflow: 'hidden',

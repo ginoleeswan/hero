@@ -11,12 +11,18 @@
 // SCOPE: only what the skeleton has to mirror. This is not a general style
 // dumping ground — per-component styling that the placeholder doesn't imitate
 // stays in its own component.
-import { Dimensions } from 'react-native';
+// WIDTH IS A PARAMETER HERE, NOT A CONSTANT. These used to be computed once
+// from Dimensions.get('window') at import. That is free on a phone and wrong on
+// an iPad, where the window changes on rotation and on every Split View drag —
+// a value captured at launch stays wrong for the rest of the session. Each
+// width-dependent group is now a function, so the feed and its skeleton can
+// both call it with the same live number and still agree, which is the whole
+// reason this file exists.
+import { heroImageAspect, isTabletWidth, pagePadding, railCardWidth } from '../../constants/layout';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-/** The feed's standard content gutter (rails and cards sit on 15). */
+/** The feed's standard content gutter — 15 on a phone, wider on a tablet. */
 export const FEED_H_PAD = 15;
+export const feedHPad = (width: number): number => pagePadding(width);
 
 /** SpotlightCarousel — the full-bleed billboard. */
 export const SPOTLIGHT = {
@@ -40,16 +46,28 @@ export const SPOTLIGHT = {
   overlap: 14,
 } as const;
 
-/** PublisherGrid — the 2×2 brand tiles on the dark stage. */
-export const PUBLISHER_GRID = {
-  hPad: 16,
-  gap: 10,
-  tileWidth: (SCREEN_WIDTH - 16 * 2 - 10) / 2,
-  tileMinHeight: 84,
-  radius: 16,
-  paddingTop: 12,
-  paddingBottom: 6,
-} as const;
+/**
+ * PublisherGrid — the brand tiles on the dark stage.
+ *
+ * Two columns on a phone, four on a tablet. Two 500pt-wide brand tiles on an
+ * iPad would be billboards for a logo; the tile is a button, and a button does
+ * not get better by being enormous.
+ */
+export function publisherGrid(width: number) {
+  const hPad = isTabletWidth(width) ? 24 : 16;
+  const gap = 10;
+  const columns = isTabletWidth(width) ? 4 : 2;
+  return {
+    hPad,
+    gap,
+    columns,
+    tileWidth: (width - hPad * 2 - gap * (columns - 1)) / columns,
+    tileMinHeight: 84,
+    radius: 16,
+    paddingTop: 12,
+    paddingBottom: 6,
+  };
+}
 
 /** TodaysMatchup — the glass card carrying two 96pt portraits. */
 export const MATCHUP_CARD = {
@@ -71,21 +89,30 @@ export const DAILY_BANNER = {
   approxHeight: 104,
 } as const;
 
-/** HomeHeroRow — the portrait cards in every Library rail. */
-const PORTRAIT_CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
-// Matches the character screen's hero image aspect (full width x 66% of the
-// screen), so the Apple Zoom morph fills the card edge to edge with no
-// background peeking through mid-transition.
-const DETAIL_HERO_RATIO = (SCREEN_HEIGHT * 0.66) / SCREEN_WIDTH;
-export const HERO_ROW = {
-  cardWidth: PORTRAIT_CARD_WIDTH,
-  cardHeight: Math.round(PORTRAIT_CARD_WIDTH * DETAIL_HERO_RATIO),
-  /** Ranked rows derive a shorter card from this same aspect. */
-  cardAspect: DETAIL_HERO_RATIO,
-  cardGap: 12,
-  /** Feature rows render the first card slightly larger. */
-  featureScale: 1.06,
-} as const;
+/**
+ * HomeHeroRow — the portrait cards in every Library rail.
+ *
+ * The card was 60% of the window, which is a well-judged 234pt on a phone and
+ * an absurd 716pt on a landscape iPad — one and a half cards on screen, so the
+ * rail stops reading as a rail. Above the tablet threshold it becomes a fixed
+ * 260pt instead: the same card, more of them.
+ */
+export function heroRow(width: number, height: number) {
+  const cardWidth = railCardWidth(width, 0.6, 260);
+  // Shared with the character screen's hero image — see heroImageAspect. The
+  // Apple Zoom morph only fills edge to edge while the two agree, so the ratio
+  // is imported rather than restated.
+  const cardAspect = heroImageAspect(width, height);
+  return {
+    cardWidth,
+    cardHeight: Math.round(cardWidth * cardAspect),
+    /** Ranked rows derive a shorter card from this same aspect. */
+    cardAspect,
+    cardGap: 12,
+    /** Feature rows render the first card slightly larger. */
+    featureScale: 1.06,
+  };
+}
 
 /** The rounded beige seam where the Library zone begins. */
 export const PAPER_SEAM_RADIUS = 24;

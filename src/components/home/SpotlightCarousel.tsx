@@ -1,6 +1,6 @@
 // src/components/home/SpotlightCarousel.tsx
 import { useState } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { useReducedMotion, type SharedValue } from 'react-native-reanimated';
 import Carousel from 'react-native-reanimated-carousel';
 import * as Haptics from 'expo-haptics';
@@ -9,15 +9,21 @@ import { SpotlightProgress } from './SpotlightProgress';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 import { SPOTLIGHT } from './homeGeometry';
+import { spotlightHeightFor } from '../../constants/layout';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 // One clock for the carousel AND its progress fill — a pill timed against a
 // different number than the advance is a clock that lies.
 const AUTOPLAY_MS = 6000;
 
-export function spotlightHeight(insetTop: number): number {
-  // A tall billboard (Apple TV / Disney+) so the portrait reads big.
-  return insetTop + Math.round(SCREEN_HEIGHT * SPOTLIGHT.heightRatio);
+/**
+ * A tall billboard (Apple TV / Disney+) so the portrait reads big.
+ *
+ * Takes the window rather than reading it at import: on a tablet in portrait,
+ * half the height is a near-square slab that eats the entire fold, so the
+ * height is also capped against the width. See constants/layout.ts.
+ */
+export function spotlightHeight(width: number, height: number, insetTop: number): number {
+  return spotlightHeightFor(width, height, insetTop);
 }
 
 export function SpotlightCarousel({
@@ -35,7 +41,8 @@ export function SpotlightCarousel({
    *  billboard (the seam moves to the first beige section instead). */
   showLip?: boolean;
 }) {
-  const height = spotlightHeight(insetTop);
+  const { width: winW, height: winH } = useWindowDimensions();
+  const height = spotlightHeight(winW, winH, insetTop);
   const [active, setActive] = useState(0);
   const reduced = useReducedMotion();
 
@@ -47,7 +54,7 @@ export function SpotlightCarousel({
   return (
     <View style={[styles.wrap, { height }]}>
       <Carousel
-        width={SCREEN_WIDTH}
+        width={winW}
         height={height}
         data={heroes}
         loop={heroes.length > 1}

@@ -37,6 +37,7 @@ import { MakeAFight } from '../../src/components/versus/MakeAFight';
 import { VersusSkeleton } from '../../src/components/skeletons/VersusSkeleton';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
+import { READING_MAX_WIDTH } from '../../src/components/ui/PageColumn';
 
 export default function VersusScreen() {
   const router = useRouter();
@@ -225,7 +226,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   titleWithHook: { marginBottom: 8 },
-  showdown: { alignSelf: 'stretch', alignItems: 'center' },
+  // Centred and capped rather than stretched: the navy stage still bleeds to
+  // the edges (it is the room), but the cards inside it stop being pulled a
+  // metre apart on a landscape iPad. No-op on a phone.
+  showdown: { width: '100%', maxWidth: READING_MAX_WIDTH, alignItems: 'center' },
   hook: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13.5,
@@ -235,5 +239,5 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     maxWidth: 320,
   },
-  ledgerWrap: { alignSelf: 'stretch', marginTop: 6 },
+  ledgerWrap: { width: '100%', maxWidth: READING_MAX_WIDTH, marginTop: 6 },
 });
