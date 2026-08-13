@@ -6,36 +6,39 @@
 // pending, and only the grid is drawn here. Card geometry is copied from that
 // screen's NUM_COLUMNS / GAP / H_PAD / CARD_WIDTH / CARD_HEIGHT constants; if
 // they change there, change them here in the same PR.
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
+import { categoryGrid } from '../../constants/categoryGeometry';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;
+// The roster grid IS the category grid — the screen it stands in for now reads
+// from categoryGrid(), so this must too or the placeholder drifts the moment an
+// iPad rotates.
 const GAP = 8;
 const H_PAD = 16;
-const CARD_WIDTH = (SCREEN_WIDTH - H_PAD * 2 - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
-const CARD_HEIGHT = Math.round(CARD_WIDTH * 1.35);
-
-// Enough rows to fill the viewport below the stage; extra rows clip cleanly.
-const GRID_ROWS = Math.ceil(SCREEN_HEIGHT / (CARD_HEIGHT + GAP));
 
 /** One roster row. `rows={1}` is the paginating footer — where the next page lands. */
 function TeamRosterRowSkeleton() {
+  const { width } = useWindowDimensions();
+  const grid = categoryGrid(width);
   return (
     <View style={styles.row}>
-      {Array.from({ length: NUM_COLUMNS }).map((_, i) => (
-        <Skeleton key={i} width={CARD_WIDTH} height={CARD_HEIGHT} borderRadius={10} />
+      {Array.from({ length: grid.columns }).map((_, i) => (
+        <Skeleton key={i} width={grid.cardW} height={grid.cardH} borderRadius={10} />
       ))}
     </View>
   );
 }
 
-export function TeamSkeleton({ rows = GRID_ROWS }: { rows?: number }) {
+export function TeamSkeleton({ rows }: { rows?: number }) {
+  // Enough rows to fill the viewport; extra rows clip cleanly. Live, because on
+  // a rotated iPad both the card height and the viewport change.
+  const { width, height } = useWindowDimensions();
+  const gridRows = rows ?? Math.ceil(height / (categoryGrid(width).cardH + GAP));
   return (
     <SkeletonProvider>
       <View style={styles.grid}>
-        {Array.from({ length: rows }).map((_, i) => (
+        {Array.from({ length: gridRows }).map((_, i) => (
           <TeamRosterRowSkeleton key={i} />
         ))}
       </View>

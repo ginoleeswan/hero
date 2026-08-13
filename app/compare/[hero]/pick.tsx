@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, FlatList, Pressable, StyleSheet, Platform, Dimensions } from 'react-native';
+import { View, FlatList, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { Text, TextInput } from '../../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,11 +18,21 @@ import { COLORS, PAPER_TEXT } from '../../../src/constants/colors';
 import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import { SEAM } from '../../../src/design';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const H_PAD = 16;
 const GRID_GAP = 12;
-const CARD_W = (SCREEN_WIDTH - H_PAD * 2 - GRID_GAP) / 2;
-const CARD_H = Math.round(CARD_W * 1.4);
+/**
+ * The picker's card, live and count-driven.
+ *
+ * A fixed 2-across grid meant 2 enormous cards on an iPad. The count comes
+ * from a target card width so a wider window offers more candidates at a size
+ * you can actually scan, which is the whole job of a picker.
+ */
+function usePickGrid() {
+  const { width } = useWindowDimensions();
+  const columns = Math.max(2, Math.min(8, Math.round((width - H_PAD * 2) / 130)));
+  const w = (width - H_PAD * 2 - GRID_GAP * (columns - 1)) / columns;
+  return { columns, width: w, height: Math.round(w * 1.4) };
+}
 const RAIL_W = 116;
 const RAIL_H = 158;
 
@@ -41,6 +51,7 @@ const headerOptions = {
 /** Skeleton screen for the initial roster load — mirrors a suggestion rail plus
  *  the grid so content swaps in place instead of jumping in after a spinner. */
 function PickSkeleton() {
+  const grid = usePickGrid();
   return (
     <View style={styles.skelWrap}>
       <View style={[styles.skelLabel, { width: 110 }]} />
@@ -52,7 +63,7 @@ function PickSkeleton() {
       <View style={[styles.skelLabel, { width: 80, marginTop: 4 }]} />
       <View style={styles.skelGrid}>
         {Array.from({ length: 6 }).map((_, i) => (
-          <CardSkeleton key={i} width={CARD_W} height={CARD_H} />
+          <CardSkeleton key={i} width={grid.width} height={grid.height} />
         ))}
       </View>
     </View>
@@ -60,6 +71,7 @@ function PickSkeleton() {
 }
 
 export default function PickOpponentScreen() {
+  const grid = usePickGrid();
   const { hero, name } = useLocalSearchParams<{ hero: string; name: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -173,7 +185,9 @@ export default function PickOpponentScreen() {
         style={styles.list}
         data={loading ? [] : displayed}
         keyExtractor={(item) => item.id}
-        numColumns={2}
+        // FlatList will not change numColumns in place; the key remounts it.
+        key={grid.columns}
+        numColumns={grid.columns}
         columnWrapperStyle={styles.gridRow}
         contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
         keyboardShouldPersistTaps="handled"
@@ -185,8 +199,8 @@ export default function PickOpponentScreen() {
             item={item}
             onPress={() => handlePick(item.id)}
             onLongPress={() => openPeek(item)}
-            width={CARD_W}
-            height={CARD_H}
+            width={grid.width}
+            height={grid.height}
           />
         )}
       />

@@ -18,7 +18,7 @@
 // width-dependent group is now a function, so the feed and its skeleton can
 // both call it with the same live number and still agree, which is the whole
 // reason this file exists.
-import { isTabletWidth, pagePadding, railCardWidth } from '../../constants/layout';
+import { heroImageAspect, isTabletWidth, pagePadding, railCardWidth } from '../../constants/layout';
 
 /** The feed's standard content gutter — 15 on a phone, wider on a tablet. */
 export const FEED_H_PAD = 15;
@@ -99,11 +99,10 @@ export const DAILY_BANNER = {
  */
 export function heroRow(width: number, height: number) {
   const cardWidth = railCardWidth(width, 0.6, 260);
-  // Matches the character screen's hero image aspect (full width x 66% of the
-  // screen), so the Apple Zoom morph fills the card edge to edge with no
-  // background peeking through mid-transition. Clamped because on a wide
-  // window the raw ratio inverts and the "portrait" card comes out landscape.
-  const cardAspect = Math.min(Math.max((height * 0.66) / width, 1.1), 1.5);
+  // Shared with the character screen's hero image — see heroImageAspect. The
+  // Apple Zoom morph only fills edge to edge while the two agree, so the ratio
+  // is imported rather than restated.
+  const cardAspect = heroImageAspect(width, height);
   return {
     cardWidth,
     cardHeight: Math.round(cardWidth * cardAspect),

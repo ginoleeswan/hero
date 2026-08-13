@@ -4,6 +4,7 @@ import {
   CONTENT_MAX_WIDTH,
   contentWidth,
   gridColumns,
+  heroImageAspect,
   isTabletWidth,
   pagePadding,
   railCardWidth,
@@ -126,5 +127,34 @@ describe('spotlightHeightFor', () => {
 
   it('adds the safe-area inset', () => {
     expect(spotlightHeightFor(IPHONE, 844, 20)).toBe(442);
+  });
+});
+
+describe('heroImageAspect', () => {
+  // The Apple Zoom transition morphs a rail card into the character page's hero
+  // image, and only fills edge to edge while the two are the same shape. They
+  // used to agree by both being frozen at launch — which stops being true the
+  // first time an iPad rotates. One function, imported by both.
+  it('stays a portrait at every window size', () => {
+    for (const [w, h] of [
+      [IPHONE, 844],
+      [IPAD_PORTRAIT, 1194],
+      [IPAD_LANDSCAPE, 834],
+      [SPLIT_THIRD, 1194],
+    ]) {
+      expect(heroImageAspect(w, h)).toBeGreaterThanOrEqual(1.1);
+      expect(heroImageAspect(w, h)).toBeLessThanOrEqual(1.5);
+    }
+  });
+
+  // The bug the clamp exists for: raw height*0.66/width drops BELOW 1 on a
+  // landscape iPad, so the "portrait" card comes out landscape.
+  it('clamps the ratio that would otherwise invert', () => {
+    expect((834 * 0.66) / IPAD_LANDSCAPE).toBeLessThan(1);
+    expect(heroImageAspect(IPAD_LANDSCAPE, 834)).toBe(1.1);
+  });
+
+  it('is unchanged on a phone', () => {
+    expect(heroImageAspect(IPHONE, 844)).toBeCloseTo((844 * 0.66) / IPHONE, 5);
   });
 });

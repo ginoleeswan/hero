@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Text } from '../../../src/components/ui/Text';
 import { useEffect } from 'react';
@@ -34,9 +34,7 @@ import { relationshipBadge } from '../../../src/lib/db/heroes';
 import { TakesSection } from '../../../src/components/takes/TakesSection';
 import { SEAM } from '../../../src/design';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 12;
-const CARD_WIDTH = SCREEN_WIDTH - CARD_MARGIN * 2;
 const CARD_HEIGHT = 286;
 
 const headerBase = {
@@ -55,6 +53,11 @@ export default function NativeCompareScreen() {
   const { hero, opponent } = useLocalSearchParams<{ hero: string; opponent: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // The clash card fills the window minus its margins. Capped, because two
+  // portraits stretched across a landscape iPad put the fighters so far apart
+  // that the card stops reading as a confrontation.
+  const { width: winW } = useWindowDimensions();
+  const cardWidth = Math.min(winW - CARD_MARGIN * 2, 720);
 
   const { statsA, statsB, result, overallWinner, verdict, error } = useCompareMatchup(
     hero,
@@ -219,14 +222,14 @@ export default function NativeCompareScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={[styles.navyTop, { paddingTop: headerHeight }]}>
-            <View style={styles.clashCard}>
+            <View style={[styles.clashCard, { width: cardWidth }]}>
               <ClashPortraits
                 imageA={imageA}
                 imageB={imageB}
                 nameA={nameA}
                 nameB={nameB}
                 winner={overallWinner ?? 'neutral'}
-                width={CARD_WIDTH}
+                width={cardWidth}
                 height={CARD_HEIGHT}
                 onSwapA={() =>
                   router.push(`/compare/${opponent}/pick?name=${encodeURIComponent(nameB)}`)
@@ -313,9 +316,8 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   clashCard: {
-    width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    marginHorizontal: CARD_MARGIN,
+    alignSelf: 'center',
     marginTop: CARD_MARGIN,
     borderRadius: 22,
     overflow: 'hidden',

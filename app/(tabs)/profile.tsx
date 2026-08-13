@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
-  Dimensions,
+  useWindowDimensions,
   Alert,
   ActionSheetIOS,
   Platform,
@@ -60,12 +60,27 @@ import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
 import * as Haptics from 'expo-haptics';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // Sized to fit 3 across inside a SectionShell panel (16 gutter + 24 padding
 // each side + two 8px gaps).
-const THUMB_SIZE = (SCREEN_WIDTH - 32 - 48 - 16) / 3;
+/**
+ * The favourites thumbnail, live.
+ *
+ * Three across at any width put ~300pt thumbnails on an iPad — a shelf of
+ * posters where a contact-sheet was meant. The count comes from a target size,
+ * so a wider window gets more thumbnails at the size they were designed at.
+ */
+function useThumbSize(width: number) {
+  const usable = width - 32 - 48;
+  const columns = Math.max(3, Math.min(7, Math.round(usable / 110)));
+  const size = (usable - 8 * (columns - 1)) / columns;
+  return { width: size, height: size * 1.25 };
+}
 // Badge tiles: 4 across inside the same panel (three 10px gaps).
-const BADGE_TILE = (SCREEN_WIDTH - 32 - 48 - 30) / 4;
+function useBadgeTile(width: number) {
+  const usable = width - 32 - 48;
+  const columns = Math.max(4, Math.min(8, Math.round(usable / 90)));
+  return { width: (usable - 10 * (columns - 1)) / columns };
+}
 
 function username(email: string) {
   return email.split('@')[0] ?? email;
@@ -80,13 +95,15 @@ function FavouriteThumb({
   onPress: () => void;
   onLongPress: () => void;
 }) {
+  const { width } = useWindowDimensions();
+  const thumb = useThumbSize(width);
   const handleLongPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onLongPress();
   };
 
   return (
-    <PressScale onPress={onPress} onLongPress={handleLongPress} scale={0.91} style={styles.thumb}>
+    <PressScale onPress={onPress} onLongPress={handleLongPress} scale={0.91} style={thumb}>
       <SquircleMask style={StyleSheet.absoluteFill} cornerRadius={26}>
         <HeroImage
           id={hero.id}
@@ -111,11 +128,13 @@ function FavouriteThumb({
 
 /** Skeleton grid matching the favourites thumbs while they load. */
 function FavouritesSkeleton() {
+  const { width } = useWindowDimensions();
+  const thumb = useThumbSize(width);
   return (
     <SkeletonProvider>
       <View style={styles.grid}>
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} width={THUMB_SIZE} height={THUMB_SIZE * 1.25} borderRadius={20} />
+          <Skeleton key={i} width={thumb.width} height={thumb.height} borderRadius={20} />
         ))}
       </View>
     </SkeletonProvider>
@@ -169,13 +188,13 @@ function GuestProfileScreen() {
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
           >
-            <Svg style={StyleSheet.absoluteFill} width={SCREEN_WIDTH} height={280}>
+            <Svg style={StyleSheet.absoluteFill} width="100%" height={280}>
               <Defs>
                 <Pattern id="dots" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
                   <Circle cx="7" cy="7" r="1.5" fill="rgba(231,115,51,0.22)" />
                 </Pattern>
               </Defs>
-              <Rect width={SCREEN_WIDTH} height={280} fill="url(#dots)" />
+              <Rect width="100%" height={280} fill="url(#dots)" />
             </Svg>
             <View style={styles.coverLogo}>
               <Svg width={72} height={72} viewBox="0 0 1024 1024">
@@ -284,6 +303,8 @@ function GuestProfileScreen() {
 export default function ProfileScreen() {
   const router = useRouter();
   const topInset = useStableTopInset();
+  const { width: winW } = useWindowDimensions();
+  const badgeTile = useBadgeTile(winW);
   const { user } = useAuth();
   const {
     profile,
@@ -607,7 +628,7 @@ export default function ProfileScreen() {
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             >
-              <Svg style={StyleSheet.absoluteFill} width={SCREEN_WIDTH} height={280}>
+              <Svg style={StyleSheet.absoluteFill} width="100%" height={280}>
                 <Defs>
                   <Pattern
                     id="dots"
@@ -620,7 +641,7 @@ export default function ProfileScreen() {
                     <Circle cx="7" cy="7" r="1.5" fill="rgba(231,115,51,0.22)" />
                   </Pattern>
                 </Defs>
-                <Rect width={SCREEN_WIDTH} height={280} fill="url(#dots)" />
+                <Rect width="100%" height={280} fill="url(#dots)" />
               </Svg>
               <View style={styles.coverLogo}>
                 <Svg width={72} height={72} viewBox="0 0 1024 1024">
@@ -894,7 +915,7 @@ export default function ProfileScreen() {
                   key={b.id}
                   onPress={() => setSelectedBadge(b)}
                   scale={0.92}
-                  style={[styles.badgeTile, !b.earned && styles.badgeTileLocked]}
+                  style={[styles.badgeTile, badgeTile, !b.earned && styles.badgeTileLocked]}
                 >
                   {b.earned ? (
                     <LinearGradient
@@ -1333,8 +1354,6 @@ const styles = StyleSheet.create({
     marginBottom: 9,
   },
   ghostTile: {
-    width: THUMB_SIZE,
-    height: THUMB_SIZE * 1.25,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: '#e3d5c1',
@@ -1377,7 +1396,7 @@ const styles = StyleSheet.create({
   // Badges
   // My Contributions
 
-  badgeTile: { width: BADGE_TILE, alignItems: 'center', gap: 6 },
+  badgeTile: { alignItems: 'center', gap: 6 },
   badgeTileLocked: { opacity: 0.6 },
   badgeIcon: {
     width: 54,
@@ -1425,10 +1444,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-  thumb: {
-    width: THUMB_SIZE,
-    height: THUMB_SIZE * 1.25,
-  },
+  thumb: {},
   thumbName: {
     position: 'absolute',
     bottom: 12,
@@ -1532,7 +1548,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     color: PAPER_TEXT.faint,
-    maxWidth: SCREEN_WIDTH * 0.4,
+    maxWidth: '40%',
   },
   divider: {
     height: StyleSheet.hairlineWidth,

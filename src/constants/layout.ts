@@ -95,6 +95,23 @@ export function railCardWidth(width: number, phoneRatio = 0.6, tabletWidth = 260
 }
 
 /**
+ * The aspect the character page's hero image and every rail card share.
+ *
+ * These two MUST agree. The Apple Zoom transition morphs a rail card into the
+ * detail image, and it only fills edge to edge — with no navy peeking through
+ * mid-flight — while the card and the image have the same shape. Two files
+ * deriving "the same" ratio independently is precisely how that drifts, so it
+ * is written down once, here.
+ *
+ * Clamped because the raw height/width ratio INVERTS on a wide window: on a
+ * landscape iPad the unclamped number drops below 1 and the portrait card comes
+ * out landscape. 1.1–1.5 keeps it a portrait at every window size.
+ */
+export function heroImageAspect(width: number, height: number): number {
+  return Math.min(Math.max((height * 0.66) / width, 1.1), 1.5);
+}
+
+/**
  * The billboard's height.
  *
  * Half the window height is right in portrait and far too tall in landscape,

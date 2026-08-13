@@ -4,7 +4,7 @@ import {
   Animated,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
   ScrollView,
   Share,
   LayoutAnimation,
@@ -79,8 +79,8 @@ import { ImageLightbox } from '../../src/components/ImageLightbox';
 import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import type { CharacterData } from '../../src/types';
+import { heroImageAspect } from '../../src/constants/layout';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 // One tint for BOTH sides of the header bar. The back chevron takes it via
 // `headerTintColor`; the share glyph has to be told explicitly, because a
 // custom `headerRight` child does not inherit the header tint. Sharing the
@@ -93,13 +93,11 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 // arena's header share already used it), and a nav-bar control is chrome, not
 // an accent: colour here competes with the artwork it floats over.
 const HEADER_TINT = COLORS.beige;
-const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.66);
 // The identity (name + vitals) sits ON the portrait over a dark scrim; the beige
 // content sheet then rises over the hero with a rounded lip, overlapping this far.
 const SHEET_OVERLAP = 28;
 // Sheet's top offset within the scroll content (hero spacer height − the lip),
 // added to each section's local onLayout y so the quick-nav anchors stay correct.
-const SHEET_TOP = HERO_IMAGE_HEIGHT - SHEET_OVERLAP;
 
 const STAT_CONFIG: { key: string; label: string; tint: string }[] = [
   { key: 'intelligence', label: 'Intelligence', tint: COLORS.blue },
@@ -632,6 +630,14 @@ export default function CharacterScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  // Live, and derived from the SHARED aspect rather than from height*0.66
+  // directly: the rail card this page morphs out of uses the same function, and
+  // the Apple Zoom transition only fills edge to edge while the two agree. They
+  // used to agree by both being frozen at launch; on an iPad that stops being
+  // true the first time it rotates.
+  const { width: winW, height: winH } = useWindowDimensions();
+  const HERO_IMAGE_HEIGHT = Math.round(winW * heroImageAspect(winW, winH));
+  const SHEET_TOP = HERO_IMAGE_HEIGHT - SHEET_OVERLAP;
   const compareStripStyle = [styles.compareStrip, { paddingBottom: insets.bottom || 16 }];
   const {
     user,
@@ -1011,6 +1017,7 @@ export default function CharacterScreen() {
       <Animated.View
         style={[
           styles.heroImageContainer,
+          { height: HERO_IMAGE_HEIGHT },
           { transform: [{ translateY: imageTranslateY }, { scale: imageScale }] },
         ]}
       >
@@ -1068,7 +1075,7 @@ export default function CharacterScreen() {
       >
         {/* Hero spacer — transparent over the parallaxing image; the identity sits
             at its bottom, on the dark scrim. Name paints instantly from params. */}
-        <View style={styles.heroSpacer}>
+        <View style={[styles.heroSpacer, { minHeight: HERO_IMAGE_HEIGHT }]}>
           {displayName ? (
             <View style={styles.identity}>
               {data ? (
@@ -1146,7 +1153,7 @@ export default function CharacterScreen() {
             The shell (hero image + skeleton) paints instantly so the navigation
             transition is always cheap; the real content then cross-dissolves in as
             it resolves (Apple TV / Disney+ pattern) instead of hard-popping. */}
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { minHeight: Math.round(winH * 0.6) }]}>
           {!data ? (
             <ReAnimated.View exiting={FadeOut.duration(180)}>
               <CharacterSkeleton hideNameBlock />
@@ -1817,9 +1824,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.beige },
   center: { alignItems: 'center', justifyContent: 'center' },
   heroImageContainer: {
-    width: SCREEN_WIDTH,
-    height: HERO_IMAGE_HEIGHT,
     position: 'absolute',
+    left: 0,
+    right: 0,
     top: 0,
     overflow: 'hidden',
   },
@@ -1860,7 +1867,7 @@ const styles = StyleSheet.create({
   // the bottom of the portrait (over the dark scrim); the sheet rises over it.
   // minHeight, not height: at large OS text sizes the identity block grows, and a
   // fixed box would push it up off-screen under the header instead of expanding.
-  heroSpacer: { minHeight: HERO_IMAGE_HEIGHT, justifyContent: 'flex-end' },
+  heroSpacer: { justifyContent: 'flex-end' },
   identity: { paddingHorizontal: 20, paddingBottom: SHEET_OVERLAP + 14, gap: 8 },
   sheet: {
     backgroundColor: COLORS.beige,
@@ -1869,7 +1876,8 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     marginTop: -SHEET_OVERLAP,
     paddingTop: 10,
-    minHeight: Math.round(SCREEN_HEIGHT * 0.6),
+    // 60% of the window, applied at the call site — a beige sheet shorter than
+    // this leaves navy under a short page.
   },
 
   eyebrow: {
