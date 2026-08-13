@@ -239,3 +239,45 @@ Supabase URL and `sensitive` for the keys, mirroring `production`.
 No prior design spec — the update lane was wired up directly. `eas.json` and
 the `updates` block in `app.config.ts` predate it; only the `development`
 channel, `yarn update:dev`, and the workflow are new.
+
+## Offline reading
+
+The query cache is persisted to AsyncStorage, so the app works without signal
+for anything already opened. `src/lib/query/persist.ts` holds the policy;
+`PersistedQueryProvider` mounts it from the native root layout.
+
+**Native only.** On the web this is a website: it has a service worker for
+assets, localStorage is a fraction of the size, and serving a stale page to a
+browser that could simply refetch is a worse trade than a cold load. The
+`OfflineBanner` copy branches on the same flag, because "showing saved pages"
+would be a promise the web cannot keep.
+
+### What is persisted
+
+An **allowlist** of query roots (`heroes`, `explore`, `teams`, `comics`,
+`houses`, `events`), minus keys that must not outlive the session:
+
+| Excluded | Why |
+| --- | --- |
+| `search` | A query someone typed — the most revealing thing in the app, and already refused by the analytics scrubber. It has no business on disk either. |
+| `takes`, `verdict` | Community content that moves under the reader; a week-old count shown as current is a small lie. |
+| `matchup`, `debateYesterday` | The daily loop. Restoring yesterday's matchup as today's is worse than showing nothing. |
+| `profile` (whole root) | Per-account, and the one screen where being stale is obvious. |
+| any non-`success` state | A restored error renders as a broken screen with nothing to retry it. |
+
+An allowlist rather than a denylist, deliberately: a denylist persists every new
+query by default and relies on someone remembering to opt the private ones out.
+
+### Two things that will bite
+
+- **`gcTime` must be ≥ `PERSIST_MAX_AGE`.** The persister writes whatever is in
+  the cache, so anything garbage-collected before the app closes is not in the
+  file to restore. A short `gcTime` makes persistence a silent no-op for exactly
+  the pages a reader stopped looking at — which are most of them. Both are one
+  week.
+- **Bump `CACHE_VERSION` when a persisted shape changes.** The file holds data
+  in the shape the app had when it was written. Change a column, rename a key,
+  alter an RPC's return, and a restored cache hands new code the old shape — a
+  render error on the reader's first launch after an update, in code that looks
+  correct, reproducible only on a device that had the previous version. Busting
+  costs one cold fetch.

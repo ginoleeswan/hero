@@ -4587,10 +4587,41 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/query-async-storage-persister@npm:5.101.2":
+  version: 5.101.2
+  resolution: "@tanstack/query-async-storage-persister@npm:5.101.2"
+  dependencies:
+    "@tanstack/query-core": "npm:5.101.2"
+    "@tanstack/query-persist-client-core": "npm:5.101.2"
+  checksum: 10c0/6af6efdcddb4481855e10dbdef0211e20c4f7539750d8b1501965d222286991da0a8c6bac0e30496218f9629a0287f2be26a89e7fd6e9a3596dc6c17e044fbb7
+  languageName: node
+  linkType: hard
+
 "@tanstack/query-core@npm:5.101.2":
   version: 5.101.2
   resolution: "@tanstack/query-core@npm:5.101.2"
   checksum: 10c0/c3288757bfd563ca35cee21bf6ed0edb2f4425a8c92f75d84dcb36a0580a59e48bd97fcdbbc7c8d8e95a4c40376edfc5772b14665b85d183079a0ba7e17793b2
+  languageName: node
+  linkType: hard
+
+"@tanstack/query-persist-client-core@npm:5.101.2":
+  version: 5.101.2
+  resolution: "@tanstack/query-persist-client-core@npm:5.101.2"
+  dependencies:
+    "@tanstack/query-core": "npm:5.101.2"
+  checksum: 10c0/a57f9046a19cebc21ce30c367eca679b5063e6a357f2395bb06e5858c8e6e1df68cae33a148a16b6d33e037a30e9bb0b13eae3d9e0b8d484de8221d3a3189437
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-query-persist-client@npm:5.101.2":
+  version: 5.101.2
+  resolution: "@tanstack/react-query-persist-client@npm:5.101.2"
+  dependencies:
+    "@tanstack/query-persist-client-core": "npm:5.101.2"
+  peerDependencies:
+    "@tanstack/react-query": ^5.101.2
+    react: ^18 || ^19
+  checksum: 10c0/3b33ab25c8a38126aa7f9820a6b24513052f5499ee29aa05b09fb5a95f3f1887a8d30214e6a8ada59a25092729e07319edb3ffecaa1056cac303661906f2ce22
   languageName: node
   linkType: hard
 
@@ -11717,7 +11748,9 @@ __metadata:
     "@react-native/jest-preset": "npm:^0.85.3"
     "@sentry/react-native": "npm:~7.11.0"
     "@supabase/supabase-js": "npm:2.110.6"
+    "@tanstack/query-async-storage-persister": "npm:5.101.2"
     "@tanstack/react-query": "npm:5.101.2"
+    "@tanstack/react-query-persist-client": "npm:5.101.2"
     "@testing-library/jest-native": "npm:^5.4.3"
     "@testing-library/react-native": "npm:^13.3.3"
     "@types/d3-hierarchy": "npm:^3.1.7"
