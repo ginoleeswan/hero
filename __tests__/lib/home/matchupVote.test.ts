@@ -1,7 +1,13 @@
 // __tests__/lib/home/matchupVote.test.ts
-import { dayStamp, matchupVoteKey, statSplit, statLead } from '../../../src/lib/home/matchupVote';
-
-import { crowdSplit, frozenResult, CROWD_FLOOR } from '../../../src/lib/home/matchupVote';
+import {
+  crowdSplit,
+  CROWD_FLOOR,
+  dayStamp,
+  frozenResult,
+  matchupVoteKey,
+  statLead,
+  statSplit,
+} from '../../../src/lib/home/matchupVote';
 
 describe('dayStamp', () => {
   it('formats the UTC calendar day as YYYY-MM-DD with zero-padding', () => {

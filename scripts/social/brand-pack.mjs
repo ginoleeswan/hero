@@ -10,11 +10,9 @@ import { mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderPng, COLORS, grainUri, fontFace, fonts, ROOT, loadEnv } from './lib.mjs';
 
-const { O, T, GOLD, CREAM } = COLORS;
+const { GOLD, CREAM } = COLORS;
 const INK = '#0b1820';
-const PAPER = '#f5ebdc';
 const INKMUT = '#93a8b6';
-const PAPERMUT = '#8a7a63';
 const OUT = join(ROOT, 'out/social/brand-kit');
 const TAGLINE = 'The fan encyclopedia of heroes & villains';
 // Live catalogue size, floored to a clean marketing number (50,434 → "50,000").

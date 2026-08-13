@@ -31,11 +31,8 @@ jest.mock('../../../src/lib/supabase', () => {
   };
 });
 
-const { __chains: chains, __mockFrom: mockFrom } = jest.requireMock(
-  '../../../src/lib/supabase',
-) as {
+const { __chains: chains } = jest.requireMock('../../../src/lib/supabase') as {
   __chains: Record<string, Record<string, jest.Mock>>;
-  __mockFrom: jest.Mock;
 };
 
 beforeEach(() => {

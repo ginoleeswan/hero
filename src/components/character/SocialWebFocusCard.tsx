@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Pressable, StyleSheet, PanResponder, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
@@ -122,10 +122,21 @@ export function SocialWebFocusCard({
 
   // Peek by default on a phone; the vote and the verdict are one drag away.
   const [expanded, setExpanded] = useState(false);
+  // The PanResponder is memoised once, so its closure would otherwise capture
+  // the first `expanded` forever — hence a mirror ref. The write belongs in an
+  // effect, not in the render body: a ref written during render is the thing
+  // the refs rule forbids, and it is not needed here because a gesture can
+  // only fire after the commit that updates it.
   const expandedRef = useRef(expanded);
-  expandedRef.current = expanded;
+  useEffect(() => {
+    expandedRef.current = expanded;
+  }, [expanded]);
   const pan = useMemo(
     () =>
+      // The closure below CAPTURES expandedRef; it reads `.current` only when a
+      // gesture fires, which is after commit. The rule cannot see that the read
+      // is deferred, so it treats the capture itself as a render-time access.
+      // eslint-disable-next-line react-hooks/refs
       PanResponder.create({
         // Only claim the gesture once it is clearly a vertical drag, so a tap
         // on the grabber still reaches the Pressable underneath.

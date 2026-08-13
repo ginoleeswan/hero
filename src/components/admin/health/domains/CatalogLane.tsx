@@ -70,11 +70,18 @@ export function CatalogLane({
   // Cross-lane deep-link (Overview glance → a specific worklist).
   useEffect(() => {
     if (!jump) return;
+    // A cross-lane deep link: another lane hands this one a target, and the
+    // sub-tab has to follow it. Guarded by the `if (!jump) return` above.
+    // A cross-lane deep link: another lane hands this one a target and the
+    // whole lane state follows it. Guarded by the `if (!jump) return` above,
+    // so it runs once per hand-off rather than on every render.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setSub(jump.sub);
     if (jump.metric) setMetric(jump.metric);
     setPubFilter(jump.publisher ?? null);
     setPage(0);
-  }, [jump]);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [jump, setSub]);
 
   const gapsQ = useQuery({
     queryKey: ['coverageGaps', metric, page, pubFilter],

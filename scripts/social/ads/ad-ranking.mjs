@@ -8,8 +8,7 @@ import { loadEnv, makeSb, fonts, OUT_DIR, renderPng } from '../lib.mjs';
 import { adShell } from './shell.mjs';
 
 const SIZES = { '1x1': [1080, 1080], '4x5': [1080, 1350], '9x16': [1080, 1920], '16x9': [1920, 1080], og: [1200, 630] };
-const GOLD = '#e0a83e', ORANGE = '#e8823a', CREAM = '#f6eddd', MUTED = '#9db4c4';
-const q = (s) => encodeURIComponent(s);
+const GOLD = '#e0a83e', CREAM = '#f6eddd', MUTED = '#9db4c4';
 
 const METRIC_WORD = { fame: 'MOST FAMOUS', strength: 'STRONGEST', speed: 'FASTEST', intelligence: 'SMARTEST', durability: 'TOUGHEST', power: 'MOST POWERFUL', combat: 'DEADLIEST' };
 

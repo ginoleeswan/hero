@@ -340,7 +340,10 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   const swipeStart = useRef<number | null>(null);
   const step = useCallback(
     (dir: number) => setActiveIndex((i) => (i + dir + heroes.length) % heroes.length),
-    [heroes.length],
+    // setActiveIndex included because the compiler infers it and cannot know a
+    // useState setter is stable. Listing it costs nothing and lets the
+    // component be optimised instead of skipped.
+    [heroes.length, setActiveIndex],
   );
   const swipeHandlers = {
     onTouchStart: (e: { touches: { clientX: number }[] }) => {

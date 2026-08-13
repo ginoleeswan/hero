@@ -334,7 +334,6 @@ export function SocialInsightsDomain() {
     .sort((a, b) => b.views - a.views || b.likes + b.comments - (a.likes + a.comments))
     .slice(0, 5);
 
-  const newest = (resultsQ.data ?? [])[0];
   const autoCount = (resultsQ.data ?? []).filter((r) => r.source === 'auto').length;
   const best = angleRows.find((a) => a.n >= 1); // leaderboard is sorted by avg views
 

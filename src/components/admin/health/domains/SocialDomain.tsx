@@ -704,7 +704,9 @@ export function SocialDomain() {
           ? p.media_type !== 'video'
           : p.angle === filter;
 
-  const allPosts = postsQ.data ?? [];
+  // Memoised because `?? []` builds a NEW array every render, which made the
+  // useMemo below it recompute on every render — the memo was doing nothing.
+  const allPosts = useMemo(() => postsQ.data ?? [], [postsQ.data]);
   const posts = allPosts.filter(matches);
   const batches = [...new Set(posts.map((p) => p.batch))].sort(
     (a, b) => batchPriority(a) - batchPriority(b) || b.localeCompare(a),
@@ -905,7 +907,7 @@ export function SocialDomain() {
         ) : (
           <Panel title="Post today" hint="Everything is posted">
             <Text style={styles.empty}>
-              Generate next month's packs: organic-pack.mjs + batch-month.mjs
+              Generate next month’s packs: organic-pack.mjs + batch-month.mjs
             </Text>
           </Panel>
         )}

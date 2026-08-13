@@ -15,7 +15,7 @@ import { renderVideo, renderPng, COLORS, grainUri, fontFace, ROOT } from '../lib
 import { DISCLAIMER } from '../safety.mjs';
 import { assertNoPortrait } from './safe-assert.mjs';
 import { rng } from './plan.mjs';
-import { silhouette, SILHOUETTE_KINDS, pickSilhouette, pickSilhouettePair } from './silhouettes.mjs';
+import { silhouette, pickSilhouette, pickSilhouettePair } from './silhouettes.mjs';
 
 const { O, T, GOLD, CREAM, NAVY } = COLORS;
 const MUT = '#9db4c4';

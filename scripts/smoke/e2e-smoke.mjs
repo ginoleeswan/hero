@@ -12,7 +12,7 @@
 // Exit 0 = all flows passed; exit 1 = failures (listed). Each flow gets a hard
 // timeout so one hung page can't wedge the run. PW_CHROME overrides the Chrome
 // binary (CI uses the runner's preinstalled Chrome via channel:'chrome').
-import pw from 'playwright-core';
+import { chromium } from 'playwright-core';
 
 const BASE = (process.env.BASE_URL || 'https://mythique.app').replace(/\/$/, '');
 const NAV_TIMEOUT = 30_000;
@@ -179,7 +179,7 @@ async function launchChrome() {
   const opts = process.env.PW_CHROME
     ? { executablePath: process.env.PW_CHROME }
     : { channel: 'chrome' };
-  return pw.chromium.launch({ ...opts, args: ['--no-sandbox'] });
+  return chromium.launch({ ...opts, args: ['--no-sandbox'] });
 }
 
 const browser = await launchChrome();

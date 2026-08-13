@@ -110,42 +110,6 @@ The character MUST face RIGHT. Preserve costume colours and identity exactly. No
 }
 
 // The 34 heroes that already have curated local images (id → local file path)
-const LOCAL_PORTRAITS: Record<string, string> = {
-  '620': 'assets/images/spiderman.jpg',
-  '346': 'assets/images/ironman.jpg',
-  '70': 'assets/images/batman.jpg',
-  '644': 'assets/images/superman.jpg',
-  '370': 'assets/images/joker.jpg',
-  '149': 'assets/images/captain-america.jpg',
-  '226': 'assets/images/doctor-strange.jpg',
-  '720': 'assets/images/wonder-woman.jpg',
-  '717': 'assets/images/wolverine.jpg',
-  '659': 'assets/images/thor.jpg',
-  '332': 'assets/images/hulk.jpg',
-  '213': 'assets/images/deadpool.jpg',
-  '313': 'assets/images/hawkeye.jpg',
-  '414': 'assets/images/loki.jpg',
-  '687': 'assets/images/venom.jpeg',
-  '630': 'assets/images/star-lord.jpg',
-  '106': 'assets/images/black-panther.jpg',
-  '30': 'assets/images/ant-man.jpg',
-  '222': 'assets/images/doctor-doom.jpg',
-  '208': 'assets/images/darth-vader.jpg',
-  '479': 'assets/images/mysterio.jpg',
-  '650': 'assets/images/terminator.jpeg',
-  '225': 'assets/images/doctor-octopus.jpg',
-  '299': 'assets/images/green-goblin.jpg',
-  '423': 'assets/images/magneto.jpg',
-  '196': 'assets/images/cyclops.jpg',
-  '480': 'assets/images/mystique.jpg',
-  '638': 'assets/images/storm.jpg',
-  '75': 'assets/images/beast.jpg',
-  '567': 'assets/images/rogue.jpg',
-  '185': 'assets/images/colossus.png',
-  '490': 'assets/images/nightcrawler.jpg',
-  '710': 'assets/images/weapon-x.jpg',
-  '274': 'assets/images/gambit.jpg',
-};
 
 // ─── CLI args ─────────────────────────────────────────────────────────────────
 
@@ -932,14 +896,6 @@ async function withConcurrency<T>(
 }
 
 // ─── Phase 2: Generate AI portraits for remaining heroes ──────────────────────
-
-const MITCHELL_IDS = new Set(Object.keys(LOCAL_PORTRAITS));
-
-function priorityOrder(id: string): number {
-  if (MITCHELL_IDS.has(id)) return 0; // Mitchell heroes first
-  if (!id.startsWith('cv-')) return 1; // SuperheroAPI numeric IDs second
-  return 2; // ComicVine cv- IDs last
-}
 
 async function phase2(filterHeroId?: string): Promise<void> {
   console.log('\n═══ Phase 2: Generating AI portraits ═══\n');

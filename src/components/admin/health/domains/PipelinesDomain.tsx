@@ -106,7 +106,7 @@ export function PipelinesDomain({
   // the same sub.
   useEffect(() => {
     if (jump) setSub(jump.sub);
-  }, [jump]);
+  }, [jump, setSub]);
 
   const p = progress ?? {
     heroesTotal: 0,

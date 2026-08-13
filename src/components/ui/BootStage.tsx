@@ -1,3 +1,9 @@
+/* eslint-disable react-hooks/immutability -- Reanimated shared values are
+   mutable BY CONTRACT: `sv.value = x` is the library's documented API and the
+   only way to drive a worklet. The rule models React state, where assignment is
+   a bug, and cannot tell a SharedValue apart from one. Scoped to this file
+   rather than the config so the exemption stays visible where it applies —
+   every violation here is a `.value =` on a useSharedValue, nothing else. */
 // src/components/ui/BootStage.tsx — native boot choreography.
 //
 // The whole screen is one idea: YOU PUT THE MASK ON. You are looking at the

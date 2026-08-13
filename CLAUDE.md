@@ -169,13 +169,21 @@ alternative — a rule strict enough to fail on every existing violation — is 
 rule someone turns off, which is how the last three token files ended up
 decorative.
 
-- **Lint warnings.** `yarn lint` runs with `--max-warnings=71`. Zero errors is
-  the hard floor; the warnings are the budget. If a change adds one, either fix
-  it or, when the pattern is genuinely deliberate, declare it with an
-  `eslint-disable-next-line` **and a reason on the line above** — the lazy
-  `require()`s for native modules are the worked example. Lower the number in
-  `package.json` in the same commit whenever you clean some up; that is how the
-  budget tightens.
+- **Lint warnings.** `yarn lint` runs with `--max-warnings=0`. There is no
+  budget left: a change either fixes its warning or, when the pattern is
+  genuinely deliberate, declares it with an `eslint-disable` **and a specific
+  reason** — not a boilerplate one. The worked examples are the lazy
+  `require()`s for native modules, Reanimated's `sv.value =` (mutable by
+  contract, which the immutability rule cannot model), and the handful of
+  effects that must set state because the value does not exist until a request
+  returns.
+
+  Two mechanical traps, both of which cost real time here:
+  `eslint-disable-next-line` applies to the **next line**, so a multi-line
+  reason above it disables a comment and the count goes *up*; and an effect with
+  several `setState` calls reports each one, so it needs a
+  `/* eslint-disable */ … /* eslint-enable */` block rather than a line
+  directive.
 - **Off-scale design values.** `yarn check:ui` counts radius and font literals
   that are not on the scale, against `scripts/ui/design-baseline.json`. It fails
   when the count rises and *tells you* when it has slack, so a cleanup can be

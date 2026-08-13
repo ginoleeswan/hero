@@ -39,6 +39,9 @@ export function useNotificationSettings(input?: { streak?: number; playedToday?:
   }, []);
 
   useEffect(() => {
+    // State set on completion of an async load. There is no render-time
+    // equivalent: the value does not exist until the request returns.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [refresh]);
 

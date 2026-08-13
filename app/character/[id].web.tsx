@@ -523,6 +523,10 @@ function VitalCount({ value, style }: { value: number; style?: object }) {
   const [display, setDisplay] = useState(reduced ? value : 0);
   useEffect(() => {
     if (reduced) {
+      // Derived UI state resetting when its input changes. The render-time
+      // alternative is a `key` on the parent, which would remount the whole
+      // subtree and throw away exactly the thing being animated.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplay(value);
       return;
     }

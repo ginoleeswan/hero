@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Animated, StyleSheet, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useUrlTabState } from '../../src/hooks/useUrlTabState';
@@ -236,7 +236,11 @@ export default function AdminHealthScreen() {
 
   // One driver animates the bar fills on first paint. (No page-level fade — the
   // shell appears immediately so it never flashes in from the white document body.)
-  const anim = useRef(new Animated.Value(0)).current;
+  // useState with a lazy initialiser, not `useRef(new Animated.Value(n)).current`.
+  // Two reasons: reading `.current` during render is exactly what the refs rule
+  // forbids, and the useRef form constructs a fresh Animated.Value on EVERY
+  // render only to throw it away. The lazy initialiser runs once.
+  const [anim] = useState(() => new Animated.Value(0));
   useEffect(() => {
     if (!h) return;
     Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: false }).start();

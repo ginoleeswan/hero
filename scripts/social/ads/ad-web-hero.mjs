@@ -2,7 +2,7 @@
 // Website hero + OG share card. A left-aligned landing composition (not a centred
 // social post): eyebrow, headline, subhead, pill CTA, with a faint hex-grid motif
 // echoing the powerstats grid. Zero character IP.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnv, makeSb, fonts, OUT_DIR, renderPng } from '../lib.mjs';
 import { adShell } from './shell.mjs';
