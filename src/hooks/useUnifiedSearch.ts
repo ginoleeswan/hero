@@ -4,7 +4,7 @@ import { searchTeams, type TeamSearchResult } from '../lib/db/teams';
 import { searchTitles, type TitleSearchResult } from '../lib/db/titles';
 import { searchHouses, type HouseSearchResult } from '../lib/db/houses';
 import { useHeroSearch } from './useHeroSearch';
-import { trackEvent } from '../lib/analytics';
+import { track } from '../lib/analytics';
 import type { HeroSearchResult } from '../lib/db/heroes';
 
 export interface UnifiedSearch {
@@ -64,7 +64,7 @@ export function useUnifiedSearch(query: string, heroLimit = 100): UnifiedSearch 
   // trimmed string and ignore 1-char noise. Query length only — never the term.
   useEffect(() => {
     if (trimmed.length < 2) return;
-    const timer = setTimeout(() => trackEvent('search', { length: trimmed.length }), 900);
+    const timer = setTimeout(() => track('search', { length: trimmed.length }), 900);
     return () => clearTimeout(timer);
   }, [trimmed]);
 

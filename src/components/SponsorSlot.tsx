@@ -20,7 +20,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { promoForDay } from '../lib/sponsor/houseAds';
 import { openKofi } from '../lib/support/kofi';
-import { trackEvent } from '../lib/analytics';
+import { track } from '../lib/analytics';
 
 export function SponsorSlot({ placement }: { placement: string }) {
   const router = useRouter();
@@ -34,14 +34,14 @@ export function SponsorSlot({ placement }: { placement: string }) {
   useEffect(() => {
     if (suppressed || seen.current) return;
     seen.current = true;
-    trackEvent('sponsor_impression', { promo: promo.id, placement });
+    track('sponsor_impression', { promo: promo.id, placement });
   }, [suppressed, promo.id, placement]);
 
   // Supporters browse promo-free — the quiet perk of the tier.
   if (suppressed) return null;
 
   const open = () => {
-    trackEvent('sponsor_click', { promo: promo.id, placement });
+    track('sponsor_click', { promo: promo.id, placement });
     if (promo.target === 'kofi') openKofi();
     else router.push(promo.target as Href);
   };

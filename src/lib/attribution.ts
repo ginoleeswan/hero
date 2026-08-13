@@ -2,7 +2,7 @@
 // arrived from — UTM tags on the landing URL, else the cross-origin referrer —
 // and pins it for the life of the browser session. Two consumers:
 //
-//   1. trackEvent() (analytics.ts) tags every conversion event (sign_up, vote,
+//   1. track() (analytics.ts) tags every conversion event (sign_up, vote,
 //      favourite…) with the first-touch source, so the funnel is attributable.
 //   2. recordAttribution() writes one row to `session_attribution`, joined to
 //      page_views server-side by session_id in admin_traffic_overview() — the

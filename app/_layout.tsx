@@ -27,6 +27,7 @@ import {
   configureNotificationHandler,
   useNotificationRouting,
 } from '../src/hooks/useNotificationRouting';
+import { initAnalytics } from '../src/lib/analytics';
 import { usePresenceHeartbeat } from '../src/hooks/usePresenceHeartbeat';
 import { BootStage } from '../src/components/ui/BootStage';
 import AnalyticsProvider from '../src/components/Analytics';
@@ -220,6 +221,9 @@ function AuthGate({ fontsReady }: { fontsReady: boolean }) {
 
 // Global, once: how an arriving notification behaves while the app is open.
 configureNotificationHandler();
+// Analytics is inert without EXPO_PUBLIC_POSTHOG_KEY, so this is safe to call
+// unconditionally — a developer's machine and CI write nowhere.
+initAnalytics();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
