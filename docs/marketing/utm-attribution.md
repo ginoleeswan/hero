@@ -30,7 +30,10 @@ campaign."
   `utm_*` params on the URL (or the referring host if untagged) — and pins it for
   the browser session.
 - Every conversion event (`sign_up`, `log_in`, `matchup_vote`, …) is tagged with
-  that source (`src/lib/analytics.ts`).
+  that source. Tagging lives in the web sink (`src/lib/analytics/vercel.ts`);
+  the events themselves go through the one typed front door in
+  `src/lib/analytics/`, which dispatches to Vercel on web and PostHog on native.
+  Attribution is web-only, so only the Vercel side carries the tag.
 - One row per session is written to `session_attribution` and joined to page
   views server-side, surfacing in **admin → Traffic → Acquisition**
   (`admin_traffic_overview`).
