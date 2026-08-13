@@ -66,6 +66,16 @@ const config: ExpoConfig = {
     './plugins/withAndroidIconPadding',
     'expo-sharing',
     [
+      'expo-notifications',
+      {
+        // The Android status-bar icon must be a flat white-on-transparent
+        // silhouette — Android masks it, so a full-colour logo renders as a
+        // white blob. The mask mark is the one asset shaped for that.
+        icon: './assets/notification-icon.png',
+        color: '#E77333',
+      },
+    ],
+    [
       'expo-build-properties',
       {
         ios: {

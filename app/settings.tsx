@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +15,7 @@ import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { useAuth } from '../src/hooks/useAuth';
 import { loginHref } from '../src/lib/loginRedirect';
+import { useNotificationSettings } from '../src/hooks/useNotificationSettings';
 import { useProfile } from '../src/hooks/useProfile';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
 import { providerMeta } from '../src/lib/profile/provider';
@@ -34,6 +36,8 @@ function SettingRow({
   chevron,
   busy,
   busyLabel,
+  trailing,
+  sub,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
@@ -43,6 +47,10 @@ function SettingRow({
   chevron?: boolean;
   busy?: boolean;
   busyLabel?: string;
+  /** Pinned to the row's right edge — a Switch, typically. */
+  trailing?: ReactNode;
+  /** A second line under the label, for a row that needs a caveat. */
+  sub?: string;
 }) {
   const iconColor =
     tone === 'orange' ? COLORS.orange : tone === 'danger' ? COLORS.red : COLORS.navy;
@@ -62,14 +70,18 @@ function SettingRow({
           <Ionicons name={icon} size={16} color={iconColor} />
         </View>
       )}
-      <Text style={[styles.label, tone === 'danger' && styles.labelDanger]}>
-        {busy && busyLabel ? busyLabel : label}
-      </Text>
+      <View style={styles.labelWrap}>
+        <Text style={[styles.label, tone === 'danger' && styles.labelDanger]}>
+          {busy && busyLabel ? busyLabel : label}
+        </Text>
+        {sub ? <Text style={styles.sub}>{sub}</Text> : null}
+      </View>
       {value != null && (
         <Text style={styles.value} numberOfLines={1}>
           {value}
         </Text>
       )}
+      {trailing}
       {chevron && <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />}
     </>
   );
@@ -95,6 +107,7 @@ export default function SettingsScreen() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const { toast, showToast } = useToast();
+  const notif = useNotificationSettings();
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -265,6 +278,62 @@ export default function SettingsScreen() {
           </SectionShell>
         )}
 
+        {/* Notifications. Native had NO surface at all before this — the web
+            push toggle lives in settings.web.tsx and reaches browsers only, so
+            an iOS reader had no way to turn anything on or off. A denied
+            permission gets a link into system Settings rather than a switch,
+            because iOS will not re-prompt and a switch that does nothing when
+            flipped is worse than no switch. */}
+        {notif.supported && notif.ready && (
+          <SectionShell title="Notifications">
+            {notif.os === 'denied' ? (
+              <SettingRow
+                icon="notifications-off-outline"
+                label="Notifications are off"
+                sub="Turn them on for Mythique in system Settings"
+                onPress={notif.openSystemSettings}
+                chevron
+              />
+            ) : (
+              <>
+                <SettingRow
+                  icon="notifications-outline"
+                  label="Daily reminders"
+                  sub="At most one a day, only when your streak is at risk"
+                  busy={notif.busy}
+                  trailing={
+                    <Switch
+                      value={notif.enabled}
+                      onValueChange={(v) => void notif.setEnabled(v)}
+                      disabled={notif.busy}
+                      trackColor={{ true: COLORS.orange, false: 'rgba(41,60,67,0.2)' }}
+                      accessibilityLabel="Daily reminders"
+                    />
+                  }
+                />
+                {notif.enabled && (
+                  <>
+                    <View style={styles.rowDivider} />
+                    <SettingRow
+                      icon="flame-outline"
+                      label="Streak reminder"
+                      sub="An evening nudge on a day you haven’t played"
+                      trailing={
+                        <Switch
+                          value={notif.prefs.streakReminder}
+                          onValueChange={(v) => void notif.setStreakReminder(v)}
+                          trackColor={{ true: COLORS.orange, false: 'rgba(41,60,67,0.2)' }}
+                          accessibilityLabel="Streak reminder"
+                        />
+                      }
+                    />
+                  </>
+                )}
+              </>
+            )}
+          </SectionShell>
+        )}
+
         {/* App Review reaches settings first. The privacy policy and terms
             existed as routes but were only linked from the SIGNUP form — a
             signed-in user (and a reviewer) had no way back to either, on the
@@ -370,12 +439,15 @@ const styles = StyleSheet.create({
   badgeNavy: { backgroundColor: '#e8f0f2' },
   badgeOrange: { backgroundColor: '#fff5ee' },
   badgeDanger: { backgroundColor: '#fde8e8' },
+  labelWrap: { flex: 1, gap: 2 },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 15,
     color: COLORS.navy,
-    flex: 1,
   },
+  // PAPER_TEXT.muted, not a lighter grey — the measured 5.61:1 rather than a
+  // 3.50:1 that looks fine on a bright screen and fails in sunlight.
+  sub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: PAPER_TEXT.muted },
   labelDanger: { color: COLORS.red },
   value: {
     fontFamily: 'Nunito_400Regular',
