@@ -1,7 +1,7 @@
 // src/components/home/TitlePosterRail.tsx — a calm horizontal rail of film/TV
 // posters for the "On Screen Now" section. The badge (In Theaters / provider /
 // Coming) carries the status; the cast lives one tap away on the title page.
-import { View, FlatList, StyleSheet, Dimensions } from 'react-native';
+import { View, FlatList, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,10 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PressScale } from '../ui/PressScale';
 import { COLORS } from '../../constants/colors';
 import { trendingBadge, type BadgeTone, type TrendingTitle } from '../../lib/db/trending';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_W = Math.round(SCREEN_WIDTH * 0.34);
-const CARD_H = Math.round(CARD_W * 1.5);
+import { railCardWidth } from '../../constants/layout';
 
 const BADGE_ICON: Record<BadgeTone, 'ticket-outline' | 'calendar-outline' | null> = {
   theaters: 'ticket-outline',
@@ -28,6 +25,20 @@ const BADGE_COLOR: Record<BadgeTone, string> = {
   coming: COLORS.gold,
 };
 
+/**
+ * The card's size, live.
+ *
+ * Was computed once from Dimensions.get('window') at import — correct on a
+ * phone, frozen at launch orientation on an iPad. Above the tablet threshold
+ * it becomes a fixed 170pt rather than 34% of the window, so a wide
+ * screen shows more cards instead of enormous ones.
+ */
+function useCardSize() {
+  const { width } = useWindowDimensions();
+  const w = railCardWidth(width, 0.34, 170);
+  return { width: w, height: Math.round(w * 1.5) };
+}
+
 export function TitlePosterRail({
   label,
   title,
@@ -39,6 +50,8 @@ export function TitlePosterRail({
   titles: TrendingTitle[];
   onTitlePress: (id: string) => void;
 }) {
+  // Before the early return: a hook after it would be a conditional hook.
+  const cardSize = useCardSize();
   if (titles.length === 0) return null;
   return (
     <View style={s.section}>
@@ -58,7 +71,7 @@ export function TitlePosterRail({
           const badge = trendingBadge(item);
           const uri = item.poster_url ?? item.backdrop_url ?? undefined;
           return (
-            <PressScale style={s.card} onPress={() => onTitlePress(item.id)}>
+            <PressScale style={[s.card, cardSize]} onPress={() => onTitlePress(item.id)}>
               {uri ? (
                 <Image
                   source={{ uri }}
@@ -124,8 +137,6 @@ const s = StyleSheet.create({
   title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.beige, lineHeight: 28 },
   strip: { gap: 12, paddingHorizontal: 16, paddingBottom: 6 },
   card: {
-    width: CARD_W,
-    height: CARD_H,
     borderRadius: 12,
     borderCurve: 'continuous',
     overflow: 'hidden',
@@ -145,7 +156,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 4,
     borderRadius: 8,
-    maxWidth: CARD_W - 16,
+    // Self-relative, not a copy of the card's width: the badge is absolutely
+    // positioned inside the card, so a percentage resolves against the card and
+    // stays right at any window size. It used to be `CARD_W - 16`, which was a
+    // second place the card's width was written down.
+    maxWidth: '90%',
     backgroundColor: 'rgba(11,24,32,0.82)',
     borderWidth: 1,
     borderColor: 'rgba(245,235,220,0.22)',

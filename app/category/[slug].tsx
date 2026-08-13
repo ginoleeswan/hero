@@ -5,7 +5,7 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
   ActivityIndicator,
   Platform,
   ScrollView,
@@ -50,12 +50,7 @@ import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { SEAM } from '../../src/design';
-import {
-  CATEGORY_GRID,
-  CATEGORY_CARD_W,
-  CATEGORY_CARD_H,
-  CATEGORY_STAGE,
-} from '../../src/constants/categoryGeometry';
+import { categoryGrid, CATEGORY_STAGE } from '../../src/constants/categoryGeometry';
 
 // Publishers (marvel/dc/image/dark-horse) are NOT here — they're universes now,
 // served by /universe/[slug] (this same screen, resolved via the registry). Only
@@ -99,12 +94,10 @@ const CATEGORY_TAGLINES: Record<CategorySlug, string> = {
   aliens: 'Born somewhere other than Earth.',
   mythology: 'Gods, monsters, and legends out of myth.',
 };
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // Shared with CategorySkeleton so the placeholder cannot drift from the real
 // layout — see constants/categoryGeometry.
-const { columns: NUM_COLUMNS, gap: GAP, hPad: H_PAD } = CATEGORY_GRID;
-const CARD_WIDTH = CATEGORY_CARD_W;
-const CARD_HEIGHT = CATEGORY_CARD_H;
+const H_PAD = 16;
+const GAP = 8;
 // Native search bar sits below the nav bar in the header; the navy stage pads
 // down past both so its content clears the floating header + search field.
 const SEARCH_BAR_PAD = 16;
@@ -125,14 +118,16 @@ function HeroGridCard({
   hero,
   onPress,
   onLongPress,
+  size,
 }: {
   hero: Hero;
   onPress: () => void;
   onLongPress?: () => void;
+  size: { width: number; height: number };
 }) {
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, size]}
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={300}
@@ -167,6 +162,12 @@ export default function CategoryScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  // Live, not a module constant: the screen and CategorySkeleton both derive
+  // from categoryGrid(), and a frozen width would let them disagree the moment
+  // an iPad rotates — which is exactly the jump categoryGeometry exists to stop.
+  const { width: winW } = useWindowDimensions();
+  const grid = categoryGrid(winW);
+  const cardSize = { width: grid.cardW, height: grid.cardH };
 
   // This one screen serves three routes. /franchise/[slug] carries the franchise
   // display name (URL-encoded) and matches heroes.franchise exactly; /category
@@ -574,7 +575,11 @@ export default function CategoryScreen() {
           style={styles.list}
           data={heroes}
           keyExtractor={(h) => String(h.id)}
-          numColumns={NUM_COLUMNS}
+          // FlatList cannot change numColumns in place — RN warns and the rows
+          // render at the old count — so the key forces a fresh list when the
+          // window resizes past a column boundary.
+          key={grid.columns}
+          numColumns={grid.columns}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={listHeader}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
@@ -582,6 +587,7 @@ export default function CategoryScreen() {
           renderItem={({ item }) => (
             <HeroGridCard
               hero={item}
+              size={cardSize}
               onPress={() => handleHeroPress(String(item.id))}
               onLongPress={() => openPeek(item)}
             />
@@ -697,8 +703,6 @@ const styles = StyleSheet.create({
   // Grid
   row: { gap: GAP, marginBottom: GAP, paddingHorizontal: H_PAD },
   card: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,

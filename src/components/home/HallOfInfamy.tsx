@@ -6,7 +6,7 @@
 // chosen to be dark ENOUGH), so on the Arena it came out dark-on-dark and the
 // section header was effectively invisible. `tone` picks the pair; the cards
 // themselves are dark art either way and never needed it.
-import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
@@ -14,10 +14,21 @@ import { PressScale } from '../ui/PressScale';
 import { COLORS, ORANGE_INK } from '../../constants/colors';
 import { SECTION } from '../../constants/arenaType';
 import type { FearedVillain } from '../../lib/db/heroes';
+import { railCardWidth } from '../../constants/layout';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_W = Math.round(SCREEN_WIDTH * 0.42);
-const CARD_H = Math.round(CARD_W * 1.33);
+/**
+ * The card's size, live.
+ *
+ * Was computed once from Dimensions.get('window') at import — correct on a
+ * phone, frozen at launch orientation on an iPad. Above the tablet threshold
+ * it becomes a fixed 210pt rather than 42% of the window, so a wide
+ * screen shows more cards instead of enormous ones.
+ */
+function useCardSize() {
+  const { width } = useWindowDimensions();
+  const w = railCardWidth(width, 0.42, 210);
+  return { width: w, height: Math.round(w * 1.33) };
+}
 
 function FearedCard({
   villain,
@@ -29,7 +40,7 @@ function FearedCard({
   onPress: () => void;
 }) {
   return (
-    <PressScale onPress={onPress} scale={0.95} style={c.card}>
+    <PressScale onPress={onPress} scale={0.95} style={[c.card, useCardSize()]}>
       <HeroImage
         id={villain.id}
         name={villain.name}
@@ -123,8 +134,6 @@ const c = StyleSheet.create({
   titleInk: { color: COLORS.beige },
   row: { gap: 12, paddingHorizontal: 15, paddingBottom: 4 },
   card: {
-    width: CARD_W,
-    height: CARD_H,
     borderRadius: 12,
     borderCurve: 'continuous',
     overflow: 'hidden',
