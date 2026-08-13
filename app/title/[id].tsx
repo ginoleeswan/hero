@@ -38,6 +38,7 @@ import { PageEndCap } from '../../src/components/web/PageEndCap';
 import { SEAM } from '../../src/design';
 import { TITLE_STAGE } from '../../src/constants/titleGeometry';
 import { nativeShare, shareLink, titleShareLine } from '../../src/lib/share';
+import { READING_MAX_WIDTH } from '../../src/components/ui/PageColumn';
 
 function fmtMoney(n: number | null | undefined): string | null {
   if (!n || n <= 0) return null;
@@ -531,7 +532,13 @@ const styles = StyleSheet.create({
   scrollContent: { gap: 0 },
 
   // ── Native stacked layout ──
-  section: { paddingHorizontal: 20, paddingTop: 24 },
+  section: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    width: '100%',
+    maxWidth: READING_MAX_WIDTH,
+    alignSelf: 'center',
+  },
   railSection: { paddingTop: 24 },
   eyebrow: {
     fontFamily: 'Flame-Regular',

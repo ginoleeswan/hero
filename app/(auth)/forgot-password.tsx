@@ -219,6 +219,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 28,
+    // Already centred; this stops the field and button inside it from growing
+    // to the full width of a tablet. No-op on a phone.
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
   },
   iconWrap: {
     width: 64,

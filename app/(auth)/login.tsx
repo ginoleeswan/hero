@@ -294,6 +294,14 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   card: {
+    // Full-bleed on a phone (the cap is wider than the window), a centred panel
+    // on a tablet. A sign-in form stretched across 1194pt is the single most
+    // recognisable "iPhone app running on an iPad" tell — and a 900pt-wide
+    // email field is not easier to fill in than a 460pt one, just a longer
+    // distance for the eye between the label and the end of the box.
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,

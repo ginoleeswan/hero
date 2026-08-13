@@ -28,6 +28,7 @@ import { IssueSkeleton } from '../../src/components/skeletons/IssueSkeleton';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import { PageEndCap } from '../../src/components/web/PageEndCap';
+import { READING_MAX_WIDTH } from '../../src/components/ui/PageColumn';
 
 // Wide editorial layout constants — the cover straddles the dark→paper seam.
 const MAXW = 1100;
@@ -751,8 +752,22 @@ const n = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  content: { alignItems: 'center', gap: 18, paddingHorizontal: 20, paddingBottom: 4 },
-  synSection: { paddingHorizontal: 20, paddingTop: 22 },
+  content: {
+    alignItems: 'center',
+    gap: 18,
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+    width: '100%',
+    maxWidth: READING_MAX_WIDTH,
+    alignSelf: 'center',
+  },
+  synSection: {
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    width: '100%',
+    maxWidth: READING_MAX_WIDTH,
+    alignSelf: 'center',
+  },
 });
 
 const ms = StyleSheet.create({

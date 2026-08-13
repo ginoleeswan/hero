@@ -23,6 +23,7 @@ import { openKofi } from '../src/lib/support/kofi';
 import { COLORS, PAPER_TEXT } from '../src/constants/colors';
 import { Toast, useToast } from '../src/components/ui/Toast';
 import { SectionShell } from '../src/components/profile/SectionShell';
+import { READING_MAX_WIDTH } from '../src/components/ui/PageColumn';
 
 type RowTone = 'navy' | 'orange' | 'danger';
 
@@ -384,6 +385,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 32,
+    // Centred and capped at the measure LegalScreen already uses. A settings
+    // list stretched across a landscape iPad puts the label at one edge of the
+    // glass and its switch at the other. No-op on a phone.
+    width: '100%',
+    maxWidth: READING_MAX_WIDTH,
+    alignSelf: 'center',
   },
 
   titleRow: {

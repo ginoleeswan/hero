@@ -1022,3 +1022,79 @@ capped re-export is the seam that actually works, and `yarn check:ui` enforces
 it (`uncapped-text`): importing `Text` or `TextInput` from `'react-native'`
 fails the build. The handful of `Animated.Text` call sites pass
 `maxFontSizeMultiplier={MAX_TYPE_SCALE}` explicitly.
+
+## iPad
+
+`supportsTablet: true`, with orientation split per platform in `app.config.ts`:
+the phone stays portrait (every phone layout is tuned for one column, and
+turning it sideways buys nothing but a shorter fold), the iPad gets all four.
+All four is also the precondition for Split View and Slide Over, which the app
+opts into by leaving `requireFullScreen` unset.
+
+### The two rules
+
+**1. Width is a parameter, never a snapshot.** Twenty-six modules read
+`Dimensions.get('window')` at module scope. That is free on a phone — the width
+never changes — and wrong on an iPad, where it changes on rotation and on every
+Split View drag, leaving a value captured at launch wrong for the session. All
+of them now take the live window (`useWindowDimensions`) or a width parameter.
+
+Two consequences that are easy to miss:
+
+- **`FlatList` will not change `numColumns` in place.** React Native warns and
+  keeps rendering the old count, so every responsive grid carries
+  `key={columns}` to force a remount when a resize crosses a boundary. Without
+  it the grid silently keeps its old column count — which looks exactly like the
+  bug being fixed.
+- **A screen and its skeleton must derive from the same live number.** The
+  `*Geometry.ts` files exist so a placeholder matches the page it stands in for;
+  a frozen width lets the two disagree the moment the device rotates.
+
+**2. A proportion is not a size.** A rail card at 60% of a 390pt phone is 234pt,
+a comfortable thing to flick through. 60% of a landscape iPad is 716pt: one and
+a half cards fit and the rail reads as a broken carousel. The tablet rule is
+**the same physical card, more of them** — a reader holding an iPad is not
+holding a magnifying glass. `src/constants/layout.ts` holds the pure maths
+(breakpoints, page padding, `gridColumns`, `railCardWidth`, `spotlightHeightFor`,
+`heroImageAspect`); `useLayout()` supplies the live width.
+
+Breakpoints are keyed on the **window**, not the device: an app in a third of an
+iPad is 320pt wide and should look like a phone, because from the reader's side
+it is one. Column counts come from a target card width rather than a breakpoint
+table, so a Split View drag gains columns smoothly instead of stepping.
+
+### Measures
+
+Capped and centred, so nothing stretches the full width of a landscape iPad.
+No-ops on a phone, where the cap exceeds the window.
+
+| Constant | Width | Used by |
+| --- | --- | --- |
+| `FORM_MAX_WIDTH` | 460 | sign-in / sign-up fields |
+| `READING_MAX_WIDTH` | 720 | settings, support, inbox, house, issue, title, arena hub |
+| `CONTENT_MAX_WIDTH` | 900 | general page column |
+
+720 because `LegalScreen` already picked it — a second number for the same job
+is how a design system starts disagreeing with itself.
+
+### `heroImageAspect` — the one that must not drift
+
+The character page's hero image and every rail card have to be the **same
+shape**: the Apple Zoom transition morphs one into the other and only fills edge
+to edge while they agree. They used to agree by both being frozen at launch. The
+ratio is now one exported function imported by both, clamped to 1.1–1.5 because
+the raw `height * 0.66 / width` **inverts** on a landscape iPad and turns the
+portrait card landscape.
+
+### The daily game goes two-panel
+
+`DailyGame`'s wide layout was gated on `isWeb && width >= 960`, so a landscape
+iPad — wider than most laptops the layout was designed for — rendered the phone
+column with a small card marooned in 1194pt. It is a width question, not a
+platform one, so the gate is now width alone. Portrait iPads stay single-column:
+one column suits a tall window, and the two-panel stage needs horizontal room.
+
+The stage's atmosphere (beam, pool, reflection, vignette) is **web-only CSS** —
+gradients, clip paths, blur filters, mask images — so each is applied behind an
+`isWeb` check. On a tablet the layout holds; the theatre lighting does not
+render.

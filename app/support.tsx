@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { COLORS, PAPER_TEXT } from '../src/constants/colors';
 import { SectionShell } from '../src/components/profile/SectionShell';
 import { openKofi } from '../src/lib/support/kofi';
+import { READING_MAX_WIDTH } from '../src/components/ui/PageColumn';
 
 const TIERS = [
   { icon: 'cafe' as const, label: 'Coffee', amount: '$3' },
@@ -77,6 +78,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 32,
+    width: '100%',
+    maxWidth: READING_MAX_WIDTH,
+    alignSelf: 'center',
   },
   titleRow: {
     flexDirection: 'row',

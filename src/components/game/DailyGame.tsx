@@ -95,7 +95,9 @@ const GLOW = Platform.select({
   default: { backgroundColor: 'rgba(231,115,51,0.12)' },
 }) as object;
 
-// Desktop stage atmosphere (web-only — the wide layout is gated on web). These
+// Desktop stage atmosphere. WEB-ONLY CSS — gradients, clip paths, blur filters
+// and mask images mean nothing to a native view, so each is applied behind an
+// isWeb check now that the wide layout also runs on a landscape iPad. These
 // turn the empty left half into a lit theatre: a spotlight beam down onto the
 // card, a warm pool at its base, a reflection on the floor and a vignette that
 // frames the whole scene. Cast as object to satisfy RN's style types, matching
@@ -190,7 +192,12 @@ export function DailyGame() {
 
   const { width, height } = useWindowDimensions();
   const isWeb = Platform.OS === 'web';
-  const isWide = isWeb && width >= WIDE_BREAKPOINT;
+  // Was `isWeb && width >= …`, which meant a landscape iPad — wider than most
+  // laptops the desktop layout was designed for — rendered the phone column
+  // with a small card marooned in 1194pt. The layout is a width question, not a
+  // platform one. Portrait iPads stay single-column: one column is right for a
+  // tall window, and the two-panel stage needs the horizontal room.
+  const isWide = width >= WIDE_BREAKPOINT;
 
   const topPad = (isWeb ? WEB_NAV_CLEARANCE : insets.top) + 14;
 
@@ -407,10 +414,10 @@ export function DailyGame() {
       {/* Left — the reveal stage: a spotlight beam, a colossal ghosted puzzle
           number, the spotlit card with its clue fan, and a floor reflection. */}
       <View style={stylesWide.stage}>
-        <View style={[stylesWide.beam, STAGE_BEAM]} pointerEvents="none" />
+        <View style={[stylesWide.beam, isWeb && STAGE_BEAM]} pointerEvents="none" />
 
         <View style={stylesWide.cardArea}>
-          <View style={[stylesWide.pool, STAGE_POOL]} pointerEvents="none" />
+          <View style={[stylesWide.pool, isWeb && STAGE_POOL]} pointerEvents="none" />
           <View style={stylesWide.cardWrapWide}>
             <View style={[styles.glow, stylesWide.glowWide, GLOW]} pointerEvents="none" />
             {renderCard(stylesWide.cardWide)}
@@ -427,7 +434,7 @@ export function DailyGame() {
 
           {/* Floor reflection — a flipped, masked echo of the card. */}
           {hero ? (
-            <View style={[stylesWide.reflection, STAGE_REFLECT]} pointerEvents="none">
+            <View style={[stylesWide.reflection, isWeb && STAGE_REFLECT]} pointerEvents="none">
               <View style={[styles.card, stylesWide.cardWide, stylesWide.cardFlip]}>
                 <MysteryPortrait
                   id={hero.id}
@@ -525,7 +532,7 @@ export function DailyGame() {
       {/* Cinematic vignette over the wide stage — frames the scene, clicks pass
           through. */}
       {isWide ? (
-        <View style={[StyleSheet.absoluteFill, STAGE_VIGNETTE]} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, isWeb && STAGE_VIGNETTE]} pointerEvents="none" />
       ) : null}
 
       <StatsSheet

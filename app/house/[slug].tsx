@@ -24,6 +24,7 @@ import { HouseSkeleton } from '../../src/components/skeletons/HouseSkeleton';
 import { OverscrollBleed } from '../../src/components/ui/OverscrollBleed';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
+import { READING_MAX_WIDTH } from '../../src/components/ui/PageColumn';
 
 // The real native header — system chevron, system swipe-back — with the iOS 26
 // scroll-edge scrim turned OFF at the source.
@@ -261,7 +262,13 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 40,
   },
-  body: { padding: HOUSE_BODY_NATIVE.pad, gap: HOUSE_BODY_NATIVE.gap },
+  body: {
+    padding: HOUSE_BODY_NATIVE.pad,
+    gap: HOUSE_BODY_NATIVE.gap,
+    width: '100%',
+    maxWidth: READING_MAX_WIDTH,
+    alignSelf: 'center',
+  },
   blank: {
     backgroundColor: 'white',
     borderRadius: 20,
