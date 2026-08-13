@@ -10,6 +10,7 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
+import { useEffect } from 'react';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SymbolView } from 'expo-symbols';
@@ -19,6 +20,7 @@ import { heroImageSource } from '../../../src/constants/heroImages';
 import { useCompareMatchup } from '../../../src/hooks/useCompareMatchup';
 import { useMatchupShareImage } from '../../../src/hooks/useMatchupShareImage';
 import { useMatchupVote } from '../../../src/hooks/useMatchupVote';
+import { useReviewPrompt } from '../../../src/hooks/useReviewPrompt';
 import { CommunityVotes } from '../../../src/components/compare/CommunityVotes';
 import { getFighterArt } from '../../../src/lib/compareHandoff';
 import { nativeShare, shareLink, vsShareLine } from '../../../src/lib/share';
@@ -88,6 +90,15 @@ export default function NativeCompareScreen() {
   // verdict) and the fan-vote tally. Voting happens earlier, as an in-place poll
   // on the matchup cards — never here.
   const { tally, pickedId } = useMatchupVote(hero, opponent);
+
+  // A battle counts as finished when the reader lands on the resolved verdict
+  // having already picked a side — they voted, then came to see how it went.
+  // Arriving without a pick is browsing, and browsing has not earned an ask.
+  const review = useReviewPrompt();
+  const settled = !!verdict && !!pickedId;
+  useEffect(() => {
+    if (settled) void review.considerAfterArena();
+  }, [settled, review]);
 
   if (error) {
     return (

@@ -28,6 +28,7 @@ import {
   useNotificationRouting,
 } from '../src/hooks/useNotificationRouting';
 import { initAnalytics } from '../src/lib/analytics';
+import { noteAppOpened } from '../src/lib/review';
 import { usePresenceHeartbeat } from '../src/hooks/usePresenceHeartbeat';
 import { BootStage } from '../src/components/ui/BootStage';
 import AnalyticsProvider from '../src/components/Analytics';
@@ -224,6 +225,10 @@ configureNotificationHandler();
 // Analytics is inert without EXPO_PUBLIC_POSTHOG_KEY, so this is safe to call
 // unconditionally — a developer's machine and CI write nowhere.
 initAnalytics();
+// Stamp the first-ever open, so the rating ask's one-week grace period is
+// measured from a real install date rather than from whenever the reader first
+// happened to reach a trigger — an unstamped install looks brand new forever.
+void noteAppOpened();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
