@@ -44,7 +44,12 @@ const LOCKUP_H = 560;
 const MARK_W = 160; // mark ink width
 const MARK_CY = 163; // mark ink centre, from the box top
 const WORD_W = 152; // wordmark ink width
-const WORD_CY = 528; // wordmark ink centre, from the box top
+// Wordmark ink centre, from the box top. The ink is WORD_W / aspect = 36pt
+// tall, so this centre spans 518-554 inside a 560 box: SIX points of clearance
+// before it meets the image edge. That is the whole remaining budget — moving
+// it lower than this needs LOCKUP_H to grow, which would also shift the mark,
+// because the OS centres the box rather than pinning its top.
+const WORD_CY = 536;
 const BEIGE = '#f5ebdc';
 const SCALE = 3; // export at @3x
 
