@@ -38,5 +38,5 @@ export const SPLASH_LOCKUP = {
   markW: 160,
   markCY: 163,
   wordW: 152,
-  wordCY: 528,
+  wordCY: 536,
 } as const;
