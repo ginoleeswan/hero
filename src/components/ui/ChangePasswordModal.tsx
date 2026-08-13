@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { Text, TextInput } from './Text';
 import { Ionicons } from '@expo/vector-icons';
 import { Sheet } from './Sheet';
 import { COLORS, PAPER_TEXT } from '../../constants/colors';

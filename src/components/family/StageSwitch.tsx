@@ -1,7 +1,8 @@
 // src/components/family/StageSwitch.tsx
 // Two looks at one house: the line of one person, or the whole ladder. A switch
 // rather than two stacked sections — they answer one question at two scales.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { STAGE_SWITCH } from '../../constants/houseGeometry';

@@ -1,6 +1,7 @@
 // Full-width "Load more" row shared by every paginated list (run history,
 // review queue, hero search). Beige button, chevron that swaps to a spinner.
-import { Pressable, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 

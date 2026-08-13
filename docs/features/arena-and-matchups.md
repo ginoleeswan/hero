@@ -63,7 +63,7 @@ matchup card and the compare arena so the surfaces can't drift. On a vote it:
 1. reveals optimistically (state flips before the network),
 2. mirrors the pick to AsyncStorage (`matchupVoteKey`) — instant reveal on
    return visits and an offline fallback,
-3. fires `trackEvent('matchup_vote', { authed })`,
+3. fires `track('matchup_vote', { authed })`,
 4. casts via `cast_matchup_vote_v2` with the voter key, and
 5. calls `recordDebateCompletionIfDaily` — counts toward the daily streak
    only when the pair is today's daily debate (the guard lives in

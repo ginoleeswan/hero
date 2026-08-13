@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT } from '../../../constants/colors';
 import type { CategorySlug } from '../../../lib/db/heroes';

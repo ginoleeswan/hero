@@ -5,7 +5,6 @@
 import { useState, useCallback, useEffect, useMemo, type ComponentType } from 'react';
 import {
   View,
-  Text,
   Pressable,
   StyleSheet,
   StatusBar,
@@ -13,6 +12,7 @@ import {
   type ListRenderItem,
   type FlatListProps,
 } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import Animated, {
   FadeIn,
   FadeInDown,

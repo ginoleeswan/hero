@@ -1,8 +1,6 @@
 import { useRef, useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
   Pressable,
   StyleSheet,
   ActivityIndicator,
@@ -10,6 +8,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { Text, TextInput } from '../../src/components/ui/Text';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';

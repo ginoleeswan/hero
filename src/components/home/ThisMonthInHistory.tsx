@@ -4,7 +4,8 @@
 // cast it introduced), with the rest of the month's vault scrolling beneath.
 // Inventory → editorial moment. Boxed in lighter-navy glass; native sibling of
 // the web module. Reuses getDebutsThisMonth data untouched.
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { PressScale } from '../ui/PressScale';
 import { COLORS, INK_TEXT } from '../../constants/colors';

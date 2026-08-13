@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text } from './ui/Text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, PAPER_TEXT } from '../constants/colors';
 import { groupPowers } from '../constants/powerIcons';

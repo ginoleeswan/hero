@@ -24,7 +24,7 @@ import {
 } from '../lib/db/favourites';
 import { useAuth } from './useAuth';
 import { useRecordView } from './useViewHistory';
-import { trackEvent } from '../lib/analytics';
+import { track } from '../lib/analytics';
 import { supabase } from '../lib/supabase';
 import { getHeroImages } from '../lib/db/heroImages';
 import type { CharacterData, HeroImage } from '../types';
@@ -332,7 +332,7 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
     }
     try {
       await (next ? addFavourite(user.id, id) : removeFavourite(user.id, id));
-      if (next) trackEvent('favourite_add', { hero_id: id });
+      if (next) track('favourite_add', { hero_id: id });
       // Explore's "Your Favourites" row caches for 5 min with no focus refetch —
       // invalidate it so the row reflects this change on the next visit.
       void queryClient.invalidateQueries({ queryKey: exploreKeys.favourites(user.id) });

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Text, StyleSheet, Platform } from 'react-native';
+import { Animated, StyleSheet, Platform } from 'react-native';
+import { Text } from './Text';
 import { COLORS } from '../../constants/colors';
 
 interface ToastState {

@@ -1,13 +1,6 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Platform,
-  Pressable,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, ScrollView, Platform, Pressable, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from './ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, HOVER_TRANSITION, PAPER_TEXT } from '../constants/colors';
 import { HeroImage } from './HeroImage';

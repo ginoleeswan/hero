@@ -10,7 +10,8 @@
 // All state lives in the URL — ?focus re-roots the tree, ?with lights the
 // kinship path — so every view a reader reaches is a link they can send.
 import { useCallback, useRef, useState } from 'react';
-import { View, Pressable, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';

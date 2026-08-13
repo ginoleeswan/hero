@@ -12,7 +12,8 @@
 // Impressions + clicks flow to Vercel custom events, so the slot earns real
 // CTR data long before any sponsor conversation happens.
 import { useEffect, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from './ui/Text';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, PAPER_TEXT, ORANGE_INK } from '../constants/colors';
@@ -20,7 +21,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { promoForDay } from '../lib/sponsor/houseAds';
 import { openKofi } from '../lib/support/kofi';
-import { trackEvent } from '../lib/analytics';
+import { track } from '../lib/analytics';
 
 export function SponsorSlot({ placement }: { placement: string }) {
   const router = useRouter();
@@ -34,14 +35,14 @@ export function SponsorSlot({ placement }: { placement: string }) {
   useEffect(() => {
     if (suppressed || seen.current) return;
     seen.current = true;
-    trackEvent('sponsor_impression', { promo: promo.id, placement });
+    track('sponsor_impression', { promo: promo.id, placement });
   }, [suppressed, promo.id, placement]);
 
   // Supporters browse promo-free — the quiet perk of the tier.
   if (suppressed) return null;
 
   const open = () => {
-    trackEvent('sponsor_click', { promo: promo.id, placement });
+    track('sponsor_click', { promo: promo.id, placement });
     if (promo.target === 'kofi') openKofi();
     else router.push(promo.target as Href);
   };

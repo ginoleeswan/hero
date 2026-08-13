@@ -3,7 +3,8 @@
 // with a gold-rimmed VS coin; tapping one opens that matchup in the arena.
 // Matches the web RivalryDeck (src/components/web/versus) so both platforms read
 // as one design.
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, Pressable, TextInput, StyleSheet, ScrollView } from 'react-native';
+import { View, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { Text, TextInput } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT } from '../../../constants/colors';
 import type { CategorySlug } from '../../../lib/db/heroes';

@@ -1,7 +1,8 @@
 // Shared renderer for the static legal documents (Privacy / Terms). Used by the
 // native + web route files so the two platforms read identically (RNW). A dark
 // stage header (back + title) landing on a scrollable beige document body.
-import { View, Text, ScrollView, Platform, StyleSheet } from 'react-native';
+import { View, ScrollView, Platform, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SURFACE } from '../../constants/colors';

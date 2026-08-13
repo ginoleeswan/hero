@@ -6,7 +6,8 @@
 // Each row carries its own detection curve as a thumbnail, so the list reads as
 // a set of measurements rather than a menu — the shape of the spike IS the
 // difference between one event and another.
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { Text } from '../ui/Text';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { EventCurve } from './EventCurve';
 import { EVENT_STAGE, EVENT_INDEX } from '../../constants/eventGeometry';

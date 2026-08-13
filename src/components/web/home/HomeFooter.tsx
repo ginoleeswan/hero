@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { COLORS, pageGutter, INK_TEXT } from '../../../constants/colors';
 import { HeroLogo } from '../HeroLogo';
 

@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';
 import type { WatchKind, WatchProvider } from '../../lib/db/titles';

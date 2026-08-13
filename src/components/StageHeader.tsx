@@ -5,7 +5,8 @@
 // dark top as the rest of the app — the chrome fuses with it — and lands on the
 // beige body over the shared seam hairline.
 import { type ReactNode } from 'react';
-import { View, Text, Pressable, Platform, StyleSheet } from 'react-native';
+import { View, Pressable, Platform, StyleSheet } from 'react-native';
+import { Text } from './ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SURFACE_GRADIENT, SEAM_COLOR } from '../constants/colors';

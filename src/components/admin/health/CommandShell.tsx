@@ -1,14 +1,8 @@
 // Dark command-center chrome. Renders the pinned top bar (brand + overall gauge +
 // refresh), the domain switcher (left rail on desktop, bottom tab bar on mobile),
 // and slots for the vitals ribbon, alerts, and the active domain content.
-import {
-  View,
-  Text,
-  Pressable,
-  ActivityIndicator,
-  StyleSheet,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Pressable, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { type ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';

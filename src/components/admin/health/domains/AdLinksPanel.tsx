@@ -3,7 +3,8 @@
 // produces sit on the same screen. Builds every link through
 // src/lib/marketing/adLinks (the single home of the UTM convention).
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text, TextInput } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';

@@ -3,7 +3,8 @@
 // cluster (one vital per lane, each deep-linking), and the ops floor (a live
 // cross-domain activity feed beside the "needs you" board + traffic pulse).
 // Read-only glance with the one primary action (Run enrichment) inline.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';

@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { COLORS } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
 import { brandForPublisher } from '../../constants/publishers';

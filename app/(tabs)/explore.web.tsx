@@ -1,7 +1,8 @@
 // app/(tabs)/explore.web.tsx — Home screen for web (spotlight + horizontal scroll rows).
 // Search lives on the dedicated /search route; this screen is home-only.
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 import {

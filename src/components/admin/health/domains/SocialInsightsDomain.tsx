@@ -5,14 +5,8 @@
 // of. Single-measure magnitude displays use one hue (gold) with direct value
 // labels; platform identity rides on text chips, never color alone.
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  ActivityIndicator,
-  useWindowDimensions,
-} from 'react-native';
+import { View, StyleSheet, Pressable, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';

@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from './ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, PAPER_TEXT } from '../constants/colors';
 import type { HeroPortrayals } from '../lib/db/people';

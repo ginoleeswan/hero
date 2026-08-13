@@ -2,7 +2,8 @@
 // catalogue and how healthy its link is. The app's data spine is source-agnostic
 // (internal id = identity; each source id is an attribute), so this reads each
 // source's coverage + status side by side. A no-scroll dashboard (fills the view).
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Bento } from '../Bento';

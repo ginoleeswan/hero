@@ -1,4 +1,5 @@
-import { View, ScrollView, StyleSheet, Pressable, Text } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { Text } from '../../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter, usePathname, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

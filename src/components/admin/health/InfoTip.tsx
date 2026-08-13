@@ -3,7 +3,8 @@
 // positioned (fixed) at the icon's measured screen coordinates, so it sits above
 // every panel regardless of stacking context / overflow.
 import { useRef, useState, type ReactNode } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Pressable, StyleSheet, Platform } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 

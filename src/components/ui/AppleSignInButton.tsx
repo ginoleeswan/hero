@@ -1,4 +1,5 @@
-import { Platform, Pressable, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, ActivityIndicator, View } from 'react-native';
+import { Text } from './Text';
 import Svg, { Path } from 'react-native-svg';
 import { COLORS } from '../../constants/colors';
 

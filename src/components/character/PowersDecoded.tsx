@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '../ui/Text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, PAPER_TEXT } from '../../constants/colors';
 import { getPowerIcon, POWER_CATEGORY_META } from '../../constants/powerIcons';

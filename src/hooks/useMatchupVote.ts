@@ -13,7 +13,7 @@ import { useAuth } from './useAuth';
 import { matchupVoteKey, type MatchupSide } from '../lib/home/matchupVote';
 import { getMatchupTallyV2, castMatchupVoteV2, type MatchupTally } from '../lib/db/matchupVotes';
 import { getVoterKey } from '../lib/voterKey';
-import { trackEvent } from '../lib/analytics';
+import { track } from '../lib/analytics';
 import { recordDebateCompletionIfDaily } from '../lib/db/dailies';
 
 export interface MatchupVoteState {
@@ -76,7 +76,7 @@ export function useMatchupVote(heroAId: string, heroBId: string): MatchupVoteSta
       // Optimistic local reveal — instant, no account required.
       setPickedId(picked);
       AsyncStorage.setItem(key, side).catch(() => {});
-      trackEvent('matchup_vote', { authed: !!user });
+      track('matchup_vote', { authed: !!user });
       getVoterKey()
         .then((vk) => castMatchupVoteV2(heroAId, heroBId, picked, vk))
         .then((t) => {

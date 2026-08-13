@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, Switch } from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator, Alert, Switch } from 'react-native';
+import { Text } from '../src/components/ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Redirect } from 'expo-router';
 import { useAuth } from '../src/hooks/useAuth';

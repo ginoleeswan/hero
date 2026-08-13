@@ -5,7 +5,8 @@
 // web card / compare arena never drift. Logged-out fans vote with no sign-up
 // wall — their pick is an on-device reveal. The card taps through to the arena.
 import { useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Share, Platform } from 'react-native';
+import { View, Pressable, StyleSheet, Share, Platform } from 'react-native';
+import { Text } from '../ui/Text';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../HeroImage';

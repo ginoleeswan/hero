@@ -1,7 +1,8 @@
 // src/components/home/ComicCoverRail.tsx — a calm horizontal rail of this week's
 // comic covers for the "New This Week" section of the Right Now band. Sibling of
 // TitlePosterRail; taps open the lightweight issue page.
-import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native';
+import { View, FlatList, StyleSheet, Dimensions } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressScale } from '../ui/PressScale';

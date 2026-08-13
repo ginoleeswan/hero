@@ -7,7 +7,8 @@
 //
 // `tone` matters because the app has two canvases: the deep-navy stage and the
 // beige paper. Pass the one the surrounding surface uses.
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { Text } from './Text';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS, PAPER_TEXT } from '../../constants/colors';

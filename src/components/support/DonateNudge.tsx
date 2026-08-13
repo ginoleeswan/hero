@@ -1,4 +1,5 @@
-import { Text, Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { Sheet } from '../ui/Sheet';
 import { COLORS, PAPER_TEXT } from '../../constants/colors';

@@ -5,7 +5,8 @@
 // (docs/marketing/utm-attribution.md) so the process lives in the UI, not in
 // memory. The link builder (AdLinksPanel) has its canonical home here — the
 // Acquisition tab shows results and points back to this tab for links.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';

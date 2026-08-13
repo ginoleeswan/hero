@@ -1,13 +1,13 @@
 import {
   Modal,
   View,
-  Text,
   FlatList,
   Pressable,
   StyleSheet,
   useWindowDimensions,
   Platform,
 } from 'react-native';
+import { Text } from './ui/Text';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

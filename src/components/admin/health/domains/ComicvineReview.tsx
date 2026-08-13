@@ -6,7 +6,8 @@
 // by the right id, overwriting the collision's bad data. Renders nothing when
 // the queue is clear.
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text, TextInput } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';

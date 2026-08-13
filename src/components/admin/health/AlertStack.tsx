@@ -2,7 +2,8 @@
 // alert list + collapsed/expanded state; this renders it. On mobile multiple
 // alerts collapse to one worst-first banner that expands on tap.
 import { type ReactNode } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 

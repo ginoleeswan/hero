@@ -14,6 +14,8 @@
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
+import { track } from '../lib/analytics';
+import { pathKind } from '../lib/analytics/events';
 
 type NotificationsModule = typeof import('expo-notifications');
 
@@ -46,9 +48,11 @@ export function useNotificationRouting() {
     const N = mod();
     if (!N) return;
 
-    const go = (data: unknown) => {
+    const go = (data: unknown, coldStart: boolean) => {
       const path = safePath(data);
-      if (path) router.push(path as Parameters<typeof router.push>[0]);
+      if (!path) return;
+      track('deep_link_opened', { path_kind: pathKind(path), cold_start: coldStart });
+      router.push(path as Parameters<typeof router.push>[0]);
     };
 
     // Cold start: whatever tap launched us, once.
@@ -56,13 +60,13 @@ export function useNotificationRouting() {
       coldStartHandled.current = true;
       void N.getLastNotificationResponseAsync()
         .then((res) => {
-          if (res) go(res.notification.request.content.data);
+          if (res) go(res.notification.request.content.data, true);
         })
         .catch(() => {});
     }
 
     const sub = N.addNotificationResponseReceivedListener((res) => {
-      go(res.notification.request.content.data);
+      go(res.notification.request.content.data, false);
     });
     return () => sub.remove();
   }, [router]);

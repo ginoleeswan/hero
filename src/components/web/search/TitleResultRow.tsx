@@ -1,4 +1,5 @@
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { View, Image, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { COLORS, INK_TEXT, PAPER_TEXT } from '../../../constants/colors';
 import type { TitleSearchResult } from '../../../lib/db/titles';
 

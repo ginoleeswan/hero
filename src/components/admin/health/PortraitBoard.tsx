@@ -4,15 +4,8 @@
 // the instant it lands. A progress grid below ticks each hero to a check.
 // Foreground only (stops if closed). Spend is gated before this opens.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  Animated,
-  ActivityIndicator,
-  StyleSheet,
-} from 'react-native';
+import { View, Pressable, ScrollView, Animated, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';

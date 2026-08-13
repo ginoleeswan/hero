@@ -2,7 +2,8 @@
 // and an inline editor (cadence + batch size) that rebuilds the job in place via
 // admin_reschedule_cron.
 import { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { COLORS } from '../../../../constants/colors';
 import { InfoTip } from '../InfoTip';
 import { Button, IconButton, PillGroup, EmptyState } from '../ui';

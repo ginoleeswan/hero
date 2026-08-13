@@ -4,7 +4,8 @@
 // with the top offenders when something regresses. Read-only — fixes happen in
 // the sibling panels (Duplicates, ComicVine review) or via re-enrichment.
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';

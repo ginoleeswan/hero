@@ -2,7 +2,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
-  Text,
   FlatList,
   StyleSheet,
   TouchableOpacity,
@@ -11,6 +10,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter, usePathname, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HouseCard } from '../../src/components/family/HouseIndex';

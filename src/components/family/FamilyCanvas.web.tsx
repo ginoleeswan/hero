@@ -7,7 +7,8 @@
 // values, so it's disabled for this file.
 /* eslint-disable react-hooks/immutability */
 import { useMemo, useState, useEffect, useCallback, type ReactElement } from 'react';
-import { View, Text, Pressable, StyleSheet, Modal, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, Modal, useWindowDimensions } from 'react-native';
+import { MAX_TYPE_SCALE, Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -850,7 +851,11 @@ function AxisLabel({
     top: tyVal.value + row.y * scale.value + (boundsH / 2) * (1 - scale.value) - 8,
   }));
   return (
-    <Animated.Text style={[styles.axisLabel, animStyle]} numberOfLines={1}>
+    <Animated.Text
+      maxFontSizeMultiplier={MAX_TYPE_SCALE}
+      style={[styles.axisLabel, animStyle]}
+      numberOfLines={1}
+    >
       {row.label}
     </Animated.Text>
   );

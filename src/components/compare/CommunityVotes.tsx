@@ -2,7 +2,8 @@
 // arena. The arena is the result page: it shows who wins (stats + verdict) and
 // what the community thinks. Voting happens BEFORE the arena (on the matchup
 // cards), never here — so this only displays the tally, it never casts one.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { COLORS, PAPER_TEXT, INK_TEXT } from '../../constants/colors';
 import { statSplit } from '../../lib/home/matchupVote';
 import type { MatchupTally } from '../../lib/db/matchupVotes';

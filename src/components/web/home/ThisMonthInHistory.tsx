@@ -1,4 +1,5 @@
-import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Image } from 'expo-image';
 import { COLORS, EYEBROW, pageGutter, INK_TEXT } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';

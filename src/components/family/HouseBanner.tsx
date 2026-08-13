@@ -4,7 +4,8 @@
 // Same ink→navy stage every other Mythique screen opens on, landing on the paper
 // body over the shared seam hairline — but the crest is the house page's alone,
 // and it's what makes the band read as a charter rather than another title bar.
-import { View, Text, Platform, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Platform, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../ui/Text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SURFACE_GRADIENT, SEAM_COLOR, INK_TEXT, EYEBROW } from '../../constants/colors';

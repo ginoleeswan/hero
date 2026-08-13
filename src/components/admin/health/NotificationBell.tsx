@@ -1,7 +1,8 @@
 // Header notification bell — command-center alerts (rate-limit, failures) live
 // here instead of taking real estate as banners. Badge shows the count; tap to
 // see them. Shared by the desktop command band and the mobile global TopBar.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';

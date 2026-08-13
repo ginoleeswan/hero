@@ -1,7 +1,8 @@
 // The instrument cluster — one vital per lane, side by side, each deep-linking
 // to the lane that owns it. Breadth of situational awareness in a single row:
 // audience, catalog, backlog, moderation, spend, community. Wraps on narrow.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../../constants/colors';
 import { CC, healthColor } from '../../format';

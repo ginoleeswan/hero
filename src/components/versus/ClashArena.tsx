@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions, Platform } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions, Platform } from 'react-native';
+import { MAX_TYPE_SCALE, Text } from '../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
@@ -432,10 +433,15 @@ function ClashHeadline({
   const synB = Math.round(sideB.synergy.total_pct * 100);
   return (
     <View style={styles.headline}>
-      <Animated.Text entering={animate ? FadeIn.duration(200) : undefined} style={styles.eyebrow}>
+      <Animated.Text
+        maxFontSizeMultiplier={MAX_TYPE_SCALE}
+        entering={animate ? FadeIn.duration(200) : undefined}
+        style={styles.eyebrow}
+      >
         {'Team Battle'}
       </Animated.Text>
       <Animated.Text
+        maxFontSizeMultiplier={MAX_TYPE_SCALE}
         entering={animate ? FadeIn.duration(240) : undefined}
         style={[styles.title, !wide ? styles.titleMobile : null]}
       >

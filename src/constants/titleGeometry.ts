@@ -1,3 +1,4 @@
+import { line } from './typeScale';
 // src/constants/titleGeometry.ts — numbers the title page, its header and its
 // skeleton share. Same rule as category/issueGeometry: placeholders read the
 // source, they do not restate it.
@@ -8,5 +9,5 @@ export const TITLE_STAGE = {
    *  SEAM.overlap of it, so the real clearance is this minus that. */
   paddingBottom: 44,
   /** The beige cap's height at the ink→paper seam. */
-  capHeight: 30,
+  capHeight: line(30),
 } as const;

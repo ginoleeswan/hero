@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Image } from 'expo-image';
 import { VsBadge } from '../../compare/VsBadge';
 import { FACTION_A, FACTION_B } from '../../versus/factionColors';

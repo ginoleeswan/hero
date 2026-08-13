@@ -8,7 +8,8 @@
 // relative timestamp is what makes it feel current rather than merely accurate.
 //
 // Ranking, decay and every string live in src/lib/home/pulse.ts. This is a view.
-import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native';
+import { View, FlatList, StyleSheet, Dimensions } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressScale } from '../ui/PressScale';

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { COLORS } from '../../../constants/colors';
 
 interface PulseTickerProps {

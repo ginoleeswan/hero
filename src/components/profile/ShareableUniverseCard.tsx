@@ -3,7 +3,8 @@
 // (avatar, name, top favourites, taste, badges, wordmark) rendered at a fixed
 // 1080×1080 so it snapshots to a PNG (react-native-view-shot on native; the
 // .web sibling redraws it via canvas because RN-web snapshots render blank).
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHARE_CARD, INK_TEXT } from '../../constants/colors';

@@ -3,7 +3,8 @@
 // can match many titles, so a swipe rail conserves vertical space (one row) and
 // stops "Films & Shows" from burying the character grid on a phone. Beige-page
 // styling (navy text); routes to /title/[id].
-import { ScrollView, View, Text, Pressable, StyleSheet } from 'react-native';
+import { ScrollView, View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT } from '../../../constants/colors';

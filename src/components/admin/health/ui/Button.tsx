@@ -3,12 +3,12 @@
 // was hand-rolling, plus a square icon-only button for toolbars and row actions.
 import {
   Pressable,
-  Text,
   ActivityIndicator,
   StyleSheet,
   useWindowDimensions,
   type ViewStyle,
 } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { CC } from '../format';

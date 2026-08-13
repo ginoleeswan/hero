@@ -1,8 +1,6 @@
 import { useRef, useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
   Pressable,
   StyleSheet,
   ActivityIndicator,
@@ -11,6 +9,7 @@ import {
   ScrollView,
   useWindowDimensions,
 } from 'react-native';
+import { Text, TextInput } from '../../src/components/ui/Text';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';

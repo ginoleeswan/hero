@@ -71,6 +71,16 @@ export function titleShareLine(title: string, year?: number | null): string {
 }
 
 /**
+ * The share funnel's two halves.
+ *
+ * `started` fires when the sheet is opened, `completed` only when the OS says
+ * something actually happened — the gap between them is the interesting number,
+ * because a share sheet that opens and is dismissed is the most common outcome
+ * and the one nobody measures.
+ */
+export type ShareOutcome = 'shared' | 'dismissed';
+
+/**
  * Compose a native share payload.
  *
  * iOS takes `message` and `url` as two activity items: Messages renders the

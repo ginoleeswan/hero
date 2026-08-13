@@ -2,7 +2,8 @@
 // web. One responsive grid of category doorways, each wearing a representative
 // character's art, replaces a dozen look-alike carousels.
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../../HeroImage';
 import { COLORS } from '../../../constants/colors';

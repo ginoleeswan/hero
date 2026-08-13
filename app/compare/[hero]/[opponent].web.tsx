@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
   View,
-  Text,
   Pressable,
   StyleSheet,
   ActivityIndicator,
   Platform,
   useWindowDimensions,
 } from 'react-native';
+import { Text } from '../../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';

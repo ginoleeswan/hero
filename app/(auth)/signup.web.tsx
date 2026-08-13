@@ -1,13 +1,6 @@
 import { useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  ActivityIndicator,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { Text, TextInput } from '../../src/components/ui/Text';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { loginHref } from '../../src/lib/loginRedirect';

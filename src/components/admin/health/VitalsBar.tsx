@@ -3,7 +3,8 @@
 // auto-drain state, and month-to-date spend. Compact, data-dense, wraps on
 // narrow. The masthead owns the static catalogue snapshot; this owns the
 // dynamic operational state.
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { CV_HOURLY_CAP, relTime } from './format';

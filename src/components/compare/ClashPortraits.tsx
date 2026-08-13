@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';

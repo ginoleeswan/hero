@@ -3,7 +3,8 @@
 // friendly section label + relative time. A pulsing "active now" header answers
 // "what's happening this minute". Tapping a hero row opens that character.
 import { useEffect, useRef } from 'react';
-import { View, Text, Pressable, Animated, StyleSheet } from 'react-native';
+import { View, Pressable, Animated, StyleSheet } from 'react-native';
+import { Text } from '../../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../../../constants/colors';

@@ -4,7 +4,6 @@ import { loginHref } from '../../src/lib/loginRedirect';
 import { exploreKeys } from '../../src/lib/query/keys';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
@@ -15,6 +14,7 @@ import {
   ActionSheetIOS,
   Platform,
 } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Defs, Pattern, Circle, Rect, Path } from 'react-native-svg';
 import { DUR } from '../../src/lib/nativeMotion';

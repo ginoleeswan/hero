@@ -3,7 +3,8 @@
 // casts your vote. Below, a ringside panel shows the head to head and — once
 // voted — the crowd's split, with a gold pill into the full breakdown.
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, EYEBROW } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';

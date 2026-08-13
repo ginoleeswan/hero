@@ -16,7 +16,8 @@
 // whole sections. Shares useVersusHub with the web hub (versus.web.tsx) so the
 // data layer never drifts.
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';

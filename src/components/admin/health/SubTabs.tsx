@@ -1,6 +1,7 @@
 // Sub-tab pill strip for splitting a dense domain into focused, no-scroll bento
 // views. Sits on the dark content background, above the active sub-view.
-import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 

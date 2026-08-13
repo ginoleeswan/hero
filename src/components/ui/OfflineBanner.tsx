@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Animated, Text, View, StyleSheet, Platform } from 'react-native';
+import { Animated, View, StyleSheet, Platform } from 'react-native';
+import { Text } from './Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { useIsOffline } from '../../hooks/useIsOffline';

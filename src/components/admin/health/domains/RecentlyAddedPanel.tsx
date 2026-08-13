@@ -3,7 +3,8 @@
 // left ~55% of the mobile screen as dead ink) with useful context at zero
 // ComicVine cost: what just came in, and how far the pipeline took it.
 import { useQuery } from '@tanstack/react-query';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';

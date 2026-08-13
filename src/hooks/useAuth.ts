@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { getProfile, upsertProfile } from '../lib/db/profiles';
-import { trackEvent } from '../lib/analytics';
+import { track, identify, resetAnalytics } from '../lib/analytics';
 
 interface AuthState {
   user: User | null;
@@ -78,6 +78,10 @@ export function useAuth(): AuthState {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       settle(session);
+      // Tie events to the account, and cut the tie on the way out — otherwise
+      // the next person to use the device inherits the last one's identity.
+      if (session?.user) identify(session.user.id);
+      else if (event === 'SIGNED_OUT') resetAnalytics();
       // Sync Google profile on web OAuth redirect (and any platform on first sign-in)
       if (event === 'SIGNED_IN' && session?.user) {
         const provider = session.user.app_metadata?.provider;
@@ -96,13 +100,13 @@ export function useAuth(): AuthState {
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error) trackEvent('log_in', { method: 'password' });
+    if (!error) track('log_in', { method: 'password' });
     return { error };
   };
 
   const signUp = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({ email, password });
-    if (!error) trackEvent('sign_up', { method: 'password' });
+    if (!error) track('sign_up', { method: 'password' });
     return { error };
   };
 

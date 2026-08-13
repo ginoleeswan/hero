@@ -10,7 +10,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   View,
-  Text,
   Pressable,
   ScrollView,
   ActivityIndicator,
@@ -19,6 +18,7 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
+import { Text } from '../ui/Text';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,6 +30,7 @@ import { ClueSticker } from './ClueSticker';
 import { StatsSheet } from './StatsSheet';
 import { NotificationOptIn } from '../notifications/NotificationOptIn';
 import { useNotificationOptIn, useStreakReminderSync } from '../../hooks/useNotificationOptIn';
+import { useReviewPrompt } from '../../hooks/useReviewPrompt';
 import { useDailyHero } from '../../hooks/useDailyHero';
 
 // The floating web nav is 64px tall; the dark stage bleeds up under it, so the
@@ -155,6 +156,15 @@ export function DailyGame() {
   useEffect(() => {
     if (won) void optIn.considerAfterWin(streak.current);
   }, [won, streak.current, optIn]);
+
+  // The rating ask rides the same win, but a streak of five rather than one, so
+  // it lands days after the notification prompt. `blocked` covers the overlap
+  // anyway: two modal asks stacked on one screen reads as an app that wants
+  // things rather than one that gives them.
+  const review = useReviewPrompt();
+  useEffect(() => {
+    if (won) void review.considerAfterStreak(streak.current, optIn.offering);
+  }, [won, streak.current, optIn.offering, review]);
   const guessedIds = new Set(guesses.map((g) => g.id));
 
   const onShare = useCallback(async () => {

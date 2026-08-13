@@ -8,7 +8,8 @@
 // the price of admission to the debate. Mirrors the web ShowdownStage
 // (src/components/web/versus) so the two platforms read as one design; both
 // share useMatchupVote.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT } from '../../constants/colors';

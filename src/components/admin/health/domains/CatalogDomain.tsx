@@ -1,4 +1,5 @@
-import { View, Text, Pressable, ActivityIndicator, Animated, StyleSheet } from 'react-native';
+import { View, Pressable, ActivityIndicator, Animated, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../../constants/colors';

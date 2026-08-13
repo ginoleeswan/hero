@@ -1,6 +1,7 @@
 // src/components/home/HomeHeroRow.tsx
 import { useRef } from 'react';
-import { View, Text, FlatList, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { View, FlatList, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { Text } from '../ui/Text';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';

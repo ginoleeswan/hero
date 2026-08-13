@@ -1,7 +1,8 @@
 // Native "Hall of Fame" — the authored treatment of Most Iconic: a chosen #1 shown
 // large, then a compact ranked list, instead of a flat rail. Mirrors the web
 // HallOfFame. Sits on the beige content sheet.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { HeroAvatar } from '../HeroAvatar';

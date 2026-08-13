@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   View,
   TouchableOpacity,
-  Text,
   StyleSheet,
   Platform,
   Pressable,
@@ -10,6 +9,7 @@ import {
   Linking,
   useWindowDimensions,
 } from 'react-native';
+import { Text } from '../ui/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';

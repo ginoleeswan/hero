@@ -113,11 +113,14 @@ cross-origin referrer are pinned per browser session, written once to
 convention lives in `docs/marketing/utm-attribution.md` — read that, don't
 duplicate it here.
 
-`src/lib/analytics.ts` exposes `trackEvent` — web-only Vercel custom events
-(native has no beacon; it hard-gates on platform). The event names: `sign_up`,
-`log_in`, `matchup_vote`, `favourite_add`, `search`, `sponsor_impression`,
-`sponsor_click`. Keep them snake_case and stable; they surface as rows in the
-Vercel dashboard.
+`src/lib/analytics/` is the one front door: `track(event, props)`, typed against
+the closed `EventMap` in `src/lib/analytics/events.ts`, dispatched to Vercel
+custom events on web and PostHog on native. Both sinks are inert without their
+key, so a dev machine and CI write nowhere. The seven original web event names
+(`sign_up`, `log_in`, `matchup_vote`, `favourite_add`, `search`,
+`sponsor_impression`, `sponsor_click`) are preserved verbatim — renaming one
+severs it from its own dashboard history. Add an event by adding a key to
+`EventMap`, never by passing a new string at a call site.
 
 ## The social content factory
 

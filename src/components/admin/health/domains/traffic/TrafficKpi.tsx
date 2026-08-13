@@ -3,14 +3,8 @@
 // direction and shape, not just magnitude. `live` adds a pulsing dot; `footer`
 // slots a custom element (e.g. the signed-in/anon split bar).
 import { useEffect, useRef, type ReactNode } from 'react';
-import {
-  View,
-  Text,
-  Animated,
-  StyleSheet,
-  useWindowDimensions,
-  type ViewStyle,
-} from 'react-native';
+import { View, Animated, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
+import { Text } from '../../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../../constants/colors';
 import { Sparkline } from './Sparkline';

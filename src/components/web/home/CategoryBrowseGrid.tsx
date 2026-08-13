@@ -2,7 +2,8 @@
 // doorway tile in one calm responsive grid, replacing the long wall of
 // near-identical category rails. Navigation wants a map, not a feed: the grid
 // shows every door at once, nothing hidden behind a horizontal scroll.
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { prefetchCategory } from '../../../lib/query/prefetchBrowse';
 import { HeroImage } from '../../HeroImage';
 import {

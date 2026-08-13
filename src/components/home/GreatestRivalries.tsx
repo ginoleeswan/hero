@@ -1,6 +1,7 @@
 // src/components/home/GreatestRivalries.tsx — native "Settle the Debate" carousel.
 // Each card is a split-portrait matchup that taps straight into the compare arena.
-import { View, Text, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { Text } from '../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { VsBadge } from '../compare/VsBadge';

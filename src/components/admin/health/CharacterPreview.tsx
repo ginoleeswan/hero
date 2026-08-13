@@ -1,7 +1,8 @@
 // Inline detail shown when a search result is expanded — real name, first
 // appearance, origin, powers, teams and deck pulled live from ComicVine, plus a
 // one-tap "Add". Lets you add a character with confidence instead of by name alone.
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { HeroThumb } from './atoms';

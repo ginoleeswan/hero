@@ -1,3 +1,4 @@
+import { line } from './typeScale';
 // src/constants/eventGeometry.ts — the numbers EventDossier / EventIndexList
 // and their skeletons BOTH lay out from.
 //
@@ -18,19 +19,19 @@ export const EVENT_STAGE = {
   paddingTop: 28,
   paddingTopWide: 44,
 
-  eyebrowLine: 15,
+  eyebrowLine: line(15),
   /** eyebrow marginBottom */
   eyebrowGap: 12,
 
   /** Flame 34. Brand-marked events swap it for `markMinHeight`. */
-  titleLine: 42,
+  titleLine: line(42),
   markMinHeight: 64,
 
   windowGap: 12,
-  windowLine: 18,
+  windowLine: line(18),
 
   methodGap: 8,
-  methodLine: 21,
+  methodLine: line(21),
   /** The method sentence is a constant, and on phone widths it sets three
    *  lines. The Text is clamped and boxed to exactly that on phone so the
    *  height is a fact rather than a font-metrics guess. */
@@ -39,9 +40,9 @@ export const EVENT_STAGE = {
   statsGap: 20,
   statsGapWide: 26,
   /** Flame 40 + 2 + a 10pt label line: the tallest stat, which sets the row. */
-  statBigLine: 49,
-  statValueLine: 32,
-  statLabelLine: 14,
+  statBigLine: line(49),
+  statValueLine: line(32),
+  statLabelLine: line(14),
   statInnerGap: 2,
 
   /** The readership curve is pinned to the stage floor and adds no height; the
@@ -57,9 +58,9 @@ export const EVENT_PAPER = {
   paddingTop: 34,
   paddingBottom: 64,
   sectionMarginBottom: 42,
-  sectionTitleLine: 32,
+  sectionTitleLine: line(32),
   sectionNoteGap: 2,
-  sectionNoteLine: 19,
+  sectionNoteLine: line(19),
   sectionBodyGap: 18,
   /** The lead trailer's backdrop. */
   leadAspect: 16 / 8,
@@ -70,11 +71,11 @@ export const EVENT_PAPER = {
  *  bigger headline, a tighter eyebrow, and rows built around a bleeding curve. */
 export const EVENT_INDEX = {
   stagePaddingBottom: 28,
-  eyebrowLine: 15,
+  eyebrowLine: line(15),
   eyebrowGap: 10,
-  titleLine: 45,
+  titleLine: line(45),
   methodGap: 10,
-  methodLine: 21,
+  methodLine: line(21),
   methodLines: 3,
 
   paperPaddingTop: 30,
@@ -82,12 +83,12 @@ export const EVENT_INDEX = {
 
   rowPaddingVertical: 22,
   rowGap: 8,
-  rowTitleLine: 30,
-  rowWindowLine: 16,
+  rowTitleLine: line(30),
+  rowWindowLine: line(16),
   rowCurveGap: 10,
   rowCurveH: 76,
   rowCurveHWide: 64,
-  rowStatLine: 18,
+  rowStatLine: line(18),
   rowBorder: 1,
 } as const;
 

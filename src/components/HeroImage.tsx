@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { LayoutChangeEvent, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { LayoutChangeEvent, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { Text } from './ui/Text';
 import { Image, ImageContentFit, ImageContentPosition, ImageStyle } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';

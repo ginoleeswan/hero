@@ -8,15 +8,8 @@
 // the list the instant they're placed and the count ticks down; placing a hero
 // also makes it fame-eligible. Shows a cleared state when the bucket is drained.
 import { useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  TextInput,
-  ActivityIndicator,
-  Linking,
-  StyleSheet,
-} from 'react-native';
+import { View, Pressable, ActivityIndicator, Linking, StyleSheet } from 'react-native';
+import { Text, TextInput } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, PAPER_TEXT } from '../../../constants/colors';
 import { Panel } from './Panel';

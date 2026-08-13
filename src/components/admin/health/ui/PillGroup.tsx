@@ -1,7 +1,8 @@
 // Segmented pill selector for small option sets (batch size, cron cadence).
 // `inset` = a beige track whose selected pill turns white (the batch selector);
 // `solid` = free-standing beige pills whose selected one turns navy (cron editor).
-import { View, Text, Pressable, StyleSheet, type ViewStyle } from 'react-native';
+import { View, Pressable, StyleSheet, type ViewStyle } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { COLORS } from '../../../../constants/colors';
 
 export interface PillOption<T> {

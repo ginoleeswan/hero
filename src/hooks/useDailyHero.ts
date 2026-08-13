@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDailyHero, type DailyPuzzle } from '../lib/db/dailyHero';
 import { getDailyDistribution, recordDailyResult } from '../lib/db/dailyStats';
 import { recordDailyCompletion } from '../lib/db/dailies';
+import { track } from '../lib/analytics';
 import { blurForGuess, buildClues, visibleClues, type Clue } from '../lib/game/reveal';
 import { buildDossier } from '../lib/game/dossier';
 import { buildShareGrid } from '../lib/game/shareGrid';
@@ -117,10 +118,15 @@ export function useDailyHero() {
         JSON.stringify({ guesses: next, status: nextStatus } satisfies SavedDay),
       ).catch(() => {});
 
+      track('daily_guess', { attempt: next.length, correct: correct });
       if (won || lost) {
         setStreak((prev) => {
           const updated = applyResult(prev, puzzle.date, won);
           AsyncStorage.setItem(STREAK_KEY, JSON.stringify(updated)).catch(() => {});
+          // Fired here rather than in an effect on `status`, so the streak
+          // reported is the one this result produced — an effect would race the
+          // state update and log the PREVIOUS streak on every finish.
+          track('daily_finished', { won, attempts: next.length, streak: updated.current });
           return updated;
         });
         setStats((prev) => {

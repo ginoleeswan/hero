@@ -1,6 +1,7 @@
 // The dashboard's standard "nothing here yet" line. One style for the ~10
 // hand-rolled grey placeholder texts scattered across the panels.
-import { Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { COLORS } from '../../../../constants/colors';
 
 export function EmptyState({ text }: { text: string }) {

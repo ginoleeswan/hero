@@ -1,7 +1,8 @@
 // src/components/search/FilterChips.tsx — Apple-style segmented filter row.
 // Generic over a string-union value (used for both the publisher scope and the
 // alignment facet). Lives on the dark search canvas.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../constants/colors';
 

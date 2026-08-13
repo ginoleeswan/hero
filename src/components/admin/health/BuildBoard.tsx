@@ -2,7 +2,8 @@
 // Resolve -> Appearances, one hero at a time, live, while you watch. Foreground
 // only (stops if closed); pauses at the ComicVine hourly cap and auto-resumes.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Pressable, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { HeroThumb } from './atoms';

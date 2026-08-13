@@ -4,7 +4,8 @@
 // so notifications.web.tsx re-exports this one. There is nothing platform
 // specific here — the list is a list.
 import { useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Pressable, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { Text } from '../src/components/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';

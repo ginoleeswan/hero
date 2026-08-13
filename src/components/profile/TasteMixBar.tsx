@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { COLORS, PAPER_TEXT } from '../../constants/colors';
 import { shortPublisher, type TasteFacet } from '../../lib/db/taste';
 

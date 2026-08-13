@@ -5,13 +5,13 @@
 import { useState, type ReactNode } from 'react';
 import {
   View,
-  Text,
   Pressable,
   ActivityIndicator,
   StyleSheet,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';

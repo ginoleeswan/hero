@@ -186,3 +186,32 @@ broken one-day streak is not a loss worth mentioning.
 The marker is written when the list has **rendered**, not when it was fetched —
 a badge that clears because something prefetched in the background is a badge
 nobody trusts.
+
+## The rating ask
+
+`src/lib/review/` + `src/hooks/useReviewPrompt.ts`, same shape as the
+notification system: a pure `policy.ts` with all the rules and tests, an
+`index.ts` that is inert off native and `require`s `expo-store-review` lazily.
+
+iOS silently rate-limits the in-app review sheet to **three appearances per app
+per year and does not tell you when it swallowed one** — `requestReview()`
+resolves identically either way. An app that asks eagerly therefore does not get
+more reviews, it gets the same three asks spent on whoever happened to open the
+app that week. So the ask is spent deliberately:
+
+- **Two triggers, both earned:** a daily streak of 5, or a third finished arena
+  battle (landing on a resolved verdict having already picked a side — arriving
+  without a pick is browsing).
+- **A week's grace** from the first open, stamped at the root by `noteAppOpened`
+  so it measures a real install date.
+- **120 days between asks**, and **two per rolling year** — under the OS's own
+  three, so our ask is never the one iOS discards.
+- **`blocked` is the caller's veto.** Policy cannot see whether a sheet is
+  already on screen, so it takes that as input. The daily game passes
+  `optIn.offering`: the notification pre-prompt and the rating ask must never
+  stack. They are separated by construction anyway — the notification prompt
+  fires at a streak of 1, this one at 5.
+
+A raised ask is recorded as spent whether or not the sheet appeared, because
+there is no way to tell. Treating a swallowed ask as unspent and retrying is how
+an app burns all three slots in a fortnight.

@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';

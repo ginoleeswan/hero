@@ -6,7 +6,8 @@
 // names in a list. This is the other half: no edges, no panning, the whole
 // ladder oldest-first. Picking anyone drops back into their line, so the two
 // views are a loop rather than a fork.
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../ui/Text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS, ORANGE_INK, HOUSE_INK } from '../../constants/colors';

@@ -1,5 +1,6 @@
 // src/components/search/PortraitCard.tsx — portrait result card for the search grid
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Link, type Href } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressScale } from '../ui/PressScale';

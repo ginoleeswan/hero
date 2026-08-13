@@ -7,7 +7,8 @@
 // scattered across fifty-five roster chips. Seat one is the root of the tree
 // below; seat two is whoever you're measuring against.
 import { Fragment } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';

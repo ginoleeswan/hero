@@ -20,16 +20,8 @@
 // "Armed" side = where taps land. Tap a tray row to arm it; the armed row gets
 // its faction tint, a "+" in its next open slot, and the dice (random fill).
 import { useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  FlatList,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Dimensions,
-} from 'react-native';
+import { View, FlatList, Pressable, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { Text, TextInput } from '../../src/components/ui/Text';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';

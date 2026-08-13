@@ -2,7 +2,8 @@
 // a face-off banner (the app's versus identity, full-scale) so the editorial
 // chapter opens with a moment instead of a plain header. Taps straight into the
 // arena; the rivalries rail below carries the rest.
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { useRouter } from 'expo-router';
 import { COLORS, ELEVATION, HOVER_TRANSITION, pageGutter } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';

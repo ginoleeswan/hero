@@ -6,7 +6,8 @@
 // chosen to be dark ENOUGH), so on the Arena it came out dark-on-dark and the
 // section header was effectively invisible. `tone` picks the pair; the cards
 // themselves are dark art either way and never needed it.
-import { View, Text, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { Text } from '../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { PressScale } from '../ui/PressScale';

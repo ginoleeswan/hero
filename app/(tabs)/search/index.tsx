@@ -12,13 +12,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
   FlatList,
   Pressable,
   StyleSheet,
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
+import { Text } from '../../../src/components/ui/Text';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter, type Href } from 'expo-router';

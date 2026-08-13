@@ -23,7 +23,7 @@ jest.mock('../../src/hooks/useAuth', () => ({
 }));
 
 jest.mock('../../src/lib/analytics', () => ({
-  trackEvent: jest.fn(),
+  track: jest.fn(),
 }));
 
 const mockGetMatchupTallyV2 = getMatchupTallyV2 as jest.MockedFunction<typeof getMatchupTallyV2>;

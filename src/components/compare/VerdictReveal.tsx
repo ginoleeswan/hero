@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
   useReducedMotion,
 } from 'react-native-reanimated';
+import { MAX_TYPE_SCALE } from '../ui/Text';
 import { COLORS } from '../../constants/colors';
 
 /**
@@ -49,6 +50,7 @@ export function VerdictReveal({
   if (verdict) {
     return (
       <Animated.Text
+        maxFontSizeMultiplier={MAX_TYPE_SCALE}
         entering={FadeIn.duration(450)}
         style={[styles.verdict, dark && styles.verdictDark]}
       >
