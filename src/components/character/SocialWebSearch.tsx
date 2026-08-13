@@ -79,6 +79,10 @@ export function SocialWebSearch({
       .slice(0, 7);
   }, [q, nodes]);
 
+  // the highlighted
+  // row resets to the top whenever the query changes. Derived state that has to
+  // follow an input; there is no render-time form that keeps the list mounted.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setCursor(0), [q]);
 
   /**
@@ -151,7 +155,6 @@ export function SocialWebSearch({
       document.removeEventListener('keydown', onKey, true);
       document.removeEventListener('pointerdown', onDown);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   if (!open) {

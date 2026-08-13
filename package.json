@@ -21,7 +21,7 @@
     "build:splash": "node scripts/brand/build-splash.mjs",
     "social": "node scripts/social/studio.mjs",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,json}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json}\"",

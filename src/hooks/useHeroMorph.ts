@@ -39,14 +39,15 @@ export function useHeroMorph(art: MorphArt, enabled = true) {
   // names would abort the transition). The store pings subscribers before the
   // back-navigation is flushed, so the tag is committed into the transition's
   // "new" snapshot.
-  const claimToken = useRef<symbol | null>(null);
-  if (claimToken.current === null) claimToken.current = Symbol('morph-return');
+  // A lazy useState rather than the useRef + null-check dance: the token is a
+  // stable per-instance identity, which is exactly what a lazy initialiser
+  // gives, and it removes a ref READ during render — the thing that made this
+  // fragile in the first place, since a ref is not meant to be part of what
+  // render depends on.
+  const [claimToken] = useState(() => Symbol('morph-return'));
   const returnId = useSyncExternalStore(subscribeMorphReturn, getMorphReturnId, () => null);
   const returning =
-    enabled &&
-    returnId != null &&
-    returnId === art.id &&
-    claimMorphReturn(art.id, claimToken.current);
+    enabled && returnId != null && returnId === art.id && claimMorphReturn(art.id, claimToken);
 
   const run = useCallback(
     (navigate: () => void) => {
@@ -78,7 +79,10 @@ export function useHeroMorph(art: MorphArt, enabled = true) {
         clear();
       }
     },
-    // art is a fresh object each render; depend on its fields, not identity.
+    // art is a fresh object each render; depend on its FIELDS, not its
+    // identity, or this callback would be rebuilt on every render and the
+    // memoised card below it with it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [art.id, art.name, art.image_url, art.portrait_url, enabled],
   );
 

@@ -2204,12 +2204,19 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
     const el = sectionRef.current;
     if (!el) return;
     if (!('IntersectionObserver' in window)) {
+      // No IntersectionObserver (old browsers, jsdom): reveal everything rather
+      // than leaving the section permanently hidden behind an observer that will
+      // never fire.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSeen(true);
       return;
     }
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
+          // No IntersectionObserver (old browsers, jsdom): reveal everything rather
+          // than leaving the section permanently hidden behind an observer that will
+          // never fire.
           setSeen(true);
           io.disconnect();
         }
@@ -2243,6 +2250,8 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
   useEffect(() => {
     if (!seen) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // Reduce Motion: land on the final percentage instead of counting to it.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShownPctA(pctA);
       return;
     }
@@ -2258,7 +2267,6 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seen, pctA]);
 
   // Top takes by agreement, one row each; editorial camp slogans keep the

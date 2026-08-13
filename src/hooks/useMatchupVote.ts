@@ -42,9 +42,17 @@ export function useMatchupVote(heroAId: string, heroBId: string): MatchupVoteSta
     // can't render the new matchup as already-revealed with the prior pair's
     // pick/tally carried over. All current callers mount fresh per pair, but the
     // hook must be correct on its own contract.
+    // Reset before the fetch — see the note above. Deliberately synchronous:
+    // the point is that the OLD pair's pick can never paint against the NEW
+    // pair, which a post-await reset would allow for exactly one frame.
+    // Reset before the fetch — see the note above. Deliberately synchronous:
+    // the point is that the OLD pair's pick can never paint against the NEW
+    // pair, which a post-await reset would allow for exactly one frame.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setPickedId(null);
     setTally(null);
     setLoaded(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
     getVoterKey()
       .then((vk) => getMatchupTallyV2(heroAId, heroBId, vk))
       .then(async (t) => {

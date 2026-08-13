@@ -41,7 +41,6 @@ import {
   TodaysMatchupSkeleton,
 } from '../../src/components/web/home/TodaysMatchup';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
-import { BrandLogoView } from '../../src/components/PublisherBadge';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { idlePrefetchTopUniverses } from '../../src/lib/query/prefetchBrowse';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
@@ -341,13 +340,16 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   const swipeStart = useRef<number | null>(null);
   const step = useCallback(
     (dir: number) => setActiveIndex((i) => (i + dir + heroes.length) % heroes.length),
-    [heroes.length],
+    // setActiveIndex included because the compiler infers it and cannot know a
+    // useState setter is stable. Listing it costs nothing and lets the
+    // component be optimised instead of skipped.
+    [heroes.length, setActiveIndex],
   );
   const swipeHandlers = {
-    onTouchStart: (e: { touches: Array<{ clientX: number }> }) => {
+    onTouchStart: (e: { touches: { clientX: number }[] }) => {
       swipeStart.current = e.touches[0]?.clientX ?? null;
     },
-    onTouchEnd: (e: { changedTouches: Array<{ clientX: number }> }) => {
+    onTouchEnd: (e: { changedTouches: { clientX: number }[] }) => {
       const from = swipeStart.current;
       swipeStart.current = null;
       const to = e.changedTouches[0]?.clientX;

@@ -2,7 +2,7 @@
 // period delta chip and an optional trend sparkline — so a number carries
 // direction and shape, not just magnitude. `live` adds a pulsing dot; `footer`
 // slots a custom element (e.g. the signed-in/anon split bar).
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, type ReactNode, useState } from 'react';
 import { View, Animated, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
 import { Text } from '../../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +27,11 @@ function DeltaChip({ delta }: { delta: number }) {
 }
 
 function LiveDot() {
-  const pulse = useRef(new Animated.Value(1)).current;
+  // useState with a lazy initialiser, not `useRef(new Animated.Value(n)).current`.
+  // Two reasons: reading `.current` during render is exactly what the refs rule
+  // forbids, and the useRef form constructs a fresh Animated.Value on EVERY
+  // render only to throw it away. The lazy initialiser runs once.
+  const [pulse] = useState(() => new Animated.Value(1));
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([

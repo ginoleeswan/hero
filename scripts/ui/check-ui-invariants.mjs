@@ -460,6 +460,23 @@ for (const kind of ['radius', 'font']) {
   }
 }
 
+// The tightening half. A ratchet that only ever fails upward is a ratchet with
+// no pawl: the count falls when someone cleans up in passing, the baseline
+// keeps the old slack, and the next careless value slides into the gap without
+// tripping anything. Reporting the fall is what turns a cleanup into a
+// permanently narrower budget — and it is a message, not a failure, because
+// nobody should have their unrelated PR blocked for improving a number.
+const slack = ['radius', 'font']
+  .filter((kind) => counts[kind] < baseline[kind])
+  .map((kind) => `${kind} ${baseline[kind]} → ${counts[kind]}`);
+if (slack.length) {
+  console.log(
+    `Design scale ratchet has slack: ${slack.join(', ')}.\n` +
+      `  Lower it in ${BASELINE_PATH} to bank the improvement:\n` +
+      `    ${JSON.stringify(counts)}`,
+  );
+}
+
 const tightened = ['radius', 'font'].filter((k) => counts[k] < baseline[k]);
 if (tightened.length) {
   console.log(

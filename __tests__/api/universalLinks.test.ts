@@ -29,6 +29,9 @@ function hasRoute(path: string): boolean {
   }
   if (!existsSync(dir)) return false;
   // A wildcard needs SOME dynamic segment file in that directory.
+  // Required inline so the fs read happens per call rather than at import,
+  // which keeps this helper usable before the test's own setup has run.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const entries = require('node:fs').readdirSync(dir) as string[];
   return entries.some((e) => e.startsWith('['));
 }

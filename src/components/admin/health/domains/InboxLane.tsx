@@ -32,7 +32,7 @@ export function InboxLane({
   ] as const);
   useEffect(() => {
     if (jump) setSub(jump.sub);
-  }, [jump]);
+  }, [jump, setSub]);
 
   // Counts share query keys with the panels (and the page-level badge), so the
   // cache is filled once and every surface agrees.

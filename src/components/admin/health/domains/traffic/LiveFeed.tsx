@@ -2,7 +2,7 @@
 // first, with character routes shown by hero name and everything else as a
 // friendly section label + relative time. A pulsing "active now" header answers
 // "what's happening this minute". Tapping a hero row opens that character.
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Pressable, Animated, StyleSheet } from 'react-native';
 import { Text } from '../../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,7 +46,11 @@ function routeMeta(route: string) {
 }
 
 function PulseDot() {
-  const pulse = useRef(new Animated.Value(1)).current;
+  // useState with a lazy initialiser, not `useRef(new Animated.Value(n)).current`.
+  // Two reasons: reading `.current` during render is exactly what the refs rule
+  // forbids, and the useRef form constructs a fresh Animated.Value on EVERY
+  // render only to throw it away. The lazy initialiser runs once.
+  const [pulse] = useState(() => new Animated.Value(1));
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([

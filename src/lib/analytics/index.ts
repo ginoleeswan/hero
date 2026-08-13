@@ -38,6 +38,9 @@ export function initAnalytics(): void {
   if (started || isWeb || !POSTHOG_KEY) return;
   started = true;
   try {
+    // Lazy by design: a static import would fail at module LOAD on a build
+    // without the native module, rather than here where the catch handles it.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PostHog } = require('posthog-react-native') as {
       PostHog: new (key: string, opts: Record<string, unknown>) => PostHogInstance;
     };
@@ -78,6 +81,7 @@ export function track<E extends EventName>(
   try {
     if (isWeb) {
       // Lazily required so the native bundle never pulls the web beacon in.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { trackWeb } = require('./vercel') as {
         trackWeb: (n: string, p: Record<string, unknown>) => void;
       };

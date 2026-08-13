@@ -3,6 +3,9 @@
 // one short text clue is uncovered per miss. All deterministic + unit-tested;
 // the hook and view just render what these return.
 
+import { alignmentLabel as taxoAlignment } from '../characterTaxonomy';
+import { isPresentableFact } from '../characterFacts';
+
 export interface RevealHero {
   id: string;
   name: string;
@@ -18,9 +21,6 @@ export interface RevealHero {
   firstAppearance: string | null;
   powers: string[];
 }
-
-import { alignmentLabel as taxoAlignment } from '../characterTaxonomy';
-import { isPresentableFact } from '../characterFacts';
 
 export interface Clue {
   label: string;

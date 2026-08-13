@@ -53,6 +53,10 @@ export const Text = forwardRef<RNText, TextProps>(function Text(
     <RNText ref={ref} maxFontSizeMultiplier={maxFontSizeMultiplier ?? MAX_TYPE_SCALE} {...rest} />
   );
 });
+// A value and a type may share a name — TS keeps them in separate namespaces,
+// and React Native declares its own Text exactly this way. The rule cannot tell
+// the two apart, so this is the pattern being declared rather than a shadow.
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type Text = RNText;
 
 export const TextInput = forwardRef<RNTextInput, TextInputProps>(function TextInput(
@@ -67,4 +71,5 @@ export const TextInput = forwardRef<RNTextInput, TextInputProps>(function TextIn
     />
   );
 });
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- as above: value + type, not a shadow.
 export type TextInput = RNTextInput;

@@ -154,10 +154,16 @@ export function DailyGame() {
   // daily just won, with a streak on screen — and the reminder is kept in step
   // with play state on every change so it is cancelled as eagerly as it is set.
   const optIn = useNotificationOptIn();
-  useStreakReminderSync({ streak: streak.current, playedToday: finished });
+  // Named, because `streak` is STATE (StreakState) and `.current` is its
+  // day-count field — not a ref. The hooks lint reads any `.current` in a dep
+  // array as a ref access and warns that mutating it will not re-render; here
+  // it is a plain number off a state object, so a new value does re-render.
+  // Lifting it out says that in the code rather than in a suppression.
+  const streakDays = streak.current;
+  useStreakReminderSync({ streak: streakDays, playedToday: finished });
   useEffect(() => {
-    if (won) void optIn.considerAfterWin(streak.current);
-  }, [won, streak.current, optIn]);
+    if (won) void optIn.considerAfterWin(streakDays);
+  }, [won, streakDays, optIn]);
 
   // The rating ask rides the same win, but a streak of five rather than one, so
   // it lands days after the notification prompt. `blocked` covers the overlap
@@ -165,8 +171,8 @@ export function DailyGame() {
   // things rather than one that gives them.
   const review = useReviewPrompt();
   useEffect(() => {
-    if (won) void review.considerAfterStreak(streak.current, optIn.offering);
-  }, [won, streak.current, optIn.offering, review]);
+    if (won) void review.considerAfterStreak(streakDays, optIn.offering);
+  }, [won, streakDays, optIn.offering, review]);
   const guessedIds = new Set(guesses.map((g) => g.id));
 
   const onShare = useCallback(async () => {

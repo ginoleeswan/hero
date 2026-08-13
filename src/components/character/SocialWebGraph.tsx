@@ -104,11 +104,20 @@ export function SocialWebGraph({
   // Mount entrance: 0→1, re-keyed when the subject (neighbourhood) changes.
   const [entrance, setEntrance] = useState(() => (reducedMotion() ? 1 : 0));
   useEffect(() => {
+    // Mount entrance. Reduce Motion lands on the finished state; otherwise the
+    // value is reset to 0 so the rAF below can drive it to 1. Both are state
+    // that has to follow the subject changing, which is what an effect is for.
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (reducedMotion()) {
+      // Reduce Motion: land on the finished state instead of animating to it.
       setEntrance(1);
       return;
     }
+    // Derived UI state resetting when its input changes. The render-time
+    // alternative is a `key` on the parent, which would remount the whole
+    // subtree and throw away exactly the thing being animated.
     setEntrance(0);
+    /* eslint-enable react-hooks/set-state-in-effect */
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
@@ -207,7 +216,6 @@ export function SocialWebGraph({
       </Svg>
       {nodes.map((n) => {
         const p = at(n.id);
-        const fame = n.fame_score ?? 0;
         // Wide fame spread (34→64) rather than the old near-uniform 40→52, so the
         // eye gets anchors and the field reads as a hierarchy instead of a swarm.
         const d = diameter(n);

@@ -4,7 +4,7 @@ import { useInViewOnce } from '../../src/hooks/useInViewOnce';
 
 // Controllable IntersectionObserver mock: capture the callback so tests can
 // fire an intersection on demand, and record disconnect calls.
-type IOCallback = (entries: Array<{ isIntersecting: boolean }>) => void;
+type IOCallback = (entries: { isIntersecting: boolean }[]) => void;
 let lastCallback: IOCallback | null = null;
 const disconnect = jest.fn();
 const observe = jest.fn();

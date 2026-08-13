@@ -109,8 +109,21 @@ FRAMING: This is a HEADSHOT — the face and head fill the entire canvas. Think 
 The character MUST face RIGHT. Preserve costume colours and identity exactly. No text, no logos.`;
 }
 
-// The 34 heroes that already have curated local images (id → local file path)
-const LOCAL_PORTRAITS: Record<string, string> = {
+/**
+ * The 34 heroes with curated local art (hero id → file in assets/images).
+ *
+ * A MANIFEST, not a helper. It is the only record of which files in
+ * assets/images are hand-picked rather than generated, and of which hero each
+ * one belongs to — the filenames say "spiderman.jpg", not "620".
+ *
+ * NOT CURRENTLY CONSULTED BY THE GENERATOR. It used to feed a `priorityOrder()`
+ * that nothing ever called, so the generator does not presently skip or
+ * prioritise these heroes. That reads as a dropped intent rather than a
+ * decision — a curated portrait is exactly the thing a generation run should
+ * not overwrite. Left unwired because changing what this script produces is a
+ * call for someone who can run it.
+ */
+export const LOCAL_PORTRAITS: Record<string, string> = {
   '620': 'assets/images/spiderman.jpg',
   '346': 'assets/images/ironman.jpg',
   '70': 'assets/images/batman.jpg',
@@ -932,14 +945,6 @@ async function withConcurrency<T>(
 }
 
 // ─── Phase 2: Generate AI portraits for remaining heroes ──────────────────────
-
-const MITCHELL_IDS = new Set(Object.keys(LOCAL_PORTRAITS));
-
-function priorityOrder(id: string): number {
-  if (MITCHELL_IDS.has(id)) return 0; // Mitchell heroes first
-  if (!id.startsWith('cv-')) return 1; // SuperheroAPI numeric IDs second
-  return 2; // ComicVine cv- IDs last
-}
 
 async function phase2(filterHeroId?: string): Promise<void> {
   console.log('\n═══ Phase 2: Generating AI portraits ═══\n');

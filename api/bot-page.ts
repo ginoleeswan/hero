@@ -64,7 +64,7 @@ async function fetchRelated(
       }),
     });
     if (!r.ok) return [];
-    const rows = (await r.json()) as Array<{ id?: string; name?: string }>;
+    const rows = (await r.json()) as { id?: string; name?: string }[];
     return rows.filter((h): h is RelatedLite => !!h.id && !!h.name);
   } catch {
     return [];
@@ -92,7 +92,7 @@ async function fetchTitleCharacters(titleId: string): Promise<RelatedLite[]> {
       `&select=rank,heroes(id,name)&order=rank.desc.nullslast&limit=24`;
     const r = await fetch(url, { headers: { apikey: SUPABASE_KEY } });
     if (!r.ok) return [];
-    const rows = (await r.json()) as Array<{ heroes: { id?: string; name?: string } | null }>;
+    const rows = (await r.json()) as { heroes: { id?: string; name?: string } | null }[];
     return rows.map((row) => row.heroes).filter((h): h is RelatedLite => !!h && !!h.id && !!h.name);
   } catch {
     return [];
@@ -117,7 +117,7 @@ async function fetchTeamRoster(teamId: string): Promise<RelatedLite[]> {
       body: JSON.stringify({ p_team_id: teamId, p_limit: 24 }),
     });
     if (!r.ok) return [];
-    const rows = (await r.json()) as Array<{ id?: string; name?: string }>;
+    const rows = (await r.json()) as { id?: string; name?: string }[];
     return rows.filter((h): h is RelatedLite => !!h.id && !!h.name);
   } catch {
     return [];
@@ -150,7 +150,7 @@ const HUB_LIMIT = 100;
 // them (parens, quotes, `*` wildcards, spaces all decode correctly server-side).
 type CatQuery = {
   select: string;
-  params: Array<[string, string]>;
+  params: [string, string][];
   order: string;
   /**
    * A hub defined by a hero_tags tag rather than a heroes column. Resolved to
@@ -304,7 +304,7 @@ async function fetchHubHeroes(spec: CatQuery): Promise<RelatedLite[]> {
       headers: { apikey: SUPABASE_KEY },
     });
     if (!r.ok) return [];
-    const rows = (await r.json()) as Array<{ id?: string; name?: string }>;
+    const rows = (await r.json()) as { id?: string; name?: string }[];
     return rows.filter((h): h is RelatedLite => !!h.id && !!h.name);
   } catch {
     return [];

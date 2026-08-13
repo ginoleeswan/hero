@@ -96,6 +96,7 @@ const CATEGORY_TAGLINES: Record<CategorySlug, string> = {
 };
 // Shared with CategorySkeleton so the placeholder cannot drift from the real
 // layout — see constants/categoryGeometry.
+const STAGE_LOGO_H = CATEGORY_STAGE.logoHeight;
 const H_PAD = 16;
 const GAP = 8;
 // Native search bar sits below the nav bar in the header; the navy stage pads
@@ -311,7 +312,6 @@ export default function CategoryScreen() {
   // Registered universes get a brand masthead: the logo at a fixed height, sized
   // by its badge aspect (mirrors the team screen + the web banner's compact mode,
   // which also drops the desktop portrait montage on phone widths).
-  const STAGE_LOGO_H = CATEGORY_STAGE.logoHeight;
   const brandLogo = useMemo(() => {
     if (!brand?.logo || !brand?.badgeSize) return null;
     return {

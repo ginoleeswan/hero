@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPlan, rng } from './plan.mjs';
+import { buildPlan } from './plan.mjs';
 
 const H = (name, over = {}) => ({ name, fame_score: 90, tier: 'A',
   stats: { intelligence: 60, strength: 90, speed: 80, durability: 70, power: 85, combat: 95, ...over } });

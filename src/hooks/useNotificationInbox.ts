@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './useAuth';
 import { getMyTakes } from '../lib/db/takes';
-import { getYesterdayResult, yesterdayIso } from '../lib/db/dailyDebate';
+import { getYesterdayResult, yesterdayIso, todayIso } from '../lib/db/dailyDebate';
 import { getHeroesByIds } from '../lib/db/heroes';
 import {
   EMPTY_SEEN,
@@ -18,7 +18,6 @@ import {
   type InboxSeen,
 } from '../lib/notifications/inbox';
 import { type StreakState } from '../lib/game/streak';
-import { todayIso } from '../lib/db/dailyDebate';
 
 const SEEN_KEY = 'inbox_seen_v1';
 /** The daily game's own streak store — read, never written, from here. */
@@ -124,6 +123,9 @@ export function useNotificationInbox() {
   }, [user]);
 
   useEffect(() => {
+    // State set on completion of an async load. There is no render-time
+    // equivalent: the value does not exist until the request returns.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 

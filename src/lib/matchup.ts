@@ -1,4 +1,4 @@
-import { getIconicHeroes, getHeroById, type Hero, type HeroRow } from './db/heroes';
+import { getIconicHeroes, getHeroById, type HeroRow } from './db/heroes';
 import { getCachedVerdict } from './db/verdicts';
 import { compareStats } from './compare';
 import { generateVerdict } from './api';

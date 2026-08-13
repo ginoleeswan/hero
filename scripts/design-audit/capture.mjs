@@ -17,7 +17,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import pw from 'playwright-core';
+import { chromium } from 'playwright-core';
 
 const EMAIL = process.env.MYTHIQUE_AUDIT_EMAIL;
 const PASS = process.env.MYTHIQUE_AUDIT_PASSWORD;
@@ -60,7 +60,7 @@ const VIEWPORTS = process.env.AUDIT_VIEWPORT
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const browser = await pw.chromium.launch({
+const browser = await chromium.launch({
   ...(process.env.PW_CHROME ? { executablePath: process.env.PW_CHROME } : { channel: 'chrome' }),
   args: ['--no-sandbox'],
 });

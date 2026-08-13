@@ -97,6 +97,10 @@ export default function SocialWebExplorer() {
   // A deep link or an in-app navigation can change the route param without
   // going through travelTo; the scene should follow it either way.
   useEffect(() => {
+    // A deep link can change the route param without going through travelTo,
+    // so the focus has to follow the URL. Guarded against a self-triggering
+    // loop by the inequality check.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (id && id !== focusSubject) setFocusSubject(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

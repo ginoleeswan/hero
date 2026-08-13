@@ -53,7 +53,7 @@ export function useSkeletonTransition(
         return;
       }
       shown.current = false;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+
       setPhase('pre');
       const t = setTimeout(() => {
         shown.current = true;

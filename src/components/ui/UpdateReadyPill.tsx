@@ -19,6 +19,11 @@ export function UpdateReadyPill() {
   const [mounted, setMounted] = useState(ready);
 
   useEffect(() => {
+    // The latch that keeps this mounted for its EXIT animation. Unmount is
+    // driven by the animation's completion callback, not by the prop, so
+    // mounting has to happen here — deriving it during render would unmount
+    // before the fade could play.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (ready) setMounted(true);
     const animation = Animated.timing(opacity, {
       toValue: ready ? 1 : 0,
