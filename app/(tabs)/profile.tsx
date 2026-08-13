@@ -42,6 +42,7 @@ import {
 } from '../../src/components/ui/GettingStartedCard';
 import { useUniverseShareImage } from '../../src/hooks/useUniverseShareImage';
 import { useDonationNudge } from '../../src/hooks/useDonationNudge';
+import { useNotificationInbox } from '../../src/hooks/useNotificationInbox';
 import { DonateNudge } from '../../src/components/support/DonateNudge';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
 import { deleteTake, type MyTake } from '../../src/lib/db/takes';
@@ -315,6 +316,7 @@ export default function ProfileScreen() {
   const [showEditName, setShowEditName] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const { toast, showToast } = useToast();
+  const { unread: inboxUnread } = useNotificationInbox();
 
   useFocusEffect(
     useCallback(() => {
@@ -743,9 +745,23 @@ export default function ProfileScreen() {
         <View style={styles.actionCards}>
           <TouchableOpacity
             style={styles.accountCard}
-            onPress={() => router.push('/settings')}
+            onPress={() => router.push('/notifications')}
             activeOpacity={0.7}
           >
+            <View style={styles.accountRow}>
+              <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
+                <Ionicons name="notifications-outline" size={16} color={COLORS.navy} />
+              </View>
+              <Text style={styles.accountLabel}>Activity</Text>
+              {inboxUnread > 0 ? (
+                <View style={styles.unreadPill}>
+                  <Text style={styles.unreadText}>{inboxUnread}</Text>
+                </View>
+              ) : null}
+              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/settings')} activeOpacity={0.7}>
             <View style={styles.accountRow}>
               <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
                 <Ionicons name="settings-outline" size={16} color={COLORS.navy} />
@@ -1496,6 +1512,16 @@ const styles = StyleSheet.create({
   accountIconBadgeOrange: {
     backgroundColor: '#fff5ee',
   },
+  unreadPill: {
+    minWidth: 22,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: COLORS.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unreadText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
   accountLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 15,

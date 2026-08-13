@@ -8,13 +8,16 @@
 
 ## Mental model
 
-There is exactly **one channel** (browser Web Push), **one message a day** (the
-daily matchup, 15:00 UTC), and **one audience** (signed-in users who flipped
-the toggle on the web settings screen). No native push — `expo-notifications`
-is not installed — and no email channel. Everything else you might expect from
-a "notifications system" (preferences matrix, per-event fan-out, badges) does
-not exist, on purpose: the retention mechanics are all daily, so one
-well-personalized daily nudge is the whole design.
+**One message a day, three surfaces.** The daily matchup goes out at 15:00 UTC
+over Web Push (browsers) and Expo Push (devices) from one sender sharing one
+message ladder — a reader with a phone and a browser must not be told two
+different things about the same day. Beside it sits an on-device streak
+reminder that needs no server at all, and an in-app Activity inbox for things
+that happened while away.
+
+Still no email, no preferences matrix beyond two switches, and no per-event
+fan-out. The retention mechanics are daily, so one well-personalized nudge
+remains the whole design.
 
 The moving parts:
 
@@ -43,11 +46,12 @@ here would risk serving a stale app bundle). It is registered in
 `app/+html.tsx` and shows the notification with a click-through URL
 (default `/versus`).
 
-**Known gap:** the toggle exists only in `app/settings.web.tsx`. The native
-settings screen (`app/settings.tsx`) has no notifications row at all — correct
-today (there is nothing a native app could subscribe to), but the row must be
-added there if native push ever ships, and until then iOS/Android users have no
-notification surface whatsoever.
+The native settings screen now carries its own rows (`useNotificationSettings`),
+and the three permission states are kept distinguishable because the right
+control differs for each: **undetermined** gets a switch that raises the real
+prompt, **granted** gets a switch we honour, **denied** gets a link into system
+Settings — iOS will not re-prompt, and a switch that does nothing when flipped
+is worse than no switch.
 
 ## Sending
 
@@ -94,3 +98,91 @@ which is exactly why nothing alarms when the keys are missing.
 - `docs/superpowers/specs/2026-07-11-matchup-takes-daily-debate-design.md` —
   the daily debate the push promotes; the streak calendar it nudges is
   `supabase/migrations/20260716090000_daily_streaks.sql`.
+
+## Native (`expo-notifications`)
+
+`src/lib/notifications/` is the device half. Every RULE lives in `policy.ts` as
+pure functions, so what the app is allowed to ask and allowed to send is
+testable without a device; `index.ts` beside it is the runtime, a no-op off
+native, lazily `require`-ing the native module so a client without it still
+boots.
+
+**The ask is a scheduled event, not a mount side effect.** iOS grants exactly
+one system prompt per install, and a denial cannot be undone from inside the
+app — it needs a trip to Settings nobody makes. So a soft sheet
+(`NotificationOptIn`) goes first, at one moment only: straight after a **first
+daily win**, with the streak the reader just started on screen. Only a yes there
+raises the real prompt; a no is recorded and can be asked again after 30 days.
+The sheet states exactly what gets sent, because vague "stay updated" copy is
+what trains people to decline by reflex.
+
+**The streak reminder is cancelled as eagerly as it is scheduled.** Play state
+syncs on every change, not only on a win: telling someone at 19:00 that their
+streak is at risk when they played at 18:00 is the fastest way to lose the
+channel, because it is provably wrong and they know it. It also refuses to roll
+to tomorrow once its hour has passed — the streak would be gone by then.
+
+**Two gates, always.** An OS grant is not consent to a particular message, so
+`notificationsActive` requires the grant AND the in-app switch. Turning the
+switch off cancels queued local schedules AND unregisters the device token;
+cancelling only the former leaves the cron still arriving.
+
+**Tap routing** (`useNotificationRouting`) handles both entry points — the
+response listener for a running app, and the LAST response read once at startup
+for a cold launch, which is the one that only shows up on a real device. The
+payload is untrusted: it arrives through the OS, so only rooted in-app paths are
+followed and absolute or protocol-relative URLs are refused.
+
+**The Android status-bar icon is generated**, not hand-exported
+(`scripts/brand/build-notification-icon.mjs`), from the same `MARK_PATH` the OG
+cards use. Android masks that asset and discards the colour, so a full-colour
+logo renders as a white blob; the generator asserts a real silhouette with
+transparency around it.
+
+### The Expo Push leg
+
+`send-daily-push` reads `device_push_tokens` alongside `push_subscriptions` and
+picks from the same ladder for both. Hygiene mirrors the web leg because the
+failure modes are the same shape under different names: `DeviceNotRegistered` is
+Expo's 404/410 and DELETES the row; anything else stamps `failed_at` for
+tomorrow; a batch that never left stamps every token in it rather than guessing
+which the service saw. Expo caps a request at 100 messages.
+
+**VAPID gates the web leg only.** It used to return early for the whole
+function, which was right when web was the only transport and wrong the moment a
+second one existed — that early return would silence native forever on a project
+that simply had not set the web keys.
+
+### Not yet live
+
+Two things outside this repo:
+
+1. **`supabase/migrations/20260812180000_device_push_tokens.sql` is written but
+   NOT applied.** Until it is, `database.generated.ts` does not know the table,
+   so `deviceToken.ts` states the row contract explicitly and reaches it through
+   a narrow typed view. **Regenerate the types and delete that shim** once the
+   migration lands.
+2. **APNs credentials and a native rebuild.** `expo-notifications` is a native
+   module; none of this reaches a dev client over OTA.
+
+## The Activity inbox
+
+`app/notifications.tsx`, reached from the profile with an unread pill.
+
+**Derived, not stored.** Every item is already a fact in another table — a
+take's agree count, yesterday's resolved debate, the local streak — and a second
+copy of a fact is a thing that can disagree with the first. The device keeps one
+marker (`inbox_seen_v1`: when the inbox was last opened, plus the agree counts
+seen then) and the items are the difference. The trade: nothing older than the
+marker can be shown, and clearing app storage clears the inbox — fine for a feed
+whose items expire within a day or two.
+
+The rules worth knowing are the ones about **staying quiet**, all in
+`lib/notifications/inbox.ts` with tests: agreement reports the DELTA (a take
+sitting at twelve is not news every time the inbox opens), a withdrawn agree
+reports nothing rather than a negative, a resolved debate reports once, and a
+broken one-day streak is not a loss worth mentioning.
+
+The marker is written when the list has **rendered**, not when it was fetched —
+a badge that clears because something prefetched in the background is a badge
+nobody trusts.
