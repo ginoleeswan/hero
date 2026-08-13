@@ -52,6 +52,8 @@ history) the linked spec.**
 | [`design-system.md`](architecture/design-system.md) | The tokens (`src/design`), the two canvases, the measured per-canvas contrast matrix, the type/elevation scales, and the ratchet that stops the scales widening. **Read before adding a colour, radius, font size or shadow.** |
 | [`data-pipelines.md`](architecture/data-pipelines.md) | How the DB gets its data: seed/drain/derive, the 6 drains, source-of-truth per field. **Read before touching any enrichment cron/edge function.** |
 | [`family-trees-and-houses.md`](architecture/family-trees-and-houses.md) | The kinship graph, the two-id-space trap, house pages, the relation console. **Read before touching `hero_relatives`, `get_house`, or `FamilyCanvas`.** |
+| [`app-store-submission.md`](architecture/app-store-submission.md) | Age rating answers, listing requirements, screenshot sets, review notes — and the Guideline 1.2 blocker (UGC with no user blocking). **Read before submitting a build.** |
+| [`privacy-and-data-collection.md`](architecture/privacy-and-data-collection.md) | Every data flow the iOS app has, per file, and the App Store privacy label derived from it. Names what is deliberately web-only and therefore out of scope. **Read before adding an SDK, a table about a person, or a permission prompt.** |
 | [`builds-and-updates.md`](architecture/builds-and-updates.md) | EAS build profiles, channels vs branches, OTA updates, opening a version from the dev build. **Read before touching `eas.json` or the `updates`/`runtimeVersion` block.** |
 
 ### Product, brand & marketing
