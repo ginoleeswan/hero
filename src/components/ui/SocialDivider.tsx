@@ -1,6 +1,6 @@
 import { View, StyleSheet } from 'react-native';
 import { Text } from './Text';
-import { COLORS, PAPER_TEXT } from '../../constants/colors';
+import { PAPER_TEXT } from '../../constants/colors';
 
 interface Props {
   label?: string;

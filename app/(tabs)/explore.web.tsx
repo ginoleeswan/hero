@@ -41,7 +41,6 @@ import {
   TodaysMatchupSkeleton,
 } from '../../src/components/web/home/TodaysMatchup';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
-import { BrandLogoView } from '../../src/components/PublisherBadge';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { idlePrefetchTopUniverses } from '../../src/lib/query/prefetchBrowse';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
@@ -344,10 +343,10 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
     [heroes.length],
   );
   const swipeHandlers = {
-    onTouchStart: (e: { touches: Array<{ clientX: number }> }) => {
+    onTouchStart: (e: { touches: { clientX: number }[] }) => {
       swipeStart.current = e.touches[0]?.clientX ?? null;
     },
-    onTouchEnd: (e: { changedTouches: Array<{ clientX: number }> }) => {
+    onTouchEnd: (e: { changedTouches: { clientX: number }[] }) => {
       const from = swipeStart.current;
       swipeStart.current = null;
       const to = e.changedTouches[0]?.clientX;

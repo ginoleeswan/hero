@@ -3,6 +3,11 @@
 // Design: docs/superpowers/specs/2026-07-06-social-ad-safety-split-design.md
 import { PUBLISHER_TIER, tierOf } from './safety.mjs';
 
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { loadEnv, makeSb, OUT_DIR } from './lib.mjs';
+
 const BANDS = [
   { label: '80-100', min: 80 },
   { label: '60-79', min: 60 },
@@ -43,11 +48,6 @@ export function buildReport(rows, { famousMin = 40 } = {}) {
 
   return { total: rows.length, tierTotals, tierFamous, publishers, untieredPublishers, safeFaceBands };
 }
-
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { loadEnv, makeSb, OUT_DIR } from './lib.mjs';
 
 // Full-catalogue scan — paginate under the PostgREST 1000-row cap.
 async function fetchAllHeroes(sb, pageSize = 1000) {

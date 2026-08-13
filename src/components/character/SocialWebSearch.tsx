@@ -151,7 +151,6 @@ export function SocialWebSearch({
       document.removeEventListener('keydown', onKey, true);
       document.removeEventListener('pointerdown', onDown);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   if (!open) {

@@ -162,6 +162,28 @@ Tests live in `__tests__/` mirroring the source tree. Run with `yarn test:ci`.
 - Do not test navigation or rendering of full screens — keep tests fast and focused.
 - The `act()` warnings from React 19 in `useAuth.test.ts` are cosmetic; the tests pass.
 
+## Ratchets
+
+Two counts in this repo may fall and may not rise. Both exist because the
+alternative — a rule strict enough to fail on every existing violation — is a
+rule someone turns off, which is how the last three token files ended up
+decorative.
+
+- **Lint warnings.** `yarn lint` runs with `--max-warnings=71`. Zero errors is
+  the hard floor; the warnings are the budget. If a change adds one, either fix
+  it or, when the pattern is genuinely deliberate, declare it with an
+  `eslint-disable-next-line` **and a reason on the line above** — the lazy
+  `require()`s for native modules are the worked example. Lower the number in
+  `package.json` in the same commit whenever you clean some up; that is how the
+  budget tightens.
+- **Off-scale design values.** `yarn check:ui` counts radius and font literals
+  that are not on the scale, against `scripts/ui/design-baseline.json`. It fails
+  when the count rises and *tells you* when it has slack, so a cleanup can be
+  banked rather than quietly absorbed.
+
+The point of both is that an exception has to be an explicit, reviewed act
+rather than one more entry in a number nobody reads.
+
 ## Code style
 
 - TypeScript throughout — no `any`, prefer `unknown` for caught errors.

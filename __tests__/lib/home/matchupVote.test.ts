@@ -1,6 +1,8 @@
 // __tests__/lib/home/matchupVote.test.ts
 import { dayStamp, matchupVoteKey, statSplit, statLead } from '../../../src/lib/home/matchupVote';
 
+import { crowdSplit, frozenResult, CROWD_FLOOR } from '../../../src/lib/home/matchupVote';
+
 describe('dayStamp', () => {
   it('formats the UTC calendar day as YYYY-MM-DD with zero-padding', () => {
     // UTC-constructed dates: dayStamp rotates on the server's UTC calendar
@@ -56,8 +58,6 @@ describe('statLead', () => {
     expect(statLead(3, 3, 'Thor', 'Hulk')).toBe('Evenly matched on the tape');
   });
 });
-
-import { crowdSplit, frozenResult, CROWD_FLOOR } from '../../../src/lib/home/matchupVote';
 
 // Four surfaces drew the crowd bar with their own copy of this rule, so fixing
 // one of them fixed exactly one of them. These lock the shared version.

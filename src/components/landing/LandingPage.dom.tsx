@@ -2258,7 +2258,6 @@ function DebateTeaser({ matchup, hookText }: { matchup: TodaysMatchup; hookText:
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seen, pctA]);
 
   // Top takes by agreement, one row each; editorial camp slogans keep the

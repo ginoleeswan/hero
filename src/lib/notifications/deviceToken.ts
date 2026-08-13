@@ -52,6 +52,9 @@ type NotificationsModule = typeof import('expo-notifications');
 function mod(): NotificationsModule | null {
   if (Platform.OS === 'web') return null;
   try {
+    // Lazy by design: a static import would fail at module LOAD on a build
+    // without the native module, rather than here where the caller handles it.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('expo-notifications') as NotificationsModule;
   } catch {
     return null;
@@ -60,6 +63,9 @@ function mod(): NotificationsModule | null {
 
 function isDevice(): boolean {
   try {
+    // Lazy by design: a static import would fail at module LOAD on a build
+    // without the native module, rather than here where the caller handles it.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Device = require('expo-device') as typeof import('expo-device');
     return Device.isDevice;
   } catch {
@@ -70,6 +76,9 @@ function isDevice(): boolean {
 /** The EAS project id the push service addresses tokens against. */
 function projectId(): string | undefined {
   try {
+    // Lazy by design: a static import would fail at module LOAD on a build
+    // without the native module, rather than here where the caller handles it.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Constants = require('expo-constants').default as typeof import('expo-constants').default;
     return (
       Constants.expoConfig?.extra?.eas?.projectId ??

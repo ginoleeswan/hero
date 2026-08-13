@@ -22,6 +22,9 @@ type StoreReviewModule = typeof import('expo-store-review');
 function mod(): StoreReviewModule | null {
   if (!isNative) return null;
   try {
+    // Lazy by design: a static import would fail at module LOAD on a build
+    // without the native module, rather than here where the caller handles it.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('expo-store-review') as StoreReviewModule;
   } catch {
     return null;

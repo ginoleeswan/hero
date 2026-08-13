@@ -11,14 +11,13 @@
 //   node scripts/social/ads/batch-month.mjs --exclude-tier-s
 //   node scripts/social/ads/batch-month.mjs --resume           # keep finished entries, render the rest
 import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join , relative } from 'node:path';
 import { loadEnv, makeSb, fonts, OUT_DIR } from '../lib.mjs';
 import { fetchPools } from './data.mjs';
 import { buildPlan, rng } from './plan.mjs';
 import { fetchAngleViews, medianViewsByFamily, weightedCycle, describeCycle } from './weights.mjs';
 import { renderCarousel } from './render-carousel.mjs';
 import { renderReel } from './render-reel.mjs';
-import { relative } from 'node:path';
 
 function gallery(batch, entries) {
   const cell = (e) => `<div class="c"><div class="k">${e.ord} · ${e.angle} · ${e.format}</div>

@@ -11,8 +11,7 @@
 // the end so they're never served publicly (they live only in Sentry).
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { globSync } from 'node:fs';
-import { rmSync } from 'node:fs';
+import { globSync , rmSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 

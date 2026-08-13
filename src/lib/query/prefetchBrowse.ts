@@ -21,7 +21,7 @@ const STALE = 1000 * 60 * 5;
 // browser has them cached (or in flight) before the grid even mounts.
 function warmGridImages(page: unknown): void {
   if (typeof window === 'undefined') return;
-  const heroes = (page as { heroes?: Array<Record<string, unknown>> })?.heroes ?? [];
+  const heroes = (page as { heroes?: Record<string, unknown>[] })?.heroes ?? [];
   for (const h of heroes.slice(0, 6)) {
     const { uri } = heroGridImageSource(
       String(h.id),

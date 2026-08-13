@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { Text, TextInput } from './Text';
 import { Ionicons } from '@expo/vector-icons';

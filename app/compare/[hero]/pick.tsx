@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { View, FlatList, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { Text, TextInput } from '../../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';

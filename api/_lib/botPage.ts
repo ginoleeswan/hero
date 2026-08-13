@@ -141,7 +141,7 @@ function jsonLd(hero: BotHero, description: string): string {
   });
 }
 
-const STATS: Array<[keyof BotHero, string]> = [
+const STATS: [keyof BotHero, string][] = [
   ['intelligence', 'Intelligence'],
   ['strength', 'Strength'],
   ['speed', 'Speed'],
