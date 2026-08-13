@@ -2,6 +2,7 @@ import {
   EMPTY_SEEN,
   buildInbox,
   markSeen,
+  MAX_REMEMBERED_APPEARANCES,
   unreadCount,
   type InboxInput,
 } from '../../../src/lib/notifications/inbox';
@@ -14,6 +15,7 @@ const base: InboxInput = {
   myTakes: [],
   yesterday: null,
   streak: null,
+  favouriteAppearances: [],
 };
 
 const take = (over: Partial<InboxInput['myTakes'][number]> = {}) => ({
@@ -143,5 +145,65 @@ describe('unreadCount', () => {
       unread: true,
     }));
     expect(unreadCount(many)).toBe(99);
+  });
+});
+
+describe('favourite appearances in the inbox', () => {
+  const appearance = {
+    id: 'h1:t1',
+    heroId: 'h1',
+    heroName: 'Storm',
+    what: 'title' as const,
+    label: 'The Film',
+    url: '/title/t1',
+    at: 2_000,
+  };
+
+  it('reports a favourite turning up in something', () => {
+    const items = buildInbox({
+      ...base,
+      now: 3_000,
+      seen: { ...EMPTY_SEEN, lastSeenAt: 1_000 },
+      favouriteAppearances: [appearance],
+    });
+    expect(items.map((i) => i.kind)).toContain('favourite-appearance');
+    expect(items[0].title).toBe('Storm is in The Film');
+  });
+
+  // Adding a favourite must not dump the hero's back catalogue into the inbox:
+  // the reader is being told what happened while they were away.
+  it('ignores anything older than the marker', () => {
+    const items = buildInbox({
+      ...base,
+      now: 3_000,
+      seen: { ...EMPTY_SEEN, lastSeenAt: 2_500 },
+      favouriteAppearances: [appearance],
+    });
+    expect(items).toEqual([]);
+  });
+
+  it('reports once, not once per open', () => {
+    const items = buildInbox({
+      ...base,
+      now: 3_000,
+      seen: { ...EMPTY_SEEN, lastSeenAt: 1_000, shownAppearances: ['h1:t1'] },
+      favouriteAppearances: [appearance],
+    });
+    expect(items).toEqual([]);
+  });
+
+  // The marker is the only part that grows with use and is rewritten on every
+  // open; unbounded, a heavy reader's write gets slower forever.
+  it('bounds what the marker remembers', () => {
+    const many = Array.from({ length: MAX_REMEMBERED_APPEARANCES + 50 }, (_, i) => `id-${i}`);
+    const next = markSeen({
+      seen: EMPTY_SEEN,
+      now: 1,
+      myTakes: [],
+      yesterdayDate: null,
+      brokenStreak: null,
+      shownAppearances: many,
+    });
+    expect(next.shownAppearances).toHaveLength(MAX_REMEMBERED_APPEARANCES);
   });
 });

@@ -21,6 +21,7 @@ const ICON: Record<InboxKind, keyof typeof Ionicons.glyphMap> = {
   'take-crowned': 'trophy',
   'debate-resolved': 'stats-chart',
   'streak-broken': 'flame-outline',
+  'favourite-appearance': 'film-outline',
 };
 
 /** Relative, because "2 hours ago" is what the reader is actually asking. */

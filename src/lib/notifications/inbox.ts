@@ -13,7 +13,8 @@
 //
 // Pure functions only, so the rules are testable without a database.
 
-export type InboxKind = 'take-agreed' | 'take-crowned' | 'debate-resolved' | 'streak-broken';
+export type InboxKind =
+  'take-agreed' | 'take-crowned' | 'debate-resolved' | 'streak-broken' | 'favourite-appearance';
 
 export interface InboxItem {
   id: string;
@@ -35,6 +36,9 @@ export interface InboxSeen {
   agreeCounts: Record<string, number>;
   /** The debate date (YYYY-MM-DD) whose result has already been shown. */
   lastDebateShown: string | null;
+  /** Appearance ids already reported, so a title does not re-announce itself
+   *  every time the inbox opens. Bounded in markSeen — see the note there. */
+  shownAppearances: string[];
   /** The streak value last acknowledged as broken, so it reports once. */
   lastBrokenStreak: number | null;
 }
@@ -44,6 +48,7 @@ export const EMPTY_SEEN: InboxSeen = {
   agreeCounts: {},
   lastDebateShown: null,
   lastBrokenStreak: null,
+  shownAppearances: [],
 };
 
 export interface InboxInput {
@@ -69,6 +74,28 @@ export interface InboxInput {
   } | null;
   /** Local streak state. `brokenAt` is set only on the render that notices. */
   streak: { previous: number; broken: boolean } | null;
+  /**
+   * Newly-synced titles and events featuring a hero the reader favourited.
+   *
+   * This is what finally makes a favourite mean something. Before it, hearting
+   * a character put them in a list and personalised the title of one daily
+   * push — nothing that a reader would describe as following anyone.
+   *
+   * The caller does the joining (it needs the DB); the rules about what is
+   * worth showing live here, where they can be tested.
+   */
+  favouriteAppearances: {
+    /** Stable per (hero, thing) so it reports once, not once per open. */
+    id: string;
+    heroId: string;
+    heroName: string;
+    /** What they turned up in. */
+    what: 'title' | 'event';
+    label: string;
+    url: string;
+    /** ms epoch the thing was added to the catalogue. */
+    at: number;
+  }[];
 }
 
 /**
@@ -79,7 +106,8 @@ export interface InboxInput {
  * keep, and for a feed this short the distinction never shows.
  */
 export function buildInbox(input: InboxInput): InboxItem[] {
-  const { seen, now, myTakes, yesterday, streak } = input;
+  const { seen, now, myTakes, yesterday, streak, favouriteAppearances } = input;
+  const alreadyShown = new Set(seen.shownAppearances);
   const items: InboxItem[] = [];
 
   // New agreement on your own takes. Only the DELTA — a take sitting at 12
@@ -145,6 +173,26 @@ export function buildInbox(input: InboxInput): InboxItem[] {
     });
   }
 
+  // A favourite turned up in something new. The one item here that is about a
+  // character rather than about the reader's own activity, which is the whole
+  // point: a favourite that never tells you anything is a bookmark.
+  for (const a of favouriteAppearances) {
+    if (alreadyShown.has(a.id)) continue;
+    // Nothing that predates the marker. Adding a favourite should not dump the
+    // hero's entire back catalogue into the inbox — the reader is being told
+    // what happened while they were away, not what happened before they cared.
+    if (seen.lastSeenAt !== null && a.at <= seen.lastSeenAt) continue;
+    items.push({
+      id: `appearance:${a.id}`,
+      kind: 'favourite-appearance',
+      title: `${a.heroName} is in ${a.label}`,
+      body: a.what === 'title' ? 'New on screen — see the cast.' : 'A live event, as it happens.',
+      url: a.url,
+      at: a.at,
+      unread: true,
+    });
+  }
+
   return items.sort((a, b) => b.at - a.at);
 }
 
@@ -155,6 +203,8 @@ export function markSeen(input: {
   myTakes: { id: string; agreeCount: number }[];
   yesterdayDate: string | null;
   brokenStreak: number | null;
+  /** Ids of the appearance items that were on screen. */
+  shownAppearances?: string[];
 }): InboxSeen {
   const agreeCounts: Record<string, number> = { ...input.seen.agreeCounts };
   for (const t of input.myTakes) agreeCounts[t.id] = t.agreeCount;
@@ -163,8 +213,20 @@ export function markSeen(input: {
     agreeCounts,
     lastDebateShown: input.yesterdayDate ?? input.seen.lastDebateShown,
     lastBrokenStreak: input.brokenStreak ?? input.seen.lastBrokenStreak,
+    // BOUNDED. This list is the only part of the marker that grows with use —
+    // every other field is a scalar — and it is written to AsyncStorage on
+    // every open. Unbounded, a heavy reader's marker grows forever and the
+    // write gets slower every time. The newest N is enough because an
+    // appearance older than the marker is filtered by date anyway; the ids
+    // only guard the window where both checks could pass.
+    shownAppearances: [
+      ...new Set([...(input.shownAppearances ?? []), ...input.seen.shownAppearances]),
+    ].slice(0, MAX_REMEMBERED_APPEARANCES),
   };
 }
+
+/** Enough to cover the marker window; see the note in markSeen. */
+export const MAX_REMEMBERED_APPEARANCES = 200;
 
 /** The badge number. Capped, because a count past a point stops being read. */
 export function unreadCount(items: InboxItem[]): number {
