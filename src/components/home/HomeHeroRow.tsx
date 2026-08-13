@@ -1,26 +1,24 @@
 // src/components/home/HomeHeroRow.tsx
 import { useRef } from 'react';
-import { View, FlatList, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { View, FlatList, StyleSheet, useWindowDimensions, Pressable } from 'react-native';
 import { Text } from '../ui/Text';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'expo-router';
 import { SPRING_PRESS } from '../../lib/nativeMotion';
-import { HERO_ROW } from './homeGeometry';
+import { heroRow } from './homeGeometry';
 import { HeroCard, HERO_CARD_RADIUS } from '../HeroCard';
 import { ThumbCard, type ThumbHero } from './ThumbCard';
 import { prefetchHeroRow } from '../../lib/query/heroQueries';
 import { COLORS, ORANGE_INK } from '../../constants/colors';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const PORTRAIT_CARD_WIDTH = HERO_ROW.cardWidth;
-// Match the character screen's hero image aspect — full width × SCREEN_HEIGHT*0.66
-// (see HERO_IMAGE_HEIGHT in app/character/[id].tsx). Keeping the card's aspect
-// equal to the detail image's means the Apple Zoom morph fills the card edge to
-// edge with no navy background peeking through mid-transition. Both are
-// screen-relative, so the ratio lines up on every device.
-const PORTRAIT_CARD_HEIGHT = HERO_ROW.cardHeight;
+// The card matches the character screen's hero image aspect (see
+// HERO_IMAGE_HEIGHT in app/character/[id].tsx), so the Apple Zoom morph fills
+// the card edge to edge with no navy peeking through mid-transition. Both are
+// window-relative, so the ratio lines up on every device — which is exactly why
+// it has to be read per render rather than once at import: on an iPad the
+// window changes and a frozen ratio would tear the morph open.
 
 export type RowHero = ThumbHero;
 
@@ -36,12 +34,12 @@ export type RowHero = ThumbHero;
  */
 function PortraitZoomCard({
   item,
-  width = PORTRAIT_CARD_WIDTH,
-  height = PORTRAIT_CARD_HEIGHT,
+  width,
+  height,
 }: {
   item: RowHero;
-  width?: number;
-  height?: number;
+  width: number;
+  height: number;
 }) {
   const pressed = useSharedValue(0);
   const queryClient = useQueryClient();
@@ -151,18 +149,12 @@ export function HomeHeroRow({
 
   // Ranked rows use smaller "poster" cards so the big Top-10 numeral beside each
   // one reads, à la Apple TV. Otherwise: optional larger feature size, else default.
-  const featW = Math.round(PORTRAIT_CARD_WIDTH * HERO_ROW.featureScale);
-  const featH = Math.round(PORTRAIT_CARD_HEIGHT * HERO_ROW.featureScale);
-  const cardW = ranked
-    ? Math.round(PORTRAIT_CARD_WIDTH * 0.72)
-    : feature
-      ? featW
-      : PORTRAIT_CARD_WIDTH;
-  const cardH = ranked
-    ? Math.round(cardW * HERO_ROW.cardAspect)
-    : feature
-      ? featH
-      : PORTRAIT_CARD_HEIGHT;
+  const { width: winW, height: winH } = useWindowDimensions();
+  const geom = heroRow(winW, winH);
+  const featW = Math.round(geom.cardWidth * geom.featureScale);
+  const featH = Math.round(geom.cardHeight * geom.featureScale);
+  const cardW = ranked ? Math.round(geom.cardWidth * 0.72) : feature ? featW : geom.cardWidth;
+  const cardH = ranked ? Math.round(cardW * geom.cardAspect) : feature ? featH : geom.cardHeight;
   // The numeral sits to the left, bottom-aligned, with the card overlapping just
   // its right edge (so the whole digit still reads — a thin "1" was being hidden).
   const rankSize = Math.round(cardH * 0.7);

@@ -1,13 +1,14 @@
 // src/components/home/PublisherGrid.tsx
-import { View, Pressable, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/Text';
 import { FEATURED_PUBLISHERS, type PublisherBrand } from '../../constants/publishers';
-import { PUBLISHER_GRID } from './homeGeometry';
+import { publisherGrid } from './homeGeometry';
 import { BrandLogoView } from '../PublisherBadge';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-// Shared with HomeSkeleton so the placeholder tiles can't drift from these.
-const { hPad: H_PAD, gap: GAP, tileWidth: TILE_W } = PUBLISHER_GRID;
+// Static half of the geometry — the width-dependent half (tile width, gutter,
+// column count) is per-render now, since a tablet gets four columns and the
+// window can change size under us.
+const GAP = 10;
 // Logo height inside a card; width follows each mark's aspect ratio.
 // Mirrors the web PublisherPods so native and web read identically.
 const LOGO_H = 44;
@@ -19,7 +20,15 @@ const LOGO_H = 44;
  * Image and Dark Horse logos read. Falls back to the name wordmark when a brand
  * has no logo art.
  */
-function Tile({ publisher, onPress }: { publisher: PublisherBrand; onPress: () => void }) {
+function Tile({
+  publisher,
+  onPress,
+  width,
+}: {
+  publisher: PublisherBrand;
+  onPress: () => void;
+  width: number;
+}) {
   const { name, color, logo, badgeSize, logoTint } = publisher;
   const logoWidth = logo && badgeSize ? LOGO_H * (badgeSize.width / badgeSize.height) : 0;
   return (
@@ -27,7 +36,7 @@ function Tile({ publisher, onPress }: { publisher: PublisherBrand; onPress: () =
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Browse ${name}`}
-      style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.tile, { width }, pressed && styles.pressed]}
     >
       {logo && badgeSize ? (
         <BrandLogoView logo={logo} width={logoWidth} height={LOGO_H} tint={logoTint} />
@@ -57,12 +66,14 @@ export function PublisherGrid({
   onPress: (slug: string) => void;
   layout?: 'grid' | 'rail';
 }) {
+  const { width } = useWindowDimensions();
+  const g = publisherGrid(width);
   if (layout === 'rail') {
     return (
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.rail}
+        contentContainerStyle={[styles.rail, { paddingHorizontal: g.hPad }]}
       >
         {FEATURED_PUBLISHERS.map((p) => (
           <RailChip key={p.slug} publisher={p} onPress={() => onPress(p.slug)} />
@@ -71,9 +82,9 @@ export function PublisherGrid({
     );
   }
   return (
-    <View style={styles.grid}>
+    <View style={[styles.grid, { paddingHorizontal: g.hPad }]}>
       {FEATURED_PUBLISHERS.map((p) => (
-        <Tile key={p.slug} publisher={p} onPress={() => onPress(p.slug)} />
+        <Tile key={p.slug} publisher={p} width={g.tileWidth} onPress={() => onPress(p.slug)} />
       ))}
     </View>
   );
@@ -105,7 +116,7 @@ function RailChip({ publisher, onPress }: { publisher: PublisherBrand; onPress: 
 const styles = StyleSheet.create({
   // Bleeds to the physical screen edge — see the horizontal-rail rule in
   // CLAUDE.md; the inset lives on the content, not on an ancestor.
-  rail: { flexDirection: 'row', gap: GAP, paddingHorizontal: H_PAD, paddingVertical: 2 },
+  rail: { flexDirection: 'row', gap: GAP, paddingVertical: 2 },
   chip: {
     height: 52,
     minWidth: 104,
@@ -120,15 +131,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: GAP,
-    paddingHorizontal: H_PAD,
-    paddingTop: PUBLISHER_GRID.paddingTop,
-    paddingBottom: PUBLISHER_GRID.paddingBottom,
+    paddingTop: 12,
+    paddingBottom: 6,
   },
   // Clean translucent panel (matches the web desktop pods / engage cards).
   tile: {
-    width: TILE_W,
-    minHeight: PUBLISHER_GRID.tileMinHeight,
-    borderRadius: PUBLISHER_GRID.radius,
+    minHeight: 84,
+    borderRadius: 16,
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',

@@ -15,7 +15,11 @@ const config: ExpoConfig = {
   slug: 'hero',
   scheme: IS_DEV ? 'mythique-dev' : 'mythique',
   version: '1.0.0',
-  orientation: 'portrait',
+  // 'default' means "whatever each platform's Info.plist says", which is the
+  // only way to let the iPad rotate while the phone stays locked — the
+  // top-level key applies to both. The two orientation lists live in
+  // ios.infoPlist below.
+  orientation: 'default',
   icon: './assets/icon.png',
   // Dark, not automatic. The app is dark-first in the places that matter most
   // — the boot stage, Explore's billboard, the Arena, every character page —
@@ -39,10 +43,27 @@ const config: ExpoConfig = {
     policy: 'appVersion',
   },
   ios: {
-    supportsTablet: false,
+    // App Review runs an iPad build whether or not we claim to support one, and
+    // an iPhone app letterboxed on an iPad is one of the things they reject
+    // for. Claiming the target means the layout has to actually hold up at
+    // tablet widths — see src/constants/layout.ts, which is what makes it.
+    supportsTablet: true,
     bundleIdentifier: IS_DEV ? 'com.ginoswanepoel.mythique.dev' : 'com.ginoswanepoel.mythique',
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
+      // The phone stays portrait: every phone layout is tuned for one column
+      // and a landscape phone gains nothing but a shorter fold.
+      UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
+      // The iPad rotates freely. A tablet that refuses to turn reads as broken
+      // — it is held either way and often docked to a keyboard — and all four
+      // are also the precondition for Split View and Slide Over, which we opt
+      // into by leaving requireFullScreen unset.
+      'UISupportedInterfaceOrientations~ipad': [
+        'UIInterfaceOrientationPortrait',
+        'UIInterfaceOrientationPortraitUpsideDown',
+        'UIInterfaceOrientationLandscapeLeft',
+        'UIInterfaceOrientationLandscapeRight',
+      ],
     },
     usesAppleSignIn: true,
     // Universal Links. Without this every mythique.app link the app SHARES

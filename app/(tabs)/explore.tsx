@@ -8,6 +8,7 @@ import {
   Pressable,
   StyleSheet,
   StatusBar,
+  useWindowDimensions,
   type FlatList,
   type ListRenderItem,
   type FlatListProps,
@@ -199,11 +200,12 @@ export default function HomeScreen() {
   // useScrollOffset READS the scroll view's live contentOffset instead of
   // accumulating events, so it cannot hold a value the list does not have.
   // That removes the whole class rather than the instances of it.
+  const { width: winW, height: winH } = useWindowDimensions();
   const listRef = useAnimatedRef<FlatList<FeedRow>>();
   const scrollY = useScrollOffset(listRef);
   // Counteract the overscroll bounce so the whole page holds still on pull-down —
   // only the spotlight portrait zooms (Apple TV style), no navy gap appears.
-  const spotH = spotlightHeight(topInset);
+  const spotH = spotlightHeight(winW, winH, topInset);
   // Pull-down (sy < 0): stretch the billboard, top-anchored, to fill the overscroll
   // so no band is ever revealed behind it. Down-scroll (sy > 0): parallax lag so the
   // dark stage slides up over the portrait instead of scrolling off with it.
