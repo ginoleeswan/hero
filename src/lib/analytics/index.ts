@@ -44,6 +44,20 @@ export function initAnalytics(): void {
     posthog = new PostHog(POSTHOG_KEY, {
       host: POSTHOG_HOST,
       captureAppLifecycleEvents: true,
+      // BOTH OF THESE ARE ALREADY THE SDK'S DEFAULTS. They are written down
+      // anyway because they are the two settings that decide what the App
+      // Store privacy label has to declare, and a default is a promise the
+      // next `yarn upgrade` can quietly break.
+      //
+      // disableGeoip: PostHog resolves an approximate location from the
+      // request IP server-side unless told not to. That would make this app
+      // collect location data — a category we would then have to declare, for
+      // a fact we have no use for.
+      disableGeoip: true,
+      // Session replay records the screen. Never, in an app where the screen
+      // can show someone's account, their email in a settings field, and
+      // whatever they typed into search.
+      enableSessionReplay: false,
     });
   } catch {
     posthog = null;

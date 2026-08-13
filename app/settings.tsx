@@ -24,6 +24,7 @@ import { COLORS, PAPER_TEXT } from '../src/constants/colors';
 import { Toast, useToast } from '../src/components/ui/Toast';
 import { SectionShell } from '../src/components/profile/SectionShell';
 import { READING_MAX_WIDTH } from '../src/components/ui/PageColumn';
+import { Attribution } from '../src/components/legal/Attribution';
 
 type RowTone = 'navy' | 'orange' | 'danger';
 
@@ -359,6 +360,8 @@ export default function SettingsScreen() {
           Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or
           any other publisher.
         </Text>
+        {/* Licence obligation, not a courtesy — see components/legal/Attribution. */}
+        <Attribution />
         {appVersion ? <Text style={styles.version}>Mythique {appVersion}</Text> : null}
       </ScrollView>
 

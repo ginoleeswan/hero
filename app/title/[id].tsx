@@ -39,6 +39,7 @@ import { SEAM } from '../../src/design';
 import { TITLE_STAGE } from '../../src/constants/titleGeometry';
 import { nativeShare, shareLink, titleShareLine } from '../../src/lib/share';
 import { READING_MAX_WIDTH } from '../../src/components/ui/PageColumn';
+import { TmdbCreditLine } from '../../src/components/legal/Attribution';
 
 function fmtMoney(n: number | null | undefined): string | null {
   if (!n || n <= 0) return null;
@@ -494,6 +495,8 @@ export default function TitleScreen() {
                 <Text style={styles.linkBtnText}>View on TMDB</Text>
               </TouchableOpacity>
             </View>
+            {/* The credit belongs where the data is, not only in settings. */}
+            <TmdbCreditLine />
           </>
         ) : (
           <TitleBodySkeleton />

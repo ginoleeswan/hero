@@ -21,6 +21,7 @@ import { useScreenChrome } from '../src/hooks/useScreenChrome';
 import { StageHeader } from '../src/components/StageHeader';
 import { SectionShell } from '../src/components/profile/SectionShell';
 import { PageEndCap } from '../src/components/web/PageEndCap';
+import { Attribution } from '../src/components/legal/Attribution';
 
 type RowTone = 'navy' | 'orange' | 'danger';
 
@@ -320,6 +321,8 @@ export default function WebSettingsScreen() {
           Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or
           any other publisher.
         </Text>
+        {/* Licence obligation, not a courtesy — see components/legal/Attribution. */}
+        <Attribution />
       </View>
 
       {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}
