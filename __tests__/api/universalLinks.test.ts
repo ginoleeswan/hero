@@ -61,8 +61,14 @@ describe('universal links', () => {
       shareLink.title('x'),
       shareLink.daily(),
     ];
+    // Escape EVERY regex metacharacter, then re-open the one wildcard the AASA
+    // path syntax has. Escaping only `/` (which does not even need it inside a
+    // RegExp built from a string) left `.` `+` `?` `(` matching as operators, so
+    // a claimed path containing one would have quietly matched more than it
+    // claims — and this test's whole job is to be strict about that.
     const patterns = claimed.map(
-      (p) => new RegExp('^' + p.replace(/\*/g, '.*').replace(/\//g, '\\/') + '$'),
+      (p) =>
+        new RegExp('^' + p.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&').replace(/\\\*/g, '.*') + '$'),
     );
     const unmatched = sent.filter((url) => {
       const path = new URL(url).pathname;
