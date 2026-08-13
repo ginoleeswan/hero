@@ -45,6 +45,15 @@ const config: ExpoConfig = {
       ITSAppUsesNonExemptEncryption: false,
     },
     usesAppleSignIn: true,
+    // Universal Links. Without this every mythique.app link the app SHARES
+    // opens in Safari — including for people who already have the app — so the
+    // share loop hands its own traffic to the website. The association document
+    // is served from api/aasa.ts; the paths it claims are listed there.
+    //
+    // `applinks:` alone is enough for link handling; `webcredentials:` lets
+    // Passwords offer a saved mythique.app login inside the app's sign-in form,
+    // and both key off the same document.
+    associatedDomains: ['applinks:mythique.app', 'webcredentials:mythique.app'],
   },
   android: {
     adaptiveIcon: {
@@ -52,6 +61,18 @@ const config: ExpoConfig = {
       backgroundColor: '#293c43',
     },
     package: IS_DEV ? 'com.ginoswanepoel.mythique.dev' : 'com.ginoswanepoel.mythique',
+    // Android's half of the same job. autoVerify makes these open the app
+    // directly rather than showing a disambiguation sheet, which requires
+    // /.well-known/assetlinks.json to list the app's signing fingerprint —
+    // see the note in api/aasa.ts.
+    intentFilters: [
+      {
+        action: 'VIEW',
+        autoVerify: true,
+        data: [{ scheme: 'https', host: 'mythique.app' }],
+        category: ['BROWSABLE', 'DEFAULT'],
+      },
+    ],
   },
   web: {
     bundler: 'metro',

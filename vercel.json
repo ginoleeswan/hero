@@ -158,6 +158,10 @@
       "destination": "/api/bot-page?kind=franchise&slug=:slug"
     },
     {
+      "source": "/.well-known/apple-app-site-association",
+      "destination": "/api/aasa"
+    },
+    {
       "source": "/battle/:a/:b",
       "destination": "/api/battle?a=:a&b=:b"
     },
