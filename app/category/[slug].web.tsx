@@ -2,14 +2,13 @@
 import { memo, useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   Pressable,
   StyleSheet,
   Animated,
-  TextInput,
   useWindowDimensions,
 } from 'react-native';
+import { Text, TextInput } from '../../src/components/ui/Text';
 import { useSkeletonGlow } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';

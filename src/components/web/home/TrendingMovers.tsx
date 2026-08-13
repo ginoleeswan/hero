@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../../HeroImage';
 import { HeroAvatar } from '../../HeroAvatar';

@@ -3,7 +3,8 @@
 // reports show the reported art (portrait reports show it beside the current
 // portrait). Web-only, like the rest of the command center.
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Linking } from 'react-native';
+import { View, Pressable, StyleSheet, Linking } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Panel } from '../Panel';

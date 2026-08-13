@@ -3,7 +3,8 @@
 // platforms — plain RN primitives). Completion checks come from the signed-in
 // server calendar (useDailies); logged out, the strip still works as a launcher
 // with the local puzzle streak folded in by the caller's screens elsewhere.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { useDailies } from '../../hooks/useDailies';

@@ -5,7 +5,8 @@
 // Activity (log · recently built · crons) · Runs (the run-history dashboard).
 import { useEffect, useState } from 'react';
 import { useUrlTabState } from '../../../../hooks/useUrlTabState';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Bento } from '../Bento';
 import { Panel } from '../Panel';
 import { RunHistory } from '../RunHistory';

@@ -9,7 +9,8 @@
 // values, so it's disabled for this file.
 /* eslint-disable react-hooks/immutability */
 import { useMemo, useState, useEffect, useCallback, type ReactElement } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { MAX_TYPE_SCALE, Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -726,7 +727,11 @@ function AxisLabel({
   const animStyle = useAnimatedStyle(() => ({
     top: tyVal.value + row.y * scale.value + (boundsH / 2) * (1 - scale.value) - 8,
   }));
-  return <Animated.Text style={[styles.axisLabel, animStyle]}>{row.label}</Animated.Text>;
+  return (
+    <Animated.Text maxFontSizeMultiplier={MAX_TYPE_SCALE} style={[styles.axisLabel, animStyle]}>
+      {row.label}
+    </Animated.Text>
+  );
 }
 
 // Inline member node for asides section (outside the canvas)

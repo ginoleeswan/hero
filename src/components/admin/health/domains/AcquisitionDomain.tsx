@@ -3,7 +3,8 @@
 // "which campaigns bring visitors, and which of those become accounts?" off the
 // same admin_traffic_overview() payload the Traffic tab reads, so it adds no
 // extra query.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';

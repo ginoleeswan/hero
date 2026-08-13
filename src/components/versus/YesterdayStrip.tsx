@@ -12,7 +12,8 @@
 // than a clause. Left-aligned, because a ticket is a record and records are
 // read from the left; the centred prose was competing with the CTA above it for
 // the same axis.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { RADIUS } from '../../design';
 import { statSplit, frozenResult } from '../../lib/home/matchupVote';

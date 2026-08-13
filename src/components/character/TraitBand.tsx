@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '../ui/Text';
 import type { HeroTagChip } from '../../lib/db/heroFacts';
 import { traitColor, withAlpha } from './traitColors';
 

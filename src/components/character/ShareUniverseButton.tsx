@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform, Share } from 'react-native';
+import { View, Pressable, StyleSheet, Platform, Share } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { INK_TEXT } from '../../constants/colors';
 import { SITE_URL } from '../../constants/site';

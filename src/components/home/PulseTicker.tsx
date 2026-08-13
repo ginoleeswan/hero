@@ -4,7 +4,8 @@
 // PulseTicker's content (the web one uses a raw-DOM CSS keyframe; native drives
 // it with Reanimated instead).
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, type LayoutChangeEvent } from 'react-native';
+import { View, StyleSheet, type LayoutChangeEvent } from 'react-native';
+import { Text } from '../ui/Text';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,

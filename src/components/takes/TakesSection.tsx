@@ -3,7 +3,8 @@
 // screens render it below the verdict/vote block). Reads/writes go through
 // useMatchupTakes; report/delete lives behind a small per-card overflow menu.
 import { useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text, TextInput } from '../ui/Text';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';

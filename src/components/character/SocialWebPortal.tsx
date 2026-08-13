@@ -7,7 +7,8 @@
 // constellation renderer (SocialWebGraph) is shared, so the two can't drift.
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SURFACE, PAPER_TEXT } from '../../constants/colors';

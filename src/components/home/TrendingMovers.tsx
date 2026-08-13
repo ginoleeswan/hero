@@ -3,7 +3,8 @@
 // lane whose length tracks their week-over-week spike — longer lane = bigger
 // mover, read at a glance. Boxed in lighter-navy glass for variation against the
 // bare rails in the dark "Right Now" band. Native sibling of the web module.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';

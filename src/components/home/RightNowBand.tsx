@@ -3,7 +3,8 @@
 // chapter: a live pulse + freshness cue, a cinematic campaign hero, the trending
 // title shelves (badged), and a personalized "In Your Universe" strip.
 import { useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, FlatList, Dimensions } from 'react-native';
+import { View, StyleSheet, Pressable, FlatList, Dimensions } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {

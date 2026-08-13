@@ -1,7 +1,8 @@
 // Live activity feed — the ops floor. Renders the merged cross-domain timeline
 // (runs · page views · engagement) newest-first, with a relative timestamp per
 // row. The list itself scrolls within its panel (fill layout).
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text } from '../../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../../constants/colors';
 import { relTime, CC } from '../../format';

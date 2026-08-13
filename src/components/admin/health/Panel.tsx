@@ -3,13 +3,13 @@
 // panel chrome so every domain stays visually in lockstep.
 import {
   View,
-  Text,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
   type ViewStyle,
   type StyleProp,
 } from 'react-native';
+import { Text } from '../../ui/Text';
 import { type ReactNode } from 'react';
 import { COLORS } from '../../../constants/colors';
 import { CC, DENSITY } from './format';

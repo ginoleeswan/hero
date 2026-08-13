@@ -4,14 +4,13 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
   Pressable,
   ScrollView,
   StyleSheet,
   Animated,
   useWindowDimensions,
 } from 'react-native';
+import { Text, TextInput } from '../../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getSearchIdleHeroes, type HeroSearchResult } from '../../../src/lib/db/heroes';

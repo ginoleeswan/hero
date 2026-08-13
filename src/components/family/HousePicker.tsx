@@ -6,7 +6,8 @@
 // back. One verb per opening — root the tree, or trace to — because the sheet
 // is opened by the seat that asked.
 import { useMemo, useState } from 'react';
-import { View, Text, Pressable, TextInput, ScrollView, StyleSheet } from 'react-native';
+import { View, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Text, TextInput } from '../ui/Text';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS, HOUSE_INK } from '../../constants/colors';

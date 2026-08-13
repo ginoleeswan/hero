@@ -8,14 +8,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   Pressable,
   StyleSheet,
   Animated,
-  TextInput,
   useWindowDimensions,
 } from 'react-native';
+import { Text, TextInput } from '../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { type Hero } from '../../src/lib/db/heroes';

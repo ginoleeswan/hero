@@ -1,7 +1,8 @@
 // app/house/index.tsx
 // Native houses index. expo-router resolves by platform extension and both files
 // must exist or it throws.
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../src/constants/colors';

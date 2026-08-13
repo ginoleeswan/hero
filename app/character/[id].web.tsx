@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, Fragment, type ComponentProps } from 'react';
 import { flushSync } from 'react-dom';
-import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter, usePathname } from 'expo-router';
 import { Image } from 'expo-image';

@@ -1,7 +1,8 @@
 // src/components/web/versus/YesterdayStrip.tsx — web sibling of
 // components/versus/YesterdayStrip.tsx. Same data shape (YesterdayDebateStrip
 // from useVersusHub), sized for the wider stage.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { COLORS, INK_TEXT } from '../../../constants/colors';
 import { statSplit, frozenResult } from '../../../lib/home/matchupVote';
 import type { YesterdayDebateStrip } from '../../../hooks/useVersusHub';

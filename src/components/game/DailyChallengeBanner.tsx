@@ -1,7 +1,8 @@
 // The home-screen entry point for the daily "Guess the Hero" game. A premium
 // navy banner with a blurred "mystery" tile, the day's hook, and the player's
 // live streak. Shared by native + web Explore (renders RN primitives via RNW).
-import { View, Text, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { View, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, INK_TEXT } from '../../constants/colors';

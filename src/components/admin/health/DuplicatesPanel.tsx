@@ -4,7 +4,8 @@
 // merge the rest in one click (admin_merge_heroes repoints data + deletes losers).
 // Renders nothing when the catalogue is clean.
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { Panel } from './Panel';

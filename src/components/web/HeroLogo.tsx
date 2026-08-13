@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import Svg, { Path } from 'react-native-svg';
 import { COLORS } from '../../constants/colors';
 import { LOGO_MASK_PATH as LOGO_PATH } from '../../constants/logo';

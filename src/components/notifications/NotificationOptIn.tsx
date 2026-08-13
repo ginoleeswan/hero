@@ -10,7 +10,8 @@
 // It appears at one moment only: straight after a first daily-game win, while
 // the reader is looking at a streak that has just started. What we are offering
 // is the continuation of the thing they just did.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { Sheet } from '../ui/Sheet';
 import { COLORS, PAPER_TEXT } from '../../constants/colors';

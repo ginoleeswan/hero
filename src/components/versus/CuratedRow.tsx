@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { OpponentCard } from '../compare/OpponentCard';
 import { PAPER_TEXT } from '../../constants/colors';
 

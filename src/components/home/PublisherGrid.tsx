@@ -1,5 +1,6 @@
 // src/components/home/PublisherGrid.tsx
-import { View, Text, Pressable, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, Pressable, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { Text } from '../ui/Text';
 import { FEATURED_PUBLISHERS, type PublisherBrand } from '../../constants/publishers';
 import { PUBLISHER_GRID } from './homeGeometry';
 import { BrandLogoView } from '../PublisherBadge';

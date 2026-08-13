@@ -1,5 +1,6 @@
 import { type ReactNode, type ComponentProps } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, EYEBROW, INK_TEXT } from '../../../constants/colors';
 

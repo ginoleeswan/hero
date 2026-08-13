@@ -1,14 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Platform,
-  Dimensions,
-} from 'react-native';
+import { View, FlatList, Pressable, StyleSheet, Platform, Dimensions } from 'react-native';
+import { Text, TextInput } from '../../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';

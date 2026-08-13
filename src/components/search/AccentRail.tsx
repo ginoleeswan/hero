@@ -1,7 +1,8 @@
 // src/components/search/AccentRail.tsx — horizontal hero rail with two header
 // styles: a gold "sword" header (accent) or a plain uppercase label. Extracted
 // from the opponent picker so Search and Pick share one rail.
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { OpponentCard } from '../compare/OpponentCard';
 import type { PeekHero } from '../compare/HeroPeek';

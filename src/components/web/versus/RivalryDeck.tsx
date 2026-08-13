@@ -2,7 +2,8 @@
 // the web Arena hub. Split-portrait collectible cards over a holographic sheen;
 // tapping one opens that matchup in the arena. A 5-up grid on desktop, a
 // horizontal swipe rail on mobile.
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { COLORS, INK_TEXT } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import type { Rivalry } from '../../../lib/db/heroes';

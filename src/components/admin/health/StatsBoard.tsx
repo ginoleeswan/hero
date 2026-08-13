@@ -4,15 +4,8 @@
 // progress grid below ticks each hero to a check as it finishes. Foreground only
 // (stops if closed). Spend is gated before this opens, so here we just run.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  Animated,
-  ActivityIndicator,
-  StyleSheet,
-} from 'react-native';
+import { View, Pressable, ScrollView, Animated, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { HeroThumb } from './atoms';

@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../../constants/colors';
 import type { PublisherCounts } from '../../../lib/db/heroes';
 

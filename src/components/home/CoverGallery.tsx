@@ -1,6 +1,7 @@
 // src/components/home/CoverGallery.tsx — native "Origins" gallery wall.
 // First-appearance comic covers; taps open the character.
-import { View, Text, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressScale } from '../ui/PressScale';

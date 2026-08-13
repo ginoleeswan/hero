@@ -4,7 +4,8 @@
 // its caption, tick it off. Posted-state lives in social_posts (admin RLS),
 // so it syncs across devices. Web-only, like the rest of the command center.
 import { useMemo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, TextInput, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text, TextInput } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';

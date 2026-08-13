@@ -1,7 +1,8 @@
 // Native "Featured Rivalry" — the curated lead for the Arena chapter: one rivalry
 // as a full-width face-off banner (the versus identity), tapping into /compare.
 // Mirrors the web FeaturedRivalry. Sits on the beige content sheet.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { PressScale } from '../ui/PressScale';

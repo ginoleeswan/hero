@@ -1,6 +1,5 @@
 import {
   View,
-  Text,
   ScrollView,
   StyleSheet,
   Platform,
@@ -9,6 +8,7 @@ import {
   TouchableOpacity,
   Share,
 } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';

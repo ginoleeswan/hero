@@ -12,7 +12,8 @@
 // Cross-platform by construction: the pill and the sheet are plain RN, and the
 // two things that genuinely differ — how you observe scroll position and how
 // you jump — are injected by the screens (`activeIndex`, `onJump`).
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useReducedMotion, withTiming } from 'react-native-reanimated';
 import { COLORS, INK_TEXT } from '../../constants/colors';

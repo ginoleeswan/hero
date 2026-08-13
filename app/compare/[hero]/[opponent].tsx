@@ -1,6 +1,5 @@
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
+import { Text } from '../../../src/components/ui/Text';
 import { useEffect } from 'react';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';

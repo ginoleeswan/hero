@@ -1,5 +1,6 @@
 // src/components/home/ThumbCard.tsx
-import { Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressScale } from '../ui/PressScale';
 import { HeroImage } from '../HeroImage';

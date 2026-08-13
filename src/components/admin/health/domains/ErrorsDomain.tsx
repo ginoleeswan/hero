@@ -2,7 +2,8 @@
 // center. Read-only view of the admin_recent_client_errors() RPC: headline
 // totals + kind split, then the top recurring signatures (collapsed on message)
 // with the latest raw rows for drill-down. Mirrors the Traffic domain.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';

@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from './ui/Text';
 import { Image } from 'expo-image';
 import { COLORS } from '../constants/colors';
 import {

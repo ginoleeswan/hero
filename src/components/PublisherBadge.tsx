@@ -6,13 +6,13 @@
 // registry — see constants/publishers.ts.
 import {
   View,
-  Text,
   StyleSheet,
   Pressable,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
+import { Text } from './ui/Text';
 import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
 import {

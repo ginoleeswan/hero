@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { COLORS, PAPER_TEXT, INK_TEXT } from '../../constants/colors';
 import type { PublisherFilter, AlignmentFilter } from '../../lib/db/heroes/types';
 

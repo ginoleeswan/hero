@@ -4,7 +4,8 @@
 // hover lift, a wider card, and a scroll container rather than a FlatList. Kept as
 // a thin view: everything judgemental (ranking, decay, copy) lives in
 // src/lib/home/pulse.ts and is shared.
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, ELEVATION, HOVER_TRANSITION, INK_TEXT } from '../../../constants/colors';

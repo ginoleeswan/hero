@@ -22,7 +22,8 @@
 // meant to offer. The toggle swaps the pair for two squads, saying without a
 // word that one-v-one and team battle are siblings: the same act at scale.
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, type LayoutChangeEvent } from 'react-native';
+import { View, Pressable, StyleSheet, type LayoutChangeEvent } from 'react-native';
+import { Text } from '../ui/Text';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,

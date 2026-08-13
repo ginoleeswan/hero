@@ -5,7 +5,8 @@
 // change is deferred. Opened by the in-place dossier editor on the character
 // screen (native + web via RNW).
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';

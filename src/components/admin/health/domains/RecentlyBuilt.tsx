@@ -1,6 +1,7 @@
 // "Recently built" — the exact heroes each run just touched, newest first.
 // A card grid; tap a card to open the character.
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';

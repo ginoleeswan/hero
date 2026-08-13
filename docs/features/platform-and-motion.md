@@ -988,3 +988,37 @@ Design docs under `docs/superpowers/` (historical; statuses may be stale):
 - `docs/superpowers/specs/2026-06-18-mobile-web-audit.md` — where the chrome/scroll rules were learned
 - `docs/superpowers/specs/2026-07-06-nebula-loader-design.md` — LogoLoader
 - `docs/superpowers/specs/2026-07-16-web-motion-polish-plan.md` — motion.ts, Reveal, view transitions, skeleton system
+
+## Dynamic Type
+
+iOS Dynamic Type reaches **310%**. This app sets its type in fixed line boxes on
+purpose (`src/constants/*Geometry.ts`) so a skeleton can match a loaded page to
+the pixel, and a fixed box with 3.1× type in it is a box with one word in it.
+Two halves keep that honest and they have to agree:
+
+1. **Type is capped.** `Text` and `TextInput` come from
+   `src/components/ui/Text`, which applies `maxFontSizeMultiplier`.
+   `MAX_TYPE_SCALE` is 1.3; long-form prose (the biography's RenderHTML
+   instances) uses `MAX_TYPE_SCALE_PROSE` at 2, because a column of reading in a
+   scroll view has no box to overflow and capping it tightly would be a
+   preference about how the page looks imposed on someone's ability to read it.
+2. **The line boxes grow by the same factor.** `src/constants/typeScale.ts`
+   exports `TYPE_SCALE` (the device's font scale, capped) and `line(h)`; every
+   `*Line` and `capHeight` in the geometry files is wrapped in it. A
+   `lineHeight` in a StyleSheet is a plain number that does **not** scale with
+   the OS font scale, so without this the cap would just be a smaller version of
+   the same bug — 130% glyphs in a 100% box, descenders gone.
+
+`TYPE_SCALE` is read once at module scope, deliberately: every consumer is a
+constant that a screen **and** its skeleton both import, and a hook would let
+the two disagree by a render, which is exactly the jump the geometry files
+exist to prevent.
+
+**React Native's documented global does not work.** The advice is
+`Text.defaultProps.maxFontSizeMultiplier = n`; RN's `Text` is a plain function
+component and React 19 removed `defaultProps` for those, so the assignment is
+silently ignored — verified in this repo, the prop arrives `undefined`. The
+capped re-export is the seam that actually works, and `yarn check:ui` enforces
+it (`uncapped-text`): importing `Text` or `TextInput` from `'react-native'`
+fails the build. The handful of `Animated.Text` call sites pass
+`maxFontSizeMultiplier={MAX_TYPE_SCALE}` explicitly.

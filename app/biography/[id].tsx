@@ -1,12 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Linking,
-  InteractionManager,
-  useWindowDimensions,
-} from 'react-native';
+import { View, StyleSheet, Linking, InteractionManager, useWindowDimensions } from 'react-native';
+import { MAX_TYPE_SCALE_PROSE, Text } from '../../src/components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -132,6 +126,12 @@ const TAG_STYLES: Record<string, MixedStyleDeclaration> = {
 };
 
 const SYSTEM_FONTS = ['FlameSans-Regular', 'Flame-Regular'];
+
+// The biography is the one screen that is nothing but prose in a scroll view —
+// no fixed line box for the type to overflow — so it gets the loose cap rather
+// than the app-wide one. Capping a column of reading at 1.3 would be a
+// preference about how the page looks imposed on someone's ability to read it.
+const PROSE_TEXT_PROPS = { maxFontSizeMultiplier: MAX_TYPE_SCALE_PROSE };
 
 // Floor for the identity stage, so a hero with a short name and no summary
 // still gets a stage with presence instead of collapsing onto its portrait.
@@ -352,6 +352,7 @@ export default function BiographyScreen() {
             tagsStyles={{ ...TAG_STYLES, p: { ...TAG_STYLES.p, ...styles.leadPara } }}
             systemFonts={SYSTEM_FONTS}
             renderersProps={renderersProps}
+            defaultTextProps={PROSE_TEXT_PROPS}
             enableExperimentalMarginCollapsing
           />
         </View>
@@ -381,6 +382,7 @@ export default function BiographyScreen() {
             systemFonts={SYSTEM_FONTS}
             renderers={renderers}
             renderersProps={renderersProps}
+            defaultTextProps={PROSE_TEXT_PROPS}
             enableExperimentalMarginCollapsing
           />
         </View>

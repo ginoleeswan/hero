@@ -1,7 +1,8 @@
 // src/components/search/TeamResultRow.tsx — native team search-hit row.
 // Monogram tile + name + "N members · publisher", a doorway into /team/[id].
 // Native sibling of the web TeamResultRow.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { PressScale } from '../ui/PressScale';
 import { BrandLogoView } from '../PublisherBadge';

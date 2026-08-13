@@ -10,7 +10,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   View,
-  Text,
   Pressable,
   ScrollView,
   ActivityIndicator,
@@ -19,6 +18,7 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
+import { Text } from '../ui/Text';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';

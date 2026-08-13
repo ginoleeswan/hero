@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Pressable, StyleSheet, Platform } from 'react-native';
+import { Text } from '../ui/Text';
 import { useRouter } from 'expo-router';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroLogo } from './HeroLogo';

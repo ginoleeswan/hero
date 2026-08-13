@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../../constants/colors';
 import { DidYouKnowDeck } from '../../character/DidYouKnowDeck';
 import { PortrayedBySection } from '../../PortrayedBySection';

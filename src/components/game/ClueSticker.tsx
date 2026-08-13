@@ -4,7 +4,8 @@
 // die-cut border, an inner keyline, a drop shadow and a category glyph — a
 // retro sticker packet rather than uniform chips. Pure presentational.
 import { useEffect } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
+import { Text } from '../ui/Text';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,

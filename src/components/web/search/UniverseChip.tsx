@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { COLORS, INK_TEXT, PAPER_TEXT } from '../../../constants/colors';
 import { BrandLogoView } from '../../PublisherBadge';
 import type { UniverseResult } from '../../../lib/db/universes';

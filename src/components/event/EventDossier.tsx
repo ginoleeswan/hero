@@ -13,7 +13,8 @@
 //
 // Boldness is spent in one place: the detection curve, drawn full-bleed as the
 // masthead's texture. Everything under the seam stays quiet so it keeps that job.
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';

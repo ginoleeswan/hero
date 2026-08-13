@@ -3,7 +3,8 @@
 // then the badged trending shelves. Mobile-web: a clean vertical stack.
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../../HeroImage';

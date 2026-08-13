@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Animated, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import { Animated, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import { Text } from './Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { useOtaUpdate } from '../../hooks/useOtaUpdate';

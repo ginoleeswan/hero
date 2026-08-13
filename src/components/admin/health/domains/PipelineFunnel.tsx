@@ -2,7 +2,8 @@
 // processed the heroes *eligible* for it (the prior stage's output), so a stage
 // reads as "done" once nothing actionable remains — even though most heroes never
 // reach it (no Wikidata/TMDB data). Each has an optional "Run all" drain.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { COLORS } from '../../../../constants/colors';
 import { InfoTip } from '../InfoTip';
 import { Button } from '../ui';

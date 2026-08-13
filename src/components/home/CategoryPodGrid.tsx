@@ -1,7 +1,8 @@
 // src/components/home/CategoryPodGrid.tsx — the "Browse" block. Image-backed
 // category tiles in a real two-up grid (each wears a representative character's
 // art), so browse reads as premium as the rest of the page — not a text menu.
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
+import { Text } from '../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { PressScale } from '../ui/PressScale';

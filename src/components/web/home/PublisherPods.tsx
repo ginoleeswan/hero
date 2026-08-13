@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { prefetchUniverse } from '../../../lib/query/prefetchBrowse';
 import { CARD_SHADOW, ELEVATION, pageGutter } from '../../../constants/colors';
 import { FEATURED_PUBLISHERS } from '../../../constants/publishers';

@@ -9,7 +9,8 @@
 // Pick a hero (and an optional opponent) to preview the character/VS/debate
 // cards; the brand card always shows. Open ↗ or copy the URL for each.
 import { useEffect, useState } from 'react';
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { View, Image, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Panel } from '../Panel';
 import { COLORS } from '../../../../constants/colors';
 import { getHeroesByIds, type HeroSearchResult } from '../../../../lib/db/heroes';

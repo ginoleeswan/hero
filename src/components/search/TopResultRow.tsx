@@ -3,7 +3,8 @@
 // name, a type tag for the surprising kinds (Universe/Team/Title), and a subtitle.
 // It's the confident single answer from pickTopResult — the native sibling of the
 // web TopResultRow (no hover/cursor/↵; press feedback via PressScale).
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { PressScale } from '../ui/PressScale';

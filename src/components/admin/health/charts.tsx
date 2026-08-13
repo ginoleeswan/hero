@@ -1,6 +1,7 @@
 // Self-contained chart primitives for the catalog-health dashboard.
 import { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import Svg, { Circle, Path, Polyline } from 'react-native-svg';
 import { COLORS } from '../../../constants/colors';
 import type { HealthSnapshot } from '../../../lib/db/catalogHealth';

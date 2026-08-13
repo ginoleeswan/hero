@@ -1,6 +1,7 @@
 // Hero console — find any single hero and re-fetch / inspect it. Per-record
 // troubleshooting; lives under Catalog (it's about catalogue records).
-import { View, Text, Pressable, ActivityIndicator, TextInput, StyleSheet } from 'react-native';
+import { View, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text, TextInput } from '../../ui/Text';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';

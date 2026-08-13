@@ -4,7 +4,8 @@
 // it can be snapshotted to a PNG (react-native-view-shot on native, html-to-image
 // on web). Kept visually self-contained and dimension-locked so the captured
 // image looks identical regardless of the device that produced it.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHARE_CARD, INK_TEXT } from '../../constants/colors';

@@ -4,13 +4,13 @@ import { loginHref } from '../../src/lib/loginRedirect';
 import { exploreKeys } from '../../src/lib/query/keys';
 import {
   View,
-  Text,
   Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
   useWindowDimensions,
 } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
 import { BadgeDetailModal } from '../../src/components/ui/BadgeDetailModal';
 import {

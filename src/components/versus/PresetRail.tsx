@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
 import type { FeaturedTeam } from '../../lib/db/teams';

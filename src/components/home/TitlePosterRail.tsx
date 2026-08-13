@@ -1,7 +1,8 @@
 // src/components/home/TitlePosterRail.tsx — a calm horizontal rail of film/TV
 // posters for the "On Screen Now" section. The badge (In Theaters / provider /
 // Coming) carries the status; the cast lives one tap away on the title page.
-import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native';
+import { View, FlatList, StyleSheet, Dimensions } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';

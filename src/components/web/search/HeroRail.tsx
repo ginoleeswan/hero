@@ -2,7 +2,8 @@
 // portraits for the dark /search landing. Used for both "Popular" (fame-ranked
 // icons) and "Recently viewed" — the icons ARE the content, so circular portraits
 // read as people/icons and tap straight into /character/[id].
-import { ScrollView, View, Text, Pressable, StyleSheet } from 'react-native';
+import { ScrollView, View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { COLORS } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 

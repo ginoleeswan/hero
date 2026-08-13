@@ -2,7 +2,8 @@
 // (e.g. catalog_health exhausting its retries during a metric-refresh stall).
 // Before this, a failed query left the SKELETON up forever with no feedback —
 // a dead-end that read as "still loading". One line of truth + a retry.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 

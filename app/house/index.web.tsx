@@ -1,7 +1,8 @@
 // app/house/index.web.tsx
 // The index of houses — what /house/[slug] pages hang off, and the one page that
 // can be linked from anywhere without knowing a slug.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { Stack } from 'expo-router';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';

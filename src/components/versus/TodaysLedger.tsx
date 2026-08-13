@@ -15,7 +15,8 @@
 // carry "Sinister Six vs Young Avengers" legibly, and padding it out to fit
 // would give back the space this exists to save. The notes survive where they
 // still do work: in the accessibility label, which is read aloud in full.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useDailies } from '../../hooks/useDailies';
 import type { DailySurface } from '../../lib/db/dailies';

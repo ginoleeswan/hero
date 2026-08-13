@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useWindowDimensions, View, Text, Pressable, StyleSheet } from 'react-native';
+import { useWindowDimensions, View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, EYEBROW, INK_TEXT } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';

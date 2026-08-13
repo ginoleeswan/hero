@@ -2,7 +2,8 @@
 // candidates (name · description · score) to pick inline, with a manual-QID
 // escape hatch. Owns its own Wikidata-summary fetch + manual-entry state.
 import { useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Text, TextInput } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';

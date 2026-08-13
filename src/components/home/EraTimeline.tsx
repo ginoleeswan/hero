@@ -1,6 +1,7 @@
 // src/components/home/EraTimeline.tsx — native "Comics History" timeline.
 // Heroes bucketed by comic age, hung off an orange spine (Golden → Modern).
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { HeroImage } from '../HeroImage';
 import { PressScale } from '../ui/PressScale';
 import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../constants/colors';

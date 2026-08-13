@@ -9,7 +9,8 @@
 // TopBar clearance, LinearGradient edge fades instead of CSS backgroundImage,
 // and RN's share sheet inside ShareUniverseButton.
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

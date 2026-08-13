@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { COLORS, ORANGE_INK } from '../../constants/colors';
 import { ImageLightbox } from '../ImageLightbox';

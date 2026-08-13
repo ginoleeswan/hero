@@ -5,7 +5,8 @@
 // row, so a house reads the same wherever you meet it. The crest carries the
 // card: a grid of eight identical text tiles would be a list with extra steps,
 // and the shield is the one thing that makes a house recognisable at a glance.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { COLORS, HOUSE_INK } from '../../constants/colors';

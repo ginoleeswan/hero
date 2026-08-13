@@ -1,3 +1,4 @@
+import { line } from './typeScale';
 // src/constants/houseGeometry.ts — the numbers the house page and HouseSkeleton
 // BOTH lay out from.
 //
@@ -32,7 +33,7 @@ export const HOUSE_BODY_WEB = {
 /** StageSwitch's resting height: a 12.5/17 label in a 7pt-padded option, inside
  *  a 4pt-padded, 1pt-bordered track. */
 export const STAGE_SWITCH = {
-  labelLine: 17,
+  labelLine: line(17),
   optionPaddingVertical: 7,
   trackPadding: 4,
   trackBorder: 1,

@@ -1,6 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import { useEffect, useState } from 'react';
-import { Platform, View, Text, Pressable, StyleSheet } from 'react-native';
+import { Platform, View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../src/components/ui/Text';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import {

@@ -2,7 +2,8 @@
 // guess-distribution chart (today's row highlighted), the global percentile, and
 // share. Presented as a bottom sheet over the dark game screen. Shared native +
 // web (RNW).
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { Sheet } from '../ui/Sheet';

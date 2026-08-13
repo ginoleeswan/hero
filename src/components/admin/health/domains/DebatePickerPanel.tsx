@@ -3,7 +3,8 @@
 // date field, two hero-search pickers, an optional hook line, and a submit
 // that calls the admin-gated set_daily_debate RPC.
 import { useEffect, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { Text, TextInput } from '../../../ui/Text';
 import { Panel } from '../Panel';
 import { COLORS } from '../../../../constants/colors';
 import { searchHeroes, type HeroSearchResult } from '../../../../lib/db/heroes';

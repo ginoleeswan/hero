@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Animated, Easing, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Animated, Easing, View, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { COLORS } from '../../../constants/colors';
 import type { CategorySlug } from '../../../lib/db/heroes';
 import type { CategoryFilters, FacetCounts } from '../../../lib/db/categoryFilters';

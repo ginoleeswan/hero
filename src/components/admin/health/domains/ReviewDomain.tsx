@@ -3,7 +3,8 @@
 // approval applies the change via the is_admin-gated admin_review_contribution
 // RPC. Web-only, like the rest of the command center.
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text, TextInput } from '../../../ui/Text';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Panel } from '../Panel';
 import { SkRows } from '../skeletons';

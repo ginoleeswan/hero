@@ -1,6 +1,7 @@
 // Boxed KPI tile — a big tinted value over a label, flexing to fill a row.
 // Shared by the run-history summary and any domain that needs headline numbers.
-import { View, Text, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
+import { View, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { COLORS } from '../../../../constants/colors';
 
 export function StatTile({

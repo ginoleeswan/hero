@@ -1,5 +1,6 @@
 // Activity log — the session's stream of action/run results. Used in Pipelines.
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { Panel } from './Panel';

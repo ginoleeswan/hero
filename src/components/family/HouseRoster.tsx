@@ -7,7 +7,8 @@
 // click that did nothing. So it's a list — one row per person, sorted the way
 // the house payload arrives (most famous first) — with a filter for long houses.
 import { useMemo, useState } from 'react';
-import { View, Text, Pressable, TextInput, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text, TextInput } from '../ui/Text';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS, HOUSE_INK } from '../../constants/colors';

@@ -1,4 +1,5 @@
-import { Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Text } from '../../ui/Text';
 // Colours are this badge's own; the words are shared so every surface agrees.
 import { ALIGNMENT_LABELS } from '../../../lib/characterTaxonomy';
 

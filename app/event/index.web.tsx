@@ -2,7 +2,8 @@
 // Web index. Same hook and body as the native route; the difference is the
 // scroll container — web screens must scroll the DOCUMENT, never a vertical RN
 // ScrollView.
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../src/constants/colors';
 import { EventIndexList } from '../../src/components/event/EventIndexList';

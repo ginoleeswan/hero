@@ -4,7 +4,8 @@
 // greatest rivalries. Native uses the sibling versus.tsx; both share useVersusHub
 // so the data layer never drifts. Entered from the TopBar Arena tab.
 import { useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';

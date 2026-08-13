@@ -1,7 +1,8 @@
 // src/components/family/HouseResultRow.tsx
 // A house in a search result list. Shared by the web palette, the web search
 // page and the native one — it's RN primitives only, so all three read the same.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS, INK_TEXT } from '../../constants/colors';

@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { Text } from '../../ui/Text';
 import { COLORS } from '../../../constants/colors';
 import type { HeroSearchResult } from '../../../lib/db/heroes';
 import { SuggestionItem } from './SuggestionItem';

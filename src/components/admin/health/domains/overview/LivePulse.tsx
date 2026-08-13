@@ -3,7 +3,8 @@
 // day-over-day delta, and a synthesized system-status line. This is the single
 // element that makes Overview read as a live bridge, not a static report.
 import { useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../../constants/colors';
 import { CC } from '../../format';

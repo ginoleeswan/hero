@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
   Pressable,
-  TextInput,
   StyleSheet,
   useWindowDimensions,
   type TextInput as RNTextInput,
 } from 'react-native';
+import { Text, TextInput } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroAvatar } from '../HeroAvatar';

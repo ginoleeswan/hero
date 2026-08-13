@@ -6,7 +6,8 @@
 // escutcheon cut from the house's own tint, carrying its initial. One shape, one
 // rule, and every house in the catalogue gets one for free the moment it exists.
 import { useId } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 /** The outer shield: square shoulders, straight flanks, a rounded point. */

@@ -2,7 +2,8 @@
 // Poster thumbnail + title + `year · media` meta, a doorway into /title/[id].
 // The web surfaces use the web TitleResultRow; this is the native equivalent
 // (PressScale feedback, expo-image poster).
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { PressScale } from '../ui/PressScale';

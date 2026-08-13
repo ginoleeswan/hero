@@ -346,6 +346,33 @@ for (const file of files) {
   }
 }
 
+// ── 4^7/8. type scaling is capped everywhere ───────────────────────────────
+// iOS Dynamic Type reaches 310%, and this app sets its type in fixed line
+// boxes (src/constants/*Geometry.ts) so the skeletons can match a loaded page
+// to the pixel. Text and TextInput therefore come from src/components/ui/Text,
+// which applies maxFontSizeMultiplier.
+//
+// React Native's documented global — `Text.defaultProps` — silently does
+// nothing under React 19 (RN's Text is a function component, and React 19
+// removed defaultProps for those), so there is no backstop behind the import.
+// One file importing straight from 'react-native' is a layout that only breaks
+// on a stranger's phone, at a size nobody here has switched on.
+const CAPPED_TEXT = 'src/components/ui/Text.tsx';
+for (const file of files) {
+  if (file === CAPPED_TEXT) continue;
+  const src = readFileSync(join(ROOT, file), 'utf8');
+  for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*'react-native'/g)) {
+    const spec = m[1].split(',').find((s) => /^\s*(Text|TextInput)\s*$/.test(s));
+    if (!spec) continue;
+    fail(
+      file,
+      lineOf(src, m.index),
+      'uncapped-text',
+      `${spec.trim()} imported from 'react-native' — import it from ${CAPPED_TEXT} so Dynamic Type stays bounded`,
+    );
+  }
+}
+
 // ── 4^15/16. every route renders something ─────────────────────────────────
 // A route file with no default export is not a compile error, not a lint
 // error, and not a test failure — expo-router only discovers it at navigation

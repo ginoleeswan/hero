@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   Modal,
   View,
-  Text,
   ScrollView,
   Pressable,
   TouchableWithoutFeedback,
@@ -11,6 +10,7 @@ import {
   Platform,
   Animated,
 } from 'react-native';
+import { Text } from './ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import type { FirstIssue } from '../types';

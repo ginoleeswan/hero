@@ -3,15 +3,8 @@
 // roster filter, a duplicate guard, and a one-click "enrich now" to close the
 // loop. Added heroes enter as 'pending' and flow into step 1.
 import { useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-  ScrollView,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Pressable, ActivityIndicator, ScrollView, useWindowDimensions } from 'react-native';
+import { Text, TextInput } from '../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { Panel } from './Panel';

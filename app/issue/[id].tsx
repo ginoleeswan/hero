@@ -1,13 +1,13 @@
 import { Fragment, useMemo, useState } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   StyleSheet,
   Platform,
   Pressable,
   useWindowDimensions,
 } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';

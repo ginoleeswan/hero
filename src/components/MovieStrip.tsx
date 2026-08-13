@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable, Platform, Linking } from 'react-native';
+import { ScrollView, View, StyleSheet, Pressable, Platform, Linking } from 'react-native';
+import { Text } from './ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';

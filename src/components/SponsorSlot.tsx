@@ -12,7 +12,8 @@
 // Impressions + clicks flow to Vercel custom events, so the slot earns real
 // CTR data long before any sponsor conversation happens.
 import { useEffect, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from './ui/Text';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, PAPER_TEXT, ORANGE_INK } from '../constants/colors';

@@ -1,13 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  useWindowDimensions,
-  Platform,
-} from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions, Platform } from 'react-native';
+import { Text, TextInput } from '../../src/components/ui/Text';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';

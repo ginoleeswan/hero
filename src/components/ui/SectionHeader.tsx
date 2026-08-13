@@ -9,7 +9,8 @@
 // `tone` picks the canvas: 'dark' for the deep-navy stage, 'light' for beige
 // paper. Flame titles carry lineHeight ≥ 1.22× fontSize (see CLAUDE.md) so
 // clamped descenders never clip.
-import { View, Text, StyleSheet, Pressable, type StyleProp, type ViewStyle } from 'react-native';
+import { View, StyleSheet, Pressable, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from './Text';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS, PAPER_TEXT, INK_TEXT, ORANGE_INK } from '../../constants/colors';

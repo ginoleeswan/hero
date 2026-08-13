@@ -3,7 +3,8 @@
 // deltas + sparklines, a readable views/visitors trend with a range toggle, what's
 // hot (top heroes resolved to names), a live activity feed, and supporting
 // breakdowns (pages / referrers / devices).
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../../constants/colors';

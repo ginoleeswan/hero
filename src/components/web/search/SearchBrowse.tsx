@@ -5,7 +5,8 @@
 // flat CategoryPodGrid, so this composes the same card look at two sizes without
 // touching the shared component.
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../../HeroImage';
 import { COLORS } from '../../../constants/colors';

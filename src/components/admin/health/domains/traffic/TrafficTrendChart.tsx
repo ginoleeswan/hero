@@ -4,7 +4,8 @@
 // gave an admin no way to read a day or a magnitude. Width is measured on layout
 // (like CompletenessChart); height is fixed by the caller.
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Text } from '../../../../ui/Text';
 import Svg, { Rect, Line, Polyline, Circle } from 'react-native-svg';
 import { COLORS } from '../../../../../constants/colors';
 import type { TrafficSeriesPoint } from '../../../../../lib/db/traffic';

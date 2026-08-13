@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo, Fragment } from 'react';
 import {
   View,
-  Text,
   Animated,
   StyleSheet,
   TouchableOpacity,
@@ -15,6 +14,7 @@ import {
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
+import { MAX_TYPE_SCALE, Text } from '../../src/components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter, usePathname, Link } from 'expo-router';
 import ReAnimated, {
   FadeIn,
@@ -948,6 +948,7 @@ export default function CharacterScreen() {
           headerTitleAlign: 'center',
           headerTitle: () => (
             <Animated.Text
+              maxFontSizeMultiplier={MAX_TYPE_SCALE}
               numberOfLines={1}
               style={[
                 styles.headerTitle,

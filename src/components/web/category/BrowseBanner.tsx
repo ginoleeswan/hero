@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { Image } from 'expo-image';
 import { COLORS } from '../../../constants/colors';
 import { withCloudinaryTransform, withComicVineScale } from '../../../constants/heroImages';

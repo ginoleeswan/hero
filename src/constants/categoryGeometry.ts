@@ -10,6 +10,7 @@
 // The rule is the one HomeSkeleton already follows via PUBLISHER_GRID: if a
 // placeholder claims to mirror a layout, it has to read from the same source.
 import { Dimensions } from 'react-native';
+import { line } from './typeScale';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -31,12 +32,12 @@ export const CATEGORY_CARD_H = Math.round(CATEGORY_CARD_W * 1.35);
  * the text will, or the swap moves everything below it.
  */
 export const CATEGORY_STAGE = {
-  titleLine: 40,
+  titleLine: line(40),
   taglineGap: 8,
-  taglineLine: 18,
+  taglineLine: line(18),
   paddingBottom: 36,
   /** The beige cap's height; it overlaps the stage by SEAM.overlap. */
-  capHeight: 30,
+  capHeight: line(30),
   /** Registered universes swap the title line for a brand masthead at this
    *  height — 16pt taller than a title line, so a placeholder that always drew
    *  a title moved the whole grid on every /universe/* page. */

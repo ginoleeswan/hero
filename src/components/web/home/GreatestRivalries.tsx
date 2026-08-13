@@ -1,4 +1,5 @@
-import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../ui/Text';
 import { useRouter } from 'expo-router';
 import { COLORS, ORANGE_INK } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';

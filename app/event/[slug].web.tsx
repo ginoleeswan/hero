@@ -2,7 +2,8 @@
 // Web event page. Same hook and same body as the native route; the difference is
 // the scroll container — web screens must scroll the DOCUMENT, never a vertical
 // RN ScrollView, so this renders a plain View and lets the page grow.
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS, INK_TEXT } from '../../src/constants/colors';
 import { EventDossier } from '../../src/components/event/EventDossier';
