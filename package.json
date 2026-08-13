@@ -49,7 +49,7 @@
     "expo-apple-authentication": "~56.0.4",
     "expo-blur": "~56.0.4",
     "expo-build-properties": "~56.0.23",
-    "expo-constants": "~56.0.21",
+    "expo-constants": "~56.0.23",
     "expo-dev-client": "~56.0.23",
     "expo-device": "~56.0.4",
     "expo-font": "~56.0.7",

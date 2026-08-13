@@ -8092,19 +8092,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-constants@npm:~56.0.20, expo-constants@npm:~56.0.21":
-  version: 56.0.21
-  resolution: "expo-constants@npm:56.0.21"
-  dependencies:
-    "@expo/env": "npm:~2.3.1"
-  peerDependencies:
-    expo: "*"
-    react-native: "*"
-  checksum: 10c0/06f02fbe273df3f57ac5685637ab468d8848d23fc9c73e81c9e1cf2aededa918444663359f28fe52bf967306ea1f8e9d935b6baca9d04a2aeb8a075a43974f88
-  languageName: node
-  linkType: hard
-
-"expo-constants@npm:~56.0.23":
+"expo-constants@npm:~56.0.20, expo-constants@npm:~56.0.21, expo-constants@npm:~56.0.23":
   version: 56.0.23
   resolution: "expo-constants@npm:56.0.23"
   dependencies:
@@ -11726,7 +11714,7 @@ __metadata:
     expo-apple-authentication: "npm:~56.0.4"
     expo-blur: "npm:~56.0.4"
     expo-build-properties: "npm:~56.0.23"
-    expo-constants: "npm:~56.0.21"
+    expo-constants: "npm:~56.0.23"
     expo-dev-client: "npm:~56.0.23"
     expo-device: "npm:~56.0.4"
     expo-font: "npm:~56.0.7"
