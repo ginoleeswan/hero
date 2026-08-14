@@ -13,9 +13,22 @@ import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 /** How long the name label takes to cross-fade between active/next/hidden —
  *  mirrors web's `transition: 'opacity 250ms ease'` on `pss.cardName`. */
 const NAME_FADE_MS = 250;
+
+/** Matches web's `transition: 'width 400ms cubic-bezier(0.16, 1, 0.3, 1), …'`
+ *  on `pss.card` — that width morph IS the carousel's motion (see
+ *  `SpotlightDeck`'s strip comment), so the card's own width and opacity
+ *  animate on the same curve web uses. Reanimated's `Easing.bezier` takes the
+ *  same four control points, so this is exact, not an approximation. Built
+ *  inside the component (not at module scope, like the other `Easing.*`
+ *  calls below) — jest's Reanimated mock doesn't implement `Easing.bezier`,
+ *  and a module-scope call would run it at import time in every test that
+ *  transitively pulls this file in, not just the ones that mount it. */
+const MORPH_MS = 400;
 
 // Ken Burns drift on the active plate — mirrors web's `spotlightIn` (opacity
 // 0→1, 700ms ease-out) and `spotlightDrift` (scale 1.07→1, 7s ease-out) CSS
@@ -49,6 +62,34 @@ export function SpotlightDeckCard({
   onPress: () => void;
 }) {
   const reduced = useReducedMotion();
+
+  // The width/opacity morph — the deck's whole carousel motion. A card holds
+  // its slot (stable key upstream, see `SpotlightDeck`) across advances, so
+  // animating these two values in place is what makes the deck read as
+  // sliding rather than cutting. Under Reduce Motion it jumps straight to
+  // the target so nothing is left mid-tween.
+  const cardWidth = useSharedValue(width);
+  const cardOpacity = useSharedValue(opacity);
+  useEffect(() => {
+    if (reduced) {
+      cardWidth.value = width;
+      cardOpacity.value = opacity;
+      return;
+    }
+    const morphEasing = Easing.bezier(0.16, 1, 0.3, 1);
+    cardWidth.value = withTiming(width, { duration: MORPH_MS, easing: morphEasing });
+    cardOpacity.value = withTiming(opacity, { duration: MORPH_MS, easing: morphEasing });
+  }, [width, opacity, reduced, cardWidth, cardOpacity]);
+  const morphStyle = useAnimatedStyle(() => ({
+    width: cardWidth.value,
+    opacity: cardOpacity.value,
+  }));
+  // A card past the end of the taper (width 0) must neither show nor take a
+  // tap — driven off the target prop, not the mid-animation shared value, so
+  // a card animating OUT stays tappable until it actually reaches zero and a
+  // card animating IN doesn't have to wait for the tween to finish first.
+  const visible = width > 0;
+
   // Slivers, and everything under Reduce Motion, park at rest immediately —
   // only a card that is active AND allowed to animate starts pulled back.
   const animate = active && !reduced;
@@ -86,11 +127,17 @@ export function SpotlightDeckCard({
   const nameAnimatedStyle = useAnimatedStyle(() => ({ opacity: nameOpacity.value }));
 
   return (
-    <Pressable
-      onPress={onPress}
+    <AnimatedPressable
+      onPress={visible ? onPress : undefined}
+      // A width-0 sliver still holds a slot in the row (that's the point —
+      // see the module comment) but must be invisible to touch and to
+      // screen readers, not just visually empty.
+      pointerEvents={visible ? 'auto' : 'none'}
+      accessibilityElementsHidden={!visible}
+      importantForAccessibility={visible ? 'auto' : 'no-hide-descendants'}
       accessibilityRole={active ? 'link' : 'button'}
       accessibilityLabel={active ? `View ${hero.name}` : `Show ${hero.name}`}
-      style={[styles.card, { width, height, opacity }, active && styles.cardActive]}
+      style={[styles.card, { height }, morphStyle, active && styles.cardActive]}
     >
       {/* The shadow (cardActive, above) has to live on this outer, unclipped
           Pressable — a shadow on a view with `overflow: 'hidden'` gets
@@ -129,7 +176,7 @@ export function SpotlightDeckCard({
           {hero.name}
         </Animated.Text>
       </View>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 

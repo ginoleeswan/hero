@@ -207,7 +207,12 @@ export function SpotlightDeck({
         <View style={styles.strip}>
           {cards.map((card) => (
             <SpotlightDeckCard
-              key={`${card.hero.id}-${card.index}`}
+              // Stable per-hero key — not the index or taper position, both of
+              // which change on every advance. The card has to hold its slot
+              // across renders for the width/opacity animation to have
+              // anything to animate between; a key that moves defeats it by
+              // making React remount into a new position instead.
+              key={card.hero.id}
               hero={card.hero}
               width={card.width}
               height={stageHeight}

@@ -39,9 +39,20 @@ export interface DeckCard {
 }
 
 /**
- * The active hero first at the full card width, then the deck behind it in
- * order, each at its own sliver width. Wraps, so a deck near the end of the
- * list keeps its taper instead of thinning out.
+ * One entry per hero, in the heroes array's own stable order — never
+ * reordered by taper position. Each entry carries the width its distance
+ * (`offset`) from the active card assigns: the active hero gets the full
+ * card width, each step behind it gets the next sliver width, and anything
+ * past the end of the taper gets a width of zero (and zero opacity) while
+ * still holding a slot.
+ *
+ * Returning entries in a stable per-hero order — rather than reordered by
+ * offset, as a naive "slice the taper" approach would — is the whole point:
+ * a hero keeps the same array position (and the same React key upstream)
+ * across every advance, so the view can animate each card's width in place
+ * instead of remounting into a new position. That width animation IS the
+ * carousel's motion (see web's `explore.web.tsx` strip comment) — it only
+ * works if nothing swaps slots underneath it.
  */
 export function deckCards(
   heroes: Hero[],
@@ -50,15 +61,16 @@ export function deckCards(
 ): DeckCard[] {
   if (heroes.length === 0) return [];
   const widths = [layout.cardWidth, ...layout.tail].slice(0, heroes.length);
-  return widths.map((width, i) => {
-    const index = (activeIndex + i) % heroes.length;
+  return heroes.map((hero, index) => {
+    const offset = (index - activeIndex + heroes.length) % heroes.length;
+    const isVisible = offset < widths.length;
     return {
-      hero: heroes[index],
+      hero,
       index,
-      width,
-      opacity: SLIVER_OPACITY[Math.min(i, SLIVER_OPACITY.length - 1)],
-      active: i === 0,
-      next: i === 1,
+      width: isVisible ? widths[offset] : 0,
+      opacity: isVisible ? SLIVER_OPACITY[Math.min(offset, SLIVER_OPACITY.length - 1)] : 0,
+      active: offset === 0,
+      next: offset === 1,
     };
   });
 }
