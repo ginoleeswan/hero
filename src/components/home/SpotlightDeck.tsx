@@ -138,11 +138,12 @@ export function SpotlightDeck({
 
   // Publisher-tinted ambience: the orb warms toward the featured hero's brand
   // colour (Marvel red, DC blue…), easing over 800ms per advance — see
-  // SpotlightGlow. Sized off the stage rather than a fixed constant so it
-  // scales with the card taper instead of over- or under-filling it.
+  // SpotlightGlow. Fixed size, matching web's `pss.orbA` exactly
+  // (`app/(tabs)/explore.web.tsx`) — it isn't scaled off the stage there
+  // either, so scaling it here just pushed it off-screen on wide stages.
   const brand = brandForPublisher(hero.publisher);
   const brandGlow = glowColor(brand?.color, 0.16);
-  const glowSize = Math.round(Math.min(420, Math.max(220, stageHeight * 1.3)));
+  const glowSize = 320;
   // Matches web's `backdropSize` exactly (`app/(tabs)/explore.web.tsx`) — a
   // fraction of the viewport, clamped so it never shrinks to illegible or
   // grows past the stage on very wide screens.
@@ -188,8 +189,14 @@ export function SpotlightDeck({
           {
             width: glowSize,
             height: glowSize,
-            top: topClearance + (stageHeight - glowSize) / 2,
-            left: gutter - glowSize * 0.25,
+            // Matches web's `pss.orbA` (`top: -60, left: 140` within its
+            // gutter-inset content band): native's glow layer sits inside the
+            // stage View, whose absolute children ignore the stage's
+            // `paddingHorizontal` and whose content starts `topClearance`
+            // down — so the gutter and topClearance offsets stand in for
+            // web's wrap-relative origin.
+            top: topClearance - 60,
+            left: gutter + 140,
           },
         ]}
         pointerEvents="none"
