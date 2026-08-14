@@ -2,7 +2,7 @@ import {
   deckCards,
   resolveActiveIndex,
   SLIVER_OPACITY,
-} from '../../../src/components/home/spotlightDeck';
+} from '../../../src/components/home/deckSelection';
 import type { Hero } from '../../../src/lib/db/heroes';
 
 // Only the fields the deck reads. Cast once here rather than building 34 columns

@@ -1,4 +1,4 @@
-// src/components/home/spotlightDeck.ts — which cards the tablet stage shows.
+// src/components/home/deckSelection.ts — which cards the tablet stage shows.
 //
 // Pure, and separate from the view, because the repo's testing convention rules
 // out rendering tests for screens: if the selection logic lived inside

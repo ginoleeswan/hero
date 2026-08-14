@@ -13,7 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { Text } from '../ui/Text';
 import { SpotlightDeckCard } from './SpotlightDeckCard';
 import { SpotlightProgress } from './SpotlightProgress';
-import { deckCards, resolveActiveIndex } from './spotlightDeck';
+import { deckCards, resolveActiveIndex } from './deckSelection';
 import { spotlightLayout } from '../../constants/spotlightLayout';
 import { COLORS } from '../../constants/colors';
 import { ALIGNMENT_LABELS } from '../../lib/characterTaxonomy';
@@ -71,7 +71,7 @@ export function SpotlightDeck({
   return (
     <View style={[styles.stage, { height: stageHeight, paddingHorizontal: gutter }]}>
       {showGhostName && (
-        <View style={styles.ghostWrap} pointerEvents="none">
+        <View style={[StyleSheet.absoluteFill, styles.ghostWrap]} pointerEvents="none">
           <Text style={styles.ghost} numberOfLines={1} accessible={false}>
             {hero.name}
           </Text>
@@ -155,7 +155,6 @@ const styles = StyleSheet.create({
   // Ink on ink, behind the deck. Set large enough to read as scenery rather
   // than as a heading someone forgot to style.
   ghostWrap: {
-    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     paddingLeft: 24,
   },
