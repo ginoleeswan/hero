@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   kicker: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 12.5,
+    fontSize: 13,
     letterSpacing: 0.4,
     color: COLORS.orange,
   },
