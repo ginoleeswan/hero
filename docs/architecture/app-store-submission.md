@@ -7,30 +7,28 @@ answers are worked out, even though it is not the place they are entered.
 
 The privacy label has its own file: `privacy-and-data-collection.md`.
 
-## BLOCKER — Guideline 1.2 is not satisfied
+## Guideline 1.2 is satisfied
 
-**The app has user-generated content and no way to block a user.** This is the
-most likely single cause of a rejection, and it is code, not metadata.
-
-Guideline 1.2 requires **all four** of these for any app with UGC. The app has
-three:
+Guideline 1.2 requires **all four** of these for any app with UGC. The app now
+has all four:
 
 | Requirement | Status |
 | --- | --- |
 | Filter objectionable material | Report reasons + an admin queue (`src/lib/db/reports.ts`, `admin_reports_queue`) |
 | Report offensive content, with timely response | `src/components/report/ReportSheet.tsx`, wired into every take |
-| **Block abusive users** | **MISSING — nothing in `src/`, `app/` or `supabase/migrations/`** |
+| Block abusive users | `blocked_users` table + RLS (`supabase/migrations/20260814120000_blocked_users.sql`), block action in `ReportSheet.tsx`, unblock list in `/settings` (`useBlockedUsers`) |
 | Published contact info | `app/support.tsx` |
 
 Takes (`src/lib/db/takes.ts`) are free text, attached to a display name and
-avatar, shown to every reader on a matchup. That is exactly the surface the
-guideline is written for.
-
-What it needs: a `blocked_users` table with RLS, the takes queries filtered by
-it, a "Block this person" action beside the existing report action, and a list
-in settings to unblock. Deliberately **not** started here — it is a feature with
-a migration and a moderation story, not a metadata fix, and it should not be
-half-built inside a submission-prep change.
+avatar, shown to every reader on a matchup — that is the surface the guideline
+is written for, and it is now covered: a block is a one-directional RLS filter
+on `matchup_takes`' SELECT policy (see `docs/features/arena-and-matchups.md`),
+so every read path inherits it with no client-side filtering to keep in sync.
+Blocking requires an account, same as posting a take; the blocked user is
+never told. Verified against production (real user ids, two-tier RLS
+simulation, self-cleaning transaction): a blocker stops seeing the blocked
+user's takes immediately, the blocked user still sees their own, anon is
+unaffected, and unblocking restores visibility.
 
 ## Age rating
 
@@ -98,7 +96,7 @@ reporting with an admin queue.
 
 ## Before submitting
 
-- [ ] **Blocking implemented** (Guideline 1.2) — see above
+- [x] **Blocking implemented** (Guideline 1.2) — see above
 - [ ] TMDB logo asset added beside the credit text (`Attribution.tsx` explains
       why it is text-only today)
 - [ ] Privacy label entered to match `privacy-and-data-collection.md`
@@ -106,3 +104,8 @@ reporting with an admin queue.
 - [ ] iPad screenshots shot from a real device pass
 - [ ] Demo account created and in the review notes
 - [ ] Support URL live (`app/support.tsx` has the in-app surface)
+
+## History
+
+- `docs/superpowers/specs/2026-08-14-user-blocking-design.md` — the fourth
+  Guideline 1.2 requirement (`blocked_users` + the takes RLS filter).

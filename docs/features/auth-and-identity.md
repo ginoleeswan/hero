@@ -82,6 +82,21 @@ email/password; Google (hidden in Expo Go — `login.tsx` checks
 | Grants-not-RLS | Public read-only **catalog** tables | `heroes` and friends (`20260715104931_heroes_reads_without_rls.sql`, `20260715105126_catalog_reads_without_rls.sql`) |
 | Owner-scoped RLS | Per-user rows | `user_favourites`, `user_profiles`, `push_subscriptions` |
 | Inline `is_admin` check inside the RPC | Admin surfaces | every `admin_*` RPC checks `user_profiles.is_admin` against `auth.uid()` |
+| Owner-scoped RLS, no update policy | A write with no mutable state | `blocked_users` — select/insert/delete all scoped `blocker_id = (select auth.uid())`; unblocking is a delete, so there is nothing to update, and nobody can read whose block list they are on |
+
+**Blocking is account-only — unlike matchup votes.** `blockUser` /
+`unblockUser` / `getBlockedUsers` (`src/lib/db/blocks.ts`) require a session;
+there is no anon voter-key path for blocks the way there is for votes and take
+agreements, because a block is a standing per-user preference, not a one-off
+poll dedupe. The block action lives in `ReportSheet` (shown only when
+`context === 'take'` and an `authorId` is present) and routes signed-out
+tappers to `onRequestSignIn` rather than silently no-opping. **`WITH CHECK`
+validates the caller-supplied value, it does not supply one for you** —
+`blocked_users.blocker_id` is `NOT NULL` with no default, so `blockUser` still
+has to send `auth.getUser().id` on the insert; RLS only rejects the insert if
+that value isn't the caller's own id. The plan for this feature originally
+assumed the policy would fill the column in, and it doesn't — the client
+always sends its own identity, RLS just checks it.
 
 **The RLS planner shackle** is the load-bearing lesson: catalog tables once had
 RLS with `USING (true)` — filtering nothing, but its mere presence stopped the
@@ -112,3 +127,5 @@ function; don't invent one in docs or code review comments.
   `docs/superpowers/specs/2026-04-11-profile-photos-design.md`,
   `docs/superpowers/specs/2026-07-05-profile-reorganize-elevate-design.md` —
   the profile surface that account identity feeds.
+- `docs/superpowers/specs/2026-08-14-user-blocking-design.md` — the
+  `blocked_users` table and the account-only block/unblock write path.

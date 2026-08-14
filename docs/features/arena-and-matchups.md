@@ -93,6 +93,20 @@ Takes are pick-a-side one-liners on a pair. Reads are plain RLS selects
 `matchup_takes.user_id` references `auth.users`, not `user_profiles`, so
 PostgREST can't embed display names — `getTakes` does a second `in()` query.
 
+**Blocking is a filter inside the takes SELECT policy, not a client concern.**
+`matchup_takes`' RLS gained `AND NOT EXISTS (… blocked_users …)`
+(`20260814120000_blocked_users.sql`) so a blocker never gets a blocked user's
+take back from Postgres, on any read path. That matters because takes are read
+straight from the table over PostgREST by seven different modules
+(`TakesSection`, `MyTakes`, `useMatchupTakes`, `useProfileData`,
+`useVersusHub`, `useNotificationInbox`, `LandingPage.dom`) and there is no read
+RPC — a client-side filter would have missed most of them and shipped the
+blocked text to the device regardless. Anon is unaffected (`auth.uid()` is
+null, so the `NOT EXISTS` is trivially true). **Do not add a client-side
+filter for blocked authors, and do not assume a new takes read path needs
+one** — RLS already covers it. See `docs/features/auth-and-identity.md` for
+the block/unblock write path.
+
 The **daily debate** (`daily_debate` table, same migration) is the
 server-curated pair of the day: admin-set via `set_daily_debate` or auto-picked
 (high-fame enemy pair, 90-day no-repeat) by `pick_daily_debate`. The
@@ -340,4 +354,5 @@ Historical specs (status lines in them may be stale):
 `docs/superpowers/specs/2026-06-24-battle-builder-deck-stage-design.md`,
 `docs/superpowers/specs/2026-06-24-battle-builder-mobile-guided-duel-design.md`,
 `docs/superpowers/specs/2026-06-24-versus-battle-discovery-feed-design.md`,
-`docs/superpowers/specs/2026-07-11-matchup-takes-daily-debate-design.md`.
+`docs/superpowers/specs/2026-07-11-matchup-takes-daily-debate-design.md`,
+`docs/superpowers/specs/2026-08-14-user-blocking-design.md`.
