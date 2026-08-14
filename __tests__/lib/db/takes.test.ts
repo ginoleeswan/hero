@@ -69,15 +69,20 @@ describe('getTakes', () => {
       ],
       error: null,
     };
-    mockResolvers['user_profiles'] = {
-      data: [{ id: 'u1', display_name: 'Gino' }],
+    mockRpc.mockResolvedValue({
+      data: [{ id: 'u1', display_name: 'Gino', avatar_url: null }],
       error: null,
-    };
+    });
 
     const result = await getTakes('h2', 'h1');
 
     expect(chains['matchup_takes'].eq).toHaveBeenCalledWith('hero_a_id', 'h1');
     expect(chains['matchup_takes'].eq).toHaveBeenCalledWith('hero_b_id', 'h2');
+    // Display names come from the SECURITY DEFINER get_public_profiles RPC,
+    // not a direct user_profiles select — that table's SELECT policy is
+    // self-scoped and would silently return nothing for another user's row.
+    expect(mockRpc).toHaveBeenCalledWith('get_public_profiles', { p_ids: ['u1'] });
+    expect(chains['user_profiles']).toBeUndefined();
     expect(result).toEqual([
       {
         id: 't1',

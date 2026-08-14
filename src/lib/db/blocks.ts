@@ -10,7 +10,13 @@ import { supabase } from '../supabase';
 // blocked_users.user_id references auth.users, not user_profiles, so
 // PostgREST can't embed display name/avatar via a nested select — same
 // constraint as matchup_takes in takes.ts. getBlockedUsers resolves them with
-// a second `in()` query against user_profiles instead.
+// a second call to the get_public_profiles RPC instead.
+//
+// Why an RPC and not a plain `.in('id', ids)` select against user_profiles:
+// that table's SELECT policy is self-scoped ((select auth.uid()) = id), so a
+// direct select returns zero rows for anyone but the caller — no error, just
+// silent nulls for every other blocked user's name/avatar. The RPC is
+// SECURITY DEFINER and exposes only the public columns.
 
 export interface BlockedUser {
   userId: string;
@@ -86,21 +92,14 @@ export async function getBlockedUsers(): Promise<BlockedUser[]> {
   if (rows.length === 0) return [];
 
   const userIds = [...new Set(rows.map((r) => r.blocked_id))];
-  const { data: profiles, error: profileError } = await supabase
-    .from('user_profiles')
-    .select('id, display_name, avatar_url')
-    .in('id', userIds);
+  const { data: profiles, error: profileError } = await supabase.rpc('get_public_profiles', {
+    p_ids: userIds,
+  });
   if (profileError) {
     console.warn('[getBlockedUsers] profile lookup error:', profileError.message);
   }
   const profileById = new Map<string, { display_name: string | null; avatar_url: string | null }>(
-    (
-      (profiles ?? []) as unknown as {
-        id: string;
-        display_name: string | null;
-        avatar_url: string | null;
-      }[]
-    ).map((p) => [p.id, p]),
+    (profiles ?? []).map((p) => [p.id, p]),
   );
 
   return rows.map((r) => {

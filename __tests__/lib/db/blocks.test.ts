@@ -4,6 +4,7 @@ let mockResolvers: Record<string, { data: unknown; error: unknown }> = {};
 const mockInsert = jest.fn();
 const mockDelete = jest.fn();
 const mockGetUser = jest.fn();
+const mockRpc = jest.fn();
 
 jest.mock('../../../src/lib/supabase', () => {
   const methods = ['select', 'eq', 'order', 'in'];
@@ -27,7 +28,11 @@ jest.mock('../../../src/lib/supabase', () => {
     return chains[tableName];
   });
   return {
-    supabase: { from: mockFrom, auth: { getUser: (...a: unknown[]) => mockGetUser(...a) } },
+    supabase: {
+      from: mockFrom,
+      auth: { getUser: (...a: unknown[]) => mockGetUser(...a) },
+      rpc: (...a: unknown[]) => mockRpc(...a),
+    },
     __chains: chains,
     __mockFrom: mockFrom,
   };
@@ -45,6 +50,7 @@ beforeEach(() => {
   mockResolvers = {};
   Object.keys(chains).forEach((k) => delete chains[k]);
   mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
+  mockRpc.mockResolvedValue({ data: [], error: null });
 });
 
 describe('blockUser', () => {
@@ -122,19 +128,24 @@ describe('unblockUser', () => {
 });
 
 describe('getBlockedUsers', () => {
-  it('maps rows joined with user_profiles to BlockedUser', async () => {
+  it('resolves names/avatars via the get_public_profiles RPC, not a user_profiles select', async () => {
     mockResolvers['blocked_users'] = {
       data: [{ blocked_id: 'u2', created_at: '2026-08-01T00:00:00Z' }],
       error: null,
     };
-    mockResolvers['user_profiles'] = {
+    mockRpc.mockResolvedValue({
       data: [{ id: 'u2', display_name: 'Villain', avatar_url: 'https://x/y.png' }],
       error: null,
-    };
+    });
 
     const result = await getBlockedUsers();
 
-    expect(chains['user_profiles'].in).toHaveBeenCalledWith('id', ['u2']);
+    // user_profiles' SELECT policy is self-scoped (auth.uid() = id), so a
+    // direct `.in()` select against it returns nothing for anyone but the
+    // caller. The RPC is SECURITY DEFINER and is the only thing that can see
+    // another user's public profile columns.
+    expect(mockRpc).toHaveBeenCalledWith('get_public_profiles', { p_ids: ['u2'] });
+    expect(chains['user_profiles']).toBeUndefined();
     expect(result).toEqual([
       {
         userId: 'u2',
@@ -153,6 +164,6 @@ describe('getBlockedUsers', () => {
   it('returns [] without a profile lookup when there are no blocked users', async () => {
     mockResolvers['blocked_users'] = { data: [], error: null };
     expect(await getBlockedUsers()).toEqual([]);
-    expect(chains['user_profiles']).toBeUndefined();
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 });

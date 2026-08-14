@@ -2992,6 +2992,14 @@ export type Database = {
         }[]
       }
       get_pending_build_ids: { Args: { p_limit?: number }; Returns: string[] }
+      get_public_profiles: {
+        Args: { p_ids: string[] }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          id: string
+        }[]
+      }
       get_pulse_candidates: {
         Args: { p_per_kind?: number }
         Returns: {

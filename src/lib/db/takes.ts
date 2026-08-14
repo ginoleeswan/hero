@@ -7,7 +7,14 @@ import { getHeroesByIds } from './heroes';
 // matchup_takes.user_id references auth.users (not user_profiles), so
 // PostgREST can't embed the display name via a `profiles(display_name)`
 // select — there's no FK for it to walk. getTakes fetches display names with
-// a second `in()` query against user_profiles instead.
+// a second call to the get_public_profiles RPC instead.
+//
+// Why an RPC and not a plain `.in('id', ids)` select against user_profiles:
+// that table's SELECT policy is self-scoped ((select auth.uid()) = id), so a
+// direct select returns zero rows for anyone but the caller — every byline
+// but your own would silently read "Anonymous hero". The RPC is SECURITY
+// DEFINER, exposes only public columns, and is granted to anon too (takes
+// are readable logged-out).
 
 export interface Take {
   id: string;
@@ -69,18 +76,14 @@ export async function getTakes(a: string, b: string): Promise<Take[]> {
   if (rows.length === 0) return [];
 
   const userIds = [...new Set(rows.map((r) => r.user_id))];
-  const { data: profiles, error: profileError } = await supabase
-    .from('user_profiles')
-    .select('id, display_name')
-    .in('id', userIds);
+  const { data: profiles, error: profileError } = await supabase.rpc('get_public_profiles', {
+    p_ids: userIds,
+  });
   if (profileError) {
     console.warn('[getTakes] profile lookup error:', profileError.message);
   }
   const nameById = new Map<string, string | null>(
-    ((profiles ?? []) as unknown as { id: string; display_name: string | null }[]).map((p) => [
-      p.id,
-      p.display_name,
-    ]),
+    (profiles ?? []).map((p) => [p.id, p.display_name]),
   );
 
   return rows.map((r) => toTake(r, nameById.get(r.user_id) ?? null));
