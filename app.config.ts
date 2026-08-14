@@ -160,12 +160,29 @@ const config: ExpoConfig = {
       {
         image: './assets/splash.png',
         backgroundColor: '#293c43',
-        // The whole lockup — mark high, wordmark low — not just the mark. Its
-        // width IS the composition's coordinate system: BootStage rebuilds the
-        // same centred box from SPLASH_LOCKUP.w to take over without a jump, so
-        // this number and `SPLASH_LOCKUP.w` in src/constants/logo.ts must agree.
+        // The whole lockup — mark high, wordmark low — not just the mark.
+        //
+        // THIS IS THE LOCKUP'S HEIGHT, NOT ITS WIDTH, AND THAT IS NOT A TYPO.
+        // expo-splash-screen treats `imageWidth` as the side of a SQUARE box
+        // and the storyboard fits the image into it with `scaleAspectFit`. Our
+        // lockup is portrait (300 × 560), so the fit is height-constrained: at
+        // `imageWidth: 300` it scaled by 300/560 = 0.536 and the OS drew a
+        // 161pt lockup with an 86pt mark, while BootStage rebuilt it at the
+        // declared 300/160 — so the handoff jumped 1.87× and the wordmark
+        // leapt down the screen. At 560 the fit scale is exactly 1 and the
+        // lockup lands at its true 300 × 560.
+        //
+        // So this must equal `SPLASH_LOCKUP.h` in src/constants/logo.ts, and
+        // the composition's coordinate system is still SPLASH_LOCKUP.w — the
+        // box is square, the art inside it is not.
+        //
+        // Hardcoded rather than imported: Expo transpiles this file to CommonJS
+        // and `require`s it from Node, which cannot resolve a `.ts` module —
+        // importing SPLASH_LOCKUP here fails prebuild outright. The agreement is
+        // enforced by __tests__/constants/splashLockup.test.ts instead, because
+        // the comment that used to assert it is exactly what went stale.
         // Regenerate the asset with `yarn build:splash`.
-        imageWidth: 300,
+        imageWidth: 560,
       },
     ],
     // Crash/error reporting. The config plugin wires native symbolication +
