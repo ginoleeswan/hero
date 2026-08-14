@@ -21,6 +21,8 @@ export interface UseMatchupTakesResult {
   agreedIds: Set<string>;
   /** Last write failure, human-readable; cleared when the next write starts. */
   error: string | null;
+  /** Re-fetch the take list — used after a block, so the blocked author's takes disappear immediately. */
+  refetch: () => void;
 }
 
 function bumpAgreeCount(takes: Take[], id: string, delta: number): Take[] {
@@ -110,5 +112,19 @@ export function useMatchupTakes(heroAId: string, heroBId: string): UseMatchupTak
     [agreedIds, queryClient, key],
   );
 
-  return { takes, loading: query.isLoading, myTake, submit, remove, agree, agreedIds, error };
+  const refetch = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: key });
+  }, [queryClient, key]);
+
+  return {
+    takes,
+    loading: query.isLoading,
+    myTake,
+    submit,
+    remove,
+    agree,
+    agreedIds,
+    error,
+    refetch,
+  };
 }

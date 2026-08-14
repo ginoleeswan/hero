@@ -17,6 +17,7 @@ import {
   submitReport,
   type ReportContext,
 } from '../../lib/db/reports';
+import { blockUser } from '../../lib/db/blocks';
 
 export interface ReportSheetProps {
   visible: boolean;
@@ -30,8 +31,13 @@ export interface ReportSheetProps {
   portraitUrl?: string | null;
   /** The take being reported (take context only). */
   takeId?: string | null;
+  /** The take's author (take context only) — enables the block action below. */
+  authorId?: string | null;
+  authorName?: string | null;
   user: { id: string } | null | undefined;
   onRequestSignIn: () => void;
+  /** Called after a successful block, so the caller can refresh its list. */
+  onBlocked?: () => void;
 }
 
 export function ReportSheet({
@@ -43,14 +49,20 @@ export function ReportSheet({
   imageUrl,
   portraitUrl,
   takeId,
+  authorId,
+  authorName,
   user,
   onRequestSignIn,
+  onBlocked,
 }: ReportSheetProps) {
   const [reason, setReason] = useState<string | null>(null);
   const [detail, setDetail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [blockConfirming, setBlockConfirming] = useState(false);
+  const [blocking, setBlocking] = useState(false);
+  const [blockError, setBlockError] = useState<string | null>(null);
 
   // Reset the form to a clean slate each time the sheet opens. Fires only on the
   // visible transition; keeping it in an effect avoids remounting mid-animation.
@@ -62,8 +74,28 @@ export function ReportSheet({
       setError(null);
       setDone(false);
       setSubmitting(false);
+      setBlockConfirming(false);
+      setBlocking(false);
+      setBlockError(null);
     }
   }, [visible]);
+
+  const showBlock = context === 'take' && !!authorId;
+
+  const handleBlock = async () => {
+    if (!authorId) return;
+    setBlocking(true);
+    setBlockError(null);
+    const ok = await blockUser(authorId);
+    setBlocking(false);
+    if (!ok) {
+      setBlockError('Could not block — please try again.');
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    onBlocked?.();
+    onClose();
+  };
 
   const reasons = REPORT_REASONS[context];
   // ai_inaccurate (page) attaches the portrait; image context shows the image.
@@ -171,6 +203,46 @@ export function ReportSheet({
             <Text style={s.btnPrimaryText}>{submitting ? 'Sending...' : 'Submit report'}</Text>
           </Pressable>
           <Text style={s.reviewNote}>Reports are reviewed by a moderator.</Text>
+
+          {showBlock &&
+            (blockConfirming ? (
+              <View style={s.blockConfirm}>
+                <Text style={s.blockConfirmText}>
+                  Block {authorName ?? 'this person'}? You won’t see their takes any more. They
+                  won’t be told. You can undo this later in Settings.
+                </Text>
+                {!!blockError && <Text style={s.error}>{blockError}</Text>}
+                <View style={s.blockConfirmRow}>
+                  <Pressable
+                    onPress={() => setBlockConfirming(false)}
+                    disabled={blocking}
+                    style={[s.btn, s.btnSecondary, s.btnHalf]}
+                  >
+                    <Text style={s.btnSecondaryText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleBlock}
+                    disabled={blocking}
+                    style={[s.btn, s.btnDanger, s.btnHalf, blocking && s.btnDisabled]}
+                  >
+                    <Text style={s.btnPrimaryText}>{blocking ? 'Blocking...' : 'Block'}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <Pressable
+                onPress={() => setBlockConfirming(true)}
+                style={({ pressed }) => [s.blockRow, pressed && s.blockRowPressed]}
+              >
+                <Ionicons name="ban-outline" size={16} color={COLORS.red} />
+                <View style={s.blockText}>
+                  <Text style={s.blockTitle}>Block this person</Text>
+                  <Text style={s.blockSub}>
+                    You won’t see their takes any more. They won’t be told.
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
         </View>
       )}
     </Sheet>
@@ -275,4 +347,39 @@ const s = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 19,
   },
+  blockRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 18,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(41,60,67,0.1)',
+  },
+  blockRowPressed: { opacity: 0.6 },
+  blockText: { flex: 1, gap: 2 },
+  blockTitle: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.red },
+  blockSub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: PAPER_TEXT.faint,
+    lineHeight: 17,
+  },
+  blockConfirm: {
+    marginTop: 18,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(41,60,67,0.1)',
+  },
+  blockConfirmText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.navy,
+    lineHeight: 19,
+  },
+  blockConfirmRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  btnHalf: { flex: 1 },
+  btnSecondary: { backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(41,60,67,0.16)' },
+  btnSecondaryText: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: COLORS.navy },
+  btnDanger: { backgroundColor: COLORS.red },
 });

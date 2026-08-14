@@ -164,7 +164,7 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
   const pathname = usePathname();
   const { user } = useAuth();
   const { pickedId: votePickedId } = useMatchupVote(heroA.id, heroB.id);
-  const { takes, myTake, submit, remove, agree, agreedIds, error } = useMatchupTakes(
+  const { takes, myTake, submit, remove, agree, agreedIds, error, refetch } = useMatchupTakes(
     heroA.id,
     heroB.id,
   );
@@ -297,11 +297,14 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
         heroName={heroA.name}
         context="take"
         takeId={reportTarget?.id ?? null}
+        authorId={reportTarget?.userId ?? null}
+        authorName={reportTarget?.displayName ?? null}
         user={user}
         onRequestSignIn={() => {
           setReportTakeId(null);
           goToLogin();
         }}
+        onBlocked={refetch}
       />
     </View>
   );
