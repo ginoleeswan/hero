@@ -14,10 +14,12 @@ import { BlurView } from 'expo-blur';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from '../ui/Text';
 import { SpotlightDeckCard } from './SpotlightDeckCard';
+import { SpotlightGlow } from './SpotlightGlow';
 import { SpotlightProgress } from './SpotlightProgress';
 import { deckCards, resolveActiveIndex } from './deckSelection';
 import { spotlightLayout } from '../../constants/spotlightLayout';
 import { COLORS, EYEBROW, INK_TEXT } from '../../constants/colors';
+import { brandForPublisher } from '../../constants/publishers';
 import { ALIGNMENT_LABELS } from '../../lib/characterTaxonomy';
 import type { Hero } from '../../lib/db/heroes';
 
@@ -38,6 +40,20 @@ export const TABLET_TAB_CLEARANCE = 48;
 // and the skeleton that mirrors it both need to agree with this number, so it
 // lives here rather than being restated at each call site.
 export const SPOTLIGHT_DECK_BOTTOM_GAP = 24;
+
+/**
+ * Brand hex → rgba at the ambient-glow alpha — the same conversion web's
+ * local `glowColor` does for its stage orb (`app/(tabs)/explore.web.tsx`).
+ * `brandForPublisher` is platform-neutral and lives in `constants/publishers`,
+ * but this alpha blend is presentation, not data, so it stays local here too.
+ */
+function glowColor(hex: string | undefined, alpha: number): string {
+  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return `rgba(231,115,51,${alpha})`;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 // A single power-stat chip: icon + value, a magnitude bar (stats run 0–100),
 // then the key label — mirrors web's StatChip at panel widths of the same
@@ -82,6 +98,13 @@ export function SpotlightDeck({
   // responder grant and release (autoplay ticks every 6s, and setActive
   // re-renders), or the gesture's start point is silently lost.
   const touchStart = useRef<number | null>(null);
+  // Web pauses autoplay while the pointer rests on the stage — touch has no
+  // hover, so a tap here instead restarts the dwell from zero. Bumping this
+  // counter tears the interval effect down and recreates it, which buys a
+  // full AUTOPLAY_MS from the moment of the touch rather than handing the
+  // rest of whatever dwell was already in flight.
+  const [interactionTick, setInteractionTick] = useState(0);
+  const bumpInteraction = useCallback(() => setInteractionTick((t) => t + 1), []);
 
   const step = useCallback(
     (dir: number) => setActive((i) => (i + dir + heroes.length) % heroes.length),
@@ -95,7 +118,7 @@ export function SpotlightDeck({
     if (heroes.length <= 1 || reduced) return;
     const timer = setInterval(() => step(1), AUTOPLAY_MS);
     return () => clearInterval(timer);
-  }, [heroes.length, reduced, step]);
+  }, [heroes.length, reduced, step, interactionTick]);
 
   if (heroes.length === 0) return null;
 
@@ -112,6 +135,14 @@ export function SpotlightDeck({
   const hasSummary = detail !== 'lean' && !!hero.summary;
   const hasStats = !!(hero.intelligence || hero.strength || hero.speed);
   const hasFirstAppearance = detail === 'full' && !!hero.first_appearance;
+
+  // Publisher-tinted ambience: the orb warms toward the featured hero's brand
+  // colour (Marvel red, DC blue…), easing over 800ms per advance — see
+  // SpotlightGlow. Sized off the stage rather than a fixed constant so it
+  // scales with the card taper instead of over- or under-filling it.
+  const brand = brandForPublisher(hero.publisher);
+  const brandGlow = glowColor(brand?.color, 0.16);
+  const glowSize = Math.round(Math.min(420, Math.max(220, stageHeight * 1.3)));
 
   const topClearance = insetTop + TABLET_TAB_CLEARANCE;
 
@@ -141,10 +172,26 @@ export function SpotlightDeck({
       )}
 
       <View
+        style={[
+          styles.glowLayer,
+          {
+            width: glowSize,
+            height: glowSize,
+            top: topClearance + (stageHeight - glowSize) / 2,
+            left: gutter - glowSize * 0.25,
+          },
+        ]}
+        pointerEvents="none"
+      >
+        <SpotlightGlow color={brandGlow} size={glowSize} />
+      </View>
+
+      <View
         style={styles.row}
         onStartShouldSetResponder={() => true}
         onResponderGrant={(e) => {
           touchStart.current = e.nativeEvent.pageX;
+          bumpInteraction();
         }}
         onResponderRelease={(e) => {
           const from = touchStart.current;
@@ -228,6 +275,15 @@ export function SpotlightDeck({
             )}
             {heroes.length > 1 && (
               <View style={styles.footer}>
+                {/* Web's plate number (`03 / 08`) beside its dwell rail — the
+                    rail says how long this one has left, the number says
+                    where in the deck you are. */}
+                <Text style={styles.plateNo}>
+                  {String(safeActive + 1).padStart(2, '0')}
+                  <Text
+                    style={styles.plateNoTotal}
+                  >{` / ${String(heroes.length).padStart(2, '0')}`}</Text>
+                </Text>
                 <SpotlightProgress
                   count={heroes.length}
                   active={safeActive}
@@ -261,6 +317,10 @@ const styles = StyleSheet.create({
     color: COLORS.beige,
     opacity: 0.055,
   },
+  // Positioned behind the strip (see the inline top/left/width/height in the
+  // render — they depend on stageHeight/gutter/glowSize) and never intercepts
+  // touch, so it sits between the ghost name and the row in paint order only.
+  glowLayer: { position: 'absolute' },
   // Glass info panel — web's `glassPanel` uses `backdrop-filter: blur(18px)`,
   // which doesn't exist on native. The BlurView above fills this container
   // (absoluteFill, first child) and is clipped to the same radius by
@@ -390,5 +450,15 @@ const styles = StyleSheet.create({
   // deck's full height (`row` centres its cross-axis, so the glass container
   // is sized by its own content) — a fixed gap reads the same without an
   // unfilled flex parent for `auto` to push against.
-  footer: { marginTop: 12, alignItems: 'flex-start' },
+  footer: { marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  // Matches web's `pss.plateNo` / `plateNoTotal` — Flame for a tracked,
+  // tabular-feeling digit pair rather than the panel's usual Nunito prose.
+  plateNo: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 15,
+    lineHeight: 19,
+    color: COLORS.beige,
+    letterSpacing: 1,
+  },
+  plateNoTotal: { color: INK_TEXT.faint },
 });
