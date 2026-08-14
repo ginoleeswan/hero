@@ -154,7 +154,14 @@ const s = StyleSheet.create({
   stage: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 },
   side: {
     flex: 1,
-    height: 560,
+    // Fills the stage rather than standing at a fixed height. It was 560, which
+    // is a number that had to agree with the header's and the footer's heights
+    // to work — and stopped agreeing when the verdict became two lines. The
+    // stage is then ~496 and `alignItems: 'center'` centred a 560 card in it, so
+    // the cards overflowed 32pt upward and covered the "WHO WOULD WIN?" eyebrow,
+    // leaving only the fragment visible in the gap between them. Stretching
+    // cannot drift: whatever the header and footer take, the cards get the rest.
+    alignSelf: 'stretch',
     borderRadius: 36,
     overflow: 'hidden',
     backgroundColor: '#1b2a30',
