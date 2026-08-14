@@ -56,6 +56,24 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       catalog_health_snapshots: {
         Row: {
           captured_at: string
@@ -3194,6 +3212,10 @@ export type Database = {
           title: string
           title_id: string
         }[]
+      }
+      has_description: {
+        Args: { h: Database["public"]["Tables"]["heroes"]["Row"] }
+        Returns: boolean
       }
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
       link_tmdb_cast: { Args: never; Returns: number }
