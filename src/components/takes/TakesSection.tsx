@@ -70,6 +70,7 @@ function TakeCard({
   isOwn,
   onAgree,
   onReport,
+  onBlock,
   onDelete,
 }: {
   take: Take;
@@ -79,6 +80,7 @@ function TakeCard({
   isOwn: boolean;
   onAgree: () => void;
   onReport: () => void;
+  onBlock: () => void;
   onDelete: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -142,16 +144,28 @@ function TakeCard({
               <Text style={[s.menuItemText, { color: COLORS.red }]}>Delete</Text>
             </Pressable>
           ) : (
-            <Pressable
-              onPress={() => {
-                setMenuOpen(false);
-                onReport();
-              }}
-              style={({ pressed }) => [s.menuItem, pressed && s.pressed]}
-            >
-              <Ionicons name="flag-outline" size={14} color={COLORS.grey} />
-              <Text style={s.menuItemText}>Report</Text>
-            </Pressable>
+            <>
+              <Pressable
+                onPress={() => {
+                  setMenuOpen(false);
+                  onBlock();
+                }}
+                style={({ pressed }) => [s.menuItem, pressed && s.pressed]}
+              >
+                <Ionicons name="ban-outline" size={14} color={COLORS.red} />
+                <Text style={[s.menuItemText, { color: COLORS.red }]}>Block</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setMenuOpen(false);
+                  onReport();
+                }}
+                style={({ pressed }) => [s.menuItem, pressed && s.pressed]}
+              >
+                <Ionicons name="flag-outline" size={14} color={COLORS.grey} />
+                <Text style={s.menuItemText}>Report</Text>
+              </Pressable>
+            </>
           )}
         </View>
       )}
@@ -173,6 +187,10 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
   const [body, setBody] = useState('');
   const [posting, setPosting] = useState(false);
   const [reportTakeId, setReportTakeId] = useState<string | null>(null);
+  // Which entry point opened the sheet: the "Report" menu item lands on the
+  // reason list, "Block" skips straight to the block confirm (Finding 2 —
+  // block used to be reachable only by scrolling past the whole report form).
+  const [sheetMode, setSheetMode] = useState<'report' | 'block'>('report');
 
   // Default the composer's side to the viewer's already-cast vote, once — never
   // stomp a side the user picked explicitly inside the composer.
@@ -222,7 +240,14 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
               agreed={agreedIds.has(t.id)}
               isOwn={!!user && t.userId === user.id}
               onAgree={() => agree(t.id)}
-              onReport={() => setReportTakeId(t.id)}
+              onReport={() => {
+                setSheetMode('report');
+                setReportTakeId(t.id);
+              }}
+              onBlock={() => {
+                setSheetMode('block');
+                setReportTakeId(t.id);
+              }}
               onDelete={() => remove(t.id)}
             />
           ))}
@@ -296,6 +321,7 @@ export function TakesSection({ heroA, heroB }: TakesSectionProps) {
         heroId={heroA.id}
         heroName={heroA.name}
         context="take"
+        mode={sheetMode}
         takeId={reportTarget?.id ?? null}
         authorId={reportTarget?.userId ?? null}
         authorName={reportTarget?.displayName ?? null}

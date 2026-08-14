@@ -30,6 +30,13 @@ export function useBlockedUsers(enabled: boolean): UseBlockedUsersResult {
 
   const refetch = useCallback(async () => {
     if (!enabled) return;
+    // `loading` initialises from `enabled`, which is false on the first
+    // native render (useAuth().user resolves async). Once auth resolves and
+    // this runs, loading is still false from that first render, so without
+    // this the empty state ("You haven't blocked anyone.") flashes before
+    // the request lands. Setting it explicitly here covers both the initial
+    // load and any later manual refetch.
+    setLoading(true);
     const rows = await getBlockedUsers();
     setBlocked(rows);
     setLoading(false);

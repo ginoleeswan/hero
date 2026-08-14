@@ -3,6 +3,12 @@
 // submit_report. Signed-in only (a queued moderation signal, never a direct
 // edit). Opened from the character page's contribute menu (context='page') and
 // the image lightbox (context='image').
+//
+// `mode="block"` skips straight to the block confirm — no reason list, no
+// submit button in between — so a "Block" entry point (e.g. the take card's
+// overflow menu) lands the user on the confirm in one tap instead of making
+// them scroll past a report form they didn't ask for. It reuses this sheet's
+// existing block state rather than building a second flow.
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../ui/Text';
@@ -38,6 +44,12 @@ export interface ReportSheetProps {
   onRequestSignIn: () => void;
   /** Called after a successful block, so the caller can refresh its list. */
   onBlocked?: () => void;
+  /**
+   * "report" (default) opens on the reason list. "block" opens straight on
+   * the block confirm, skipping the report form entirely — for a dedicated
+   * "Block" entry point. Requires `context === 'take'` and an `authorId`.
+   */
+  mode?: 'report' | 'block';
 }
 
 export function ReportSheet({
@@ -54,7 +66,9 @@ export function ReportSheet({
   user,
   onRequestSignIn,
   onBlocked,
+  mode = 'report',
 }: ReportSheetProps) {
+  const blockOnly = mode === 'block' && context === 'take' && !!authorId;
   const [reason, setReason] = useState<string | null>(null);
   const [detail, setDetail] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -74,11 +88,11 @@ export function ReportSheet({
       setError(null);
       setDone(false);
       setSubmitting(false);
-      setBlockConfirming(false);
+      setBlockConfirming(blockOnly);
       setBlocking(false);
       setBlockError(null);
     }
-  }, [visible]);
+  }, [visible, blockOnly]);
 
   const showBlock = context === 'take' && !!authorId;
 
@@ -135,8 +149,50 @@ export function ReportSheet({
   };
 
   return (
-    <Sheet visible={visible} onClose={onClose} avoidKeyboard label="Report a problem">
-      {!user ? (
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      avoidKeyboard
+      label={blockOnly ? 'Block this person' : 'Report a problem'}
+    >
+      {blockOnly ? (
+        !user ? (
+          <View style={s.body}>
+            <Text style={s.kicker}>{heroName}</Text>
+            <Text style={s.prompt}>Block</Text>
+            <Text style={s.guideline}>Sign in to block — it only changes what you see.</Text>
+            <Pressable onPress={onRequestSignIn} style={[s.btn, s.btnPrimary]}>
+              <Text style={s.btnPrimaryText}>Sign in to block</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={s.body}>
+            <Text style={s.kicker}>{heroName}</Text>
+            <Text style={s.prompt}>Block {authorName ?? 'this person'}?</Text>
+            <Text style={s.guideline}>
+              You won’t see their takes any more. They won’t be told. You can undo this later in
+              Settings.
+            </Text>
+            {!!blockError && <Text style={s.error}>{blockError}</Text>}
+            <View style={[s.blockConfirmRow, s.blockOnlyRow]}>
+              <Pressable
+                onPress={onClose}
+                disabled={blocking}
+                style={[s.btn, s.btnSecondary, s.btnHalf]}
+              >
+                <Text style={s.btnSecondaryText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleBlock}
+                disabled={blocking}
+                style={[s.btn, s.btnDanger, s.btnHalf, blocking && s.btnDisabled]}
+              >
+                <Text style={s.btnPrimaryText}>{blocking ? 'Blocking...' : 'Block'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        )
+      ) : !user ? (
         <View style={s.body}>
           <Text style={s.kicker}>{heroName}</Text>
           <Text style={s.prompt}>Report a problem</Text>
@@ -378,6 +434,7 @@ const s = StyleSheet.create({
     lineHeight: 19,
   },
   blockConfirmRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  blockOnlyRow: { marginTop: 16 },
   btnHalf: { flex: 1 },
   btnSecondary: { backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(41,60,67,0.16)' },
   btnSecondaryText: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: COLORS.navy },
