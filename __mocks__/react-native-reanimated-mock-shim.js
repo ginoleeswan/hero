@@ -85,6 +85,10 @@ module.exports = {
   useAnimatedKeyboard: () => ({ height: 0, state: 0 }),
   useScrollViewOffset: () => ({ value: 0 }),
   useScrollOffset: () => ({ value: 0 }),
+  // Defaults to "motion is fine" — the same as a real device with the OS
+  // setting off — so a component's non-reduced-motion branch is what tests
+  // exercise unless they mock this module further to flip it.
+  useReducedMotion: () => false,
   useEvent: () => NOOP,
   withSpring,
   withTiming,
