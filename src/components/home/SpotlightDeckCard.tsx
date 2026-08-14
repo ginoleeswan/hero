@@ -47,7 +47,7 @@ export function SpotlightDeckCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 14,
+    borderRadius: 16,
     borderCurve: 'continuous',
     overflow: 'hidden',
     backgroundColor: COLORS.deepNavy,
