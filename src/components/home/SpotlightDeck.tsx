@@ -206,9 +206,30 @@ export function SpotlightDeck({
 
       <View
         style={styles.row}
-        onStartShouldSetResponder={() => true}
-        onResponderGrant={(e) => {
+        // `onStartShouldSetResponder` is a bubbling handler, and RN's responder
+        // negotiation grants the responder to the deepest node that returns
+        // true — every card is a Pressable and so is the panel name, so they
+        // all claimed the responder on touch start and this row's grant/release
+        // pair almost never fired. Capture-phase handlers run top-down instead:
+        // recording the start point here (without claiming the responder, so
+        // taps still reach the cards) and only claiming it, via
+        // `onMoveShouldSetResponderCapture`, once the drag has actually
+        // crossed the swipe threshold. A plain tap never claims the row's
+        // responder at all — it falls through to the card/panel Pressable
+        // underneath, which is what makes tapping still work.
+        onStartShouldSetResponderCapture={(e) => {
           touchStart.current = e.nativeEvent.pageX;
+          return false;
+        }}
+        onMoveShouldSetResponderCapture={(e) => {
+          const from = touchStart.current;
+          if (from == null) return false;
+          return Math.abs(e.nativeEvent.pageX - from) > SWIPE_THRESHOLD;
+        }}
+        onResponderGrant={() => {
+          // Only reached once the move-capture above has claimed the
+          // responder for a genuine swipe — restart the dwell here too, so a
+          // drag across the stage counts as interaction just like a tap does.
           bumpInteraction();
         }}
         onResponderRelease={(e) => {
@@ -237,7 +258,16 @@ export function SpotlightDeck({
               opacity={card.opacity}
               active={card.active}
               next={card.next}
-              onPress={() => (card.active ? onHeroPress(card.hero) : setActive(card.index))}
+              onPress={() => {
+                // The row's own responder never grants on a plain tap (see the
+                // capture-phase handlers above), so a card tap has to restart
+                // the dwell itself — otherwise a tap that merely promotes a
+                // sliver leaves `SpotlightProgress` timed against whatever
+                // dwell was already in flight.
+                bumpInteraction();
+                if (card.active) onHeroPress(card.hero);
+                else setActive(card.index);
+              }}
             />
           ))}
         </View>
@@ -257,7 +287,10 @@ export function SpotlightDeck({
                 portrait is the same instruction printed twice — the argument
                 the web plate already settled — so the chevron says it once. */}
             <Pressable
-              onPress={() => onHeroPress(hero)}
+              onPress={() => {
+                bumpInteraction();
+                onHeroPress(hero);
+              }}
               accessibilityRole="link"
               accessibilityLabel={`View ${hero.name}`}
             >
