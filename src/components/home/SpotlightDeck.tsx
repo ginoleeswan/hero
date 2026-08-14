@@ -143,6 +143,10 @@ export function SpotlightDeck({
   const brand = brandForPublisher(hero.publisher);
   const brandGlow = glowColor(brand?.color, 0.16);
   const glowSize = Math.round(Math.min(420, Math.max(220, stageHeight * 1.3)));
+  // Matches web's `backdropSize` exactly (`app/(tabs)/explore.web.tsx`) — a
+  // fraction of the viewport, clamped so it never shrinks to illegible or
+  // grows past the stage on very wide screens.
+  const ghostSize = Math.min(260, Math.max(140, Math.round(width * 0.15)));
 
   const topClearance = insetTop + TABLET_TAB_CLEARANCE;
 
@@ -165,8 +169,15 @@ export function SpotlightDeck({
     >
       {showGhostName && (
         <View style={[StyleSheet.absoluteFill, styles.ghostWrap]} pointerEvents="none">
-          <Text style={styles.ghost} numberOfLines={1} accessible={false}>
-            {hero.name}
+          <Text
+            style={[
+              styles.ghost,
+              { fontSize: ghostSize, lineHeight: Math.round(ghostSize * 1.05) },
+            ]}
+            numberOfLines={1}
+            accessible={false}
+          >
+            {hero.name.toUpperCase()}
           </Text>
         </View>
       )}
@@ -319,20 +330,34 @@ const styles = StyleSheet.create({
   strip: { flexDirection: 'row', alignItems: 'center', gap: CARD_GAP },
   panel: { flex: 1, minWidth: 0 },
   // Ink on ink, behind the deck. Set large enough to read as scenery rather
-  // than as a heading someone forgot to style.
+  // than as a heading someone forgot to style. Clips to the stage bounds —
+  // matches web's `ambientClip` — so the name's bottom-left overhang (see
+  // `ghost` below) doesn't bleed past the stage edge.
   ghostWrap: {
-    justifyContent: 'center',
-    paddingLeft: 24,
+    overflow: 'hidden',
   },
   ghost: {
+    // Anchored bottom-left of the (clipped) stage, hanging slightly off both
+    // edges — matches web's `pss.backdropName` (`bottom: -14, left: -6`)
+    // exactly. Previously this was centred, which is why native's ghost sat
+    // mid-stage instead of low-left like web's.
+    position: 'absolute',
+    bottom: -14,
+    left: -6,
     fontFamily: 'Flame-Regular',
-    fontSize: 200,
-    // Flame needs ≥1.22× or a clamped line loses its descenders.
-    lineHeight: 244,
+    // fontSize/lineHeight are supplied inline from `ghostSize` (viewport-
+    // derived, matching web's `backdropSize`) rather than fixed here.
     color: COLORS.beige,
     // Matches web's `pss.backdropName` (`rgba(245,235,220,0.07)`) — legible
     // only once the panel's BlurView is thinned to let it show through.
     opacity: 0.07,
+    letterSpacing: 2,
+    // Uppercase-only text (see `.toUpperCase()` at the call site) has no
+    // descenders, so this is exempt from the repo's ≥1.22× clamped-Flame
+    // line-height rule (CLAUDE.md) — that rule exists to stop `g`/`y`/`p`
+    // descenders from being clipped by `numberOfLines` + tight line-height,
+    // and there are none here. Matching web's 1.05 keeps the glyphs from
+    // spacing out vertically for no reason; do not "fix" this back to 1.22.
   },
   // Positioned behind the strip (see the inline top/left/width/height in the
   // render — they depend on stageHeight/gutter/glowSize) and never intercepts
