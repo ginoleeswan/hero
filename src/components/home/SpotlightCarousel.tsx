@@ -6,23 +6,41 @@ import Carousel from 'react-native-reanimated-carousel';
 import * as Haptics from 'expo-haptics';
 import { SpotlightSlide } from './SpotlightSlide';
 import { SpotlightProgress } from './SpotlightProgress';
+import { SpotlightDeck } from './SpotlightDeck';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 import { SPOTLIGHT } from './homeGeometry';
 import { spotlightHeightFor } from '../../constants/layout';
+import { spotlightLayout } from '../../constants/spotlightLayout';
 
 // One clock for the carousel AND its progress fill — a pill timed against a
 // different number than the advance is a clock that lies.
 const AUTOPLAY_MS = 6000;
 
+/** Above this the billboard is a deck of correctly-proportioned cards rather
+ *  than one full-bleed crop. It is `spotlightLayout`'s own stacked threshold,
+ *  not `BREAKPOINTS.tablet` (700) — this number is tuned to the card
+ *  arithmetic, and a 20pt band where the page is "tablet" but the billboard is
+ *  still a phone billboard costs nothing. */
+export const SPOTLIGHT_DECK_MIN_WIDTH = 720;
+
+export function usesSpotlightDeck(width: number): boolean {
+  return width >= SPOTLIGHT_DECK_MIN_WIDTH;
+}
+
 /**
- * A tall billboard (Apple TV / Disney+) so the portrait reads big.
+ * A tall billboard (Apple TV / Disney+) so the portrait reads big — below the
+ * deck threshold.
  *
  * Takes the window rather than reading it at import: on a tablet in portrait,
  * half the height is a near-square slab that eats the entire fold, so the
  * height is also capped against the width. See constants/layout.ts.
+ *
+ * Above the threshold the answer comes from `spotlightLayout` instead, so the
+ * skeleton and the feed agree on the deck's stage without either restating it.
  */
 export function spotlightHeight(width: number, height: number, insetTop: number): number {
+  if (usesSpotlightDeck(width)) return spotlightLayout(width).stageHeight;
   return spotlightHeightFor(width, height, insetTop);
 }
 
@@ -47,6 +65,17 @@ export function SpotlightCarousel({
   const reduced = useReducedMotion();
 
   if (heroes.length === 0) return null;
+
+  // Tablet widths get the deck. The phone path below is untouched: it is tuned,
+  // shipped, and the defect this branch fixes does not exist at phone widths.
+  if (usesSpotlightDeck(winW)) {
+    return (
+      <View style={[styles.wrap, { height }]}>
+        <SpotlightDeck heroes={heroes} onHeroPress={onHeroPress} />
+        {showLip && <View style={styles.lip} pointerEvents="none" />}
+      </View>
+    );
+  }
 
   // No transform on the wrap — it scrolls uniformly with the page so the beige
   // lip stays glued to the content sheet below. The pull-down zoom lives on the
