@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Pressable, StyleSheet, ActivityIndicator, Alert, Switch } from 'react-native';
 import { Text } from '../src/components/ui/Text';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Redirect } from 'expo-router';
 import { useAuth } from '../src/hooks/useAuth';
@@ -12,6 +13,7 @@ import {
 } from '../src/lib/push';
 import { useProfile } from '../src/hooks/useProfile';
 import { useCachedAdminFlag } from '../src/hooks/useCachedAdminFlag';
+import { useBlockedUsers } from '../src/hooks/useBlockedUsers';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
 import { providerMeta } from '../src/lib/profile/provider';
 import { openKofi } from '../src/lib/support/kofi';
@@ -22,6 +24,7 @@ import { StageHeader } from '../src/components/StageHeader';
 import { SectionShell } from '../src/components/profile/SectionShell';
 import { PageEndCap } from '../src/components/web/PageEndCap';
 import { Attribution } from '../src/components/legal/Attribution';
+import type { BlockedUser } from '../src/lib/db/blocks';
 
 type RowTone = 'navy' | 'orange' | 'danger';
 
@@ -151,6 +154,56 @@ function NotificationsSection({ userId }: { userId: string }) {
   );
 }
 
+/** One row in the "Blocked people" list — avatar, name, unblock control. */
+function BlockedUserRow({
+  entry,
+  busy,
+  onUnblock,
+}: {
+  entry: BlockedUser;
+  busy: boolean;
+  onUnblock: () => void;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = !!entry.avatarUrl && !imageFailed;
+  return (
+    <View style={styles.blockedRow}>
+      <View style={styles.blockedAvatar}>
+        {showImage ? (
+          <Image
+            source={{ uri: entry.avatarUrl! }}
+            style={styles.blockedAvatarImg}
+            contentFit="cover"
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <Ionicons name="person" size={16} color="rgba(41,60,67,0.35)" />
+        )}
+      </View>
+      <Text style={styles.blockedName} numberOfLines={1}>
+        {entry.displayName ?? 'Anonymous hero'}
+      </Text>
+      <Pressable
+        onPress={onUnblock}
+        disabled={busy}
+        accessibilityRole="button"
+        accessibilityLabel={`Unblock ${entry.displayName ?? 'this person'}`}
+        style={({ hovered }: { pressed: boolean; hovered?: boolean }) => [
+          styles.unblockBtn,
+          styles.rowPressable,
+          hovered && styles.rowHover,
+        ]}
+      >
+        {busy ? (
+          <ActivityIndicator size="small" color={COLORS.navy} />
+        ) : (
+          <Text style={styles.unblockBtnText}>Unblock</Text>
+        )}
+      </Pressable>
+    </View>
+  );
+}
+
 export default function WebSettingsScreen() {
   const router = useRouter();
   // Ink chrome over a beige canvas, matching the rest of the web shell.
@@ -164,6 +217,9 @@ export default function WebSettingsScreen() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const { toast, showToast } = useToast();
+  // This screen already redirects signed-out visitors to /explore below, so
+  // the hook is always enabled here — no separate signed-out gate needed.
+  const blockedUsers = useBlockedUsers(!!user);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -300,6 +356,28 @@ export default function WebSettingsScreen() {
           />
         </SectionShell>
 
+        {/* Reversible + discoverable per App Review Guideline 1.2 — the
+            confirm copy in ReportSheet's block action tells people they can
+            undo it "in Settings", so this section is a promise already made. */}
+        <SectionShell title="Blocked people">
+          {blockedUsers.loading ? (
+            <ActivityIndicator size="small" color={COLORS.navy} />
+          ) : blockedUsers.blocked.length === 0 ? (
+            <Text style={styles.blockedEmpty}>You haven’t blocked anyone.</Text>
+          ) : (
+            <View style={styles.blockedList}>
+              {blockedUsers.blocked.map((entry) => (
+                <BlockedUserRow
+                  key={entry.userId}
+                  entry={entry}
+                  busy={blockedUsers.unblockingId === entry.userId}
+                  onUnblock={() => void blockedUsers.unblock(entry.userId)}
+                />
+              ))}
+            </View>
+          )}
+        </SectionShell>
+
         {/* Same Legal section as native — the policy and terms were reachable
             only from the signup form on both platforms. */}
         <SectionShell title="Legal">
@@ -389,6 +467,41 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
     flex: 1,
   },
+
+  blockedEmpty: { fontFamily: 'FlameSans-Regular', fontSize: 13.5, color: PAPER_TEXT.faint },
+  blockedList: { gap: 4 },
+  blockedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 8,
+  } as object,
+  blockedAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#e8f0f2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  blockedAvatarImg: { width: 32, height: 32 },
+  blockedName: {
+    flex: 1,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13.5,
+    color: COLORS.navy,
+  },
+  unblockBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.16)',
+    minWidth: 78,
+    alignItems: 'center',
+  } as object,
+  unblockBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   labelDanger: { color: COLORS.red },
   value: {
     fontFamily: 'Nunito_400Regular',

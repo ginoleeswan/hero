@@ -9,6 +9,7 @@ import {
   Switch,
 } from 'react-native';
 import { Text } from '../src/components/ui/Text';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -17,6 +18,7 @@ import { useAuth } from '../src/hooks/useAuth';
 import { loginHref } from '../src/lib/loginRedirect';
 import { useNotificationSettings } from '../src/hooks/useNotificationSettings';
 import { useProfile } from '../src/hooks/useProfile';
+import { useBlockedUsers } from '../src/hooks/useBlockedUsers';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
 import { providerMeta } from '../src/lib/profile/provider';
 import { openKofi } from '../src/lib/support/kofi';
@@ -25,6 +27,7 @@ import { Toast, useToast } from '../src/components/ui/Toast';
 import { SectionShell } from '../src/components/profile/SectionShell';
 import { READING_MAX_WIDTH } from '../src/components/ui/PageColumn';
 import { Attribution } from '../src/components/legal/Attribution';
+import type { BlockedUser } from '../src/lib/db/blocks';
 
 type RowTone = 'navy' | 'orange' | 'danger';
 
@@ -100,6 +103,52 @@ function SettingRow({
   );
 }
 
+/** One row in the "Blocked people" list — avatar, name, unblock control. */
+function BlockedUserRow({
+  entry,
+  busy,
+  onUnblock,
+}: {
+  entry: BlockedUser;
+  busy: boolean;
+  onUnblock: () => void;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = !!entry.avatarUrl && !imageFailed;
+  return (
+    <View style={styles.blockedRow}>
+      <View style={styles.blockedAvatar}>
+        {showImage ? (
+          <Image
+            source={{ uri: entry.avatarUrl! }}
+            style={styles.blockedAvatarImg}
+            contentFit="cover"
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <Ionicons name="person" size={16} color="rgba(41,60,67,0.35)" />
+        )}
+      </View>
+      <Text style={styles.blockedName} numberOfLines={1}>
+        {entry.displayName ?? 'Anonymous hero'}
+      </Text>
+      <Pressable
+        onPress={onUnblock}
+        disabled={busy}
+        accessibilityRole="button"
+        accessibilityLabel={`Unblock ${entry.displayName ?? 'this person'}`}
+        style={({ pressed }) => [styles.unblockBtn, pressed && styles.rowPressed]}
+      >
+        {busy ? (
+          <ActivityIndicator size="small" color={COLORS.navy} />
+        ) : (
+          <Text style={styles.unblockBtnText}>Unblock</Text>
+        )}
+      </Pressable>
+    </View>
+  );
+}
+
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -110,6 +159,7 @@ export default function SettingsScreen() {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const { toast, showToast } = useToast();
   const notif = useNotificationSettings();
+  const blockedUsers = useBlockedUsers(!!user);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -277,6 +327,30 @@ export default function SettingsScreen() {
               busy={deletingAccount}
               busyLabel="Deleting account…"
             />
+          </SectionShell>
+        )}
+
+        {/* Reversible + discoverable per App Review Guideline 1.2 — the
+            confirm copy in ReportSheet's block action tells people they can
+            undo it "in Settings", so this section is a promise already made. */}
+        {signedIn && (
+          <SectionShell title="Blocked people">
+            {blockedUsers.loading ? (
+              <ActivityIndicator size="small" color={COLORS.navy} />
+            ) : blockedUsers.blocked.length === 0 ? (
+              <Text style={styles.blockedEmpty}>You haven’t blocked anyone.</Text>
+            ) : (
+              <View style={styles.blockedList}>
+                {blockedUsers.blocked.map((entry) => (
+                  <BlockedUserRow
+                    key={entry.userId}
+                    entry={entry}
+                    busy={blockedUsers.unblockingId === entry.userId}
+                    onUnblock={() => void blockedUsers.unblock(entry.userId)}
+                  />
+                ))}
+              </View>
+            )}
           </SectionShell>
         )}
 
@@ -458,6 +532,41 @@ const styles = StyleSheet.create({
   // PAPER_TEXT.muted, not a lighter grey — the measured 5.61:1 rather than a
   // 3.50:1 that looks fine on a bright screen and fails in sunlight.
   sub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: PAPER_TEXT.muted },
+
+  blockedEmpty: { fontFamily: 'FlameSans-Regular', fontSize: 13.5, color: PAPER_TEXT.faint },
+  blockedList: { gap: 4 },
+  blockedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  blockedAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#e8f0f2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  blockedAvatarImg: { width: 32, height: 32 },
+  blockedName: {
+    flex: 1,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 15,
+    color: COLORS.navy,
+  },
+  unblockBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.16)',
+    minWidth: 78,
+    alignItems: 'center',
+  },
+  unblockBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   labelDanger: { color: COLORS.red },
   value: {
     fontFamily: 'Nunito_400Regular',
