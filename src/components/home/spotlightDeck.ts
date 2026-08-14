@@ -14,6 +14,18 @@ import type { Hero } from '../../lib/db/heroes';
  */
 export const SLIVER_OPACITY: readonly number[] = [1, 0.82, 0.66, 0.54, 0.44, 0.36, 0.28, 0.2];
 
+/**
+ * Wraps a possibly-stale active index back into range for the current list —
+ * the same modulo `deckCards` already applies internally. A feed refetch can
+ * shrink `heroes` out from under a still-mounted `active` state; without this,
+ * the panel (`heroes[active]`) and the deck's front card would either crash
+ * on `undefined` or silently disagree about which hero is active.
+ */
+export function resolveActiveIndex(activeIndex: number, length: number): number {
+  if (length === 0) return 0;
+  return ((activeIndex % length) + length) % length;
+}
+
 export interface DeckCard {
   hero: Hero;
   /** Index into `heroes` — what a tap on this card promotes to active. */

@@ -1,4 +1,8 @@
-import { deckCards, SLIVER_OPACITY } from '../../../src/components/home/spotlightDeck';
+import {
+  deckCards,
+  resolveActiveIndex,
+  SLIVER_OPACITY,
+} from '../../../src/components/home/spotlightDeck';
 import type { Hero } from '../../../src/lib/db/heroes';
 
 // Only the fields the deck reads. Cast once here rather than building 34 columns
@@ -51,5 +55,25 @@ describe('deckCards', () => {
 
   it('returns nothing when there is nothing to show', () => {
     expect(deckCards([], layout, 0)).toEqual([]);
+  });
+});
+
+describe('resolveActiveIndex', () => {
+  it('wraps an index past the end of a shrunken list', () => {
+    // A refetch can drop entries out from under a still-mounted `active`
+    // state; this must land back in range the same way deckCards wraps.
+    expect(resolveActiveIndex(5, 3)).toBe(2);
+  });
+
+  it('returns 0 for a single-hero list regardless of the stale index', () => {
+    expect(resolveActiveIndex(7, 1)).toBe(0);
+  });
+
+  it('returns 0 when the list is empty', () => {
+    expect(resolveActiveIndex(4, 0)).toBe(0);
+  });
+
+  it('leaves a valid in-range index unchanged', () => {
+    expect(resolveActiveIndex(2, 4)).toBe(2);
   });
 });

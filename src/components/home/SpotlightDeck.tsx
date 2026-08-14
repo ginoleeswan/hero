@@ -13,7 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { Text } from '../ui/Text';
 import { SpotlightDeckCard } from './SpotlightDeckCard';
 import { SpotlightProgress } from './SpotlightProgress';
-import { deckCards } from './spotlightDeck';
+import { deckCards, resolveActiveIndex } from './spotlightDeck';
 import { spotlightLayout } from '../../constants/spotlightLayout';
 import { COLORS } from '../../constants/colors';
 import { ALIGNMENT_LABELS } from '../../lib/characterTaxonomy';
@@ -58,8 +58,11 @@ export function SpotlightDeck({
   if (heroes.length === 0) return null;
 
   const { stageHeight, cardWidth, tail, detail, showGhostName, gutter } = layout;
-  const hero = heroes[active];
-  const cards = deckCards(heroes, { cardWidth, tail }, active);
+  // A refetch can shrink `heroes` out from under `active` between renders;
+  // resolve once so the panel and the deck's front card never disagree.
+  const safeActive = resolveActiveIndex(active, heroes.length);
+  const hero = heroes[safeActive];
+  const cards = deckCards(heroes, { cardWidth, tail }, safeActive);
   const align = hero.alignment ? ALIGNMENT_LABELS[hero.alignment.toLowerCase().trim()] : undefined;
   const kicker = [hero.publisher, align].filter(Boolean).join('   ·   ');
   // caption sheds the blurb; duo clamps it; gallery lets it run.
@@ -131,7 +134,11 @@ export function SpotlightDeck({
           )}
           {heroes.length > 1 && (
             <View style={styles.progress}>
-              <SpotlightProgress count={heroes.length} active={active} intervalMs={AUTOPLAY_MS} />
+              <SpotlightProgress
+                count={heroes.length}
+                active={safeActive}
+                intervalMs={AUTOPLAY_MS}
+              />
             </View>
           )}
         </View>
