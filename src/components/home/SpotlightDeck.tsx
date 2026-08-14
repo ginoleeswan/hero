@@ -213,6 +213,7 @@ export function SpotlightDeck({
               height={stageHeight}
               opacity={card.opacity}
               active={card.active}
+              next={card.next}
               onPress={() => (card.active ? onHeroPress(card.hero) : setActive(card.index))}
             />
           ))}
@@ -221,9 +222,13 @@ export function SpotlightDeck({
         <View style={styles.panel}>
           {/* No backdrop-filter on native — a BlurView sits behind the content,
               clipped to the container's own radius, with the fill and border
-              carried by the container itself (see web's `glassPanel`). */}
+              carried by the container itself (see web's `glassPanel`). Web's
+              panel is `rgba(255,255,255,0.04)` + `blur(18px)` — barely there,
+              so the ghost name in `ghostWrap` shows *through* it. A high
+              BlurView `intensity` is opaque enough to erase that; kept low so
+              the panel reads the same as web's glass, not a frosted card. */}
           <View style={styles.glassPanel}>
-            <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={14} tint="dark" style={StyleSheet.absoluteFill} />
             <Text style={styles.eyebrow}>Featured Character</Text>
             {/* The name is the link. A "View profile" button beside a tappable
                 portrait is the same instruction printed twice — the argument
@@ -300,7 +305,12 @@ export function SpotlightDeck({
 
 const styles = StyleSheet.create({
   stage: { backgroundColor: COLORS.deepNavy, justifyContent: 'center' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  // `stretch` (not `center`) so the glass panel below runs the full stage
+  // height, matching web's `pss.wrap` — see `glassPanel`'s `flex: 1`. The
+  // strip's own cards are already given an explicit `height={stageHeight}`
+  // by the caller, so stretching this row's cross-axis doesn't change their
+  // size, only the panel's, which had none.
+  row: { flexDirection: 'row', alignItems: 'stretch', gap: 16 },
   strip: { flexDirection: 'row', alignItems: 'center', gap: CARD_GAP },
   panel: { flex: 1, minWidth: 0 },
   // Ink on ink, behind the deck. Set large enough to read as scenery rather
@@ -315,7 +325,9 @@ const styles = StyleSheet.create({
     // Flame needs ≥1.22× or a clamped line loses its descenders.
     lineHeight: 244,
     color: COLORS.beige,
-    opacity: 0.055,
+    // Matches web's `pss.backdropName` (`rgba(245,235,220,0.07)`) — legible
+    // only once the panel's BlurView is thinned to let it show through.
+    opacity: 0.07,
   },
   // Positioned behind the strip (see the inline top/left/width/height in the
   // render — they depend on stageHeight/gutter/glowSize) and never intercepts
@@ -327,6 +339,10 @@ const styles = StyleSheet.create({
   // `overflow: hidden`; the translucent fill and border live on the
   // container itself so they composite over the blur rather than under it.
   glassPanel: {
+    // Fills `panel`'s now-stretched height (see `row`) and top-aligns its
+    // content by default (column flex, no `justifyContent` override) —
+    // matching web's `flex: 1` + `justifyContent: 'flex-start'`.
+    flex: 1,
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.10)',
@@ -446,11 +462,18 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     color: INK_TEXT.faint,
   },
-  // Unlike web's `marginTop: 'auto'`, this panel isn't stretched to the
-  // deck's full height (`row` centres its cross-axis, so the glass container
-  // is sized by its own content) — a fixed gap reads the same without an
-  // unfilled flex parent for `auto` to push against.
-  footer: { marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  // `marginTop: 'auto'` now has something to push against: `glassPanel` is
+  // `flex: 1` inside a stretched-height `panel`, so the footer (rail + plate
+  // number) sits pinned to the stage floor exactly as it does on web,
+  // instead of trailing directly under whatever content happens to precede
+  // it.
+  footer: {
+    marginTop: 'auto',
+    paddingTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   // Matches web's `pss.plateNo` / `plateNoTotal` — Flame for a tracked,
   // tabular-feeling digit pair rather than the panel's usual Nunito prose.
   plateNo: {

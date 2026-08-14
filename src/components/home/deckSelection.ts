@@ -33,6 +33,9 @@ export interface DeckCard {
   width: number;
   opacity: number;
   active: boolean;
+  /** The card directly behind the active one — shown at a smaller, dimmer
+   *  name treatment (web's `cardNameNext`) so the deck previews what's next. */
+  next: boolean;
 }
 
 /**
@@ -55,6 +58,7 @@ export function deckCards(
       width,
       opacity: SLIVER_OPACITY[Math.min(i, SLIVER_OPACITY.length - 1)],
       active: i === 0,
+      next: i === 1,
     };
   });
 }

@@ -48,6 +48,11 @@ describe('deckCards', () => {
     expect(cards.map((c) => c.index)).toEqual([1, 2, 3, 0]);
   });
 
+  it('flags exactly the second card as next, mirroring web cardNameNext', () => {
+    const cards = deckCards(heroes, layout, 2);
+    expect(cards.map((c) => c.next)).toEqual([false, true, false, false]);
+  });
+
   it('has an opacity for every width the taper can produce', () => {
     // buildTail tops out at 7 slivers, so 8 cards is the deepest deck.
     expect(SLIVER_OPACITY.length).toBeGreaterThanOrEqual(8);
