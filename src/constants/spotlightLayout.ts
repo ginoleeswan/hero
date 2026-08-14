@@ -36,7 +36,7 @@ export interface SpotlightLayout {
   /** Sliver widths after the active card, widest first. Empty unless gallery/duo. */
   tail: number[];
   detail: SpotlightDetail;
-  /** Type-as-scenery needs negative space to be scenery. */
+  /** Type-as-scenery needs negative space to be scenery — so, gallery only. */
   showGhostName: boolean;
   /** Ceiling on the panel so a wide window doesn't stretch a short read across
    *  600px of glass. Undefined where the panel should simply take the rest. */
@@ -143,7 +143,9 @@ export function spotlightLayout(width: number): SpotlightLayout {
     stageHeight,
     tail,
     detail: tail.length === 0 ? 'lean' : gallery ? 'full' : 'trim',
-    showGhostName: tail.length > 0,
+    // Gallery only. The duo deck fills its stage, so scenery type there is just
+    // the name printed twice — see the 2026-08-14 iPad spotlight spec.
+    showGhostName: tail.length > 0 && gallery,
     panelMaxWidth: tail.length === 0 ? 520 : undefined,
     gutter,
   };

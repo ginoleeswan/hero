@@ -79,11 +79,13 @@ describe('spotlightLayout', () => {
     expect(l.detail).toBe('full');
   });
 
-  it('drops the scenery type and the deck together', () => {
-    // Type-as-scenery only works where there's negative space for it.
+  it('keeps the scenery type to the gallery, where there is room for it', () => {
+    // Type-as-scenery only works where there's negative space for it. The duo
+    // deck fills its stage — strip plus panel — so a ghost name there would set
+    // the character's name at display size twice within 40pt of itself.
     for (const w of WIDTHS) {
-      const { tail, showGhostName } = spotlightLayout(w);
-      expect(showGhostName).toBe(tail.length > 0);
+      const { state, showGhostName } = spotlightLayout(w);
+      expect(showGhostName).toBe(state === 'gallery');
     }
   });
 
