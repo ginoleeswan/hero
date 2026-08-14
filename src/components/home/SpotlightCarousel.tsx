@@ -6,7 +6,7 @@ import Carousel from 'react-native-reanimated-carousel';
 import * as Haptics from 'expo-haptics';
 import { SpotlightSlide } from './SpotlightSlide';
 import { SpotlightProgress } from './SpotlightProgress';
-import { SpotlightDeck } from './SpotlightDeck';
+import { SpotlightDeck, TABLET_TAB_CLEARANCE } from './SpotlightDeck';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 import { SPOTLIGHT } from './homeGeometry';
@@ -40,7 +40,12 @@ export function usesSpotlightDeck(width: number): boolean {
  * skeleton and the feed agree on the deck's stage without either restating it.
  */
 export function spotlightHeight(width: number, height: number, insetTop: number): number {
-  if (usesSpotlightDeck(width)) return spotlightLayout(width).stageHeight;
+  // The deck is cards, not full-bleed art — a card clipped by the status bar
+  // (0–44pt) or iPadOS's floating top tab pill (~19–71pt) reads as broken, so
+  // the stage grows to clear both. See TABLET_TAB_CLEARANCE.
+  if (usesSpotlightDeck(width)) {
+    return spotlightLayout(width).stageHeight + insetTop + TABLET_TAB_CLEARANCE;
+  }
   return spotlightHeightFor(width, height, insetTop);
 }
 
@@ -71,7 +76,7 @@ export function SpotlightCarousel({
   if (usesSpotlightDeck(winW)) {
     return (
       <View style={[styles.wrap, { height }]}>
-        <SpotlightDeck heroes={heroes} onHeroPress={onHeroPress} />
+        <SpotlightDeck heroes={heroes} insetTop={insetTop} onHeroPress={onHeroPress} />
         {showLip && <View style={styles.lip} pointerEvents="none" />}
       </View>
     );

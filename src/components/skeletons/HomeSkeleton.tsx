@@ -20,9 +20,11 @@ import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { COLORS } from '../../constants/colors';
 import { spotlightHeight } from '../home/SpotlightCarousel';
 import {
+  dailyBanner,
   DAILY_BANNER,
   FEED_H_PAD,
   heroRow,
+  matchupCard,
   MATCHUP_CARD,
   PAPER_SEAM_RADIUS,
   publisherGrid,
@@ -106,6 +108,7 @@ function PublisherGridSkeleton() {
  * the point: a placeholder that has to be kept in step with a skeleton drifts.
  */
 export function MatchupSkeleton() {
+  const { width } = useWindowDimensions();
   return (
     <View style={styles.darkSection}>
       <View style={styles.headerLeft}>
@@ -118,7 +121,7 @@ export function MatchupSkeleton() {
           style={styles.titleGap}
         />
       </View>
-      <View style={styles.matchupCard}>
+      <View style={{ paddingHorizontal: matchupCard(width).hMargin }}>
         <Skeleton
           width="100%"
           height={MATCHUP_CARD.approxHeight}
@@ -131,8 +134,9 @@ export function MatchupSkeleton() {
 }
 
 function DailyBannerSkeleton() {
+  const { width } = useWindowDimensions();
   return (
-    <View style={styles.dailyBanner}>
+    <View style={[styles.dailyBanner, { paddingHorizontal: dailyBanner(width).hMargin }]}>
       <Skeleton
         width="100%"
         height={DAILY_BANNER.approxHeight}
@@ -248,9 +252,7 @@ const styles = StyleSheet.create({
   darkSection: { paddingTop: 12, paddingBottom: 4 },
   headerLeft: { gap: 2, paddingHorizontal: FEED_H_PAD, marginBottom: 10 },
   titleGap: { marginTop: 2 },
-  matchupCard: { paddingHorizontal: MATCHUP_CARD.hMargin },
   dailyBanner: {
-    paddingHorizontal: DAILY_BANNER.hMargin,
     paddingTop: DAILY_BANNER.marginTop,
     paddingBottom: DAILY_BANNER.marginBottom,
   },

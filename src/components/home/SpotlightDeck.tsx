@@ -25,11 +25,19 @@ const CARD_GAP = 12;
 /** Past this a horizontal drag is a deck flip rather than a stray touch. */
 const SWIPE_THRESHOLD = 44;
 
+// iPadOS floats the tab bar at the TOP, not the bottom. Measured on an iPad
+// Pro 13" simulator in both orientations: the pill (Explore / Arena / Profile
+// / search) spans roughly 19–71pt, sitting directly on the deck's top card. A
+// ~24pt safe-area inset plus this clears it in both orientations.
+export const TABLET_TAB_CLEARANCE = 48;
+
 export function SpotlightDeck({
   heroes,
+  insetTop,
   onHeroPress,
 }: {
   heroes: Hero[];
+  insetTop: number;
   onHeroPress: (hero: Hero) => void;
 }) {
   const { width } = useWindowDimensions();
@@ -68,8 +76,19 @@ export function SpotlightDeck({
   // caption sheds the blurb; duo clamps it; gallery lets it run.
   const blurbLines = detail === 'full' ? 4 : 3;
 
+  const topClearance = insetTop + TABLET_TAB_CLEARANCE;
+
   return (
-    <View style={[styles.stage, { height: stageHeight, paddingHorizontal: gutter }]}>
+    <View
+      style={[
+        styles.stage,
+        {
+          height: stageHeight + topClearance,
+          paddingHorizontal: gutter,
+          paddingTop: topClearance,
+        },
+      ]}
+    >
       {showGhostName && (
         <View style={[StyleSheet.absoluteFill, styles.ghostWrap]} pointerEvents="none">
           <Text style={styles.ghost} numberOfLines={1} accessible={false}>

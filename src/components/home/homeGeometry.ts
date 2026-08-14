@@ -54,7 +54,12 @@ export const SPOTLIGHT = {
  * not get better by being enormous.
  */
 export function publisherGrid(width: number) {
-  const hPad = isTabletWidth(width) ? 24 : 16;
+  // Tablet: the same gutter as the deck and every other feed edge (see
+  // matchupCard/dailyBanner below) — a device pass on an iPad Pro 13" found
+  // three different left margins stepping down the page. Phone keeps its
+  // tuned 16, deliberately NOT feedHPad(width) (15) — that one point of drift
+  // never showed on a phone, so there is nothing to fix there.
+  const hPad = isTabletWidth(width) ? feedHPad(width) : 16;
   const gap = 10;
   const columns = isTabletWidth(width) ? 4 : 2;
   return {
@@ -79,6 +84,18 @@ export const MATCHUP_CARD = {
   approxHeight: 206,
 } as const;
 
+/**
+ * Width-aware version of MATCHUP_CARD. Phone keeps the tuned FEED_H_PAD (15)
+ * unchanged; tablet widths switch to feedHPad(width) so the card's edge lines
+ * up with the deck, publisherGrid and dailyBanner instead of sitting a step
+ * in from them.
+ */
+export function matchupCard(width: number): Omit<typeof MATCHUP_CARD, 'hMargin'> & {
+  hMargin: number;
+} {
+  return { ...MATCHUP_CARD, hMargin: isTabletWidth(width) ? feedHPad(width) : FEED_H_PAD };
+}
+
 /** DailyChallengeBanner — content-driven, so the skeleton approximates. */
 export const DAILY_BANNER = {
   hMargin: FEED_H_PAD,
@@ -88,6 +105,13 @@ export const DAILY_BANNER = {
   /** Not a fixed height on the real banner — a placeholder stand-in. */
   approxHeight: 104,
 } as const;
+
+/** Width-aware version of DAILY_BANNER — see matchupCard() above. */
+export function dailyBanner(width: number): Omit<typeof DAILY_BANNER, 'hMargin'> & {
+  hMargin: number;
+} {
+  return { ...DAILY_BANNER, hMargin: isTabletWidth(width) ? feedHPad(width) : FEED_H_PAD };
+}
 
 /**
  * HomeHeroRow — the portrait cards in every Library rail.

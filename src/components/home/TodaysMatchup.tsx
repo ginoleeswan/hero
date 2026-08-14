@@ -5,7 +5,7 @@
 // web card / compare arena never drift. Logged-out fans vote with no sign-up
 // wall — their pick is an on-device reveal. The card taps through to the arena.
 import { useCallback } from 'react';
-import { View, Pressable, StyleSheet, Share, Platform } from 'react-native';
+import { View, Pressable, StyleSheet, Share, Platform, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/Text';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +15,7 @@ import { nativeShare, shareLink, vsShareLine } from '../../lib/share';
 import { crowdSplit, statLead, type MatchupSide } from '../../lib/home/matchupVote';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 import type { TodaysMatchup as Matchup } from '../../lib/matchup';
-import { MATCHUP_CARD } from './homeGeometry';
+import { MATCHUP_CARD, matchupCard } from './homeGeometry';
 
 const PORTRAIT = MATCHUP_CARD.portrait;
 
@@ -70,6 +70,11 @@ export function TodaysMatchup({
 }) {
   const { heroA, heroB, winsA, winsB } = matchup;
   const { pickedId, tally, loaded, revealed, castVote } = useMatchupVote(heroA.id, heroB.id);
+  // Tablet: the same left edge as the deck/publisherGrid/dailyBanner — a
+  // device pass on an iPad Pro 13" found this card sitting a step in from
+  // them. Phone keeps the tuned 15 the static styles below used to hardcode.
+  const { width } = useWindowDimensions();
+  const { hMargin } = matchupCard(width);
 
   // Add a haptic tap to the shared vote handler on native (only on a fresh vote).
   const vote = useCallback(
@@ -103,7 +108,7 @@ export function TodaysMatchup({
 
   return (
     <View style={m.section}>
-      <View style={m.header}>
+      <View style={[m.header, { paddingHorizontal: hMargin }]}>
         <View style={m.accentBar} />
         <View style={m.headerText}>
           <Text style={m.label}>Daily</Text>
@@ -111,7 +116,7 @@ export function TodaysMatchup({
         </View>
       </View>
 
-      <View style={m.card}>
+      <View style={[m.card, { marginHorizontal: hMargin }]}>
         <View style={m.fighters}>
           <Fighter
             hero={heroA}
@@ -195,7 +200,6 @@ export function TodaysMatchup({
 const m = StyleSheet.create({
   section: { paddingTop: 8, paddingBottom: 12 },
   header: {
-    paddingHorizontal: 15,
     marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -213,7 +217,6 @@ const m = StyleSheet.create({
   title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.beige, lineHeight: 28 },
 
   card: {
-    marginHorizontal: 15,
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 18,
     borderCurve: 'continuous',
