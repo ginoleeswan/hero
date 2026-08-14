@@ -1,12 +1,20 @@
 // The home-screen entry point for the daily "Guess the Hero" game. A premium
 // navy banner with a blurred "mystery" tile, the day's hook, and the player's
 // live streak. Shared by native + web Explore (renders RN primitives via RNW).
-import { View, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  View,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { Text } from '../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { useDailyStreak } from '../../hooks/useDailyStreak';
+import { dailyBanner } from '../home/homeGeometry';
 
 export function DailyChallengeBanner({
   onPress,
@@ -21,6 +29,14 @@ export function DailyChallengeBanner({
   tall?: boolean;
 }) {
   const streak = useDailyStreak();
+  // Tablet: the same left edge as the deck/publisherGrid/matchupCard — this
+  // card used to hardcode its own 15pt margin and never read the shared
+  // value at all, which is exactly the drift homeGeometry.ts exists to
+  // prevent (its own dailyBanner() was already correct; nothing consumed
+  // it). Phone keeps the tuned 15. `style` (the web glass/mobile overrides)
+  // is still spread last, so it wins over this when a caller supplies one.
+  const { width } = useWindowDimensions();
+  const { hMargin } = dailyBanner(width);
 
   if (tall) {
     return (
@@ -28,7 +44,12 @@ export function DailyChallengeBanner({
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel="Play the daily Guess the Hero challenge"
-        style={({ pressed }) => [styles.card, pressed && styles.pressed, style]}
+        style={({ pressed }) => [
+          styles.card,
+          { marginHorizontal: hMargin },
+          pressed && styles.pressed,
+          style,
+        ]}
       >
         <LinearGradient
           colors={[COLORS.navy, COLORS.deepNavy]}
@@ -107,7 +128,12 @@ export function DailyChallengeBanner({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="Play the daily Guess the Hero challenge"
-      style={({ pressed }) => [styles.card, pressed && styles.pressed, style]}
+      style={({ pressed }) => [
+        styles.card,
+        { marginHorizontal: hMargin },
+        pressed && styles.pressed,
+        style,
+      ]}
     >
       <LinearGradient
         colors={[COLORS.navy, COLORS.deepNavy]}
@@ -123,7 +149,6 @@ export function DailyChallengeBanner({
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 15,
     marginTop: 16,
     marginBottom: 4,
     borderRadius: 20,

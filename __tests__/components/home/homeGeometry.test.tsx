@@ -5,10 +5,23 @@
 //  2. At tablet widths the deck gutter, publisherGrid, matchupCard and
 //     dailyBanner must all land on the SAME left edge — that unification is
 //     the entire point of the fix, so it has to be a test, not a comment.
+//
+// The DailyChallengeBanner describe block below is the reason (2) is a
+// component-render test rather than a pure-function one for that one row:
+// DAILY_BANNER/dailyBanner() had exactly one consumer — HomeSkeleton's
+// placeholder — and the REAL banner (src/components/game/
+// DailyChallengeBanner.tsx) hardcoded its own `marginHorizontal: 15` and
+// never read the shared value at all. A function-level assertion on
+// dailyBanner(width) alone cannot catch that: the function was already
+// correct, the component just wasn't reading it.
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { pageGutter } from '../../../src/constants/colors';
 import { spotlightLayout } from '../../../src/constants/spotlightLayout';
 import { spotlightHeight } from '../../../src/components/home/SpotlightCarousel';
 import { TABLET_TAB_CLEARANCE } from '../../../src/components/home/SpotlightDeck';
+import { DailyChallengeBanner } from '../../../src/components/game/DailyChallengeBanner';
 import {
   dailyBanner,
   DAILY_BANNER,
@@ -28,6 +41,28 @@ jest.mock('react-native-reanimated-carousel', () => ({
   __esModule: true,
   default: () => null,
 }));
+
+// The banner's streak number comes from a hook that hits AsyncStorage +
+// Supabase — irrelevant to a gutter test, so it's stubbed to a fixed value.
+jest.mock('../../../src/hooks/useDailyStreak', () => ({ useDailyStreak: () => 0 }));
+
+// react-native's own useWindowDimensions returns whatever the test host's
+// fixed default is, which is fine for the pure-function tests above but not
+// for the render test below, which needs to assert what the banner does at
+// SPECIFIC widths. Mocking the whole 'react-native' package (or spying on
+// its namespace import) reconstructs the module and breaks jest-expo's own
+// setup (native module registration errors) — so only the leaf module that
+// react-native/index.js's useWindowDimensions getter re-requires internally
+// is swapped instead.
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({ width: 390, height: 1024, scale: 2, fontScale: 1 })),
+}));
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- needs the mocked jest.fn instance, not the typed hook
+const mockUseWindowDimensions = require('react-native/Libraries/Utilities/useWindowDimensions')
+  .default as jest.Mock;
+const atWidth = (width: number) =>
+  mockUseWindowDimensions.mockReturnValue({ width, height: 1024, scale: 2, fontScale: 1 });
 
 describe('phone widths — untouched', () => {
   it('publisherGrid(390).hPad stays 16, not feedHPad(390)', () => {
@@ -83,6 +118,34 @@ describe('spotlightHeight — deck branch grows to clear the floating tab bar', 
       const insetTop = 59;
       const stage = spotlightLayout(width).stageHeight;
       expect(spotlightHeight(width, 1366, insetTop)).toBe(stage + insetTop + TABLET_TAB_CLEARANCE);
+    },
+  );
+});
+
+// The real regression: dailyBanner() being correct doesn't help if nothing
+// reads it. This renders the actual banner component and reads its resolved
+// `marginHorizontal`, so a hardcoded literal that silently stops tracking
+// the shared function fails here even if every pure-function test above is
+// green.
+describe('DailyChallengeBanner — reads the shared gutter, not a hardcoded one', () => {
+  function cardMargin() {
+    const { getByLabelText } = render(<DailyChallengeBanner onPress={() => {}} />);
+    const card = getByLabelText('Play the daily Guess the Hero challenge');
+    return StyleSheet.flatten(card.props.style).marginHorizontal;
+  }
+
+  it('stays at FEED_H_PAD (15) on phone — unchanged', () => {
+    atWidth(390);
+    expect(cardMargin()).toBe(FEED_H_PAD);
+    expect(cardMargin()).toBe(15);
+  });
+
+  it.each([1032, 1376])(
+    'at %dpt, matches dailyBanner(width).hMargin — the same edge as the deck/publisherGrid/matchupCard',
+    (width) => {
+      atWidth(width);
+      expect(cardMargin()).toBe(dailyBanner(width).hMargin);
+      expect(cardMargin()).toBe(spotlightLayout(width).gutter);
     },
   );
 });
