@@ -6,7 +6,7 @@ import Carousel from 'react-native-reanimated-carousel';
 import * as Haptics from 'expo-haptics';
 import { SpotlightSlide } from './SpotlightSlide';
 import { SpotlightProgress } from './SpotlightProgress';
-import { SpotlightDeck, TABLET_TAB_CLEARANCE } from './SpotlightDeck';
+import { SpotlightDeck, TABLET_TAB_CLEARANCE, SPOTLIGHT_DECK_BOTTOM_GAP } from './SpotlightDeck';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 import { SPOTLIGHT } from './homeGeometry';
@@ -44,7 +44,15 @@ export function spotlightHeight(width: number, height: number, insetTop: number)
   // (0–44pt) or iPadOS's floating top tab pill (~19–71pt) reads as broken, so
   // the stage grows to clear both. See TABLET_TAB_CLEARANCE.
   if (usesSpotlightDeck(width)) {
-    return spotlightLayout(width).stageHeight + insetTop + TABLET_TAB_CLEARANCE;
+    // The deck reserves its own breathing room beneath it (matching web's
+    // `marginBottom: 24` on the spotlight wrap) so the feed below isn't
+    // pulled up flush against the panel — see `SPOTLIGHT_DECK_BOTTOM_GAP`.
+    return (
+      spotlightLayout(width).stageHeight +
+      insetTop +
+      TABLET_TAB_CLEARANCE +
+      SPOTLIGHT_DECK_BOTTOM_GAP
+    );
   }
   return spotlightHeightFor(width, height, insetTop);
 }

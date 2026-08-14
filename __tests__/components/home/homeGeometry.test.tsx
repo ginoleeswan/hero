@@ -20,7 +20,10 @@ import { StyleSheet } from 'react-native';
 import { pageGutter } from '../../../src/constants/colors';
 import { spotlightLayout } from '../../../src/constants/spotlightLayout';
 import { spotlightHeight } from '../../../src/components/home/SpotlightCarousel';
-import { TABLET_TAB_CLEARANCE } from '../../../src/components/home/SpotlightDeck';
+import {
+  TABLET_TAB_CLEARANCE,
+  SPOTLIGHT_DECK_BOTTOM_GAP,
+} from '../../../src/components/home/SpotlightDeck';
 import { DailyChallengeBanner } from '../../../src/components/game/DailyChallengeBanner';
 import {
   dailyBanner,
@@ -113,11 +116,13 @@ describe('tablet widths — one shared left edge', () => {
 
 describe('spotlightHeight — deck branch grows to clear the floating tab bar', () => {
   it.each([1032, 1376])(
-    'at %dpt, spotlightHeight adds insetTop + TABLET_TAB_CLEARANCE on top of the stage',
+    'at %dpt, spotlightHeight adds insetTop + TABLET_TAB_CLEARANCE + SPOTLIGHT_DECK_BOTTOM_GAP on top of the stage',
     (width) => {
       const insetTop = 59;
       const stage = spotlightLayout(width).stageHeight;
-      expect(spotlightHeight(width, 1366, insetTop)).toBe(stage + insetTop + TABLET_TAB_CLEARANCE);
+      expect(spotlightHeight(width, 1366, insetTop)).toBe(
+        stage + insetTop + TABLET_TAB_CLEARANCE + SPOTLIGHT_DECK_BOTTOM_GAP,
+      );
     },
   );
 });

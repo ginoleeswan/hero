@@ -10,12 +10,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { BlurView } from 'expo-blur';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from '../ui/Text';
 import { SpotlightDeckCard } from './SpotlightDeckCard';
 import { SpotlightProgress } from './SpotlightProgress';
 import { deckCards, resolveActiveIndex } from './deckSelection';
 import { spotlightLayout } from '../../constants/spotlightLayout';
-import { COLORS } from '../../constants/colors';
+import { COLORS, EYEBROW, INK_TEXT } from '../../constants/colors';
 import { ALIGNMENT_LABELS } from '../../lib/characterTaxonomy';
 import type { Hero } from '../../lib/db/heroes';
 
@@ -30,6 +32,38 @@ const SWIPE_THRESHOLD = 44;
 // / search) spans roughly 19–71pt, sitting directly on the deck's top card. A
 // ~24pt safe-area inset plus this clears it in both orientations.
 export const TABLET_TAB_CLEARANCE = 48;
+
+// Web's spotlight wrap carries `marginBottom: 24` so the billboard doesn't sit
+// flush against the section below it. `spotlightHeight()` (SpotlightCarousel)
+// and the skeleton that mirrors it both need to agree with this number, so it
+// lives here rather than being restated at each call site.
+export const SPOTLIGHT_DECK_BOTTOM_GAP = 24;
+
+// A single power-stat chip: icon + value, a magnitude bar (stats run 0–100),
+// then the key label — mirrors web's StatChip at panel widths of the same
+// order (its 400–460pt targets are close kin to the native 415–475pt range).
+function StatChip({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  label: string;
+  value: number;
+}) {
+  return (
+    <View style={styles.statPill}>
+      <View style={styles.statTop}>
+        <MaterialCommunityIcons name={icon} size={18} color={COLORS.orange} />
+        <Text style={styles.statPillVal}>{value}</Text>
+      </View>
+      <View style={styles.statBarTrack}>
+        <View style={[styles.statBarFill, { width: `${Math.min(100, value)}%` }]} />
+      </View>
+      <Text style={styles.statPillKey}>{label}</Text>
+    </View>
+  );
+}
 
 export function SpotlightDeck({
   heroes,
@@ -71,10 +105,13 @@ export function SpotlightDeck({
   const safeActive = resolveActiveIndex(active, heroes.length);
   const hero = heroes[safeActive];
   const cards = deckCards(heroes, { cardWidth, tail }, safeActive);
+  // ALIGNMENT_LABELS is a plain Record — an alignment string outside its
+  // handful of known keys indexes to `undefined`, which the chip below guards.
   const align = hero.alignment ? ALIGNMENT_LABELS[hero.alignment.toLowerCase().trim()] : undefined;
-  const kicker = [hero.publisher, align].filter(Boolean).join('   ·   ');
-  // caption sheds the blurb; duo clamps it; gallery lets it run.
-  const blurbLines = detail === 'full' ? 4 : 3;
+  const hasRealName = detail !== 'lean' && !!hero.full_name && hero.full_name !== hero.name;
+  const hasSummary = detail !== 'lean' && !!hero.summary;
+  const hasStats = !!(hero.intelligence || hero.strength || hero.speed);
+  const hasFirstAppearance = detail === 'full' && !!hero.first_appearance;
 
   const topClearance = insetTop + TABLET_TAB_CLEARANCE;
 
@@ -83,9 +120,15 @@ export function SpotlightDeck({
       style={[
         styles.stage,
         {
-          height: stageHeight + topClearance,
+          // The extra `SPOTLIGHT_DECK_BOTTOM_GAP` lands as bottom padding, not
+          // extra centred space — `justifyContent: 'center'` centres within
+          // the content box (padding already excluded), so the deck's own
+          // cards/panel keep their original `stageHeight` and the gap shows
+          // up only below them, matching web's `marginBottom: 24`.
+          height: stageHeight + topClearance + SPOTLIGHT_DECK_BOTTOM_GAP,
           paddingHorizontal: gutter,
           paddingTop: topClearance,
+          paddingBottom: SPOTLIGHT_DECK_BOTTOM_GAP,
         },
       ]}
     >
@@ -129,37 +172,70 @@ export function SpotlightDeck({
         </View>
 
         <View style={styles.panel}>
-          {!!kicker && (
-            <Text style={styles.kicker} numberOfLines={1}>
-              {kicker}
-            </Text>
-          )}
-          {/* The name is the link. A "View profile" button beside a tappable
-              portrait is the same instruction printed twice — the argument the
-              web plate already settled — so the chevron says it once. */}
-          <Pressable
-            onPress={() => onHeroPress(hero)}
-            accessibilityRole="link"
-            accessibilityLabel={`View ${hero.name}`}
-          >
-            <Text style={styles.name} numberOfLines={2}>
-              {hero.name}
-            </Text>
-          </Pressable>
-          {detail !== 'lean' && !!hero.summary && (
-            <Text style={styles.blurb} numberOfLines={blurbLines}>
-              {hero.summary}
-            </Text>
-          )}
-          {heroes.length > 1 && (
-            <View style={styles.progress}>
-              <SpotlightProgress
-                count={heroes.length}
-                active={safeActive}
-                intervalMs={AUTOPLAY_MS}
-              />
+          {/* No backdrop-filter on native — a BlurView sits behind the content,
+              clipped to the container's own radius, with the fill and border
+              carried by the container itself (see web's `glassPanel`). */}
+          <View style={styles.glassPanel}>
+            <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+            <Text style={styles.eyebrow}>Featured Character</Text>
+            {/* The name is the link. A "View profile" button beside a tappable
+                portrait is the same instruction printed twice — the argument
+                the web plate already settled — so the chevron says it once. */}
+            <Pressable
+              onPress={() => onHeroPress(hero)}
+              accessibilityRole="link"
+              accessibilityLabel={`View ${hero.name}`}
+            >
+              <Text style={styles.name} numberOfLines={2}>
+                {hero.name}
+              </Text>
+            </Pressable>
+            {hasRealName && (
+              <Text style={styles.realName} numberOfLines={1}>
+                {hero.full_name}
+              </Text>
+            )}
+            <View style={styles.metaRow}>
+              {!!hero.publisher && (
+                <Text style={styles.publisher} numberOfLines={1}>
+                  {hero.publisher}
+                </Text>
+              )}
+              {!!align && (
+                <View style={styles.alignChip}>
+                  <Text style={styles.alignChipText}>{align}</Text>
+                </View>
+              )}
             </View>
-          )}
+            {hasSummary && (
+              <Text style={styles.summary} numberOfLines={detail === 'full' ? 4 : 3}>
+                {hero.summary}
+              </Text>
+            )}
+            {hasStats && (
+              <View style={styles.statPills}>
+                {!!hero.intelligence && (
+                  <StatChip icon="brain" label="INT" value={hero.intelligence} />
+                )}
+                {!!hero.strength && <StatChip icon="arm-flex" label="STR" value={hero.strength} />}
+                {!!hero.speed && <StatChip icon="run-fast" label="SPD" value={hero.speed} />}
+              </View>
+            )}
+            {hasFirstAppearance && (
+              <Text style={styles.firstAppearance} numberOfLines={1}>
+                First appearance · {hero.first_appearance}
+              </Text>
+            )}
+            {heroes.length > 1 && (
+              <View style={styles.footer}>
+                <SpotlightProgress
+                  count={heroes.length}
+                  active={safeActive}
+                  intervalMs={AUTOPLAY_MS}
+                />
+              </View>
+            )}
+          </View>
         </View>
       </View>
     </View>
@@ -170,7 +246,7 @@ const styles = StyleSheet.create({
   stage: { backgroundColor: COLORS.deepNavy, justifyContent: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   strip: { flexDirection: 'row', alignItems: 'center', gap: CARD_GAP },
-  panel: { flex: 1, minWidth: 0, gap: 12 },
+  panel: { flex: 1, minWidth: 0 },
   // Ink on ink, behind the deck. Set large enough to read as scenery rather
   // than as a heading someone forgot to style.
   ghostWrap: {
@@ -185,24 +261,134 @@ const styles = StyleSheet.create({
     color: COLORS.beige,
     opacity: 0.055,
   },
-  kicker: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    letterSpacing: 0.4,
-    color: COLORS.orange,
+  // Glass info panel — web's `glassPanel` uses `backdrop-filter: blur(18px)`,
+  // which doesn't exist on native. The BlurView above fills this container
+  // (absoluteFill, first child) and is clipped to the same radius by
+  // `overflow: hidden`; the translucent fill and border live on the
+  // container itself so they composite over the blur rather than under it.
+  glassPanel: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    paddingVertical: 32,
+    paddingHorizontal: 30,
+  },
+  eyebrow: {
+    ...EYEBROW,
+    marginBottom: 10,
   },
   name: {
     fontFamily: 'Flame-Regular',
-    fontSize: 46,
-    // 1.24× — clamped Flame clips below 1.22×.
-    lineHeight: 58,
+    fontSize: 38,
+    // ~1.24× — clamped Flame clips below 1.22×.
+    lineHeight: 47,
     color: COLORS.beige,
+    paddingBottom: 2,
+    marginBottom: 4,
   },
-  blurb: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 15,
+  realName: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    lineHeight: 17,
+    color: INK_TEXT.faint,
+    marginBottom: 16,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
+  },
+  publisher: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: INK_TEXT.faint,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  alignChip: {
+    backgroundColor: 'rgba(231,115,51,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(231,115,51,0.4)',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  alignChipText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: COLORS.orange,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  summary: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14.5,
+    lineHeight: 22,
+    color: INK_TEXT.muted,
+    marginBottom: 20,
+  },
+  statPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
+  },
+  statPill: {
+    flexGrow: 1,
+    flexBasis: 90,
+    maxWidth: 120,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    gap: 9,
+  },
+  statTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  statPillKey: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: INK_TEXT.faint,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  statPillVal: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 23,
+    color: COLORS.beige,
     lineHeight: 23,
-    color: 'rgba(245,235,220,0.66)',
   },
-  progress: { marginTop: 4, alignItems: 'flex-start' },
+  statBarTrack: {
+    height: 4,
+    width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  statBarFill: {
+    height: 4,
+    backgroundColor: COLORS.orange,
+    borderRadius: 4,
+  },
+  firstAppearance: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    lineHeight: 16,
+    color: INK_TEXT.faint,
+  },
+  // Unlike web's `marginTop: 'auto'`, this panel isn't stretched to the
+  // deck's full height (`row` centres its cross-axis, so the glass container
+  // is sized by its own content) — a fixed gap reads the same without an
+  // unfilled flex parent for `auto` to push against.
+  footer: { marginTop: 12, alignItems: 'flex-start' },
 });
