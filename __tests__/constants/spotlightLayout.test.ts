@@ -1,4 +1,4 @@
-import { spotlightLayout } from '../../../../src/components/web/home/spotlightLayout';
+import { spotlightLayout } from '../../src/constants/spotlightLayout';
 
 // The layout's job is to hold a set of promises at EVERY width, so the tests
 // are those promises rather than a table of expected numbers.

@@ -1,7 +1,7 @@
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from './Skeleton';
 import { COLORS, pageGutter } from '../../constants/colors';
-import { spotlightLayout } from './home/spotlightLayout';
+import { spotlightLayout } from '../../constants/spotlightLayout';
 import { TOPBAR_HEIGHT } from './TopBar';
 
 // Matches MOBILE_STAGE_TOP in explore.web.tsx — the stage's phone clearance,

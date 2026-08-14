@@ -25,7 +25,7 @@ import { pressTransform } from '../../src/components/web/pressStyles';
 import { useHeroMorph } from '../../src/hooks/useHeroMorph';
 import { HeroImage } from '../../src/components/HeroImage';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
-import { spotlightLayout } from '../../src/components/web/home/spotlightLayout';
+import { spotlightLayout } from '../../src/constants/spotlightLayout';
 import { type Hero } from '../../src/lib/db/heroes';
 import { loginHref } from '../../src/lib/loginRedirect';
 import { RightNowBand } from '../../src/components/web/home/RightNowBand';

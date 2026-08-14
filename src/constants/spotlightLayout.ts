@@ -1,3 +1,9 @@
+// Lives in constants/ — NOT in components/web/ — because both platforms read
+// it. The native deck and the web spotlight derive their card widths, stage
+// height and deck taper from this one function, which is the only thing that
+// keeps them from drifting apart the way the character screen's native/web
+// pair did. It is pure arithmetic: no React, no platform APIs.
+
 // One place that decides how the Explore billboard behaves at every width.
 //
 // The old version fixed the stage at 516px tall and shrank only the card
@@ -14,7 +20,7 @@
 //   duo      1000+   active card + two slivers
 //   caption  720+    one correctly-proportioned portrait beside the panel
 //   stacked  <720    one column: full-width portrait, everything under it
-import { pageGutter } from '../../../constants/colors';
+import { pageGutter } from './colors';
 
 export type SpotlightState = 'gallery' | 'duo' | 'caption' | 'stacked';
 
