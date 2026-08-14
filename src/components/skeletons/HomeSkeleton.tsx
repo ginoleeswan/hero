@@ -121,7 +121,7 @@ export function MatchupSkeleton() {
           style={styles.titleGap}
         />
       </View>
-      <View style={{ paddingHorizontal: matchupCard(width).hMargin }}>
+      <View style={[styles.matchupWrap, { paddingHorizontal: matchupCard(width).hMargin }]}>
         <Skeleton
           width="100%"
           height={MATCHUP_CARD.approxHeight}
@@ -250,6 +250,7 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   darkSection: { paddingTop: 12, paddingBottom: 4 },
+  matchupWrap: {},
   headerLeft: { gap: 2, paddingHorizontal: FEED_H_PAD, marginBottom: 10 },
   titleGap: { marginTop: 2 },
   dailyBanner: {

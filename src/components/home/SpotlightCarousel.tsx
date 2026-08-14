@@ -22,9 +22,9 @@ const AUTOPLAY_MS = 6000;
  *  not `BREAKPOINTS.tablet` (700) — this number is tuned to the card
  *  arithmetic, and a 20pt band where the page is "tablet" but the billboard is
  *  still a phone billboard costs nothing. */
-export const SPOTLIGHT_DECK_MIN_WIDTH = 720;
+const SPOTLIGHT_DECK_MIN_WIDTH = 720;
 
-export function usesSpotlightDeck(width: number): boolean {
+function usesSpotlightDeck(width: number): boolean {
   return width >= SPOTLIGHT_DECK_MIN_WIDTH;
 }
 
