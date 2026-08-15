@@ -139,6 +139,31 @@ export function parseFeed(xml: string): FeedEntry[] {
   return out;
 }
 
+/**
+ * The specific work a video is about, when the matcher only saw the franchise.
+ *
+ * "Shawn Levy and Ryan Gosling Introduce Star Wars: Starfighter at D23" matched
+ * `Star Wars` — the 1977 film — because that really is the longest catalogue
+ * title inside the string. The work being announced is Star Wars: Starfighter,
+ * and it is right there after the colon. Same for "The Mandalorian and Grogu".
+ *
+ * Returns null when there is nothing more specific to find, in which case the
+ * caller falls back to the ordinary query cleaner.
+ */
+export function specificWorkFromTitle(videoTitle: string, matchedTitle: string): string | null {
+  const i = videoTitle.toLowerCase().indexOf(matchedTitle.toLowerCase());
+  if (i < 0) return null;
+  const after = videoTitle.slice(i + matchedTitle.length);
+  // ": Starfighter" / " and Grogu" / " - Modern Warfare 4". Capitalised, because
+  // a continuation of a proper title is, and ordinary prose after a title is not.
+  const m = after.match(/^\s*(:|-|–|\band\b)\s+([A-Z][\w''-]*(?:\s+[A-Z0-9][\w''-]*){0,3})/);
+  if (!m) return null;
+  // Keep the connector. "The Mandalorian and Grogu" is the work's actual name;
+  // dropping the "and" produces a query TMDB has no reason to resolve.
+  const joiner = m[1] === 'and' ? ' and' : ':';
+  return `${matchedTitle}${joiner} ${m[2].trim()}`.replace(/\s+/g, ' ').trim();
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
@@ -237,13 +262,9 @@ serve(async (req: Request) => {
   // once inserted, it does not get inserted.
   const discovered: string[] = [];
   if (TMDB_API_KEY) {
-    const { data: orphans } = await sb
-      .from('channel_videos')
-      .select('id, title')
-      .is('title_id', null)
-      .gt('published_at', new Date(Date.now() - 14 * 86_400_000).toISOString())
-      .order('published_at', { ascending: false })
-      .limit(40);
+    // Includes videos that DID match, but to a title nothing new could be about
+    // — see channel_videos_needing_discovery.
+    const { data: orphans } = await sb.rpc('channel_videos_needing_discovery', { p_limit: 24 });
 
     const rows: Record<string, unknown>[] = [];
     // Videos that produced a title. Their `matched_at` is already set from the
@@ -252,10 +273,22 @@ serve(async (req: Request) => {
     // and the trailer would wait a whole sweep for the row minted for it.
     const retry: string[] = [];
     let calls = 0;
-    for (const o of (orphans ?? []) as unknown as { id: string; title: string }[]) {
+    const attempted: string[] = [];
+    for (const o of (orphans ?? []) as unknown as {
+      id: string;
+      title: string;
+      matched_title: string | null;
+    }[]) {
       if (calls >= 12) break;
-      if (!TRAILERISH.test(o.title)) continue;
-      const q = searchQueryFromVideoTitle(o.title);
+      attempted.push(o.id);
+      // A weakly-matched video does not have to look like a trailer: the X-Men
+      // cast reveal is news whatever its title shape. An UNMATCHED one still
+      // does, or every studio short would mint a catalogue row.
+      const weak = !!o.matched_title;
+      if (!weak && !TRAILERISH.test(o.title)) continue;
+      const q = (o.matched_title
+        ? specificWorkFromTitle(o.title, o.matched_title)
+        : null) ?? searchQueryFromVideoTitle(o.title);
       if (!q) continue;
       try {
         calls++;
@@ -302,7 +335,20 @@ serve(async (req: Request) => {
     if (rows.length) {
       // ignoreDuplicates: an existing row is already richer than this thin one.
       await sb.from('titles').upsert(rows, { onConflict: 'id', ignoreDuplicates: true });
-      await sb.from('channel_videos').update({ matched_at: null }).in('id', retry);
+      // Clear the match so the corrected, more specific title can win — the
+      // matcher prefers active titles, and the newly minted one is active.
+      await sb
+        .from('channel_videos')
+        .update({ matched_at: null, title_id: null })
+        .in('id', retry);
+    }
+    // Stamped whether or not anything was found: a video with nothing better
+    // behind it must not be re-searched on every sweep for a fortnight.
+    if (attempted.length) {
+      await sb
+        .from('channel_videos')
+        .update({ discovery_at: new Date().toISOString() })
+        .in('id', attempted);
     }
     if (calls > 0) {
       await sb.from('api_usage').insert({ api: 'tmdb', endpoint: 'search/multi', units: calls });
