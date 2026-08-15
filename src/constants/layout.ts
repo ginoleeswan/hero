@@ -58,12 +58,37 @@ export function pagePadding(width: number): number {
 }
 
 /**
+ * A feed section's horizontal inset, preserving whatever the phone already uses.
+ *
+ * `pagePadding` is the app-wide gutter and its phone value is 15. Explore's
+ * sections were tuned at 16, and a one-point shift on every heading is exactly
+ * the phone-visible diff the tablet work is not allowed to make — so the phone
+ * value is a parameter and only the tablet widths are unified. Pass the
+ * caller's existing literal and the phone cannot move.
+ */
+export function sectionGutter(width: number, phone = 16): number {
+  const bp = breakpointFor(width);
+  return bp === 'wide' ? 32 : bp === 'tablet' ? 24 : phone;
+}
+
+/**
  * The widest a column of content is allowed to get, centred in whatever is
  * left. Beyond about 900pt a single column stops being a column and becomes a
  * line of text you have to move your head to read — the same reason the web
  * layout caps its measure.
  */
 export const CONTENT_MAX_WIDTH = 900;
+
+/**
+ * The widest a line of body copy may run, independent of the column it sits in.
+ *
+ * A section head keeps its left edge on the page gutter so every row in the
+ * feed shares one edge — the raggedness Arena had came from centring some
+ * sections and not others. But a standfirst inheriting that full width becomes
+ * an unreadable measure at 1312pt, so the CAP GOES ON THE TEXT, not on the
+ * block: aligned left, wrapped at a sane measure, no centring anywhere.
+ */
+export const PROSE_MAX_WIDTH = 560;
 
 /** How much of `width` a centred content column actually occupies. */
 export function contentWidth(width: number): number {
@@ -80,6 +105,25 @@ export function contentWidth(width: number): number {
 export function gridColumns(width: number, target = 120, min = 3, max = 8): number {
   const usable = Math.min(width, CONTENT_MAX_WIDTH + pagePadding(width) * 2);
   return Math.max(min, Math.min(max, Math.round(usable / target)));
+}
+
+/**
+ * Columns for a grid whose tile count is FIXED and must divide evenly.
+ *
+ * `gridColumns` is right for an open-ended list, where a short last row is just
+ * the end of the data. It is wrong for a closed set like the browse doorways:
+ * those are twelve tiles chosen so the grid never strands a lone one, and a
+ * count that does not divide twelve breaks that by drawing 5 / 5 / 2 with three
+ * empty slots and a ragged bottom edge.
+ *
+ * So the count is snapped to the nearest LEGAL divisor rather than rounded off
+ * a target width. `legal` is the caller's set of counts that tile its own item
+ * count evenly — the function cannot derive it, because only the caller knows
+ * how many items there are.
+ */
+export function snappedColumns(width: number, pad: number, legal: number[], target = 220): number {
+  const ideal = (width - pad * 2) / target;
+  return legal.reduce((best, n) => (Math.abs(n - ideal) < Math.abs(best - ideal) ? n : best));
 }
 
 /**

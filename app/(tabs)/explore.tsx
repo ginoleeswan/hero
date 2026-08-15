@@ -36,8 +36,14 @@ import { useRouter, type Href } from 'expo-router';
 import { useSignalFirstPaint } from '../../src/components/ui/BootStage';
 import { DUR, STAGGER, SPRING_SETTLE } from '../../src/lib/nativeMotion';
 import * as Haptics from 'expo-haptics';
-import { COLORS, ORANGE_INK } from '../../src/constants/colors';
-import { breakpointFor } from '../../src/constants/layout';
+import { COLORS, ORANGE_INK, PAPER_TEXT } from '../../src/constants/colors';
+import {
+  breakpointFor,
+  isTabletWidth,
+  sectionGutter,
+  CONTENT_MAX_WIDTH,
+  PROSE_MAX_WIDTH,
+} from '../../src/constants/layout';
 import { HomeSkeleton, MatchupSkeleton } from '../../src/components/skeletons/HomeSkeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { SpotlightCarousel, spotlightHeight } from '../../src/components/home/SpotlightCarousel';
@@ -111,7 +117,7 @@ type FeedRow =
       pulse: PulseEvent[];
       liveEventName: string | null;
     }
-  | { type: 'chapter'; kicker: string; title: string }
+  | { type: 'chapter'; kicker: string; title: string; sub: string }
   | { type: 'halloffame'; heroes: Hero[] }
   | { type: 'browsegrid' }
   | { type: 'featuredrivalry'; rivalry: Rivalry }
@@ -316,6 +322,12 @@ export default function HomeScreen() {
   // is. `winW` already tracks the live window (see the band-bug note above),
   // so this stays correct through rotation without a second dimensions read.
   const isWide = breakpointFor(winW) === 'wide';
+  // One gutter for every non-rail section in the feed, so the chapter heads,
+  // the Hall of Fame, the rivalry banner, the sponsor slot and the footer all
+  // share ONE left edge. Rails deliberately keep their own inset and bleed past
+  // it — that is the rails rule, not an exception to this one.
+  const gutter = sectionGutter(winW);
+  const isTablet = isTabletWidth(winW);
 
   // The feed as a flat list of rows. A deliberate, chaptered sequence: billboard →
   // today's battle → the dynamic "Right Now" zone → your personal rows → the
@@ -371,10 +383,19 @@ export default function HomeScreen() {
     // Discovery: characters you haven't engaged with yet (taste + graph).
     if (forYou.length > 0) out.push({ type: 'foryou', heroes: forYou.map(toRowHero) });
 
-    // The Library — an authored canon feature, then the browse grid (the map that
-    // replaces the old wall of category rails), then the one fresh rail.
-    out.push({ type: 'chapter', kicker: 'The Library', title: 'Browse the Universe' });
+    // Hall of Fame leads, THEN the Library chapter break — the order web uses.
+    // It used to sit after the break, which was survivable while the head was a
+    // bare title and became wrong the moment the head gained its standfirst:
+    // "pick your corner of the multiverse — archetypes, teams, media…" promises
+    // the tile grid, and putting a ranked canon list between the promise and the
+    // tiles makes the sentence describe the wrong thing.
     if (iconic.length > 0) out.push({ type: 'halloffame', heroes: iconic });
+    out.push({
+      type: 'chapter',
+      kicker: 'The Library',
+      title: 'Browse the Universe',
+      sub: 'Pick your corner of the multiverse — archetypes, teams, media, origins and power rankings.',
+    });
     out.push({ type: 'browsegrid' });
     if (newlyAdded.length > 0)
       out.push({
@@ -389,7 +410,12 @@ export default function HomeScreen() {
 
     // The Arena — a featured rivalry leads; the rest live in /versus.
     if (rivalries.length > 0) {
-      out.push({ type: 'chapter', kicker: 'The Arena', title: 'Greatest Rivalries' });
+      out.push({
+        type: 'chapter',
+        kicker: 'The Arena',
+        title: 'Greatest Rivalries',
+        sub: 'The debates that never settle — pick a side and see who the fans crown.',
+      });
       out.push({ type: 'featuredrivalry', rivalry: rivalries[0] });
       out.push({ type: 'seeall', label: 'See all rivalries →', route: '/versus' });
     }
@@ -581,8 +607,10 @@ export default function HomeScreen() {
             );
           case 'sponsorslot':
             return (
-              <View style={styles.sponsorWrap}>
-                <SponsorSlot placement="explore-feed" />
+              <View style={[styles.sponsorWrap, { paddingHorizontal: gutter }]}>
+                <View style={isTablet ? styles.capped : undefined}>
+                  <SponsorSlot placement="explore-feed" />
+                </View>
               </View>
             );
           case 'rightnow':
@@ -607,9 +635,16 @@ export default function HomeScreen() {
             );
           case 'chapter':
             return (
-              <View style={styles.browseHead}>
+              <View
+                style={[
+                  styles.browseHead,
+                  { paddingHorizontal: gutter },
+                  isTablet && styles.browseHeadWide,
+                ]}
+              >
                 <Text style={styles.browseKicker}>{item.kicker}</Text>
                 <Text style={styles.browseTitle}>{item.title}</Text>
+                <Text style={styles.browseSubtitle}>{item.sub}</Text>
               </View>
             );
           case 'favourites':
@@ -632,7 +667,7 @@ export default function HomeScreen() {
           case 'seeall':
             return (
               <Pressable
-                style={styles.seeAllRow}
+                style={[styles.seeAllRow, { paddingHorizontal: gutter }]}
                 onPress={() => handleOpenPath(item.route as string)}
               >
                 <Text style={styles.seeAllText}>{item.label}</Text>
@@ -683,6 +718,8 @@ export default function HomeScreen() {
       return <Animated.View entering={cascadeFor(index)}>{surfaced}</Animated.View>;
     },
     [
+      gutter,
+      isTablet,
       topInset,
       scrollY,
       handlePress,
@@ -776,7 +813,8 @@ const styles = StyleSheet.create({
   // Deep navy so the overscroll rubber-band reveals the same dark as the stage
   // (no lighter-navy band behind the zooming portrait).
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
-  sponsorWrap: { paddingHorizontal: 16, paddingVertical: 6 },
+  sponsorWrap: { paddingVertical: 6 },
+  capped: { maxWidth: CONTENT_MAX_WIDTH },
   // Transparent so the dark navy root shows under the status bar and on
   // overscroll (matching the spotlight) instead of a beige band.
   scroll: { flex: 1, backgroundColor: 'transparent' },
@@ -785,7 +823,7 @@ const styles = StyleSheet.create({
   // the spotlight.
   content: { flexGrow: 1, backgroundColor: COLORS.deepNavy },
   // Beige paper tail so the bottom padding isn't a dark strip.
-  footer: { minHeight: 120, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  footer: { minHeight: 120, alignItems: 'center', justifyContent: 'center' },
   supportPill: {
     backgroundColor: '#fff',
     borderRadius: 999,
@@ -809,7 +847,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.beige,
   },
   // Chapter break ("Browse the Universe", "Beyond the Page").
-  browseHead: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 4 },
+  browseHead: { paddingTop: 22, paddingBottom: 4 },
+  // A chapter break is the feed's biggest structural beat, and on a tablet the
+  // phone's 22pt of air above it is not enough to read as one — the head lands
+  // close enough to the rail above to look like that rail's second title.
+  browseHeadWide: { paddingTop: 40, paddingBottom: 10 },
   browseKicker: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
@@ -819,8 +861,19 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   browseTitle: { fontFamily: 'Flame-Regular', fontSize: 30, color: COLORS.navy, lineHeight: 32 },
+  // The standfirst web has had all along. Its measure is capped on the TEXT and
+  // it is not centred, so the chapter head keeps the feed's single left edge
+  // while the copy still wraps somewhere a reader can follow.
+  browseSubtitle: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13.5,
+    lineHeight: 19,
+    color: PAPER_TEXT.faint,
+    marginTop: 6,
+    maxWidth: PROSE_MAX_WIDTH,
+  },
   // "See all rivalries →" link under the featured rivalry.
-  seeAllRow: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+  seeAllRow: { paddingTop: 12, paddingBottom: 8 },
   seeAllText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,

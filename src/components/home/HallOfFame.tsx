@@ -1,7 +1,7 @@
 // Native "Hall of Fame" — the authored treatment of Most Iconic: a chosen #1 shown
 // large, then a compact ranked list, instead of a flat rail. Mirrors the web
 // HallOfFame. Sits on the beige content sheet.
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
@@ -9,6 +9,7 @@ import { HeroAvatar } from '../HeroAvatar';
 import { PressScale } from '../ui/PressScale';
 import { SectionHeader } from '../ui/SectionHeader';
 import { COLORS, PAPER_TEXT } from '../../constants/colors';
+import { CONTENT_MAX_WIDTH, isTabletWidth, sectionGutter } from '../../constants/layout';
 import type { Hero } from '../../lib/db/heroes';
 
 // Rank tint — top 3 get progressively warmer orange (podium), rest stay dim.
@@ -20,12 +21,17 @@ function rankColor(i: number): string {
 }
 
 export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: string) => void }) {
+  const { width } = useWindowDimensions();
+  // Hooks before the early return — `heroes` can be empty on a cold feed.
+  const wide = isTabletWidth(width);
+  const gutter = sectionGutter(width);
+
   if (heroes.length === 0) return null;
   const lead = heroes[0];
   const rest = heroes.slice(1, 7);
 
   return (
-    <View style={s.section}>
+    <View style={[s.section, { paddingHorizontal: gutter }]}>
       <SectionHeader
         eyebrow="The Canon"
         title="Hall of Fame"
@@ -34,78 +40,107 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
         style={s.head}
       />
 
-      <PressScale style={s.lead} scale={0.97} onPress={() => onPress(String(lead.id))}>
-        <HeroImage
-          id={String(lead.id)}
-          name={lead.name}
-          imageUrl={lead.image_url}
-          portraitUrl={lead.portrait_url}
-          contentFit="cover"
-          contentPosition={{ top: '16%', left: '50%' }}
-          style={StyleSheet.absoluteFill as object}
-          recyclingKey={String(lead.id)}
-        />
-        <LinearGradient
-          colors={['transparent', 'rgba(11,24,32,0.55)', 'rgba(11,24,32,0.96)']}
-          locations={[0.3, 0.66, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={s.leadBody}>
-          <Text style={s.leadRank}>01</Text>
-          <Text style={s.leadName} numberOfLines={2}>
-            {lead.name}
-          </Text>
-          {!!lead.publisher && <Text style={s.leadStat}>{lead.publisher}</Text>}
-        </View>
-      </PressScale>
-
-      <View style={s.list}>
-        {rest.map((h, i) => (
-          <PressScale key={h.id} style={s.row} onPress={() => onPress(String(h.id))}>
-            <Text style={[s.rank, { color: rankColor(i) }]}>{String(i + 2).padStart(2, '0')}</Text>
-            <View style={[s.thumb, h.avatar_url && s.faceBare] as object}>
-              {/* The pool is the top 25 by fame, which is the tier with full
-                  avatar coverage — so these rows are heads, not crops. */}
-              {h.avatar_url ? (
-                <HeroAvatar
-                  id={String(h.id)}
-                  name={h.name}
-                  avatarUrl={h.avatar_url}
-                  size={50}
-                  bare
-                />
-              ) : (
-                <HeroImage
-                  id={String(h.id)}
-                  name={h.name}
-                  imageUrl={h.image_url}
-                  portraitUrl={h.portrait_url}
-                  grid
-                  contentFit="cover"
-                  contentPosition={{ top: 0, left: '50%' }}
-                  style={StyleSheet.absoluteFill as object}
-                  recyclingKey={String(h.id)}
-                />
-              )}
-            </View>
-            <Text style={s.rowName} numberOfLines={1}>
-              {h.name}
-            </Text>
-            {!!h.publisher && (
-              <Text style={s.rowMeta} numberOfLines={1}>
-                {h.publisher}
+      {/* On a phone this View is a plain wrapper and the plate stacks above the
+          list exactly as before. Above 700pt they become two columns, which is
+          what fixes the plate: a 320pt-tall card given the full 1312pt of a
+          landscape iPad is a 4.1:1 letterbox, and the crop lands on an ear.
+          Halved, it comes back to roughly square and the face is in frame —
+          and the ranked rows stop putting 1300pt between a name and its
+          publisher. Density, not size; same rule as the rails. */}
+      <View style={[s.body, wide && s.bodyWide]}>
+        <View style={wide ? s.col : undefined}>
+          <PressScale
+            style={[s.lead, wide && s.leadWide]}
+            scale={0.97}
+            onPress={() => onPress(String(lead.id))}
+          >
+            <HeroImage
+              id={String(lead.id)}
+              name={lead.name}
+              imageUrl={lead.image_url}
+              portraitUrl={lead.portrait_url}
+              contentFit="cover"
+              contentPosition={{ top: '16%', left: '50%' }}
+              style={StyleSheet.absoluteFill as object}
+              recyclingKey={String(lead.id)}
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(11,24,32,0.55)', 'rgba(11,24,32,0.96)']}
+              locations={[0.3, 0.66, 1]}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={s.leadBody}>
+              <Text style={s.leadRank}>01</Text>
+              <Text style={s.leadName} numberOfLines={2}>
+                {lead.name}
               </Text>
-            )}
+              {!!lead.publisher && <Text style={s.leadStat}>{lead.publisher}</Text>}
+            </View>
           </PressScale>
-        ))}
+        </View>
+
+        <View style={[s.list, wide && s.listWide] as object}>
+          {rest.map((h, i) => (
+            <PressScale key={h.id} style={s.row} onPress={() => onPress(String(h.id))}>
+              <Text style={[s.rank, { color: rankColor(i) }]}>
+                {String(i + 2).padStart(2, '0')}
+              </Text>
+              <View style={[s.thumb, h.avatar_url && s.faceBare] as object}>
+                {/* The pool is the top 25 by fame, which is the tier with full
+                    avatar coverage — so these rows are heads, not crops. */}
+                {h.avatar_url ? (
+                  <HeroAvatar
+                    id={String(h.id)}
+                    name={h.name}
+                    avatarUrl={h.avatar_url}
+                    size={50}
+                    bare
+                  />
+                ) : (
+                  <HeroImage
+                    id={String(h.id)}
+                    name={h.name}
+                    imageUrl={h.image_url}
+                    portraitUrl={h.portrait_url}
+                    grid
+                    contentFit="cover"
+                    contentPosition={{ top: 0, left: '50%' }}
+                    style={StyleSheet.absoluteFill as object}
+                    recyclingKey={String(h.id)}
+                  />
+                )}
+              </View>
+              <Text style={s.rowName} numberOfLines={1}>
+                {h.name}
+              </Text>
+              {!!h.publisher && (
+                <Text style={s.rowMeta} numberOfLines={1}>
+                  {h.publisher}
+                </Text>
+              )}
+            </PressScale>
+          ))}
+        </View>
       </View>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  section: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 8 },
+  section: { paddingTop: 18, paddingBottom: 8 },
   head: { marginBottom: 16, paddingHorizontal: 0 },
+  body: {},
+  // Capped and LEFT-aligned, not centred. Centring this block while the section
+  // head above it sits on the page gutter is what gives a feed two left edges —
+  // the ragged-gutter fault Arena had. The cap is on the pair of columns; the
+  // space beyond it is margin.
+  bodyWide: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 20,
+    maxWidth: CONTENT_MAX_WIDTH,
+  },
+  col: { flex: 1, minWidth: 0 },
   lead: {
     height: 320,
     borderRadius: 18,
@@ -133,7 +168,16 @@ const s = StyleSheet.create({
     color: 'rgba(245,235,220,0.6)',
     marginTop: 6,
   },
+  // 420 rather than 320 in the two-column layout: at a column width of 383pt
+  // (iPad portrait) to 440pt (landscape) that lands the plate between 1.09:1
+  // and 0.95:1 — near-square, which is the shape the 16%-from-top crop was
+  // tuned for. It also matches the six ranked rows beside it, so the two
+  // columns end level.
+  leadWide: { height: 420 },
   list: { marginTop: 8 },
+  // Beside the plate rather than under it, so the rows share its top edge and
+  // the marginTop that separated them when stacked would push them out of line.
+  listWide: { flex: 1, minWidth: 0, marginTop: 0 },
   // No dividers — whitespace separates the rows (matches web)
   row: {
     flexDirection: 'row',

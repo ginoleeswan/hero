@@ -170,7 +170,6 @@ export function HomeHeroRow({
   return (
     <View style={[styles.section, isDark && styles.sectionDark]}>
       <View style={styles.header}>
-        <View style={[styles.accentBar, accent ? { backgroundColor: accent } : null]} />
         <View style={styles.headerText}>
           {!!label && (
             <Text style={[styles.label, accent ? { color: accent } : null]}>{label}</Text>
@@ -245,17 +244,17 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
     marginVertical: 8,
   },
+  // No accent bar. A coloured vertical stripe beside a heading is decoration
+  // that labels nothing — colour belongs on a pill or badge that names
+  // something, and the orange eyebrow under it already does that job. Removing
+  // it also fixes an alignment fault it was causing: bar (4) + gap (11) pushed
+  // the heading to 30pt while the rail's cards below start at 15pt, so the
+  // title never lined up with its own row.
   header: {
     paddingHorizontal: 15,
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'stretch',
-    gap: 11,
-  },
-  accentBar: {
-    width: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.orange,
   },
   headerText: { gap: 2, justifyContent: 'center' },
   label: {

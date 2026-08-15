@@ -7,25 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { PressScale } from '../ui/PressScale';
 import { COLORS } from '../../constants/colors';
+import { podTile, POD_GAP } from './podGrid';
 import type { BrowseCover } from '../../lib/db/heroes';
-
-const H_PAD = 16;
-const GAP = 12;
-
-/**
- * Tile size, live, and the column count with it.
- *
- * Two columns at any width meant two ~500pt tiles on an iPad — a browse
- * shortcut the size of a poster. The count comes from a target tile width, so
- * the grid gains columns smoothly as the window grows rather than stepping
- * between breakpoints mid-drag.
- */
-function usePodTile() {
-  const { width } = useWindowDimensions();
-  const columns = Math.max(2, Math.min(5, Math.round((width - H_PAD * 2) / 220)));
-  const w = Math.floor((width - H_PAD * 2 - GAP * (columns - 1)) / columns);
-  return { width: w, height: Math.round(w * 0.82) };
-}
 
 export interface CategoryPod {
   slug: string;
@@ -78,13 +61,13 @@ export function CategoryPodGrid({
   covers?: Record<string, BrowseCover>;
   onPress: (slug: string) => void;
 }) {
-  const tile = usePodTile();
+  const { pad, size } = podTile(useWindowDimensions().width);
   return (
-    <View style={s.grid}>
+    <View style={[s.grid, { paddingHorizontal: pad }]}>
       {BROWSE_PODS.map((p) => {
         const c = covers?.[p.slug];
         return (
-          <PressScale key={p.slug} style={[s.tile, tile]} onPress={() => onPress(p.slug)}>
+          <PressScale key={p.slug} style={[s.tile, size]} onPress={() => onPress(p.slug)}>
             <HeroImage
               id={p.slug}
               name={c?.name ?? p.label}
@@ -118,8 +101,7 @@ const s = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: GAP,
-    paddingHorizontal: H_PAD,
+    gap: POD_GAP,
     paddingTop: 4,
   },
   tile: {

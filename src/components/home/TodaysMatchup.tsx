@@ -109,7 +109,6 @@ export function TodaysMatchup({
   return (
     <View style={m.section}>
       <View style={[m.header, { paddingHorizontal: hMargin }]}>
-        <View style={m.accentBar} />
         <View style={m.headerText}>
           <Text style={m.label}>Daily</Text>
           <Text style={m.title}>{"Today's Battle"}</Text>
@@ -203,9 +202,9 @@ const m = StyleSheet.create({
     marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'stretch',
-    gap: 11,
   },
-  accentBar: { width: 4, borderRadius: 2, backgroundColor: COLORS.orange },
+  // No accent bar — see the note in HomeHeroRow. The orange "Daily" eyebrow
+  // under it already carries the colour and, unlike a stripe, it says something.
   headerText: { gap: 2, justifyContent: 'center' },
   label: {
     fontFamily: 'Nunito_700Bold',

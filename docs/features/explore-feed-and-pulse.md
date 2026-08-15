@@ -190,6 +190,72 @@ and starts reading as one and a half). The two rows that do pair are both
 compact, self-contained cards with no rail inside them — that's the test for
 whether a future row is a pairing candidate, not just whether it "fits."
 
+## Tablets: one gutter, one measure, and grids that tile
+
+The pairing above uses the extra width for *density*. Three further faults were
+about the feed having no notion of width at all, and they share one cause: five
+separate `paddingHorizontal: 16` literals with nothing keying them to the
+window. On an iPad Pro 13" landscape every heading started 16pt from the bezel.
+
+**`sectionGutter(width, phone)` (`src/constants/layout.ts`) is now the feed's
+one left edge** — 16 (or whatever the caller's existing phone literal is) below
+700pt, 24 at tablet, 32 at wide. It exists alongside `pagePadding` rather than
+replacing it because `pagePadding`'s phone value is **15** and Explore's
+sections were tuned at **16**: adopting it wholesale would have shifted every
+heading on every phone by a point. The phone value is a parameter, so only the
+tablet widths are unified. Adopted by `browseHead`, `seeAllRow`, `sponsorWrap`
+and `footer` in `app/(tabs)/explore.tsx`, plus `HallOfFame`, `FeaturedRivalry`
+and `CategoryPodGrid`.
+
+**Rails still bleed past it.** The gutter is for non-rail sections; a
+horizontal rail keeps its own inset and scrolls to the physical edge, which is
+the rule in CLAUDE.md and is not an exception to this one.
+
+**The cap goes on the text, never on the block.** A section head keeps its left
+edge on the gutter so every row shares one edge — centring some sections and
+not others is the ragged-gutter fault Arena had. Body copy that would otherwise
+run 1312pt gets `PROSE_MAX_WIDTH` (560) on the `Text` itself: aligned left,
+wrapped at a readable measure, centred nowhere.
+
+**Two cards were portrait designs stretched into letterboxes.** Both are fixed
+heights that were fine at a phone's width and absurd at 1312pt:
+
+- `HallOfFame`'s #1 plate is 320pt tall. Unbounded that is a **4.1:1** band and
+  the crop lands on an ear. Above 700pt the section becomes **two columns** —
+  plate left at 420pt tall, the ranked 02–07 rows right — capped together at
+  `CONTENT_MAX_WIDTH` and left-aligned. The plate comes back to roughly square
+  (1.09:1 at 834pt, 0.95:1 at 1376pt), and the rows stop putting 1300pt between
+  a name and its publisher.
+- `FeaturedRivalry` is 240pt tall and would be a **5.5:1** strip in which both
+  faces are foreheads. Capped at `CONTENT_MAX_WIDTH` and 320pt tall above 700pt
+  — 2.8:1, the shape the two 50%-wide face crops were composed for.
+
+**A grid over a closed set needs a column count that divides it.**
+`BROWSE_PODS` is twelve tiles and its own comment promises the grid never
+strands a lone one. The count was clamped to 2–5, and **five is the one value
+in that range twelve does not divide** — so a landscape iPad drew 5 / 5 / 2
+with three empty slots. `snappedColumns(width, pad, legal)` snaps to the
+nearest legal divisor instead of rounding off a target width, and
+`src/components/home/podGrid.ts` holds the geometry apart from the component so
+it can be unit-tested (same reason `deckSelection.ts` exists — a constant
+inside a file that imports `expo-linear-gradient` cannot be imported by a
+test, and a test that re-declares the value passes while the screen draws
+something else). Twelve tiles now land 2-up on a phone, 4-up at 1032pt and 6-up
+at 1376pt, always in full rows.
+
+**Two things changed on the phone too, deliberately.** Chapter heads gained the
+standfirst web has always had (`browseSubtitle`), and Hall of Fame moved
+**above** the Library chapter break rather than below it — the standfirst
+promises the tile grid ("archetypes, teams, media, origins and power
+rankings"), so a ranked canon list between the promise and the tiles makes the
+sentence describe the wrong thing. Web has always had this order.
+
+**The accent bars are gone** (`HomeHeroRow`, `TodaysMatchup`). A coloured
+vertical stripe beside a heading decorates without labelling, which is a
+standing rule in this project. It was also causing a real misalignment: bar (4)
++ gap (11) pushed the heading to 30pt while the rail's own cards start at 15pt,
+so a row's title never lined up with the row.
+
 ## Category pages: never filter on an embedded resource
 
 `/category/[slug]` shares `getCategoryPage` with the universe, franchise and

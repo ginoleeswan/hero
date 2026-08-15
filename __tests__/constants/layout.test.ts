@@ -7,9 +7,13 @@ import {
   heroImageAspect,
   isTabletWidth,
   pagePadding,
+  PROSE_MAX_WIDTH,
   railCardWidth,
+  sectionGutter,
+  snappedColumns,
   spotlightHeightFor,
 } from '../../src/constants/layout';
+import { podTile } from '../../src/components/home/podGrid';
 
 // Real windows, so a regression reads as a device rather than as a number.
 const IPHONE = 390;
@@ -165,5 +169,111 @@ describe('heroImageAspect', () => {
 
   it('is unchanged on a phone', () => {
     expect(heroImageAspect(IPHONE, 844)).toBeCloseTo((844 * 0.66) / IPHONE, 5);
+  });
+});
+
+describe('sectionGutter', () => {
+  // THE reason this exists rather than reusing pagePadding: pagePadding's phone
+  // value is 15 and Explore's sections were tuned at 16. Adopting pagePadding
+  // wholesale would have shifted every heading on every phone by one point,
+  // which is exactly the phone-visible diff the tablet work is not allowed to
+  // make. So the phone value is the caller's existing literal, passed through.
+  it.each([320, 375, 390, 428, 699])('returns the caller’s phone value at %ipt', (w) => {
+    expect(sectionGutter(w, 16)).toBe(16);
+    expect(sectionGutter(w, 15)).toBe(15);
+  });
+
+  it('defaults the phone value to 16 — Explore’s literal', () => {
+    expect(sectionGutter(IPHONE)).toBe(16);
+  });
+
+  // Above the threshold every caller converges on ONE gutter, whatever phone
+  // literal they came from. Two sections disagreeing by a point is invisible on
+  // a phone and a visibly ragged left edge on a 1376pt page.
+  it('unifies the tablet widths regardless of the phone value', () => {
+    for (const phone of [15, 16]) {
+      expect(sectionGutter(IPAD_PORTRAIT, phone)).toBe(24);
+      expect(sectionGutter(IPAD_LANDSCAPE, phone)).toBe(32);
+    }
+  });
+
+  it('steps exactly at the breakpoints, not near them', () => {
+    expect(sectionGutter(BREAKPOINTS.tablet - 1)).toBe(16);
+    expect(sectionGutter(BREAKPOINTS.tablet)).toBe(24);
+    expect(sectionGutter(BREAKPOINTS.wide - 1)).toBe(24);
+    expect(sectionGutter(BREAKPOINTS.wide)).toBe(32);
+  });
+
+  // A third of an iPad is a phone from the reader's side, so it gets the phone
+  // gutter — the same window-not-device rule the breakpoints are built on.
+  it('gives a Slide Over column the phone gutter', () => {
+    expect(sectionGutter(SPLIT_THIRD)).toBe(16);
+  });
+});
+
+describe('PROSE_MAX_WIDTH', () => {
+  // The cap goes on the TEXT, not on the block that holds it: a centred block
+  // would give the feed a second left edge, which is the ragged-gutter fault.
+  // So this must stay comfortably under a capped content column — if it ever
+  // exceeded it, the constant would be doing nothing.
+  it('is a measure, not a column', () => {
+    expect(PROSE_MAX_WIDTH).toBeLessThan(CONTENT_MAX_WIDTH);
+  });
+
+  // Never narrows a phone: the widest phone's content is already under it.
+  it('does not bite on a phone', () => {
+    expect(IPHONE - sectionGutter(IPHONE) * 2).toBeLessThan(PROSE_MAX_WIDTH);
+    expect(428 - sectionGutter(428) * 2).toBeLessThan(PROSE_MAX_WIDTH);
+  });
+});
+
+describe('the browse grid tiles evenly', () => {
+  // BROWSE_PODS is twelve tiles and its own comment promises the grid never
+  // strands a short last row. The count used to be clamped to 2–5, and 5 is the
+  // one value in that range 12 does not divide: a landscape iPad drew 5 / 5 / 2
+  // with three empty slots. This pins the promise rather than the arithmetic.
+  // The real function, imported — a test that re-derived the formula would go
+  // on passing while the screen drew something else.
+  const columnsFor = (w: number) => podTile(w).columns;
+
+  it.each([
+    SPLIT_THIRD,
+    375,
+    IPHONE,
+    428,
+    IPAD_MINI_PORTRAIT,
+    IPAD_PORTRAIT,
+    1032,
+    IPAD_LANDSCAPE,
+    1376,
+  ])('divides twelve at %ipt', (w) => {
+    expect(12 % columnsFor(w)).toBe(0);
+  });
+
+  // The phone stayed two-up before this change and must stay two-up after it.
+  it('leaves every phone width at two columns', () => {
+    for (const w of [SPLIT_THIRD, 375, IPHONE, 428]) expect(columnsFor(w)).toBe(2);
+  });
+
+  it('gains columns with the window', () => {
+    expect(columnsFor(IPAD_PORTRAIT)).toBe(4);
+    expect(columnsFor(1376)).toBe(6);
+  });
+
+  // The tile itself must be byte-identical on a phone: same gutter, same two
+  // columns, same 12pt gap, so the same width falls out.
+  it('leaves the phone tile exactly where it was', () => {
+    const { pad, size } = podTile(IPHONE);
+    expect(pad).toBe(16);
+    expect(size.width).toBe(Math.floor((IPHONE - 16 * 2 - 12) / 2));
+    expect(size.height).toBe(Math.round(size.width * 0.82));
+  });
+
+  // Snapping, not rounding: 5.96 columns of ideal width rounds to 6 either way,
+  // but 4.4 rounds to 4 and 5.4 would round to 5 — which twelve does not
+  // divide. The snap sends it to 6 instead.
+  it('snaps past an illegal count rather than rounding into it', () => {
+    expect(snappedColumns(1240, 32, [2, 3, 4, 6])).toBe(6);
+    expect(Math.round((1240 - 64) / 220)).toBe(5);
   });
 });

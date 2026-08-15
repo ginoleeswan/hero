@@ -1,13 +1,14 @@
 // Native "Featured Rivalry" — the curated lead for the Arena chapter: one rivalry
 // as a full-width face-off banner (the versus identity), tapping into /compare.
 // Mirrors the web FeaturedRivalry. Sits on the beige content sheet.
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { PressScale } from '../ui/PressScale';
 import { VsBadge } from '../compare/VsBadge';
 import { COLORS, EYEBROW } from '../../constants/colors';
+import { CONTENT_MAX_WIDTH, isTabletWidth, sectionGutter } from '../../constants/layout';
 import type { Rivalry } from '../../lib/db/heroes';
 
 export function FeaturedRivalry({
@@ -18,9 +19,15 @@ export function FeaturedRivalry({
   onOpen: (path: string) => void;
 }) {
   const { a, b } = rivalry;
+  const { width } = useWindowDimensions();
+  const wide = isTabletWidth(width);
   return (
-    <View style={s.wrap}>
-      <PressScale style={s.card} scale={0.97} onPress={() => onOpen(`/compare/${a.id}/${b.id}`)}>
+    <View style={[s.wrap, { paddingHorizontal: sectionGutter(width) }]}>
+      <PressScale
+        style={[s.card, wide && s.cardWide]}
+        scale={0.97}
+        onPress={() => onOpen(`/compare/${a.id}/${b.id}`)}
+      >
         <View style={s.faceA}>
           <HeroImage
             id={a.id}
@@ -73,7 +80,13 @@ export function FeaturedRivalry({
 }
 
 const s = StyleSheet.create({
-  wrap: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  wrap: { paddingTop: 4, paddingBottom: 8 },
+  // Capped and left-aligned for the same reason as Hall of Fame's body: one
+  // left edge for the whole feed. Unbounded, the banner is 1312 × 240 on a
+  // landscape iPad — a 5.5:1 strip in which both faces are foreheads. Capped at
+  // 900 and 320 tall it is 2.8:1, which is the shape the two 50%-wide face
+  // crops were composed for.
+  cardWide: { maxWidth: CONTENT_MAX_WIDTH, height: 320 },
   card: {
     height: 240,
     borderRadius: 18,
