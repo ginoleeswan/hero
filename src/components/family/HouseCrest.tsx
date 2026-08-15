@@ -114,7 +114,13 @@ export function HouseCrest({
           strokeWidth={2.4}
           strokeLinejoin="round"
         />
-        <Path d={ORLE} fill="none" stroke={orle} strokeWidth={1.1} strokeOpacity={light ? 1 : 0.6} />
+        <Path
+          d={ORLE}
+          fill="none"
+          stroke={orle}
+          strokeWidth={1.1}
+          strokeOpacity={light ? 1 : 0.6}
+        />
       </Svg>
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <Text

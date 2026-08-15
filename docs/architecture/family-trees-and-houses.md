@@ -214,7 +214,9 @@ on native. Don't remove these without a replacement:
 
 `HouseCard` (`src/components/family/HouseIndex.tsx`) is a **hanging banner**: a
 field washed with the house's `sigil_tint` carrying the crest, a hairline
-division, then a plinth with the name, the motto and the member count. It takes
+division, then a plinth with the name, the motto — or the **seat**, for a house
+with no words, so the line never goes blank and drops that card's name a whole
+line below its neighbours — and the member count. It takes
 a `tone` — `paper` (default) or `ink` — and every colour on it is that tint
 blended into the host surface, so the same component sits down on the universe
 page's ink floor and on the parchment index without either being special-cased.

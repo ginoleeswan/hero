@@ -99,7 +99,11 @@ export function HouseCard({
         [
           styles.card,
           { backgroundColor: c.base, borderColor: hovered ? c.borderHover : c.border },
-          width ? { width } : null,
+          // flexBasis as well as width: a bare `width` loses to the stylesheet's
+          // own flexBasis, so wrapping would be decided by a number the caller
+          // never passed — and a caller computing how many cards fit a row
+          // would compute it from the wrong one.
+          width ? { width, flexBasis: width } : null,
           hovered && (styles.cardHover as object),
           pressed && styles.pressed,
         ] as object
@@ -125,14 +129,19 @@ export function HouseCard({
         <Text style={[styles.name, ink && (styles.nameInk as object)] as object} numberOfLines={2}>
           {house.name}
         </Text>
-        {house.words ? (
+        {/* The motto if the house has one, its seat if it doesn't. A card with
+            the line missing sits a whole line lower than its neighbours, which
+            reads as missing data rather than as a house that simply has no
+            words — and the seat is the other fact that places a dynasty. Quoted
+            only when it is something someone actually says. */}
+        {house.words || house.seat ? (
           <Text
-            style={[styles.words, ink && (styles.wordsInk as object)] as object}
+            style={
+              [styles.words, ink && (house.words ? styles.wordsInk : styles.seatInk)] as object
+            }
             numberOfLines={1}
           >
-            {'“'}
-            {house.words}
-            {'”'}
+            {house.words ? `“${house.words}”` : house.seat}
           </Text>
         ) : null}
         <Text style={[styles.count, ink && (styles.countInk as object)] as object}>
@@ -199,8 +208,10 @@ const styles = StyleSheet.create({
     color: HOUSE_INK,
     textAlign: 'center',
   },
-  // Gold on ink, matching the motto in the house page's own banner.
+  // Gold on ink, matching the motto in the house page's own banner. A seat is a
+  // fact rather than a voice, so it takes the muted ink instead of the gold.
   wordsInk: { color: 'rgba(206,155,51,0.92)' },
+  seatInk: { color: INK_TEXT.muted },
   count: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,

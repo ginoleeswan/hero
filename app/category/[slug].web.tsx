@@ -547,7 +547,13 @@ export default function WebCategoryScreen() {
   // arithmetic flex-wrap would do, run ahead of it so the overflow becomes a
   // disclosure instead of a second and third row. Two is the floor: a "band"
   // of one card is just a card.
-  const housesTrackWidth = Math.min(CONTENT_MAX_WIDTH, Math.max(0, width - contentPad * 2));
+  //
+  // The padding comes off AFTER the cap, not before it. Yoga sizes a box
+  // border-box, so `maxWidth: CONTENT_MAX_WIDTH` bounds the padded box and the
+  // track is 1440 − 64, not 1470 − 64. Thirty points of imaginary room is
+  // exactly one card's worth of rounding, which is how House Greyjoy ended up
+  // alone on a second row.
+  const housesTrackWidth = Math.max(0, Math.min(CONTENT_MAX_WIDTH, width) - contentPad * 2);
   const housesPerRow = Math.max(
     2,
     Math.floor((housesTrackWidth + HOUSE_CARD_GAP) / (HOUSE_CARD_W + HOUSE_CARD_GAP)),
