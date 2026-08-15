@@ -14,6 +14,18 @@
 // titles.videos_checked_at so a limit smaller than the window degrades to "each
 // title every few days" instead of starving the tail.
 //
+// The window is keyed on titles.release_date, which for TV is TMDB's
+// `first_air_date` — the date the series FIRST aired, not the date anything new
+// arrives. A returning show therefore ages out of the window permanently and is
+// never swept again: Ahsoka premiered 2023-08-22, so on the day its season-2
+// trailer dropped its videos_checked_at was still null. It had never been
+// checked once. That was 431 of 530 TV titles, i.e. most of television.
+//
+// Hence the third arm below, on `details->>'status'`. TMDB marks a show
+// 'Returning Series' or 'In Production' while more of it is coming, which is
+// exactly the condition under which a trailer can drop, and it is independent of
+// when the show began. 38 of those sat outside the release window.
+//
 // POST body: { limit?: number, aheadDays?: number, behindDays?: number,
 //              triggeredBy?: string }
 
@@ -84,16 +96,34 @@ serve(async (req: Request) => {
       .order('videos_checked_at', { ascending: true, nullsFirst: true })
       .limit(limit);
 
-  const [windowed, trending] = await Promise.all([
+  const [windowed, trending, active] = await Promise.all([
     base().gte('release_date', from).lte('release_date', to),
     base().gt('trending_at', trendingSince),
+    // Shows with more still to come, whenever they began. `Planned` and `Pilot`
+    // are deliberately included: a show that has not aired at all is the one
+    // most likely to be announced with a trailer.
+    // `.filter` with a pre-quoted list rather than `.in`: the values contain
+    // spaces, and PostgREST needs them double-quoted inside `in.()`. `.filter`
+    // passes the string through verbatim, so the quoting is visible here rather
+    // than dependent on the client version's escaping.
+    base()
+      .eq('media_type', 'tv')
+      .filter(
+        'details->>status',
+        'in',
+        '("Returning Series","In Production","Planned","Pilot")',
+      ),
   ]);
-  if (windowed.error && trending.error) {
-    return json({ error: windowed.error.message }, 500);
+  if (windowed.error && trending.error && active.error) {
+    return json({ error: windowed.error.message ?? active.error?.message }, 500);
   }
 
   const byId = new Map<string, TitleRow>();
-  for (const r of [...(windowed.data ?? []), ...(trending.data ?? [])] as unknown as TitleRow[]) {
+  for (const r of [
+    ...(windowed.data ?? []),
+    ...(trending.data ?? []),
+    ...(active.data ?? []),
+  ] as unknown as TitleRow[]) {
     if (r.external_id) byId.set(r.id, r);
   }
   const rows = [...byId.values()].slice(0, limit);
