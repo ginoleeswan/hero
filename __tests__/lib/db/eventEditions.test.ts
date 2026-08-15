@@ -104,10 +104,17 @@ describe('recap — the only editorial field on an edition', () => {
     // string has to collapse to null: the page renders the recap in place of the
     // method note, and '' would blank that paragraph rather than fall back.
     expect(
-      mapEventEdition({ event: { slug: 'game-awards', headline: 'The Game Awards', recap: 'Elden Ring won Game of the Year.' } })
-        ?.event.recap,
+      mapEventEdition({
+        event: {
+          slug: 'game-awards',
+          headline: 'The Game Awards',
+          recap: 'Elden Ring won Game of the Year.',
+        },
+      })?.event.recap,
     ).toBe('Elden Ring won Game of the Year.');
-    expect(mapEventEdition({ event: { slug: 'x', headline: 'X', recap: '' } })?.event.recap).toBeNull();
+    expect(
+      mapEventEdition({ event: { slug: 'x', headline: 'X', recap: '' } })?.event.recap,
+    ).toBeNull();
     // An unapplied migration returns no `recap` key at all.
     expect(mapEventEdition({ event: { slug: 'x', headline: 'X' } })?.event.recap).toBeNull();
   });
