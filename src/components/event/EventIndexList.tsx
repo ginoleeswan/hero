@@ -7,7 +7,9 @@
 // a set of measurements rather than a menu — the shape of the spike IS the
 // difference between one event and another.
 import { View, StyleSheet, Pressable } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from '../ui/Text';
+import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { EventCurve } from './EventCurve';
 import { EVENT_STAGE, EVENT_INDEX } from '../../constants/eventGeometry';
@@ -42,6 +44,15 @@ export function EventIndexList({
   // edge, which is where the drama is.
   const bleed = Math.max(0, measure);
   const { events, watching } = index;
+  // Two up on a phone, more as the measure grows. Derived rather than fixed, so
+  // every row reaches both edges at every width — the same rule the dossier's
+  // grids use.
+  const avail = Math.max(0, measure - pad * 2);
+  const tileGap = 12;
+  const tileCols = Math.max(2, Math.floor((avail + tileGap) / (168 + tileGap)));
+  const tileCell = Math.floor((avail - tileGap * (tileCols - 1)) / tileCols);
+  const live = events.filter((e) => e.isLive);
+  const rest = events.filter((e) => !e.isLive);
 
   return (
     <View>
@@ -84,25 +95,12 @@ export function EventIndexList({
               up here.
             </Text>
           ) : (
-            events.map((e) => {
-              const accent = e.accent ?? COLORS.goldAccent;
-              const win = formatWindow(e.liveFrom, e.liveTo);
-              // The years-on-record line. This is the whole point of the page
-              // after the backfill: "7 editions · 2018–2026" says there is
-              // something to read here, where a lone date says only that we
-              // noticed once.
-              const span =
-                e.editions > 1 && e.firstYear && e.lastYear
-                  ? `${e.editions} editions · ${e.firstYear}–${e.lastYear}`
-                  : e.editions === 1 && e.lastYear
-                    ? `One edition · ${e.lastYear}`
-                    : null;
-
-              // A live event keeps the full treatment — the curve is the news.
-              // The other nineteen do not: twenty full-bleed charts is a scroll
-              // through abstraction, and the shape of a 2019 spike is not what
-              // makes someone open a 2019 page.
-              if (e.isLive) {
+            <>
+              {/* The live event keeps the full treatment: the curve IS the news
+                  while it is happening. */}
+              {live.map((e) => {
+                const accent = e.accent ?? COLORS.goldAccent;
+                const win = formatWindow(e.liveFrom, e.liveTo);
                 return (
                   <Pressable
                     key={e.slug}
@@ -128,57 +126,86 @@ export function EventIndexList({
                         height={wide ? EVENT_INDEX.rowCurveHWide : EVENT_INDEX.rowCurveH}
                       />
                     </View>
-                    <Text style={s.rowStat}>
-                      {e.spikeRatio !== null && e.spikeRatio > 1 ? (
-                        <>
-                          <Text style={[s.rowStatNum, { color: COLORS.deepNavy }]}>
-                            {e.spikeRatio}×
-                          </Text>{' '}
-                          usual readership
-                        </>
-                      ) : e.peak ? (
-                        <>
-                          <Text style={[s.rowStatNum, { color: COLORS.deepNavy }]}>
-                            {e.peak.toLocaleString()}
-                          </Text>{' '}
-                          readers on its busiest day
-                        </>
-                      ) : null}
-                      {span ? `  ·  ${span}` : ''}
-                    </Text>
+                    {e.spikeRatio !== null && e.spikeRatio > 1 && (
+                      <Text style={s.rowStat}>
+                        <Text style={[s.rowStatNum, { color: COLORS.deepNavy }]}>
+                          {e.spikeRatio}×
+                        </Text>{' '}
+                        usual readership
+                        {e.peak ? ` · peak ${e.peak.toLocaleString()} a day` : ''}
+                      </Text>
+                    )}
                   </Pressable>
                 );
-              }
+              })}
 
-              // Everything else: one compact, scannable line per event.
-              return (
-                <Pressable
-                  key={e.slug}
-                  style={s.compact}
-                  onPress={() => onEventPress(e.slug)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${e.headline}${span ? `, ${span}` : ''}`}
-                >
-                  <View style={[s.spine, { backgroundColor: accent }]} />
-                  <View style={s.compactBody}>
-                    <Text style={s.compactTitle} numberOfLines={1}>
-                      {e.headline}
-                    </Text>
-                    <Text style={s.compactMeta} numberOfLines={1}>
-                      {[
-                        span,
-                        // The loudest year it ever had. A number a reader can
-                        // compare across rows, which a date cannot be.
-                        e.bestSpike && e.bestSpike > 1 ? `best ${e.bestSpike}×` : null,
-                      ]
-                        .filter(Boolean)
-                        .join('  ·  ')}
-                    </Text>
+              {rest.length > 0 && (
+                <>
+                  {live.length > 0 && <Text style={s.gridHead}>Every event on record</Text>}
+                  {/* Tiles carrying each event's own mark.
+                      Twenty stacked detection curves was a scroll through
+                      abstraction: the shape of a 2019 spike is not what makes
+                      anyone open a 2019 page, and a wall of identical charts
+                      reads as one undifferentiated thing. The marks are what a
+                      fan recognises instantly, they exist for every watched
+                      event, and they are single-path silhouettes that take the
+                      event's own accent — so twenty of them read as one set
+                      rather than as a sponsor wall. */}
+                  <View style={[s.tileGrid, { gap: tileGap }]}>
+                    {rest.map((e) => {
+                      const accent = e.accent ?? COLORS.goldAccent;
+                      const brand = brandForEvent(e.slug);
+                      const artH = Math.round(tileCell * 0.62);
+                      const span =
+                        e.editions > 1 && e.firstYear && e.lastYear
+                          ? `${e.editions} editions · ${e.firstYear}–${e.lastYear}`
+                          : e.editions === 1 && e.lastYear
+                            ? `One edition · ${e.lastYear}`
+                            : null;
+                      return (
+                        <Pressable
+                          key={e.slug}
+                          style={[s.tile, { width: tileCell }]}
+                          onPress={() => onEventPress(e.slug)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${e.headline}${span ? `, ${span}` : ''}`}
+                        >
+                          <View style={[s.tileArt, { height: artH, borderColor: `${accent}33` }]}>
+                            <LinearGradient
+                              colors={[`${accent}2b`, `${accent}0a`]}
+                              start={{ x: 0.1, y: 0 }}
+                              end={{ x: 0.9, y: 1 }}
+                              style={StyleSheet.absoluteFill}
+                            />
+                            {brand ? (
+                              <brand.mark
+                                {...fitMark(brand, tileCell - 30, artH - 28)}
+                                color={accent}
+                                fill={accent}
+                              />
+                            ) : (
+                              // A row can land in watched_events before its mark
+                              // does; the name is the fallback, not a gap.
+                              <Text style={[s.tileFallback, { color: accent }]} numberOfLines={2}>
+                                {e.headline}
+                              </Text>
+                            )}
+                          </View>
+                          <Text style={s.tileName} numberOfLines={1}>
+                            {e.headline}
+                          </Text>
+                          <Text style={s.tileMeta} numberOfLines={1}>
+                            {[span, e.bestSpike && e.bestSpike > 1 ? `best ${e.bestSpike}×` : null]
+                              .filter(Boolean)
+                              .join('  ·  ')}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
                   </View>
-                  <Text style={[s.compactYear, { color: accent }]}>{e.lastYear ?? ''}</Text>
-                </Pressable>
-              );
-            })
+                </>
+              )}
+            </>
           )}
 
           {watching.length > 0 && (
@@ -274,38 +301,47 @@ const s = StyleSheet.create({
     color: PAPER_TEXT.muted,
   },
   rowCurve: { marginTop: EVENT_INDEX.rowCurveGap, marginBottom: EVENT_INDEX.rowCurveGap },
-  // A compact row for an event that is not on right now. Nineteen full-bleed
-  // detection curves is a scroll through abstraction; the shape of a 2019 spike
-  // is not what makes anyone open a 2019 page. The accent spine keeps each event
-  // identifiable at a glance without spending a whole band on it.
-  compact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 13,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(11,24,32,0.09)',
+
+  gridHead: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: PAPER_TEXT.muted,
+    marginTop: 26,
+    marginBottom: 14,
   },
-  spine: { width: 3, alignSelf: 'stretch', borderRadius: 4 },
-  compactBody: { flex: 1, minWidth: 0, gap: 2 },
-  compactTitle: {
+  tileGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  tile: { gap: 7 },
+  // The mark sits on a wash of the event's own accent rather than on bare
+  // paper: a single-path silhouette on beige reads as a stain, and the wash is
+  // what makes twenty different logos look like one designed set.
+  tileArt: {
+    width: '100%',
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileFallback: {
     fontFamily: 'Flame-Regular',
-    fontSize: 18,
-    // Clamped Flame needs >= 1.22x fontSize or numberOfLines shears descenders.
-    lineHeight: 23,
+    fontSize: 15,
+    lineHeight: 20,
+    textAlign: 'center',
+    paddingHorizontal: 10,
+  },
+  tileName: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 15,
+    lineHeight: 20,
     color: COLORS.deepNavy,
   },
-  compactMeta: {
+  tileMeta: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 15,
     color: PAPER_TEXT.muted,
-  },
-  compactYear: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 18,
-    lineHeight: 23,
-    fontVariant: ['tabular-nums'],
   },
 
   rowStat: {

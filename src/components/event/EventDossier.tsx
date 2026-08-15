@@ -13,7 +13,7 @@
 //
 // Boldness is spent in one place: the detection curve, drawn full-bleed as the
 // masthead's texture. Everything under the seam stays quiet so it keeps that job.
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -85,6 +85,9 @@ export function EventDossier({
   const [lead, ...rest] = trailers;
   // One entry per thing announced, not per clip. See groupAnnouncements.
   const [leadNews, ...restNews] = groupAnnouncements(announcements);
+  // Wide enough that a 16:9 still reads, narrow enough that the next card
+  // peeks — the cue that says the row scrolls.
+  const newsCardW = Math.min(232, Math.round(avail * 0.62));
   // A backfilled edition is the readership record and little else: announcements
   // come from channel_videos, which only starts the day that pipeline shipped,
   // and movers cannot be reconstructed because heroes.views_daily is a rolling
@@ -256,12 +259,24 @@ export function EventDossier({
                 </View>
               </Pressable>
 
+              {/* The rest as a rail, not a list. A stack of thumbnail rows made
+                  thirteen announcements read as a changelog — uniform, ordered,
+                  and inviting nobody to look past the third. Horizontally they
+                  are cards you browse, which is what a reveal deserves and what
+                  every other Mythique surface already does with a set of things.
+                  Escapes the parent's gutter so cards run to the physical screen
+                  edge while the first still lines up with the page inset. */}
               {restNews.length > 0 && (
-                <View style={s.newsList}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginHorizontal: -pad }}
+                  contentContainerStyle={[s.newsRail, { paddingHorizontal: pad }]}
+                >
                   {restNews.map((a) => (
                     <Pressable
                       key={a.titleId}
-                      style={s.newsRow}
+                      style={[s.newsCard, { width: newsCardW }]}
                       onPress={() => onTitlePress(a.titleId)}
                       accessibilityRole="button"
                       accessibilityLabel={`${a.titleName}, announced at this event`}
@@ -269,88 +284,23 @@ export function EventDossier({
                       {!!(a.thumbnailUrl ?? a.posterUrl) && (
                         <Image
                           source={{ uri: (a.thumbnailUrl ?? a.posterUrl) as string }}
-                          style={s.newsThumb}
+                          style={[
+                            s.newsCardArt,
+                            { width: newsCardW, height: Math.round(newsCardW * 0.5625) },
+                          ]}
                           contentFit="cover"
                           transition={160}
                         />
                       )}
-                      <View style={s.newsBody}>
-                        {/* The catalogue's name leads. The marketing string is
-                            a caption underneath, where its length is harmless —
-                            clamped as a headline it sheared mid-word. */}
-                        <Text style={s.newsTitle} numberOfLines={2}>
-                          {a.titleName}
-                        </Text>
-                        <Text style={s.newsMeta} numberOfLines={1}>
-                          {sourceLine(a)}
-                        </Text>
-                      </View>
+                      <Text style={s.newsCardTitle} numberOfLines={2}>
+                        {a.titleName}
+                      </Text>
+                      <Text style={s.newsMeta} numberOfLines={1}>
+                        {sourceLine(a)}
+                      </Text>
                     </Pressable>
                   ))}
-                </View>
-              )}
-            </Section>
-          )}
-
-          {/* Directly under the news, because it IS the news for this app: the
-              catalogue being named by the rights holder. Everything else on the
-              page is a measurement or a marketing string. Placed above trailers
-              on purpose — a reader who has just learned six X-Men were cast
-              should meet them before a poster grid. */}
-          {revealed.length > 0 && (
-            <Section
-              title="Characters revealed"
-              note="Named in the studio's own cast list, during the window"
-            >
-              <View style={[s.faceGrid, { gap: faceGrid.gap }]}>
-                {revealed.map((r) => (
-                  <Pressable
-                    key={r.heroId}
-                    style={[s.faceCell, { width: faceGrid.cell }]}
-                    onPress={() => onHeroPress(r.heroId)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${r.name}${r.titleName ? `, revealed for ${r.titleName}` : ''}`}
-                  >
-                    {!!r.portraitUrl && (
-                      <Image
-                        source={{ uri: r.portraitUrl }}
-                        style={[
-                          s.face,
-                          {
-                            width: faceGrid.cell,
-                            height: faceGrid.cell,
-                            borderRadius: faceGrid.cell / 2,
-                          },
-                        ]}
-                        contentFit="cover"
-                        transition={160}
-                      />
-                    )}
-                    <Text style={s.faceName} numberOfLines={2}>
-                      {r.name}
-                    </Text>
-                    {!!r.titleName && (
-                      <Text style={s.faceCause} numberOfLines={1}>
-                        {r.titleName}
-                      </Text>
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-
-              {/* The one place an event page can hand a reader straight into the
-                  app's own game. Two revealed characters is the minimum for a
-                  matchup to mean anything. */}
-              {revealed.length >= 2 && !!onArenaPress && (
-                <Pressable
-                  style={[s.arenaCta, { borderColor: `${accent}66` }]}
-                  onPress={() => onArenaPress(revealed[0].heroId, revealed[1].heroId)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Put ${revealed[0].name} against ${revealed[1].name} in the Arena`}
-                >
-                  <Text style={s.arenaCtaText}>{`${revealed[0].name} vs ${revealed[1].name}`}</Text>
-                  <Text style={[s.arenaCtaHint, { color: accent }]}>Settle it in the Arena</Text>
-                </Pressable>
+                </ScrollView>
               )}
             </Section>
           )}
@@ -702,13 +652,13 @@ const s = StyleSheet.create({
     maxWidth: 520,
   },
 
-  newsList: { gap: 14, marginTop: 4 },
-  newsRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  newsThumb: { width: 112, height: 63, borderRadius: 8, backgroundColor: '#00000010' },
-  newsBody: { flex: 1, minWidth: 0, gap: 3 },
-  newsTitle: {
+  newsRail: { gap: 12, paddingTop: 20 },
+  newsCard: { gap: 7 },
+  newsCardArt: { borderRadius: 12, backgroundColor: '#00000010' },
+  newsCardTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 15,
+    // Clamped Flame needs >= 1.22x fontSize.
     lineHeight: 20,
     color: COLORS.deepNavy,
   },
