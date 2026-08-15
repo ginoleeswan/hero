@@ -118,7 +118,7 @@ Real-world events (SDCC, a Direct) are _detected_ from Wikipedia attention, not
 read from a calendar: the `sync-watched-events` edge function writes detector
 state into `watched_events`, and `get_live_events` returns anything the detector
 calls `live` **unless it was explicitly rejected**
-(`20260726150000_watched_events.sql`, `src/lib/db/events.ts`). Each event gets
+(`20260726150000_watched_events.sql`). Each event gets
 a dossier page at `/event/[slug]` (`useEventDossier` → `get_event_dossier`) and
 an index at `/event` (`get_event_index`), both platform-paired.
 
@@ -190,6 +190,19 @@ The cost of not having had this: SDCC 2026 was detected at 3.35×, and by
 movers, because the July spike had rolled out of the 27-day series. Its frozen
 edition records that damage honestly rather than restoring a number from a design
 doc. D23 2026 was captured with its full 27-day curve intact.
+
+**Most of the watch list cannot fire, and it is the floor that stops it.**
+Reviewed 2026-08-15: two of the twenty rows have ever been caught (`sdcc`,
+`d23`). The spike threshold is not what excludes the rest — `MIN_PEAK_VIEWS` is
+an absolute 250, and six articles sit far below it at baseline (DC FanDome 28,
+ECCC 31, CCXP 41, Angoulême 66, Lucca 68, MCM London 69). Those need a **6–9×
+spike merely to reach the floor**, against the 2.5× the detector asks for, so
+they are undetectable on English Wikipedia however large the event is in the
+world. Left enabled deliberately — six extra requests per half-hour is nothing,
+and a disabled row can never surprise you by growing — but nobody should expect
+them to fire, and lowering the floor for them would buy noise, not events. The
+honest fix, if these matter, is a different signal for small events, not a looser
+threshold on this one.
 
 **Not built yet: the hub and edition routes.** `get_event_hub` and
 `get_event_edition` are live and verified, but `/event/[slug]` is still the live
@@ -268,7 +281,7 @@ whether a future row is a pairing candidate, not just whether it "fits."
 
 ## Tablets: one gutter, one measure, and grids that tile
 
-The pairing above uses the extra width for *density*. Three further faults were
+The pairing above uses the extra width for _density_. Three further faults were
 about the feed having no notion of width at all, and they share one cause: five
 separate `paddingHorizontal: 16` literals with nothing keying them to the
 window. On an iPad Pro 13" landscape every heading started 16pt from the bezel.
@@ -329,8 +342,9 @@ sentence describe the wrong thing. Web has always had this order.
 **The accent bars are gone** (`HomeHeroRow`, `TodaysMatchup`). A coloured
 vertical stripe beside a heading decorates without labelling, which is a
 standing rule in this project. It was also causing a real misalignment: bar (4)
-+ gap (11) pushed the heading to 30pt while the rail's own cards start at 15pt,
-so a row's title never lined up with the row.
+
+- gap (11) pushed the heading to 30pt while the rail's own cards start at 15pt,
+  so a row's title never lined up with the row.
 
 ## Category pages: never filter on an embedded resource
 
@@ -555,12 +569,12 @@ native and web** — moved out of `components/web/home/` so the two platforms
 cannot drift apart the way the character screen's native/web pair still does.
 `spotlightLayout(width)` returns one of four states:
 
-| Width | State | What renders |
-| --- | --- | --- |
+| Width                              | State     | What renders                                                            |
+| ---------------------------------- | --------- | ----------------------------------------------------------------------- |
 | < `SPOTLIGHT_DECK_MIN_WIDTH` (720) | `stacked` | web-only; native keeps today's full-bleed `SpotlightCarousel` unchanged |
-| 720–999 | `caption` | one correctly-proportioned card beside the panel, no deck |
-| 1000–1279 | `duo` | active card + two slivers |
-| ≥ 1280 | `gallery` | active card + a tapering deck, ghost name as scenery |
+| 720–999                            | `caption` | one correctly-proportioned card beside the panel, no deck               |
+| 1000–1279                          | `duo`     | active card + two slivers                                               |
+| ≥ 1280                             | `gallery` | active card + a tapering deck, ghost name as scenery                    |
 
 Above `SPOTLIGHT_DECK_MIN_WIDTH`, `SpotlightCarousel` renders `SpotlightDeck`
 (`src/components/home/SpotlightDeck.tsx`) instead of the phone carousel.
@@ -571,7 +585,7 @@ array's own stable order, each carrying the width its distance from the
 active index assigns. Nothing is reordered by taper position, so a card holds
 its slot across an advance and the view animates its width in place — that
 400ms width/opacity morph (`SpotlightDeckCard.tsx`, eased to match web's
-`cubic-bezier(0.16, 1, 0.3, 1)`) *is* the carousel's motion. `resolveActiveIndex()`
+`cubic-bezier(0.16, 1, 0.3, 1)`) _is_ the carousel's motion. `resolveActiveIndex()`
 exists because a feed refetch can shrink `heroes` out from under a still-mounted
 `active` index; without it the panel and the deck's front card disagree or crash.
 
@@ -592,7 +606,7 @@ glow** (`SpotlightGlow.tsx`) is a real `RadialGradient` via `react-native-svg`,
 publisher-tinted, crossfading over 800ms; native has no backdrop-filter to
 fake it with a flat disc, and Reanimated cannot animate an SVG `<Stop>` (see
 trap below), so the crossfade is two static gradient layers with the top one's
-*View* opacity driven instead.
+_View_ opacity driven instead.
 
 The deck also clears the floating iPadOS tab bar via `TABLET_TAB_CLEARANCE`
 (`SpotlightDeck.tsx`), which `spotlightHeight()` (`SpotlightCarousel.tsx`)

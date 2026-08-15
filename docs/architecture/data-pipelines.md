@@ -44,14 +44,14 @@ TMDB ──────────────────────→ title
 
 ## Source of truth (which source owns what)
 
-| Domain | Authoritative source | Notes |
-| --- | --- | --- |
-| Comic canon (issues, teams, enemies, powers, first issue) | **ComicVine** | `comicvine_id` is the key |
-| Identity / base stats (name, gender, alignment, powerstats) | **SuperheroAPI** (legacy) → migrating to ComicVine | numeric ids only; being phased out |
-| Cross-linking + popularity signal | **Wikidata** (`wikidata_qid`, P5905 = ComicVine id) | drives sitelinks → fame |
-| Screen appearances ("On Screen") | **TMDB** (`titles` + `hero_media_appearances`) | the legacy `heroes.movies` jsonb is **deprecated** — UI reads `hero_media_appearances` |
-| Pageview popularity | **Wikipedia** | `enwiki_title` → pageviews |
-| Portraits / AI stats | **AI** (Gemini/Imagen) | generated, not sourced |
+| Domain                                                      | Authoritative source                                | Notes                                                                                  |
+| ----------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Comic canon (issues, teams, enemies, powers, first issue)   | **ComicVine**                                       | `comicvine_id` is the key                                                              |
+| Identity / base stats (name, gender, alignment, powerstats) | **SuperheroAPI** (legacy) → migrating to ComicVine  | numeric ids only; being phased out                                                     |
+| Cross-linking + popularity signal                           | **Wikidata** (`wikidata_qid`, P5905 = ComicVine id) | drives sitelinks → fame                                                                |
+| Screen appearances ("On Screen")                            | **TMDB** (`titles` + `hero_media_appearances`)      | the legacy `heroes.movies` jsonb is **deprecated** — UI reads `hero_media_appearances` |
+| Pageview popularity                                         | **Wikipedia**                                       | `enwiki_title` → pageviews                                                             |
+| Portraits / AI stats                                        | **AI** (Gemini/Imagen)                              | generated, not sourced                                                                 |
 
 **Convergence direction (the simplification path):** SuperheroAPI → ComicVine
 for identity; `heroes.movies` → `hero_media_appearances` for screen. When those
@@ -70,34 +70,63 @@ are complete, two legacy data paths disappear.
 └────────────────────────────────────────────────────────────┘
 ```
 
-Properties: **idempotent, resumable** (no cursor table — status column *is* the
+Properties: **idempotent, resumable** (no cursor table — status column _is_ the
 queue), **popularity-ordered** (users land on enriched rows first), and
 **self-healing** (a transient failure stays `pending` for the next run).
 
 ### The 6 drains
 
-| Cron job | Every | Edge function | Gate column | Fills |
-| --- | --- | --- | --- | --- |
-| `enrich-comicvine-pending` | 15 min | `enrich-comicvine-batch` | `comicvine_status` | publisher, issues, teams, enemies/friends, powers, desc, first issue |
-| `enrich-wikidata-pending` | 15 min | `enrich-wikidata-batch` | `wikidata_status='resolved'` | sitelinks, `hero_media_appearances`, creators/aliases |
-| `enrich-tmdb-pending` | 15 min | `enrich-tmdb-batch` | `titles.enrich_status` | title details, **`cast_members`**, posters |
-| `resolve-enwiki-title-drain` | 5 min | `resolve-enwiki-title` | `enwiki_title IS NULL` | Wikipedia article title |
-| `sync-wiki-pageviews-cycle` | 10 min | `sync-wiki-pageviews` | (rotates) | `pageviews_week` |
-| `enrich-blurhash-pending` | 2 min | `enrich-blurhash-batch` | `portrait_blurhash` empty | LQIP placeholder hash |
+| Cron job                     | Every  | Edge function            | Gate column                  | Fills                                                                |
+| ---------------------------- | ------ | ------------------------ | ---------------------------- | -------------------------------------------------------------------- |
+| `enrich-comicvine-pending`   | 15 min | `enrich-comicvine-batch` | `comicvine_status`           | publisher, issues, teams, enemies/friends, powers, desc, first issue |
+| `enrich-wikidata-pending`    | 15 min | `enrich-wikidata-batch`  | `wikidata_status='resolved'` | sitelinks, `hero_media_appearances`, creators/aliases                |
+| `enrich-tmdb-pending`        | 15 min | `enrich-tmdb-batch`      | `titles.enrich_status`       | title details, **`cast_members`**, posters                           |
+| `resolve-enwiki-title-drain` | 6 h    | `resolve-enwiki-title`   | `enwiki_title IS NULL`       | Wikipedia article title                                              |
+| `sync-wiki-pageviews-cycle`  | 30 min | `sync-wiki-pageviews`    | (rotates)                    | `pageviews_week`, `views_daily`                                      |
+| `enrich-blurhash-pending`    | 2 min  | `enrich-blurhash-batch`  | `portrait_blurhash` empty    | LQIP placeholder hash                                                |
 
 > ⚠️ **Wikidata is two steps:** `resolve-wikidata-batch` sets the `qid`
 > (deterministic P5905 ComicVine-id → QID; fuzzy name fallback), _then_
 > `enrich-wikidata-batch` uses the qid. Resolution currently runs **manually**
 > (no cron) — most unresolved heroes have no Wikidata item, so it's low value.
 
+### The attention chain (and why one broken link blanks the surge lane)
+
+`views_daily` is the only measurement Mythique has of what an **audience** did
+rather than what a studio announced, and it is reached through four links that
+each silently disable the next:
+
+```text
+wikidata_qid  →  enwiki_title  →  views_daily  →  pageviews_spike  →  Pulse surge
+```
+
+No QID means no article title; no title means no curve; no curve means a
+character can never be seen to move, however famous it is. Audited 2026-08-15:
+
+- **`enwiki_title = ''` is a sentinel, not a gap.** 1,019 heroes carry it and it
+  means "resolved, no article exists" — the same convention `portrait_blurhash`
+  uses. The sweep skips them correctly. Every hero with a real title has a curve.
+- **The real gap is QIDs.** 94 heroes at `fame_score >= 40` have none, and the
+  ones left are mostly not comic characters (Harry Potter, Gollum, Solid Snake,
+  Katniss, Rey), which is why `resolve-wikidata-batch` ordering by `issue_count`
+  never reached them. It orders by `fame_score` now; the first run after that
+  took the figure from 112 to 94.
+- **What remains is name ambiguity, not queue order.** The stragglers are marked
+  `unresolved` because a Wikidata search for "Leonardo" returns da Vinci and
+  "Raphael" returns the painter. Retrying the same algorithm will not fix it;
+  disambiguating with publisher/franchise context is separate work.
+- **A failed pageview fetch must never overwrite a curve.** It used to, and the
+  damage is unrecoverable — the Wikimedia API serves a rolling window, so a
+  series blanked today loses whatever has since fallen out of it.
+
 ## Maintenance jobs (pure SQL — no API, no cost)
 
 Fold **new SQL housekeeping here. Do not add new crons for it.**
 
-| Cron job | When | Runs |
-| --- | --- | --- |
+| Cron job              | When        | Runs                                                                                                        |
+| --------------------- | ----------- | ----------------------------------------------------------------------------------------------------------- |
 | `nightly-maintenance` | daily 03:40 | `nightly_maintenance()` = `rebuild_hero_relationships()` + `link_tmdb_cast()` + `snapshot_catalog_health()` |
-| `refresh-fame-weekly` | Sun 04:00 | `refresh_fame()` = auto-tier unrated pool + recompute fame scores |
+| `refresh-fame-weekly` | Sun 04:00   | `refresh_fame()` = auto-tier unrated pool + recompute fame scores                                           |
 
 - **`rebuild_hero_relationships()`** resolves the `enemies`/`friends`/`teams`
   name arrays into ally/enemy/teammate **cards**. ~50 s, full TRUNCATE+rebuild
