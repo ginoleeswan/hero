@@ -24,6 +24,9 @@ export interface EventDossierEvent {
   editsRecent: number | null;
   viewsDaily: { date: string; views: number }[];
   firstDetectedAt: string | null;
+  /** Editorial: one sentence on what actually happened. Only ever set on a
+   *  frozen edition — a live event has not finished happening yet. */
+  recap: string | null;
 }
 
 /**
@@ -140,6 +143,7 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
         .map((d) => ({ date: String(d.date ?? ''), views: num(d.views) ?? 0 }))
         .filter((d) => d.date),
       firstDetectedAt: (e.first_detected_at as string) ?? null,
+      recap: typeof e.recap === 'string' && e.recap ? e.recap : null,
     },
     // Defensive against an unapplied migration: an older RPC has no
     // `announcements` key at all, and the section must then render nothing

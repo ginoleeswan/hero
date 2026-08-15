@@ -187,8 +187,13 @@ export function EventDossier({
             ]}
             numberOfLines={wide ? undefined : EVENT_STAGE.methodLines}
           >
-            No calendar told us this was on. The window is inferred from readership on the
-            event&rsquo;s own Wikipedia article.
+            {/* On a frozen edition the recap outranks the method note. How the
+                window was found is worth saying about an event we are still
+                measuring; about 2019 the reader wants to know what happened,
+                and the method has already been said on the hub above. Falls
+                back where no recap could be written honestly. */}
+            {event.recap ??
+              'No calendar told us this was on. The window is inferred from readership on the event’s own Wikipedia article.'}
           </Text>
 
           {/* The measurements, given the weight they deserve. The multiplier is

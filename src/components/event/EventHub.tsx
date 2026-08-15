@@ -225,6 +225,16 @@ export function EditionList({
               )}
             </View>
 
+            {/* The one line on this row that is not a measurement, and the only
+                one that answers what the year was. It leads the metadata rather
+                than following it: "Elden Ring won Game of the Year" is why a
+                reader opens 2022, and "96.64× readership" is the evidence. */}
+            {!!e.recap && (
+              <Text style={s.rowRecap} numberOfLines={2}>
+                {e.recap}
+              </Text>
+            )}
+
             <Text style={s.rowMeta}>
               {[
                 e.spikeRatio !== null && e.spikeRatio > 1 ? `${e.spikeRatio}× readership` : null,
@@ -371,6 +381,17 @@ const s = StyleSheet.create({
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     color: PAPER_TEXT.muted,
+  },
+  // FlameSans and full-strength ink: this is editorial prose, and the numbers
+  // under it are the apparatus. Clamped, so it needs 1.22x — but FlameSans, not
+  // Flame, so 19/14.5 is comfortably clear of it.
+  rowRecap: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14.5,
+    lineHeight: 19,
+    color: COLORS.deepNavy,
+    marginTop: 2,
+    maxWidth: 520,
   },
   rowMeta: {
     fontFamily: 'Nunito_400Regular',

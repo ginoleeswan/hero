@@ -96,3 +96,31 @@ describe('mapEventEdition', () => {
     expect(mapEventEdition({})).toBeNull();
   });
 });
+
+describe('recap — the only editorial field on an edition', () => {
+  it('carries a recap onto the edition, and treats an empty string as absent', () => {
+    // 129 of 142 editions predate the announcement feed and can never get one,
+    // so this line is the only thing that can say what a year WAS. An empty
+    // string has to collapse to null: the page renders the recap in place of the
+    // method note, and '' would blank that paragraph rather than fall back.
+    expect(
+      mapEventEdition({ event: { slug: 'game-awards', headline: 'The Game Awards', recap: 'Elden Ring won Game of the Year.' } })
+        ?.event.recap,
+    ).toBe('Elden Ring won Game of the Year.');
+    expect(mapEventEdition({ event: { slug: 'x', headline: 'X', recap: '' } })?.event.recap).toBeNull();
+    // An unapplied migration returns no `recap` key at all.
+    expect(mapEventEdition({ event: { slug: 'x', headline: 'X' } })?.event.recap).toBeNull();
+  });
+
+  it('carries a recap onto each hub row', () => {
+    const h = mapEventHub({
+      slug: 'game-awards',
+      headline: 'The Game Awards',
+      editions: [
+        { edition_slug: '2022', recap: 'Elden Ring won Game of the Year.' },
+        { edition_slug: '2021' },
+      ],
+    });
+    expect(h?.editions.map((e) => e.recap)).toEqual(['Elden Ring won Game of the Year.', null]);
+  });
+});

@@ -30,6 +30,12 @@ export interface EventEditionSummary {
   liveTo: string | null;
   spikeRatio: number | null;
   peak: number | null;
+  /** One sentence on what actually happened, where it can be stated plainly.
+   *  Editorial, and the only field here that is not a measurement — 129 of the
+   *  142 editions predate the announcement feed and can never get one, so this
+   *  is the only thing that can answer "what happened at D23 2019". Null on any
+   *  edition where the answer would be a guess, and null renders as nothing. */
+  recap: string | null;
   /** Characters whose readership broke out — frozen at the time. */
   movers: number;
   /** Studio uploads inside the window. The "what was announced" count. */
@@ -91,6 +97,7 @@ export function mapEventHub(raw: unknown): EventHub | null {
         liveTo: (e.live_to as string) ?? null,
         spikeRatio: num(e.spike_ratio),
         peak: num(e.peak),
+        recap: typeof e.recap === 'string' && e.recap ? e.recap : null,
         movers: num(e.movers) ?? 0,
         announcements: num(e.announcements) ?? 0,
         faces: (Array.isArray(e.faces) ? (e.faces as Record<string, unknown>[]) : [])
