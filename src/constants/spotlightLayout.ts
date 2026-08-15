@@ -142,7 +142,13 @@ export function spotlightLayout(width: number): SpotlightLayout {
     cardWidth,
     stageHeight,
     tail,
-    detail: tail.length === 0 ? 'lean' : gallery ? 'full' : 'trim',
+    // `full` at duo as well as gallery. `trim` was dropping the first-appearance
+    // line at 1000-1279 — but the panel's height is set by the card deck beside
+    // it, not by its own content, so trimming the copy does not shrink the panel:
+    // it leaves a hole. Measured on an iPad in portrait (1032pt): the stat pills
+    // ended at pt 435 and the panel at pt 581, with 146pt of nothing between
+    // them. The trim tier is for when space is short, and at duo it is not.
+    detail: tail.length === 0 ? 'lean' : 'full',
     // Gallery only. The duo deck fills its stage, so scenery type there is just
     // the name printed twice — see the 2026-08-14 iPad spotlight spec.
     showGhostName: tail.length > 0 && gallery,
