@@ -81,6 +81,9 @@ const SKELETON_DISSOLVE_MS = 480;
 
 const SPOTLIGHT_POOL = 5;
 
+// The height of TodaysMatchup's own heading block — see `engageDaily`.
+const MATCHUP_HEAD_H = 60;
+
 function toRowHero(h: Hero | FavouriteHero): RowHero {
   return { id: h.id, name: h.name, image_url: h.image_url, portrait_url: h.portrait_url };
 }
@@ -907,9 +910,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 16,
   },
-  // Paired with the matchup the banner owns its column's full height, so the
-  // stacked layout's vertical margins would show as a gap inside the row.
-  dailyPaired: { marginTop: 0, marginBottom: 0 },
+  // `tall` fixes the banner's INNER layout — tile and copy up top, CTA pinned
+  // to the bottom. It does not make the banner fill: `bgTall`'s flex: 1 is on
+  // the gradient inside a Pressable that still sizes to its content, so the
+  // outer flex has to arrive through the style prop. Web does the same thing
+  // via `dailyBannerGlass: { flex: 1, … }`. Without it the row stretches the
+  // COLUMN and the card inside still stops short, leaving a gap under the CTA.
+  // The margins go because the banner now owns the column's full height.
+  dailyPaired: { flex: 1, marginTop: 0, marginBottom: 0 },
   // `wide` pairing of TodaysMatchup + the daily banner (see the 'engage' row
   // type above). flex:1 on each half is what makes them split the width evenly
   // minus the gap — neither card is told a width directly.
@@ -920,7 +928,16 @@ const styles = StyleSheet.create({
   // what web's own comment on `engageRow` says it is for.
   engageRow: { flexDirection: 'row', alignItems: 'stretch', gap: ENGAGE_ROW_GAP },
   engageMatchup: { flex: 1.7, minWidth: 0 },
-  engageDaily: { flex: 1, minWidth: 240, maxWidth: 440 },
+  // Offset by the matchup's own header so the two CARDS align, not the two
+  // columns. `TodaysMatchup` carries its "DAILY / Today's Battle" heading
+  // inside the left column and the daily banner has no heading, so stretching
+  // the row alone left the daily card starting 58pt higher than the card it is
+  // paired with — above the heading rather than level with the artwork.
+  //
+  // 60 = section paddingTop 8 + label 12 + gap 2 + title lineHeight 28 +
+  // header marginBottom 10, all from TodaysMatchup's own styles. Spelled out so
+  // it is checkable rather than a number someone nudged until it looked close.
+  engageDaily: { flex: 1, minWidth: 240, maxWidth: 440, paddingTop: MATCHUP_HEAD_H },
   // No transformOrigin — the top anchor is computed in spotlightParallax so it
   // does not depend on a style property we cannot verify is honoured here.
   spotlightWrap: {},
