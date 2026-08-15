@@ -34,6 +34,10 @@ export interface EventEditionSummary {
   movers: number;
   /** Studio uploads inside the window. The "what was announced" count. */
   announcements: number;
+  /** Up to three movers with portraits, in the archive's own ranking. A row of
+   *  faces is what tells a reader what a year was ABOUT — eight lines of
+   *  multiples do not. */
+  faces: { heroId: string; name: string; portraitUrl: string }[];
 }
 
 export interface EventHub {
@@ -49,6 +53,8 @@ export interface EventHub {
   liveTo: string | null;
   shape: string | null;
   spikeRatio: number | null;
+  /** The loudest edition on record, so a row can be drawn in proportion. */
+  bestSpike: number | null;
   editions: EventEditionSummary[];
 }
 
@@ -76,6 +82,7 @@ export function mapEventHub(raw: unknown): EventHub | null {
     liveTo: (r.live_to as string) ?? null,
     shape: (r.shape as string) ?? null,
     spikeRatio: num(r.spike_ratio),
+    bestSpike: num(r.best_spike),
     editions: arr(r.editions)
       .map((e) => ({
         editionSlug: String(e.edition_slug ?? ''),
@@ -86,6 +93,13 @@ export function mapEventHub(raw: unknown): EventHub | null {
         peak: num(e.peak),
         movers: num(e.movers) ?? 0,
         announcements: num(e.announcements) ?? 0,
+        faces: (Array.isArray(e.faces) ? (e.faces as Record<string, unknown>[]) : [])
+          .map((f) => ({
+            heroId: String(f.hero_id ?? ''),
+            name: String(f.name ?? ''),
+            portraitUrl: String(f.portrait_url ?? ''),
+          }))
+          .filter((f) => f.heroId && f.portraitUrl),
       }))
       // An edition with no slug cannot be routed to, so it is not a row.
       .filter((e) => e.editionSlug),

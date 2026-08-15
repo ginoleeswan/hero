@@ -24,6 +24,11 @@ export interface EventIndexListProps {
   /** Viewport height, so a short record still closes on paper rather than
    *  stopping mid-screen and reverting to ink. */
   viewportHeight?: number;
+  /** Override the stage's top padding. The web routes pass a smaller value:
+   *  a 64pt fixed masthead already occupies that zone, so the default —
+   *  which is sized for a native screen with a nav header — stacked on top
+   *  of the route's own offset and left ~120pt of dead ink above the fold. */
+  topPad?: number;
   onEventPress: (slug: string) => void;
 }
 
@@ -103,6 +108,7 @@ export function EventIndexList({
   contentWidth,
   maxContentWidth,
   viewportHeight,
+  topPad,
   onEventPress,
 }: EventIndexListProps) {
   const pad = wide ? EVENT_STAGE.padWide : EVENT_STAGE.pad;
@@ -178,7 +184,7 @@ export function EventIndexList({
             inner,
             {
               paddingHorizontal: pad,
-              paddingTop: wide ? EVENT_STAGE.paddingTopWide : EVENT_STAGE.paddingTop,
+              paddingTop: topPad ?? (wide ? EVENT_STAGE.paddingTopWide : EVENT_STAGE.paddingTop),
             },
           ]}
         >

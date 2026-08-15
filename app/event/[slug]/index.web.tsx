@@ -57,6 +57,7 @@ export default function EventPageWeb() {
               wide={wide}
               contentWidth={width}
               maxContentWidth={900}
+              topPad={14}
               viewportHeight={height}
               onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}
               onHeroPress={(id) => router.push(`/character/${encodeURIComponent(id)}`)}
@@ -81,6 +82,7 @@ export default function EventPageWeb() {
             wide={wide}
             contentWidth={width}
             maxContentWidth={900}
+            topPad={14}
             viewportHeight={height}
             onEditionPress={goEdition}
             onIndexPress={() => router.push('/event')}
@@ -99,7 +101,10 @@ const s = StyleSheet.create({
   screen: { backgroundColor: COLORS.deepNavy, minHeight: '100%' } as object,
   // The web masthead is fixed, so a page that starts at 0 renders underneath it.
   // 84 is the same offset the house page's scrollMarginTop uses.
-  column: { width: '100%', alignSelf: 'center', paddingTop: 84 } as object,
+  // Exactly the fixed masthead's height (TOPBAR_HEIGHT). The stage supplies
+  // the breathing gap via `topPad`; 84 here plus the stage's own 28-44 left
+  // ~120pt of dead ink above every event page's first word.
+  column: { width: '100%', alignSelf: 'center', paddingTop: 64 } as object,
   failed: { alignItems: 'flex-start' },
   retry: {
     marginLeft: 32,

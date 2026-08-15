@@ -13,6 +13,7 @@
 // event. The hub is the thing that accrues; the editions are what it accrues.
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text } from '../ui/Text';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
@@ -26,6 +27,11 @@ export interface EventHubProps {
   contentWidth: number;
   maxContentWidth?: number;
   viewportHeight?: number;
+  /** Override the stage's top padding. The web routes pass a smaller value:
+   *  a 64pt fixed masthead already occupies that zone, so the default —
+   *  which is sized for a native screen with a nav header — stacked on top
+   *  of the route's own offset and left ~120pt of dead ink above the fold. */
+  topPad?: number;
   onEditionPress: (editionSlug: string) => void;
   onIndexPress?: () => void;
 }
@@ -36,6 +42,7 @@ export function EventHub({
   contentWidth,
   maxContentWidth,
   viewportHeight,
+  topPad,
   onEditionPress,
   onIndexPress,
 }: EventHubProps) {
@@ -54,16 +61,20 @@ export function EventHub({
             inner,
             {
               paddingHorizontal: pad,
-              paddingTop: wide ? EVENT_STAGE.paddingTopWide : EVENT_STAGE.paddingTop,
+              paddingTop: topPad ?? (wide ? EVENT_STAGE.paddingTopWide : EVENT_STAGE.paddingTop),
             },
           ]}
         >
-          {/* See EventDossier: status and navigation are different things and
-              must not share one label. */}
+          {/* No "WATCHED EVENT" label. It named the page in a way the mark
+              directly below already does, and cost a whole line at the top of
+              every hub. The live state is worth saying because it changes what
+              the page IS; "watched event" is not. */}
           <View style={s.eyebrowRow}>
-            <Text style={[s.eyebrow, { color: accent }]}>
-              {hub.isLive ? 'Happening now' : 'Watched event'}
-            </Text>
+            {hub.isLive ? (
+              <Text style={[s.eyebrow, { color: accent }]}>Happening now</Text>
+            ) : (
+              <View />
+            )}
             {!!onIndexPress && (
               <Pressable
                 onPress={onIndexPress}
@@ -123,7 +134,12 @@ export function EventHub({
               live.
             </Text>
           ) : (
-            <EditionList editions={hub.editions} accent={accent} onEditionPress={onEditionPress} />
+            <EditionList
+              editions={hub.editions}
+              accent={accent}
+              bestSpike={hub.bestSpike}
+              onEditionPress={onEditionPress}
+            />
           )}
         </View>
       </View>
@@ -141,47 +157,76 @@ export function EventHub({
 export function EditionList({
   editions,
   accent,
+  bestSpike,
   onEditionPress,
 }: {
   editions: Hub['editions'];
   accent: string;
+  /** The event's loudest edition, for drawing each row in proportion. */
+  bestSpike?: number | null;
   onEditionPress: (editionSlug: string) => void;
 }) {
   return (
     <View style={s.list}>
-      {editions.map((e) => (
-        <Pressable
-          key={e.editionSlug}
-          style={s.row}
-          onPress={() => onEditionPress(e.editionSlug)}
-          accessibilityRole="button"
-          accessibilityLabel={`${e.headline} ${e.editionSlug}`}
-        >
-          <View style={s.rowMain}>
-            <Text style={[s.year, { color: accent }]}>{e.editionSlug}</Text>
-            <Text style={s.rowWindow}>{formatWindow(e.liveFrom, e.liveTo) ?? '—'}</Text>
-          </View>
-          <Text style={s.rowMeta}>
-            {/* Counts rather than adjectives: they are what tells a reader which
-                year is worth opening. */}
-            {[
-              // Only when it is actually a rise. A frozen edition can hold a
-              // ratio BELOW 1 — SDCC 2026 was detected at 3.35x and its stored
-              // figure is 0.82, because the spike rolled out of the rolling
-              // 27-day curve before the edition was captured. "0.82x readership"
-              // on a page about an event reads as a broken number, and it is
-              // not a fact worth leading a row with either way.
-              e.spikeRatio !== null && e.spikeRatio > 1 ? `${e.spikeRatio}× readership` : null,
-              e.announcements > 0
-                ? `${e.announcements} announcement${e.announcements === 1 ? '' : 's'}`
-                : null,
-              e.movers > 0 ? `${e.movers} moved` : null,
-            ]
-              .filter(Boolean)
-              .join('  ·  ')}
-          </Text>
-        </Pressable>
-      ))}
+      {editions.map((e) => {
+        // Drawn in proportion to this event's own loudest year, so the reader
+        // can see which editions mattered without reading two decimals off
+        // eight near-identical lines. Floored at 6% so a quiet year is still a
+        // mark rather than nothing.
+        const share =
+          bestSpike && e.spikeRatio ? Math.max(0.06, Math.min(1, e.spikeRatio / bestSpike)) : 0;
+        return (
+          <Pressable
+            key={e.editionSlug}
+            style={s.row}
+            onPress={() => onEditionPress(e.editionSlug)}
+            accessibilityRole="button"
+            accessibilityLabel={`${e.headline} ${e.editionSlug}`}
+          >
+            <View style={s.rowTop}>
+              <View style={s.rowMain}>
+                <Text style={[s.year, { color: accent }]}>{e.editionSlug}</Text>
+                <Text style={s.rowWindow}>{formatWindow(e.liveFrom, e.liveTo) ?? '—'}</Text>
+              </View>
+              {/* The faces say what the year was about. Eight lines of
+                  multiples do not, and this is the hub's only route into a
+                  character page. */}
+              {e.faces.length > 0 && (
+                <View style={s.faces}>
+                  {e.faces.map((f, i) => (
+                    <Image
+                      key={f.heroId}
+                      source={{ uri: f.portraitUrl }}
+                      style={[s.face, i > 0 && s.faceOverlap]}
+                      contentFit="cover"
+                      transition={160}
+                      accessibilityLabel={f.name}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+
+            <Text style={s.rowMeta}>
+              {[
+                e.spikeRatio !== null && e.spikeRatio > 1 ? `${e.spikeRatio}× readership` : null,
+                e.announcements > 0
+                  ? `${e.announcements} announcement${e.announcements === 1 ? '' : 's'}`
+                  : null,
+                e.movers > 0 ? `${e.movers} moved` : null,
+              ]
+                .filter(Boolean)
+                .join('  ·  ')}
+            </Text>
+
+            {share > 0 && (
+              <View style={s.barTrack}>
+                <View style={[s.barFill, { width: `${share * 100}%`, backgroundColor: accent }]} />
+              </View>
+            )}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -269,6 +314,21 @@ const s = StyleSheet.create({
 
   list: { marginTop: 20, gap: 2 },
   row: { paddingVertical: 14, borderTopWidth: 1, borderTopColor: 'rgba(11,24,32,0.10)', gap: 4 },
+  rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  // Overlapped, like a credits strip — three separate circles read as three
+  // things, an overlapped set reads as "the cast of that year".
+  faces: { flexDirection: 'row', alignItems: 'center' },
+  face: { width: 30, height: 30, borderRadius: 999, backgroundColor: '#00000012' },
+  faceOverlap: { marginLeft: -9 },
+  barTrack: {
+    height: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(11,24,32,0.07)',
+    marginTop: 10,
+    overflow: 'hidden',
+  },
+  barFill: { height: 3, borderRadius: 999, opacity: 0.75 },
+
   rowMain: { flexDirection: 'row', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' },
   year: { fontFamily: 'Flame-Regular', fontSize: 23, lineHeight: 30 },
   rowWindow: {

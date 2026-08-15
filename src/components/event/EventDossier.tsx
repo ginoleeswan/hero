@@ -40,6 +40,11 @@ export interface EventDossierProps {
   maxContentWidth?: number;
   /** Viewport height, so a thin dossier still closes on paper. */
   viewportHeight?: number;
+  /** Override the stage's top padding. The web routes pass a smaller value:
+   *  a 64pt fixed masthead already occupies that zone, so the default —
+   *  which is sized for a native screen with a nav header — stacked on top
+   *  of the route's own offset and left ~120pt of dead ink above the fold. */
+  topPad?: number;
   onTitlePress: (titleId: string) => void;
   onHeroPress: (heroId: string) => void;
   /** Two revealed characters → the Arena. Optional: the section renders without
@@ -57,6 +62,7 @@ export function EventDossier({
   contentWidth,
   maxContentWidth,
   viewportHeight,
+  topPad,
   onTitlePress,
   onHeroPress,
   onArenaPress,
@@ -123,7 +129,7 @@ export function EventDossier({
             inner,
             {
               paddingHorizontal: pad,
-              paddingTop: wide ? EVENT_STAGE.paddingTopWide : EVENT_STAGE.paddingTop,
+              paddingTop: topPad ?? (wide ? EVENT_STAGE.paddingTopWide : EVENT_STAGE.paddingTop),
             },
           ]}
         >
