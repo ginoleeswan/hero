@@ -37,6 +37,7 @@ import type { DebutIssue } from '../../lib/db/anniversaries';
 import { computeFreshness } from '../../lib/home/freshness';
 import type { PulseEvent } from '../../lib/home/pulse';
 import { railCardWidth } from '../../constants/layout';
+import { sectionGap } from './homeGeometry';
 
 type HeroPress = (item: {
   id: string;
@@ -269,6 +270,9 @@ export function RightNowBand({
   onArchivePress,
   disabled = false,
 }: RightNowBandProps) {
+  // Above the early return — the band bails out when it has nothing to show,
+  // and a hook after that would run conditionally.
+  const { width } = useWindowDimensions();
   const hasAny =
     !!campaign ||
     onScreen.length > 0 ||
@@ -299,8 +303,12 @@ export function RightNowBand({
     ? { name: wikiTrending[0].name, spikePct: wikiTrending[0].spikePct }
     : null;
 
+  // The band's top padding IS the boundary under the ticker — one number from
+  // the same scale as every other dark-stage boundary (see sectionGap).
+  const gap = sectionGap(width, { top: 20, bottom: 18 });
+
   return (
-    <View style={bandStyles.band}>
+    <View style={[bandStyles.band, { paddingTop: gap.top }]}>
       <View style={bandStyles.header}>
         {/* Freshness belongs beside the kicker — it describes THIS band. That
             frees the right edge for one navigational affordance, which is where
@@ -368,8 +376,10 @@ export function RightNowBand({
 
 const bandStyles = StyleSheet.create({
   band: {
+    // paddingTop is the section boundary and comes from sectionGap(); the
+    // bottom is internal to the band, not a boundary — the beige Library seam
+    // follows it, and that seam is a device of its own.
     backgroundColor: COLORS.deepNavy,
-    paddingTop: 20,
     paddingBottom: 18,
     marginBottom: 8,
   },

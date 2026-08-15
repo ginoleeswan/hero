@@ -17,7 +17,7 @@ import { SpotlightDeckCard } from './SpotlightDeckCard';
 import { SpotlightGlow } from './SpotlightGlow';
 import { SpotlightProgress } from './SpotlightProgress';
 import { deckCards, resolveActiveIndex } from './deckSelection';
-import { spotlightLayout } from '../../constants/spotlightLayout';
+import { spotlightLayout, summaryLineBudget } from '../../constants/spotlightLayout';
 import { COLORS, EYEBROW, INK_TEXT } from '../../constants/colors';
 import { brandForPublisher } from '../../constants/publishers';
 import { ALIGNMENT_LABELS } from '../../lib/characterTaxonomy';
@@ -104,6 +104,10 @@ export function SpotlightDeck({
   // full AUTOPLAY_MS from the moment of the touch rather than handing the
   // rest of whatever dwell was already in flight.
   const [interactionTick, setInteractionTick] = useState(0);
+  // The name is the only variable-height element above the summary, and the
+  // summary's line budget is what is left after it — see summaryLineBudget.
+  // Measured rather than guessed: onTextLayout reports the laid-out lines.
+  const [nameLines, setNameLines] = useState(1);
   const bumpInteraction = useCallback(() => setInteractionTick((t) => t + 1), []);
 
   const step = useCallback(
@@ -294,7 +298,11 @@ export function SpotlightDeck({
               accessibilityRole="link"
               accessibilityLabel={`View ${hero.name}`}
             >
-              <Text style={styles.name} numberOfLines={2}>
+              <Text
+                style={styles.name}
+                numberOfLines={2}
+                onTextLayout={(e) => setNameLines(e.nativeEvent.lines.length)}
+              >
                 {hero.name}
               </Text>
             </Pressable>
@@ -316,7 +324,10 @@ export function SpotlightDeck({
               )}
             </View>
             {hasSummary && (
-              <Text style={styles.summary} numberOfLines={detail === 'full' ? 4 : 3}>
+              <Text
+                style={styles.summary}
+                numberOfLines={detail === 'full' ? summaryLineBudget(stageHeight, nameLines) : 3}
+              >
                 {hero.summary}
               </Text>
             )}

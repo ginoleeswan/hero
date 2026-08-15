@@ -4,7 +4,7 @@
 // PulseTicker's content (the web one uses a raw-DOM CSS keyframe; native drives
 // it with Reanimated instead).
 import { useEffect, useState } from 'react';
-import { View, StyleSheet, type LayoutChangeEvent } from 'react-native';
+import { View, StyleSheet, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { Text } from '../ui/Text';
 import Animated, {
   useSharedValue,
@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useScreenFocused } from '../../hooks/useScreenFocused';
 import { COLORS } from '../../constants/colors';
+import { sectionGap } from './homeGeometry';
 
 interface PulseTickerProps {
   heroCount: number;
@@ -69,8 +70,14 @@ export function PulseTicker({ heroCount, newlyAddedCount }: PulseTickerProps) {
 
   const style = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }] }));
 
+  // The bar is full-bleed and orange, so the boundary above it is the loudest
+  // on the page — and it was the tightest, at 12.5pt. On a tablet it owns that
+  // gap; on a phone the section above still supplies it and this is 0.
+  const { width } = useWindowDimensions();
+  const gap = sectionGap(width, { top: 0, bottom: 0 });
+
   return (
-    <View style={s.wrap} pointerEvents="none">
+    <View style={[s.wrap, { marginTop: gap.top }]} pointerEvents="none">
       <Animated.View style={[s.track, style]}>
         <Text style={s.text} numberOfLines={1} onLayout={onCopyLayout}>
           {text}

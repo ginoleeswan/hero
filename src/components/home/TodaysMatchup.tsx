@@ -15,7 +15,7 @@ import { nativeShare, shareLink, vsShareLine } from '../../lib/share';
 import { crowdSplit, statLead, type MatchupSide } from '../../lib/home/matchupVote';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 import type { TodaysMatchup as Matchup } from '../../lib/matchup';
-import { MATCHUP_CARD, matchupCard } from './homeGeometry';
+import { MATCHUP_CARD, matchupCard, sectionGap } from './homeGeometry';
 
 const PORTRAIT = MATCHUP_CARD.portrait;
 
@@ -75,6 +75,7 @@ export function TodaysMatchup({
   // them. Phone keeps the tuned 15 the static styles below used to hardcode.
   const { width } = useWindowDimensions();
   const { hMargin } = matchupCard(width);
+  const gap = sectionGap(width, { top: 8, bottom: 12 });
 
   // Add a haptic tap to the shared vote handler on native (only on a fresh vote).
   const vote = useCallback(
@@ -107,7 +108,7 @@ export function TodaysMatchup({
     : statLead(winsA, winsB, heroA.name, heroB.name);
 
   return (
-    <View style={m.section}>
+    <View style={{ paddingTop: gap.top, paddingBottom: gap.bottom }}>
       <View style={[m.header, { paddingHorizontal: hMargin }]}>
         <View style={m.headerText}>
           <Text style={m.label}>Daily</Text>
@@ -197,7 +198,10 @@ export function TodaysMatchup({
 }
 
 const m = StyleSheet.create({
-  section: { paddingTop: 8, paddingBottom: 12 },
+  // No `section` entry: its padding is the section boundary, which is width-
+  // aware now (see sectionGap). Keeping a static copy here as well as passing
+  // the phone values to sectionGap() would be the same number in two places —
+  // which is how the four boundaries drifted apart in the first place.
   header: {
     marginBottom: 10,
     flexDirection: 'row',

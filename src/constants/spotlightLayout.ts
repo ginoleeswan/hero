@@ -65,6 +65,37 @@ function clamp(min: number, v: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }
 
+/** The panel's furniture at `full` detail, with a one-line name — padding,
+ *  eyebrow, name, alias, chips, stat pills, first appearance and the pager.
+ *  Measured on an iPad in portrait on 2026-08-15: a 509pt stage carried a
+ *  four-line summary (4 x 22 + 20 marginBottom) and 45pt of nothing, so the
+ *  furniture is 509 - 108 - 45. */
+const PANEL_FIXED = 356;
+/** `summary` lineHeight + its marginBottom, and `name` lineHeight. */
+const SUMMARY_LINE = 22;
+const SUMMARY_MARGIN = 20;
+const NAME_LINE = 47;
+
+/**
+ * How many lines of the summary the panel has room for.
+ *
+ * The panel's height is set by the card deck beside it, not by its own
+ * content, so surplus height cannot shrink the panel — it shows up as a hole
+ * above the bottom-pinned pager. The summary is the only elastic thing in
+ * there, so the surplus is its to take.
+ *
+ * `nameLines` is why this is not a constant: the name is 38pt Flame and wraps
+ * to two lines for about half the featured pool, which costs 47pt — nearly
+ * the whole surplus. Sizing for the worst case would clamp a one-line name's
+ * summary to 3 lines and leave the hole; sizing for the best case would clip
+ * the pager off a two-line name's panel, since the glass is `overflow:
+ * hidden`. So the caller measures the name with `onTextLayout` and asks.
+ */
+export function summaryLineBudget(stageHeight: number, nameLines: number): number {
+  const room = stageHeight - PANEL_FIXED - SUMMARY_MARGIN - (nameLines - 1) * NAME_LINE;
+  return clamp(2, Math.floor(room / SUMMARY_LINE), 8);
+}
+
 /** Fit the taper into the space left beside the active card, widest first. */
 function buildTail(cardWidth: number, space: number): number[] {
   const tail: number[] = [];

@@ -47,7 +47,7 @@ import {
 import { HomeSkeleton, MatchupSkeleton } from '../../src/components/skeletons/HomeSkeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { SpotlightCarousel, spotlightHeight } from '../../src/components/home/SpotlightCarousel';
-import { ENGAGE_ROW_GAP, SPOTLIGHT } from '../../src/components/home/homeGeometry';
+import { ENGAGE_ROW_GAP, SECTION_GAP, SPOTLIGHT } from '../../src/components/home/homeGeometry';
 import { PaperSurface } from '../../src/components/home/PaperSurface';
 import { rowStyle } from '../../src/lib/home/rowStyle';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
@@ -82,7 +82,11 @@ const SKELETON_DISSOLVE_MS = 480;
 const SPOTLIGHT_POOL = 5;
 
 // The height of TodaysMatchup's own heading block — see `engageDaily`.
-const MATCHUP_HEAD_H = 60;
+// SECTION_GAP is its section paddingTop: this row only renders at `wide`,
+// which is always a tablet, so sectionGap() has already resolved there. The
+// other 52 is label 12 + gap 2 + title lineHeight 28 + header marginBottom 10,
+// all from TodaysMatchup's own styles.
+const MATCHUP_HEAD_H = SECTION_GAP + 52;
 
 function toRowHero(h: Hero | FavouriteHero): RowHero {
   return { id: h.id, name: h.name, image_url: h.image_url, portrait_url: h.portrait_url };
@@ -940,9 +944,8 @@ const styles = StyleSheet.create({
   // the row alone left the daily card starting 58pt higher than the card it is
   // paired with — above the heading rather than level with the artwork.
   //
-  // 60 = section paddingTop 8 + label 12 + gap 2 + title lineHeight 28 +
-  // header marginBottom 10, all from TodaysMatchup's own styles. Spelled out so
-  // it is checkable rather than a number someone nudged until it looked close.
+  // MATCHUP_HEAD_H spells out where the number comes from, so it stays
+  // checkable rather than being a value someone nudged until it looked close.
   engageDaily: { flex: 1, minWidth: 240, maxWidth: 440, paddingTop: MATCHUP_HEAD_H },
   // No transformOrigin — the top anchor is computed in spotlightParallax so it
   // does not depend on a style property we cannot verify is honoured here.

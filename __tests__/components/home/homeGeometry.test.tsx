@@ -32,6 +32,8 @@ import {
   matchupCard,
   MATCHUP_CARD,
   publisherGrid,
+  sectionGap,
+  SECTION_GAP,
 } from '../../../src/components/home/homeGeometry';
 
 // SpotlightCarousel pulls in react-native-reanimated-carousel purely for its
@@ -153,4 +155,37 @@ describe('DailyChallengeBanner — reads the shared gutter, not a hardcoded one'
       expect(cardMargin()).toBe(spotlightLayout(width).gutter);
     },
   );
+});
+
+// The vertical counterpart of the gutter unification above. Measured down an
+// iPad in portrait, the four dark-stage boundaries were 23.5 / 18.5 / 12.5 /
+// 28pt — additive sums of a bottom padding and a top padding, so no component
+// owned the number it was half of. sectionGap makes the tablet boundary one
+// number owned by the section below; the phone keeps every tuned value.
+describe('sectionGap', () => {
+  const PHONE = { top: 8, bottom: 12 };
+
+  it.each([320, 390, 430, 699])('returns the phone pair untouched at %dpt', (width) => {
+    expect(sectionGap(width, PHONE)).toEqual(PHONE);
+  });
+
+  it.each([700, 1032, 1194, 1376])('is SECTION_GAP on top and nothing below at %dpt', (width) => {
+    expect(sectionGap(width, PHONE)).toEqual({ top: SECTION_GAP, bottom: 0 });
+  });
+
+  // The boundary is the section below's top plus the section above's bottom.
+  // Zeroing the bottom is what makes that sum a single number — without it the
+  // tablet boundary would be 24 + whatever the section above happened to use.
+  it('sums to exactly SECTION_GAP between two adjacent sections', () => {
+    const above = sectionGap(1032, { top: 8, bottom: 12 });
+    const below = sectionGap(1032, { top: 20, bottom: 18 });
+    expect(above.bottom + below.top).toBe(SECTION_GAP);
+  });
+
+  it('leaves publisherGrid a bottom pad on a phone and none on a tablet', () => {
+    expect(publisherGrid(390).paddingBottom).toBe(6);
+    expect(publisherGrid(1032).paddingBottom).toBe(0);
+    // Its TOP is the billboard seam, not a boundary, so it does not move.
+    expect(publisherGrid(390).paddingTop).toBe(publisherGrid(1032).paddingTop);
+  });
 });

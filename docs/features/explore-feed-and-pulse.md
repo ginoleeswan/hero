@@ -293,6 +293,23 @@ tablet widths are unified. Adopted by `browseHead`, `seeAllRow`, `sponsorWrap`
 and `footer` in `app/(tabs)/explore.tsx`, plus `HallOfFame`, `FeaturedRivalry`
 and `CategoryPodGrid`.
 
+**`sectionGap(width, phone)` (`src/components/home/homeGeometry.ts`) is the
+vertical counterpart** — the same shape, the same reason. Measured down an iPad
+in portrait, the four dark-stage boundaries were **23.5 / 18.5 / 12.5 / 28pt**,
+and the tightest one separated the two loudest elements on the page: the engage
+cards and the full-bleed orange ticker. They were four numbers rather than one
+because the boundary was **additive** — the section above contributed a bottom
+padding and the section below a top padding, so no component could see, let
+alone set, the gap it was half of.
+
+At tablet widths the boundary is therefore owned entirely by the section
+**below** it: every section pads its top by `SECTION_GAP` (24) and pads its
+bottom by nothing. Adopted by `TodaysMatchup`, `PulseTicker` and
+`RightNowBand`, with `publisherGrid()` zeroing its bottom. The billboard seam
+is deliberately **not** one of them — the deck's bottom gap, the stage's -14
+overlap and the pods' top padding compose a design device that already measures
+23.5pt. Phone values pass through untouched, and the test asserts that.
+
 **Rails still bleed past it.** The gutter is for non-rail sections; a
 horizontal rail keeps its own inset and scrolls to the physical edge, which is
 the rule in CLAUDE.md and is not an exception to this one.
@@ -591,7 +608,25 @@ below), real name, publisher + alignment chip, summary, INT/STR/SPD stat
 pills, first appearance (`gallery` only, via `detail === 'full'`), and a plate
 number (`03 / 08`) beside the reused `SpotlightProgress` dwell rail. What the
 panel carries shrinks with `layout.detail` (`full` → `trim` → `lean`) as the
-state narrows. It has **no "View Profile" CTA** — a deliberate native
+state narrows.
+
+**The panel's height comes from the card deck beside it, not from its own
+content** — which is why trimming its copy does not shrink it, it just leaves a
+hole above the bottom-pinned pager. Two measured faults came out of that. At
+`duo` the panel was dropping the first-appearance line for space it in fact
+had, leaving 146pt of nothing; `detail` is now `full` at `duo` as well as
+`gallery`. And the summary was clamped to a fixed four lines with 45pt still
+empty beneath it — `summaryLineBudget(stageHeight, nameLines)`
+(`src/constants/spotlightLayout.ts`) now hands the surplus to the summary,
+which is the only elastic thing in the panel. `nameLines` is a parameter, not a
+constant, because the 38pt Flame name wraps to two lines for much of the
+featured pool and costs 47pt — nearly the whole surplus. The panel is
+`overflow: hidden`, so over-granting clips the pager rather than overflowing
+visibly; the component measures the name with `onTextLayout` and asks. Residual
+slack is content-driven (a hero with no `full_name`, or a short `summary`) and
+cannot be closed by layout.
+
+It has **no "View Profile" CTA** — a deliberate native
 divergence from web's `duo`/`gallery` panels: the card is already a ~280×500pt
 touch target and the name is a link, so a button beside it would be the same
 instruction printed twice.

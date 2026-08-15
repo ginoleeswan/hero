@@ -82,7 +82,12 @@ export function PublisherGrid({
     );
   }
   return (
-    <View style={[styles.grid, { paddingHorizontal: g.hPad }]}>
+    <View
+      style={[
+        styles.grid,
+        { paddingHorizontal: g.hPad, paddingTop: g.paddingTop, paddingBottom: g.paddingBottom },
+      ]}
+    >
       {FEATURED_PUBLISHERS.map((p) => (
         <Tile key={p.slug} publisher={p} width={g.tileWidth} onPress={() => onPress(p.slug)} />
       ))}
@@ -127,12 +132,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(41,60,67,0.5)',
   },
+  // paddingTop/Bottom come from publisherGrid(width) — they are width-aware
+  // now that the section boundary below is owned by the section below.
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: GAP,
-    paddingTop: 12,
-    paddingBottom: 6,
   },
   // Clean translucent panel (matches the web desktop pods / engage cards).
   tile: {

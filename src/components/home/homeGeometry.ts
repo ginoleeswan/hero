@@ -24,6 +24,35 @@ import { heroImageAspect, isTabletWidth, pagePadding, railCardWidth } from '../.
 export const FEED_H_PAD = 15;
 export const feedHPad = (width: number): number => pagePadding(width);
 
+/** The one vertical boundary between two dark-stage sections. */
+export const SECTION_GAP = 24;
+
+/**
+ * The gap a dark-stage section leaves above and below itself.
+ *
+ * Measured down an iPad in portrait on 2026-08-15, the four boundaries were
+ * 23.5 / 18.5 / 12.5 / 28pt — four numbers from four components, none of them
+ * from a scale, and the tightest one separated the two loudest elements on the
+ * page (the engage cards and the full-bleed orange ticker). They were four
+ * numbers rather than one because the boundary was ADDITIVE: the section above
+ * contributed a bottom padding and the section below a top padding, so no
+ * component could see, let alone set, the gap it was half of.
+ *
+ * So on a tablet the boundary is owned entirely by the section BELOW it —
+ * every section pads its top by `SECTION_GAP` and pads its bottom by nothing —
+ * which is what makes the four boundaries one number instead of four sums.
+ *
+ * The phone keeps each component's own tuned pair, passed in and returned
+ * untouched below the threshold, so the phone feed cannot move. Same shape as
+ * `sectionGutter` in constants/layout.ts, which unified the horizontal gutters.
+ */
+export function sectionGap(
+  width: number,
+  phone: { top: number; bottom: number },
+): { top: number; bottom: number } {
+  return isTabletWidth(width) ? { top: SECTION_GAP, bottom: 0 } : phone;
+}
+
 /** SpotlightCarousel — the full-bleed billboard. */
 export const SPOTLIGHT = {
   /** insetTop + half the screen. The carousel's exported spotlightHeight()
@@ -69,8 +98,13 @@ export function publisherGrid(width: number) {
     tileWidth: (width - hPad * 2 - gap * (columns - 1)) / columns,
     tileMinHeight: 84,
     radius: 16,
+    // The deck's bottom gap, the stage's -14 overlap and this padding compose
+    // the SEAM out of the billboard's fade — a design device, not a section
+    // boundary, which is why sectionGap() does not own it (it measures 23.5pt,
+    // already on the scale). The bottom is a boundary, though, and on a tablet
+    // the section below owns it.
     paddingTop: 12,
-    paddingBottom: 6,
+    paddingBottom: isTabletWidth(width) ? 0 : 6,
   };
 }
 

@@ -1,4 +1,4 @@
-import { spotlightLayout } from '../../src/constants/spotlightLayout';
+import { spotlightLayout, summaryLineBudget } from '../../src/constants/spotlightLayout';
 
 // The layout's job is to hold a set of promises at EVERY width, so the tests
 // are those promises rather than a table of expected numbers.
@@ -97,5 +97,41 @@ describe('spotlightLayout', () => {
       expect(rank).toBeLessThanOrEqual(previous);
       previous = rank;
     }
+  });
+});
+
+// The panel's height comes from the card deck beside it, not from its own
+// content, so surplus height cannot shrink the panel — it lands as a hole
+// above the bottom-pinned pager. Measured on an iPad in portrait (a 509pt
+// stage): 45pt of nothing under the first-appearance line while the summary
+// was clamped to four. The summary is the only elastic thing in the panel, so
+// the surplus is its to take — but the panel is `overflow: hidden`, so
+// over-granting clips the pager off the bottom instead.
+describe('summaryLineBudget', () => {
+  // The measured stage on an iPad in portrait at 1032pt.
+  const STAGE = spotlightLayout(1032).stageHeight;
+
+  it('gives a one-line name more than the four it used to be fixed at', () => {
+    expect(summaryLineBudget(STAGE, 1)).toBeGreaterThan(4);
+  });
+
+  it('takes lines back when the name wraps, rather than clipping the pager', () => {
+    expect(summaryLineBudget(STAGE, 2)).toBeLessThan(summaryLineBudget(STAGE, 1));
+  });
+
+  // The budget's whole job: whatever it grants must still FIT. Reconstructing
+  // the panel's height from the same parts the budget subtracts is what pins
+  // that — a budget that overshoots by one line is invisible in a green suite
+  // and clips the pager on a device.
+  it.each([
+    [1, 1],
+    [2, 2],
+  ])('fits inside the stage with a %d-line name', (nameLines) => {
+    const used = 356 + (nameLines - 1) * 47 + summaryLineBudget(STAGE, nameLines) * 22 + 20;
+    expect(used).toBeLessThanOrEqual(STAGE);
+  });
+
+  it('never drops below two lines, however short the stage', () => {
+    expect(summaryLineBudget(300, 2)).toBe(2);
   });
 });
