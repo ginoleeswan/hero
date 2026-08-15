@@ -13,6 +13,7 @@ import { EventDossier } from '../../../src/components/event/EventDossier';
 import { EventHub, EditionList } from '../../../src/components/event/EventHub';
 import { useEventDossier } from '../../../src/hooks/useEventDossier';
 import { useEventHub } from '../../../src/hooks/useEventEditions';
+import { PageEndCap } from '../../../src/components/web/PageEndCap';
 
 export default function EventPageWeb() {
   const router = useRouter();
@@ -83,6 +84,10 @@ export default function EventPageWeb() {
           />
         ) : null}
       </View>
+      {/* Closes the beige sheet onto the app's ink floor. Without it the page
+          ended on raw beige, which in an iOS Safari tab puts a hard beige→navy
+          cut right under the toolbar — the exact case PageEndCap documents. */}
+      {(hub || dossier) && <PageEndCap />}
     </View>
   );
 }

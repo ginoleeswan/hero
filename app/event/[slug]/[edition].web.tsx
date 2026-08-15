@@ -8,6 +8,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS, INK_TEXT } from '../../../src/constants/colors';
 import { EventDossier } from '../../../src/components/event/EventDossier';
 import { useEventEdition } from '../../../src/hooks/useEventEditions';
+import { PageEndCap } from '../../../src/components/web/PageEndCap';
 
 export default function EventEditionPageWeb() {
   const router = useRouter();
@@ -59,6 +60,7 @@ export default function EventEditionPageWeb() {
           />
         )}
       </View>
+      {!!dossier && <PageEndCap />}
     </View>
   );
 }

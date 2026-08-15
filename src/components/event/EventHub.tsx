@@ -13,6 +13,7 @@
 // event. The hub is the thing that accrues; the editions are what it accrues.
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text } from '../ui/Text';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import { EVENT_STAGE } from '../../constants/eventGeometry';
@@ -57,17 +58,25 @@ export function EventHub({
             },
           ]}
         >
-          {onIndexPress ? (
-            <Pressable onPress={onIndexPress} accessibilityRole="link">
-              <Text style={[s.eyebrow, { color: accent }]}>
-                {(hub.isLive ? 'Happening now' : 'Watched event') + '  ·  All events'}
-              </Text>
-            </Pressable>
-          ) : (
+          {/* See EventDossier: status and navigation are different things and
+              must not share one label. */}
+          <View style={s.eyebrowRow}>
             <Text style={[s.eyebrow, { color: accent }]}>
               {hub.isLive ? 'Happening now' : 'Watched event'}
             </Text>
-          )}
+            {!!onIndexPress && (
+              <Pressable
+                onPress={onIndexPress}
+                style={[s.indexLink, { borderColor: `${accent}55` }]}
+                accessibilityRole="link"
+                accessibilityLabel="All events"
+                hitSlop={8}
+              >
+                <Text style={[s.indexLinkText, { color: accent }]}>All events</Text>
+                <Ionicons name="chevron-forward" size={12} color={accent} />
+              </Pressable>
+            )}
+          </View>
 
           {brand ? (
             <View style={s.markBox}>
@@ -179,6 +188,27 @@ export function EditionList({
 
 const s = StyleSheet.create({
   stage: { backgroundColor: SURFACE.ink, overflow: 'hidden', paddingBottom: 34 },
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  indexLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 5,
+    paddingHorizontal: 11,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginBottom: EVENT_STAGE.eyebrowGap,
+  },
+  indexLinkText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.4,
+  },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,

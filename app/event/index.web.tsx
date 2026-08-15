@@ -7,6 +7,7 @@ import { Text } from '../../src/components/ui/Text';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../src/constants/colors';
 import { EventIndexList } from '../../src/components/event/EventIndexList';
+import { PageEndCap } from '../../src/components/web/PageEndCap';
 import { useEventIndex } from '../../src/hooks/useEventDossier';
 
 export default function EventIndexPageWeb() {
@@ -31,6 +32,7 @@ export default function EventIndexPageWeb() {
           />
         )}
       </View>
+      {!!index && <PageEndCap />}
     </View>
   );
 }

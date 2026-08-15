@@ -7,6 +7,7 @@ import { View, StyleSheet, Pressable, FlatList, useWindowDimensions } from 'reac
 import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -301,10 +302,27 @@ export function RightNowBand({
   return (
     <View style={bandStyles.band}>
       <View style={bandStyles.header}>
+        {/* Freshness belongs beside the kicker — it describes THIS band. That
+            frees the right edge for one navigational affordance, which is where
+            a reader looks for one. It was a 104px card at the end of a
+            horizontal rail, i.e. only findable by someone who had already
+            scrolled past everything it was competing with. */}
         <PulseDot animate={fresh.pulse} />
         <Text style={bandStyles.kicker}>Right Now</Text>
-        <View style={{ flex: 1 }} />
         {!!fresh.label && <Text style={bandStyles.fresh}>{fresh.label}</Text>}
+        <View style={{ flex: 1 }} />
+        {!!onArchivePress && (
+          <Pressable
+            onPress={onArchivePress}
+            style={bandStyles.archiveLink}
+            accessibilityRole="link"
+            accessibilityLabel="All events"
+            hitSlop={8}
+          >
+            <Text style={bandStyles.archiveText}>All events</Text>
+            <Ionicons name="chevron-forward" size={12} color={COLORS.beige} />
+          </Pressable>
+        )}
       </View>
 
       <PulseRail
@@ -313,7 +331,6 @@ export function RightNowBand({
         onTitlePress={onTitlePress}
         onIssuePress={onIssuePress}
         onEventPress={onEventPress}
-        onArchivePress={onArchivePress}
         onHeroPress={onHeroPress}
         disabled={disabled}
       />
@@ -379,6 +396,19 @@ const bandStyles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: INK_TEXT.faint,
+  },
+  archiveLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 4,
+    paddingLeft: 8,
+  },
+  archiveText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.4,
+    color: COLORS.beige,
   },
   shelfHeader: {
     flexDirection: 'row',

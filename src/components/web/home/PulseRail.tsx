@@ -8,7 +8,6 @@ import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Text } from '../../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { COLORS, ELEVATION, HOVER_TRANSITION, INK_TEXT } from '../../../constants/colors';
 import { brandForEvent, fitMark } from '../../../constants/eventBrands';
 import type { PulseEvent, PulseKind } from '../../../lib/home/pulse';
@@ -40,10 +39,6 @@ export interface PulseRailProps {
   onEventPress?: (slug: string) => void;
   /** A surge → the character whose face fronts it. */
   onHeroPress?: (hero: { id: string; portrait_url?: string | null }) => void;
-  /** The event archive at /event. Optional: when omitted the rail ends at the
-   *  last card exactly as before. It exists because /event had NO inbound link
-   *  anywhere in the app — the index was reachable only by typing the URL. */
-  onArchivePress?: () => void;
   /** Page gutter so the rail's first card lines up with the band's other content. */
   gutter?: number;
 }
@@ -55,7 +50,6 @@ export function PulseRail({
   onIssuePress,
   onHeroPress,
   onEventPress,
-  onArchivePress,
   gutter = 16,
 }: PulseRailProps) {
   if (events.length === 0) return null;
@@ -204,17 +198,6 @@ export function PulseRail({
             </Pressable>
           );
         })}
-        {onArchivePress ? (
-          <Pressable
-            style={s.archive as object}
-            onPress={onArchivePress}
-            accessibilityRole="button"
-            accessibilityLabel="All events"
-          >
-            <Ionicons name="arrow-forward" size={18} color={COLORS.goldAccent} />
-            <Text style={s.archiveLabel as object}>All events</Text>
-          </Pressable>
-        ) : null}
       </ScrollView>
     </View>
   );
@@ -289,25 +272,6 @@ const live = StyleSheet.create({
 const s = StyleSheet.create({
   section: { marginBottom: 26 } as object,
   strip: { gap: 14, paddingBottom: 6 } as object,
-  // Narrower than a card on purpose: a way out of the rail, not another thing
-  // in it.
-  archive: {
-    width: 120,
-    height: CARD_H,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.16)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    cursor: 'pointer',
-  } as object,
-  archiveLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    letterSpacing: 0.4,
-    color: COLORS.beige,
-  },
   card: {
     width: CARD_W,
     height: CARD_H,

@@ -612,12 +612,29 @@ export function RightNowBand({
             The movies, shows and comics moving the multiverse this week.
           </Text>
         </View>
-        {!!fresh.label && (
-          <View style={band.freshChip as object}>
-            <View style={[band.pulse, !fresh.pulse && band.pulseIdle] as object} />
-            <Text style={band.fresh as object}>{fresh.label}</Text>
-          </View>
-        )}
+        {/* The chapter head is where a reader looks for where else to go. The
+            archive link was a 120px card at the far end of a horizontal rail,
+            i.e. reachable only by someone who had already scrolled past every
+            card competing with it. */}
+        <View style={band.headSide as object}>
+          {!!fresh.label && (
+            <View style={band.freshChip as object}>
+              <View style={[band.pulse, !fresh.pulse && band.pulseIdle] as object} />
+              <Text style={band.fresh as object}>{fresh.label}</Text>
+            </View>
+          )}
+          {!!onArchivePress && (
+            <Pressable
+              onPress={onArchivePress}
+              style={band.archiveLink as object}
+              accessibilityRole="link"
+              accessibilityLabel="All events"
+            >
+              <Text style={band.archiveText as object}>All events</Text>
+              <Ionicons name="chevron-forward" size={13} color={COLORS.beige} />
+            </Pressable>
+          )}
+        </View>
       </View>
 
       <PulseRail
@@ -626,7 +643,6 @@ export function RightNowBand({
         onTitlePress={onTitlePress}
         onIssuePress={onIssuePress}
         onEventPress={onEventPress}
-        onArchivePress={onArchivePress}
         onHeroPress={(h) => onHeroPress(h.id)}
         gutter={pagePad}
       />
@@ -739,6 +755,24 @@ const band = StyleSheet.create({
   } as object,
   // Stale content gets a dimmed, halo-less dot rather than a confident live one.
   pulseIdle: { backgroundColor: COLORS.grey, boxShadow: 'none' } as object,
+  headSide: { alignItems: 'flex-end', gap: 10 },
+  archiveLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.22)',
+    cursor: 'pointer',
+  } as object,
+  archiveText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    letterSpacing: 0.4,
+    color: COLORS.beige,
+  },
   kicker: {
     ...EYEBROW,
     letterSpacing: 2.5,

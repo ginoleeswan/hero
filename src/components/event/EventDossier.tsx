@@ -16,6 +16,7 @@
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
@@ -116,17 +117,28 @@ export function EventDossier({
             },
           ]}
         >
-          {onIndexPress ? (
-            <Pressable onPress={onIndexPress} accessibilityRole="link">
-              <Text style={[s.eyebrow, { color: accent }]}>
-                {(event.ongoing ? 'Happening now' : 'Detected event') + '  ·  All events'}
-              </Text>
-            </Pressable>
-          ) : (
+          {/* Status and navigation were one concatenated string — "HAPPENING NOW
+              · ALL EVENTS" reads as a single label, so the half of it that was a
+              link did not look like one. They are different things and now look
+              different: a status word, and a bordered affordance with a chevron
+              at the opposite edge, where a reader looks for a way out. */}
+          <View style={s.eyebrowRow}>
             <Text style={[s.eyebrow, { color: accent }]}>
               {event.ongoing ? 'Happening now' : 'Detected event'}
             </Text>
-          )}
+            {!!onIndexPress && (
+              <Pressable
+                onPress={onIndexPress}
+                style={[s.indexLink, { borderColor: `${accent}55` }]}
+                accessibilityRole="link"
+                accessibilityLabel="All events"
+                hitSlop={8}
+              >
+                <Text style={[s.indexLinkText, { color: accent }]}>All events</Text>
+                <Ionicons name="chevron-forward" size={12} color={accent} />
+              </Pressable>
+            )}
+          </View>
 
           {brand ? (
             <View style={s.markBox}>
@@ -484,6 +496,27 @@ const s = StyleSheet.create({
   // height came from whatever the font's own metrics happened to be, which the
   // skeleton could only approximate — and a placeholder that approximates its
   // own page's geometry is the thing EVENT_STAGE exists to stop.
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  indexLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 5,
+    paddingHorizontal: 11,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginBottom: EVENT_STAGE.eyebrowGap,
+  },
+  indexLinkText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.4,
+  },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
