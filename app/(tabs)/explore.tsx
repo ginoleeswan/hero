@@ -553,13 +553,13 @@ export default function HomeScreen() {
             // neither component is given.
             return (
               <View style={styles.engageRow}>
-                <View style={styles.engageHalf}>
+                <View style={styles.engageMatchup}>
                   <TodaysMatchup matchup={item.matchup} onOpen={handleOpenPath} />
                 </View>
-                <View style={styles.engageHalf}>
+                <View style={styles.engageDaily}>
                   <DailyChallengeBanner
                     onPress={() => handleOpenPath('/play')}
-                    style={styles.dailyOnDark}
+                    style={[styles.dailyOnDark, styles.dailyFill]}
                   />
                 </View>
               </View>
@@ -567,15 +567,15 @@ export default function HomeScreen() {
           case 'engagePending':
             return (
               <View style={styles.engageRow}>
-                <View style={styles.engageHalf}>
+                <View style={styles.engageMatchup}>
                   <SkeletonProvider>
                     <MatchupSkeleton />
                   </SkeletonProvider>
                 </View>
-                <View style={styles.engageHalf}>
+                <View style={styles.engageDaily}>
                   <DailyChallengeBanner
                     onPress={() => handleOpenPath('/play')}
-                    style={styles.dailyOnDark}
+                    style={[styles.dailyOnDark, styles.dailyFill]}
                   />
                 </View>
               </View>
@@ -893,11 +893,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 16,
   },
+  // Paired with the matchup, the banner has to FILL its column or it bottoms
+  // out early and leaves a hole under the CTA — web's `dailyBannerGlass` sets
+  // flex: 1 for exactly this. Stretching the row is only half the fix; the
+  // child has to accept the height.
+  dailyFill: { flex: 1, marginTop: 0, marginBottom: 0 },
   // `wide` pairing of TodaysMatchup + the daily banner (see the 'engage' row
   // type above). flex:1 on each half is what makes them split the width evenly
   // minus the gap — neither card is told a width directly.
-  engageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: ENGAGE_ROW_GAP },
-  engageHalf: { flex: 1, minWidth: 0 },
+  // `stretch`, not `flex-start`, and 1.7 : 1, not 50/50 — both measured off
+  // `explore.web.tsx`. Half-and-half gave the daily banner a column as wide as
+  // the matchup for a third of the content, and `flex-start` let it float short
+  // with a hole under it. Stretching bottoms the two cards out level, which is
+  // what web's own comment on `engageRow` says it is for.
+  engageRow: { flexDirection: 'row', alignItems: 'stretch', gap: ENGAGE_ROW_GAP },
+  engageMatchup: { flex: 1.7, minWidth: 0 },
+  engageDaily: { flex: 1, minWidth: 240, maxWidth: 440 },
   // No transformOrigin — the top anchor is computed in spotlightParallax so it
   // does not depend on a style property we cannot verify is honoured here.
   spotlightWrap: {},

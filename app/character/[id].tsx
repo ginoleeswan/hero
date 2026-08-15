@@ -81,6 +81,7 @@ import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import type { CharacterData } from '../../src/types';
 import { heroBlock, sectionGutter, PROSE_MAX_WIDTH } from '../../src/constants/layout';
 import { QuickFacts } from '../../src/components/character/QuickFacts';
+import { PaperCard } from '../../src/components/ui/PaperCard';
 
 // One tint for BOTH sides of the header bar. The back chevron takes it via
 // `headerTintColor`; the share glyph has to be told explicitly, because a
@@ -1003,7 +1004,7 @@ export default function CharacterScreen() {
                   ) : null}
                 </View>
                 {hasBadges ? (
-                  <View style={styles.chipRow}>
+                  <View style={[styles.chipRow, split && styles.chipRowSplit]}>
                     {taxoChips.map((c) => (
                       <View
                         key={c.key}
@@ -1022,6 +1023,126 @@ export default function CharacterScreen() {
         <Text style={styles.heroName}>{displayName}</Text>
       )}
     </View>
+  ) : null;
+
+  // The lede and the power dials, hoisted so the two layouts can order them
+  // differently without either owning a copy.
+  // `data ? … : null` because these used to sit inside `sheetContent`'s
+  // data-loaded branch and hoisting them out loses that narrowing. The guard is
+  // the same one, just written explicitly.
+  const summaryNode = data ? (
+    <>
+      {/* Summary — the lede; shows skeleton lines while ComicVine loads. A
+    subtle pencil at the top-right edits it (the lede has no header). */}
+      <View onLayout={registerAnchor('summary')}>
+        {comicVineLoading ? (
+          <SkeletonProvider>
+            <View style={styles.summaryBlock}>
+              <Skeleton width="100%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
+              <Skeleton width="88%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
+              <Skeleton width="65%" height={12} borderRadius={5} />
+            </View>
+          </SkeletonProvider>
+        ) : data.details.summary || data.details.hasBiography ? (
+          <View style={styles.summaryBlock}>
+            <PullQuoteBio
+              flat
+              summary={data.details.summary ?? ''}
+              accent={theme.accent}
+              hasBiography={data.details.hasBiography}
+              onReadMore={() => router.push(`/biography/${id}`)}
+              onEdit={() =>
+                setEditTarget({
+                  field: SUMMARY_FIELD,
+                  current: data.details.summary ?? null,
+                })
+              }
+            />
+          </View>
+        ) : null}
+      </View>
+    </>
+  ) : null;
+
+  const statsNode = data ? (
+    <>
+      {/* Power Stats — circular dials, 3×2 grid + percentile hook. The
+    admin pencil swaps the dials for an editable 0–100 list. */}
+      <View onLayout={registerAnchor('stats')}>
+        <Section
+          title="Power Stats"
+          action={
+            isAdmin ? (
+              <SectionPencil
+                active={statsEditing}
+                onPress={() => setStatsEditing((s) => !s)}
+                label="Edit power stats"
+              />
+            ) : undefined
+          }
+        >
+          {isAdmin && statsEditing ? (
+            <View style={styles.statsCard}>
+              {STAT_FIELDS.map((f) => {
+                const cur = (data.stats.powerstats as Record<string, string>)[f.field] ?? '0';
+                return (
+                  <TouchableOpacity
+                    key={f.field}
+                    onPress={() => setEditTarget({ field: f, current: cur })}
+                    style={styles.editRow}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.editRowLabel}>{f.label}</Text>
+                    <View style={styles.editRowRight}>
+                      <Text style={styles.editRowValue}>{cur}</Text>
+                      <Ionicons name="pencil" size={14} color={COLORS.orange} />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={[styles.statsCard, { borderColor: theme.accent + '2b' }] as object}>
+              <View style={styles.statsGrid}>
+                {STAT_CONFIG.map(({ key, label, tint }) => (
+                  <StatDial
+                    key={key}
+                    label={label}
+                    value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
+                    tint={tint}
+                  />
+                ))}
+              </View>
+              {powerTotal > 0 ? (
+                <View style={styles.statTotalRow}>
+                  <Text style={styles.statTotal}>Total {powerTotal} / 600</Text>
+                  {percentile != null && percentile > 0 ? (
+                    <View
+                      style={
+                        [
+                          styles.statPercentileBadge,
+                          {
+                            backgroundColor: theme.accent + '14',
+                            borderColor: theme.accent + '3d',
+                          },
+                        ] as object
+                      }
+                    >
+                      <Ionicons name="flash" size={11} color={theme.accent} />
+                      <Text
+                        style={[styles.statPercentileBadgeText, { color: theme.accent }] as object}
+                      >
+                        Stronger than {percentile}%
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+          )}
+        </Section>
+      </View>
+    </>
   ) : null;
 
   // The dossier itself, hoisted so it has one definition and two homes: the
@@ -1044,141 +1165,63 @@ export default function CharacterScreen() {
             </View>
           ) : null}
 
-          {/* Summary — the lede; shows skeleton lines while ComicVine loads. A
-          subtle pencil at the top-right edits it (the lede has no header). */}
-          <View onLayout={registerAnchor('summary')}>
-            {comicVineLoading ? (
-              <SkeletonProvider>
-                <View style={styles.summaryBlock}>
-                  <Skeleton width="100%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
-                  <Skeleton width="88%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
-                  <Skeleton width="65%" height={12} borderRadius={5} />
-                </View>
-              </SkeletonProvider>
-            ) : data.details.summary || data.details.hasBiography ? (
-              <View style={styles.summaryBlock}>
-                <PullQuoteBio
-                  flat
-                  summary={data.details.summary ?? ''}
-                  accent={theme.accent}
-                  hasBiography={data.details.hasBiography}
-                  onReadMore={() => router.push(`/biography/${id}`)}
-                  onEdit={() =>
-                    setEditTarget({
-                      field: SUMMARY_FIELD,
-                      current: data.details.summary ?? null,
-                    })
-                  }
-                />
-              </View>
-            ) : null}
-          </View>
-
-          {/* Power Stats — circular dials, 3×2 grid + percentile hook. The
-          admin pencil swaps the dials for an editable 0–100 list. */}
-          <View onLayout={registerAnchor('stats')}>
-            <Section
-              title="Power Stats"
-              action={
-                isAdmin ? (
-                  <SectionPencil
-                    active={statsEditing}
-                    onPress={() => setStatsEditing((s) => !s)}
-                    label="Edit power stats"
-                  />
-                ) : undefined
-              }
-            >
-              {isAdmin && statsEditing ? (
-                <View style={styles.statsCard}>
-                  {STAT_FIELDS.map((f) => {
-                    const cur = (data.stats.powerstats as Record<string, string>)[f.field] ?? '0';
-                    return (
-                      <TouchableOpacity
-                        key={f.field}
-                        onPress={() => setEditTarget({ field: f, current: cur })}
-                        style={styles.editRow}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.editRowLabel}>{f.label}</Text>
-                        <View style={styles.editRowRight}>
-                          <Text style={styles.editRowValue}>{cur}</Text>
-                          <Ionicons name="pencil" size={14} color={COLORS.orange} />
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              ) : (
-                <View style={[styles.statsCard, { borderColor: theme.accent + '2b' }] as object}>
-                  <View style={styles.statsGrid}>
-                    {STAT_CONFIG.map(({ key, label, tint }) => (
-                      <StatDial
-                        key={key}
-                        label={label}
-                        value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
-                        tint={tint}
-                      />
-                    ))}
-                  </View>
-                  {powerTotal > 0 ? (
-                    <View style={styles.statTotalRow}>
-                      <Text style={styles.statTotal}>Total {powerTotal} / 600</Text>
-                      {percentile != null && percentile > 0 ? (
-                        <View
-                          style={
-                            [
-                              styles.statPercentileBadge,
-                              {
-                                backgroundColor: theme.accent + '14',
-                                borderColor: theme.accent + '3d',
-                              },
-                            ] as object
-                          }
-                        >
-                          <Ionicons name="flash" size={11} color={theme.accent} />
-                          <Text
-                            style={
-                              [styles.statPercentileBadgeText, { color: theme.accent }] as object
-                            }
-                          >
-                            Stronger than {percentile}%
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  ) : null}
-                </View>
-              )}
-            </Section>
-          </View>
+          {/* Web's desktop leads with Power Profile and puts the lede second;
+          the phone leads with the lede, because on a phone the lede is the hook
+          and the dials are a detail you scroll to. Both are right for their own
+          shape, so the ORDER is the branch and the blocks themselves are
+          shared — duplicating them per order is how the two pages drift. */}
+          {split ? (
+            <>
+              {/* Web's main column is a stack of cards on beige. `plain` on a
+                  phone keeps its rule-separated sections exactly as they were —
+                  the card grammar is a tablet decision, which is why PaperCard
+                  takes the flag rather than testing the width itself. */}
+              <PaperCard plain={!split} style={styles.mainCard}>
+                {statsNode}
+              </PaperCard>
+              <PaperCard plain={!split} style={styles.mainCard}>
+                {summaryNode}
+              </PaperCard>
+            </>
+          ) : (
+            <>
+              {summaryNode}
+              {statsNode}
+            </>
+          )}
 
           {/* Abilities — signature tier headlines (blurb-backed powers) above
           the categorized grid; header pencil edits the whole list. */}
-          <View onLayout={registerAnchor('abilities')}>
-            {!comicVineLoading &&
-            pickSignaturePowers(data.details.powers, narrative?.powerExplainers ?? []).length >
-              0 ? (
-              <View style={styles.signatureWrap}>
-                <SignaturePowerTiles
-                  powers={data.details.powers}
-                  explainers={narrative?.powerExplainers ?? []}
-                  accent={theme.accent}
-                />
-              </View>
-            ) : null}
-            <AbilitiesSection
-              powers={data.details.powers}
-              loading={comicVineLoading}
-              explainers={narrative?.powerExplainers ?? []}
-              onEdit={() =>
-                setEditTarget({
-                  field: POWERS_FIELD,
-                  current: data.details.powers?.length ? data.details.powers.join('\n') : null,
-                })
-              }
-            />
-          </View>
+          {/* Abilities is the third card in web's main column. The bleed
+              sections below it — allies, on-screen, in print — deliberately
+              stay uncarded: each carries a horizontal rail, and a rail inside a
+              padded card cannot reach the column's edge. */}
+          <PaperCard plain={!split} style={styles.mainCard}>
+            <View onLayout={registerAnchor('abilities')}>
+              {!comicVineLoading &&
+              pickSignaturePowers(data.details.powers, narrative?.powerExplainers ?? []).length >
+                0 ? (
+                <View style={styles.signatureWrap}>
+                  <SignaturePowerTiles
+                    powers={data.details.powers}
+                    explainers={narrative?.powerExplainers ?? []}
+                    accent={theme.accent}
+                  />
+                </View>
+              ) : null}
+              <AbilitiesSection
+                powers={data.details.powers}
+                loading={comicVineLoading}
+                explainers={narrative?.powerExplainers ?? []}
+                onEdit={() =>
+                  setEditTarget({
+                    field: POWERS_FIELD,
+                    current: data.details.powers?.length ? data.details.powers.join('\n') : null,
+                  })
+                }
+              />
+            </View>
+          </PaperCard>
 
           {/* Did You Know — swipeable trivia deck (the one playful module).
           Full-bleed so the deck owns its own edge insets + peek. */}
@@ -1941,14 +1984,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 24,
   },
-  mainCol: { flex: 1, minWidth: 0 },
+  mainCol: { flex: 1, minWidth: 0, gap: 16 },
+  // The sections pad themselves by 20; the card adds 16 of its own, so the
+  // card's is dropped and the section's kept — otherwise every card is 36pt
+  // inside and the dials lose a column.
+  mainCard: { padding: 0, paddingVertical: 6 },
   sideCol: { width: SIDE_COL, flexShrink: 0, gap: 16 },
   // Hangs up into the band. The negative margin is web's `portraitOverlap`: it
   // stitches the two colours together instead of leaving a hard seam, and it is
   // why the portrait reads as floating rather than as the top of a column.
   portraitCard: {
     width: SIDE_COL,
-    height: Math.round(SIDE_COL * 1.1),
+    // 1.4, measured off web at 1440: the card is 300 x 420. It is NOT the rail
+    // card's ratio and does not need to be — this is a framed print, not the
+    // full-bleed art the morph grows out of on a phone.
+    height: Math.round(SIDE_COL * 1.4),
     marginTop: -PORTRAIT_OVERLAP,
     borderRadius: 20,
     borderCurve: 'continuous',
