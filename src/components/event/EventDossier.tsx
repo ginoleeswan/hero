@@ -21,7 +21,12 @@ import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constan
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import { EVENT_STAGE, EVENT_PAPER } from '../../constants/eventGeometry';
 import { EventCurve } from './EventCurve';
-import type { EventDossier as Dossier, EventTrailer } from '../../lib/db/events.dossier';
+import {
+  groupAnnouncements,
+  type EventDossier as Dossier,
+  type EventTrailer,
+  type AnnouncementGroup,
+} from '../../lib/db/events.dossier';
 
 export interface EventDossierProps {
   dossier: Dossier;
@@ -76,6 +81,8 @@ export function EventDossier({
   const coverGrid = grid(10, 104, 3);
 
   const [lead, ...rest] = trailers;
+  // One entry per thing announced, not per clip. See groupAnnouncements.
+  const [leadNews, ...restNews] = groupAnnouncements(announcements);
 
   return (
     <View>
@@ -188,41 +195,71 @@ export function EventDossier({
               SAID. Everything below it is derived from attention — a spike, a
               curve, whose readership moved — which records that something
               happened and never what it was. */}
-          {announcements.length > 0 && (
+          {leadNews && (
             <Section
               title="What was announced"
               note="From the studios' own channels, during the window"
             >
-              <View style={s.annList}>
-                {announcements.map((a) => (
-                  <Pressable
-                    key={a.videoId}
-                    style={s.annRow}
-                    onPress={() => onTitlePress(a.titleId)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${a.title}, from ${a.channel}`}
-                  >
-                    {!!a.thumbnailUrl && (
-                      <Image
-                        source={{ uri: a.thumbnailUrl }}
-                        style={s.annThumb}
-                        contentFit="cover"
-                        transition={160}
-                      />
-                    )}
-                    <View style={s.annBody}>
-                      <Text style={s.annTitle} numberOfLines={2}>
-                        {a.title}
-                      </Text>
-                      <Text style={s.annMeta} numberOfLines={1}>
-                        {/* The channel is the attribution and it matters: a
-                            studio announced this, a press channel reported it. */}
-                        {a.official ? a.channel : `${a.channel} · reported`}
-                      </Text>
-                    </View>
-                  </Pressable>
-                ))}
-              </View>
+              {/* The lead gets the room. This is the section a reader came for,
+                  and it was rendering as the smallest thing on the page. */}
+              <Pressable
+                style={s.newsLead}
+                onPress={() => onTitlePress(leadNews.titleId)}
+                accessibilityRole="button"
+                accessibilityLabel={`${leadNews.titleName}, announced at this event`}
+              >
+                {!!(leadNews.thumbnailUrl ?? leadNews.posterUrl) && (
+                  <Image
+                    source={{ uri: (leadNews.thumbnailUrl ?? leadNews.posterUrl) as string }}
+                    style={[s.newsLeadArt, { height: Math.round(avail * 0.5625) }]}
+                    contentFit="cover"
+                    transition={160}
+                  />
+                )}
+                <View style={s.newsLeadBody}>
+                  <Text style={s.newsLeadTitle} numberOfLines={2}>
+                    {leadNews.titleName}
+                  </Text>
+                  <Text style={s.newsCaption} numberOfLines={2}>
+                    {leadNews.caption}
+                  </Text>
+                  <Text style={s.newsMeta}>{sourceLine(leadNews)}</Text>
+                </View>
+              </Pressable>
+
+              {restNews.length > 0 && (
+                <View style={s.newsList}>
+                  {restNews.map((a) => (
+                    <Pressable
+                      key={a.titleId}
+                      style={s.newsRow}
+                      onPress={() => onTitlePress(a.titleId)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${a.titleName}, announced at this event`}
+                    >
+                      {!!(a.thumbnailUrl ?? a.posterUrl) && (
+                        <Image
+                          source={{ uri: (a.thumbnailUrl ?? a.posterUrl) as string }}
+                          style={s.newsThumb}
+                          contentFit="cover"
+                          transition={160}
+                        />
+                      )}
+                      <View style={s.newsBody}>
+                        {/* The catalogue's name leads. The marketing string is
+                            a caption underneath, where its length is harmless —
+                            clamped as a headline it sheared mid-word. */}
+                        <Text style={s.newsTitle} numberOfLines={2}>
+                          {a.titleName}
+                        </Text>
+                        <Text style={s.newsMeta} numberOfLines={1}>
+                          {sourceLine(a)}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
             </Section>
           )}
 
@@ -404,6 +441,19 @@ function LeadTrailer({
   );
 }
 
+/**
+ * "Marvel Entertainment · 3 clips", or "IGN · reported".
+ *
+ * The channel is the attribution and it carries real weight: a studio ANNOUNCED
+ * this, a press channel reported it. The clip count is the only honest proxy the
+ * page has for how big an announcement was — how many times a studio went back
+ * to the same thing during its own event.
+ */
+function sourceLine(a: AnnouncementGroup): string {
+  const who = a.official ? a.channel : `${a.channel} · reported`;
+  return a.clips > 1 ? `${who}  ·  ${a.clips} clips` : who;
+}
+
 /** A heading plus the one line that says what the list is made of. Not
  *  decoration: each list has a different rule behind it and the reader has no
  *  other way to know that. */
@@ -531,21 +581,38 @@ const s = StyleSheet.create({
   poster: { borderRadius: 9, backgroundColor: 'rgba(11,24,32,0.08)' },
   // Two lines' worth, always: a one-line title next to a two-line one used to
   // push the following row out of alignment.
-  annList: { gap: 14 },
-  annRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  // 16:9, the shape YouTube actually returns — a square crop of a trailer
-  // thumbnail cuts the title card out of the middle of it.
-  annThumb: { width: 112, height: 63, borderRadius: 8, backgroundColor: '#00000010' },
-  annBody: { flex: 1, gap: 3 },
-  annTitle: {
+  // The lead announcement, at the size the news deserves.
+  newsLead: { gap: 0 },
+  // 16:9 — the shape YouTube returns. A square crop takes the title card out of
+  // the middle of a trailer thumbnail.
+  newsLeadArt: { width: '100%', borderRadius: 12, backgroundColor: '#00000010' },
+  newsLeadBody: { gap: 4, paddingTop: 10 },
+  newsLeadTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 23,
+    // Clamped Flame needs >= 1.22x fontSize or numberOfLines shears the
+    // descenders on web, where it becomes -webkit-line-clamp + overflow hidden.
+    lineHeight: 30,
+    color: COLORS.deepNavy,
+  },
+  newsCaption: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14.5,
+    lineHeight: 20,
+    color: PAPER_TEXT.muted,
+  },
+
+  newsList: { gap: 14, marginTop: 4 },
+  newsRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  newsThumb: { width: 112, height: 63, borderRadius: 8, backgroundColor: '#00000010' },
+  newsBody: { flex: 1, minWidth: 0, gap: 3 },
+  newsTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 15,
-    // 1.33x — clamped Flame needs >= 1.22x or numberOfLines shears the
-    // descenders on web, where it becomes -webkit-line-clamp + overflow hidden.
     lineHeight: 20,
     color: COLORS.deepNavy,
   },
-  annMeta: {
+  newsMeta: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11.5,
     lineHeight: 15,

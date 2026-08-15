@@ -257,3 +257,72 @@ export async function getEventIndex(): Promise<EventIndex> {
   }
   return mapEventIndex(data);
 }
+
+/** One thing announced, with the studio's own words and any repeats folded in. */
+export interface AnnouncementGroup {
+  titleId: string;
+  /** The catalogue's name for it — "Avengers: Doomsday". The HEADLINE. */
+  titleName: string;
+  /** The studio's marketing copy for the best clip. Secondary, not the headline. */
+  caption: string;
+  channel: string;
+  official: boolean;
+  thumbnailUrl: string | null;
+  posterUrl: string | null;
+  publishedAt: string | null;
+  /** How many clips this event produced about the same thing. */
+  clips: number;
+}
+
+/**
+ * Fold announcements into one entry per thing announced.
+ *
+ * Two problems, one fix. The raw feed is per-CLIP, so D23 produced three
+ * Avengers: Doomsday entries — the trailer, a reaction and a press channel's
+ * re-cut — and the page listed them as three announcements. And a YouTube title
+ * is marketing copy, not a headline: "Watch the newly announced X-Men cast meet
+ * for the very first time backstage a…" cannot be clamped to two lines without
+ * shearing mid-word, because it was never written to be read that way.
+ *
+ * Grouping by `titleId` gives both: the catalogue's own name becomes the
+ * headline (short, real, and already the thing the reader is looking for) and
+ * the marketing string demotes to a caption where its length stops mattering.
+ *
+ * Best clip per group = official first, then newest. A studio's own upload
+ * outranks a press re-cut of the same beat.
+ */
+export function groupAnnouncements(list: readonly EventAnnouncement[]): AnnouncementGroup[] {
+  const byTitle = new Map<string, EventAnnouncement[]>();
+  for (const a of list) {
+    const bucket = byTitle.get(a.titleId);
+    if (bucket) bucket.push(a);
+    else byTitle.set(a.titleId, [a]);
+  }
+
+  const groups: AnnouncementGroup[] = [];
+  for (const [titleId, clips] of byTitle) {
+    const best = [...clips].sort((x, y) => {
+      if (x.official !== y.official) return x.official ? -1 : 1;
+      return (y.publishedAt ?? '').localeCompare(x.publishedAt ?? '');
+    })[0];
+    groups.push({
+      titleId,
+      // Fall back to the caption only if the catalogue somehow has no name —
+      // a headline is required, a bad one beats none.
+      titleName: best.titleName ?? best.title,
+      caption: best.title,
+      channel: best.channel,
+      official: best.official,
+      thumbnailUrl: best.thumbnailUrl,
+      posterUrl: best.posterUrl,
+      publishedAt: best.publishedAt,
+      clips: clips.length,
+    });
+  }
+
+  // Most-covered first, then newest: how many times a studio went back to a
+  // thing is the best available proxy for how big the announcement was.
+  return groups.sort(
+    (a, b) => b.clips - a.clips || (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''),
+  );
+}

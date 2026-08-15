@@ -123,7 +123,13 @@ export function EventIndexList({
                     />
                   </View>
 
-                  {e.spikeRatio !== null && (
+                  {/* Only when it is a rise. A caught event can carry a ratio
+                      BELOW 1 — SDCC 2026 was detected at 3.35x and its row read
+                      "0.82x usual readership", because the spike rolled out of
+                      the rolling curve after detection. A sub-1 multiple on a
+                      page about an event reads as a broken number. The peak is
+                      still worth stating on its own: it is a fact either way. */}
+                  {e.spikeRatio !== null && e.spikeRatio > 1 ? (
                     <Text style={s.rowStat}>
                       <Text style={[s.rowStatNum, { color: COLORS.deepNavy }]}>
                         {e.spikeRatio}×
@@ -131,7 +137,14 @@ export function EventIndexList({
                       usual readership
                       {e.peak ? ` · peak ${e.peak.toLocaleString()} a day` : ''}
                     </Text>
-                  )}
+                  ) : e.peak ? (
+                    <Text style={s.rowStat}>
+                      <Text style={[s.rowStatNum, { color: COLORS.deepNavy }]}>
+                        {e.peak.toLocaleString()}
+                      </Text>{' '}
+                      readers on its busiest day
+                    </Text>
+                  ) : null}
                 </Pressable>
               );
             })
