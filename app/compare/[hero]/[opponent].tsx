@@ -33,6 +33,7 @@ import { useRelationship } from '../../../src/lib/query/heroQueries';
 import { relationshipBadge } from '../../../src/lib/db/heroes';
 import { TakesSection } from '../../../src/components/takes/TakesSection';
 import { SEAM } from '../../../src/design';
+import { railCardWidth } from '../../../src/constants/layout';
 
 const CARD_MARGIN = 12;
 const CARD_HEIGHT = 286;
@@ -53,11 +54,16 @@ export default function NativeCompareScreen() {
   const { hero, opponent } = useLocalSearchParams<{ hero: string; opponent: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  // The clash card fills the window minus its margins. Capped, because two
-  // portraits stretched across a landscape iPad put the fighters so far apart
-  // that the card stops reading as a confrontation.
+  // The clash card fills the window minus its margins — unchanged on a phone.
+  // Above the tablet threshold it's a fixed size instead of a bigger one: two
+  // portrait panels stretched across a landscape iPad would put the fighters
+  // so far apart the card stops reading as a confrontation and starts reading
+  // as two separate photos. 720 is the composition's own number (two 360pt
+  // panels, the same width this screen already used as its widest phone
+  // value) rather than the default rail card's 260, which is sized for one
+  // portrait, not a face-off.
   const { width: winW } = useWindowDimensions();
-  const cardWidth = Math.min(winW - CARD_MARGIN * 2, 720);
+  const cardWidth = railCardWidth(winW - CARD_MARGIN * 2, 1, 720);
 
   const { statsA, statsB, result, overallWinner, verdict, error } = useCompareMatchup(
     hero,
