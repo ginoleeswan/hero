@@ -60,6 +60,9 @@ interface RightNowBandProps {
   onIssuePress: (issueId: string) => void;
   /** A live event → its permanent page at /event/[slug]. */
   onEventPress: (slug: string) => void;
+  /** Forwarded to the rail's trailing card. See PulseRail — /event had no
+   *  inbound link anywhere in the app before this. */
+  onArchivePress?: () => void;
 }
 
 // One avatar chip in the campaign hero. Tracks its own hover so it can lift,
@@ -535,6 +538,7 @@ export function RightNowBand({
   onTitlePress,
   onIssuePress,
   onEventPress,
+  onArchivePress,
 }: RightNowBandProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
@@ -622,6 +626,7 @@ export function RightNowBand({
         onTitlePress={onTitlePress}
         onIssuePress={onIssuePress}
         onEventPress={onEventPress}
+        onArchivePress={onArchivePress}
         onHeroPress={(h) => onHeroPress(h.id)}
         gutter={pagePad}
       />

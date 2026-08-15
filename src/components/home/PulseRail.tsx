@@ -13,6 +13,7 @@ import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressScale } from '../ui/PressScale';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import type { PulseEvent, PulseKind } from '../../lib/home/pulse';
@@ -53,6 +54,11 @@ export interface PulseRailProps {
   onEventPress?: (slug: string) => void;
   /** A surge → the character whose face fronts it. */
   onHeroPress?: (hero: { id: string; portrait_url?: string | null }) => void;
+  /** The event archive at /event. Optional: when omitted the rail ends at the
+   *  last card exactly as before. It exists because /event had NO inbound link
+   *  anywhere in the app — the index was reachable only by typing the URL, which
+   *  makes an archive that outlives the rail unreachable from the rail. */
+  onArchivePress?: () => void;
   disabled?: boolean;
 }
 
@@ -63,6 +69,7 @@ export function PulseRail({
   onIssuePress,
   onHeroPress,
   onEventPress,
+  onArchivePress,
   disabled = false,
 }: PulseRailProps) {
   if (events.length === 0) return null;
@@ -89,6 +96,19 @@ export function PulseRail({
         contentContainerStyle={s.strip}
         removeClippedSubviews
         initialNumToRender={4}
+        ListFooterComponent={
+          onArchivePress ? (
+            <PressScale
+              style={s.archive}
+              onPress={onArchivePress}
+              accessibilityRole="button"
+              accessibilityLabel="All events"
+            >
+              <Ionicons name="arrow-forward" size={18} color={COLORS.goldAccent} />
+              <Text style={s.archiveLabel}>All events</Text>
+            </PressScale>
+          ) : null
+        }
         renderItem={({ item }) => {
           const tint = KIND_TINT[item.kind];
 
@@ -289,6 +309,24 @@ const live = StyleSheet.create({
 const s = StyleSheet.create({
   section: { marginBottom: 20 },
   strip: { gap: 10, paddingHorizontal: 15, paddingBottom: 4 },
+  archive: {
+    width: 104,
+    height: CARD_H,
+    marginLeft: 10,
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  archiveLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    letterSpacing: 0.4,
+    color: COLORS.beige,
+  },
   card: {
     width: CARD_W,
     height: CARD_H,

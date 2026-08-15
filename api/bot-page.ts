@@ -10,9 +10,13 @@ import {
   buildNotFoundPage,
   buildTeamBotPage,
   buildTitleBotPage,
+  buildEventEditionBotPage,
+  buildEventHubBotPage,
   buildUniverseBotPage,
   buildVsBotPage,
   CATEGORY_SEO,
+  type BotEventAnnouncement,
+  type BotEventEdition,
   type BotHero,
   type BotTeam,
   type BotTitle,
@@ -35,6 +39,28 @@ const HERO_COLUMNS =
   'first_appearance,occupation,place_of_birth,race,gender,height_metric,weight_metric,' +
   'base,creators,teams,powers,intelligence,strength,speed,durability,power,combat,' +
   'portrait_url,image_url,wikidata_qid,enwiki_title';
+
+/**
+ * Call a security-definer RPC and return its jsonb, or null.
+ *
+ * Fail-soft by design: every caller treats null as "no page", which becomes a
+ * noindex 404. A crawler seeing a 404 for a page that briefly failed is
+ * recoverable; a crawler indexing a half-rendered page is not.
+ */
+async function rpc<T>(fn: string, body: Record<string, unknown>): Promise<T | null> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) return null;
+    const json = (await r.json()) as T | null;
+    return json ?? null;
+  } catch {
+    return null;
+  }
+}
 
 async function fetchHero(id: string): Promise<BotHero | null> {
   const url = `${SUPABASE_URL}/rest/v1/heroes?id=eq.${encodeURIComponent(
@@ -390,6 +416,49 @@ async function render(query: Req['query']): Promise<string | null> {
     });
     if (heroes.length === 0) return null;
     return buildFranchiseBotPage(name, heroes);
+  }
+  if (kind === 'event') {
+    // Both event shapes come from the same two security-definer RPCs the app
+    // uses, so the crawlable page and the rendered page cannot disagree about
+    // what an event contains. Reading the tables directly is not an option
+    // anyway: watched_events has RLS enabled with no policies.
+    const slug = str(query.slug).trim();
+    if (!slug) return null;
+    const edition = str(query.edition).trim();
+
+    if (edition) {
+      const d = await rpc<Record<string, unknown>>('get_event_edition', {
+        p_slug: slug,
+        p_edition: edition,
+      });
+      const e = d?.event as Record<string, unknown> | undefined;
+      if (!e) return null;
+      const list = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+      return buildEventEditionBotPage(
+        slug,
+        edition,
+        String(e.headline ?? slug),
+        (e.live_from as string) ?? null,
+        (e.live_to as string) ?? null,
+        list<BotEventAnnouncement>(d?.announcements),
+        list<{ title_id: string; title: string }>(d?.trailers).map((t) => ({
+          id: t.title_id,
+          title: t.title,
+        })) as BotTitle[],
+        list<{ hero_id: string; name: string }>(d?.movers).map((m) => ({
+          id: m.hero_id,
+          name: m.name,
+        })),
+      );
+    }
+
+    const hub = await rpc<Record<string, unknown>>('get_event_hub', { p_slug: slug });
+    if (!hub || typeof hub.headline !== 'string') return null;
+    const editions = Array.isArray(hub.editions) ? (hub.editions as BotEventEdition[]) : [];
+    // A hub with no editions is an empty page. Better a noindex 404 than a URL
+    // that promises an archive and delivers a heading.
+    if (editions.length === 0) return null;
+    return buildEventHubBotPage(slug, hub.headline, editions);
   }
   return null;
 }

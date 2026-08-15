@@ -93,7 +93,10 @@
     {
       "source": "/compare/:hero/:opponent",
       "has": [
-        { "type": "query", "key": "debate" },
+        {
+          "type": "query",
+          "key": "debate"
+        },
         {
           "type": "header",
           "key": "user-agent",
@@ -158,6 +161,28 @@
       "destination": "/api/bot-page?kind=franchise&slug=:slug"
     },
     {
+      "source": "/event/:slug/:edition",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot|GPTBot|OAI-SearchBot|ChatGPT-User|PerplexityBot|Perplexity-User|ClaudeBot|Claude-User|anthropic-ai|Applebot|Amazonbot|Bytespider|CCBot|YouBot|Meta-ExternalAgent|Diffbot).*"
+        }
+      ],
+      "destination": "/api/bot-page?kind=event&slug=:slug&edition=:edition"
+    },
+    {
+      "source": "/event/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot|GPTBot|OAI-SearchBot|ChatGPT-User|PerplexityBot|Perplexity-User|ClaudeBot|Claude-User|anthropic-ai|Applebot|Amazonbot|Bytespider|CCBot|YouBot|Meta-ExternalAgent|Diffbot).*"
+        }
+      ],
+      "destination": "/api/bot-page?kind=event&slug=:slug"
+    },
+    {
       "source": "/.well-known/apple-app-site-association",
       "destination": "/api/aasa"
     },
@@ -165,15 +190,27 @@
       "source": "/battle/:a/:b",
       "destination": "/api/battle?a=:a&b=:b"
     },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=63072000; includeSubDomains; preload"

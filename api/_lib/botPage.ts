@@ -804,3 +804,165 @@ export function buildNotFoundPage(): string {
 <meta name="robots" content="noindex">
 </head><body><p>Character not found. <a href="${SITE_URL}/explore">Explore Mythique</a></p></body></html>`;
 }
+
+// ── events ──────────────────────────────────────────────────────────────────
+//
+// The archive is the reason these exist. A hub URL means "D23", and what it
+// means changes every August; an EDITION URL means "D23 2026" and never changes,
+// which is the only kind of page that can hold a ranking for a year-qualified
+// query. "what happened at d23 2026" is a real query with real intent, and until
+// event_editions existed there was nothing durable to point at it.
+//
+// Schema.org `Event` rather than CollectionPage: this genuinely is an event with
+// a start and end date, and saying so is both true and the thing that can earn a
+// rich result. The edition page uses `eventStatus: EventScheduled` with dates in
+// the past, which is how a concluded event is correctly described.
+
+export interface BotEventEdition {
+  edition_slug: string;
+  live_from: string | null;
+  live_to: string | null;
+  spike_ratio?: number | string | null;
+}
+
+export interface BotEventAnnouncement {
+  title: string;
+  title_id: string | null;
+  title_name: string | null;
+  channel: string;
+  published_at: string | null;
+}
+
+/** The series hub: what this event is, and every edition on record. */
+export function buildEventHubBotPage(
+  slug: string,
+  headline: string,
+  editions: BotEventEdition[],
+): string {
+  const path = `/event/${encodeURIComponent(slug)}`;
+  const years = editions.map((e) => e.edition_slug).join(', ');
+  const blurb =
+    `${headline} on Mythique — every edition on record` +
+    (years ? ` (${years})` : '') +
+    `, with the trailers, announcements and characters each one moved.`;
+  const list = editions.length
+    ? `<ol>${editions
+        .map(
+          (e) =>
+            `<li><a href="${path}/${encodeURIComponent(e.edition_slug)}">` +
+            `${escapeHtml(headline)} ${escapeHtml(e.edition_slug)}</a>` +
+            (e.live_from ? ` — ${escapeHtml(e.live_from)}` : '') +
+            `</li>`,
+        )
+        .join('')}</ol>`
+    : '';
+  const body = [
+    `<header><h1>${escapeHtml(headline)}</h1><p>${escapeHtml(blurb)}</p></header>`,
+    section('Editions', list),
+    `<nav><h2>Browse more</h2><ul><li><a href="/event">All events</a></li></ul></nav>`,
+    FOOTER,
+  ].join('\n');
+  return buildDoc({
+    title: `${headline} — Every Edition, Trailers & Announcements | Mythique`,
+    description: blurb,
+    path,
+    ogImage: `${SITE_URL}/og.png`,
+    ogType: 'website',
+    jsonLd: serializeLd({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: headline,
+      description: blurb,
+      url: `${SITE_URL}${path}`,
+      mainEntity: {
+        '@type': 'ItemList',
+        numberOfItems: editions.length,
+        itemListElement: editions.map((e, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: `${headline} ${e.edition_slug}`,
+          url: `${SITE_URL}${path}/${encodeURIComponent(e.edition_slug)}`,
+        })),
+      },
+    }),
+    body,
+  });
+}
+
+/** One frozen edition — the page built to answer "what happened at X in YEAR". */
+export function buildEventEditionBotPage(
+  slug: string,
+  edition: string,
+  headline: string,
+  liveFrom: string | null,
+  liveTo: string | null,
+  announcements: BotEventAnnouncement[],
+  trailers: BotTitle[],
+  movers: RelatedLite[],
+): string {
+  const path = `/event/${encodeURIComponent(slug)}/${encodeURIComponent(edition)}`;
+  const name = `${headline} ${edition}`;
+  const when = liveFrom
+    ? liveTo && liveTo !== liveFrom
+      ? `${liveFrom} to ${liveTo}`
+      : liveFrom
+    : '';
+  const blurb =
+    `Everything announced at ${name}${when ? ` (${when})` : ''} — trailers, reveals and the ` +
+    `characters whose readership moved, measured as it happened.`;
+
+  // The announcements ARE the page. Everything else on an event page is derived
+  // from attention; this is the only part that says what was said.
+  const annList = announcements.length
+    ? `<ul>${announcements
+        .map((a) => {
+          const label = escapeHtml(a.title);
+          const linked = a.title_id
+            ? `<a href="/title/${encodeURIComponent(a.title_id)}">${label}</a>`
+            : label;
+          return `<li>${linked} — ${escapeHtml(a.channel)}</li>`;
+        })
+        .join('')}</ul>`
+    : '';
+  const trailerList = trailers.length
+    ? `<ul>${trailers
+        .map(
+          (t) => `<li><a href="/title/${encodeURIComponent(t.id)}">${escapeHtml(t.title)}</a></li>`,
+        )
+        .join('')}</ul>`
+    : '';
+
+  const body = [
+    `<header><h1>${escapeHtml(name)}</h1><p>${escapeHtml(blurb)}</p></header>`,
+    section('What was announced', annList),
+    section('Trailers', trailerList),
+    section('Characters it moved', characterOrderedList(movers)),
+    `<nav><h2>Browse more</h2><ul>` +
+      `<li><a href="/event/${encodeURIComponent(slug)}">All ${escapeHtml(headline)} editions</a></li>` +
+      `<li><a href="/event">All events</a></li></ul></nav>`,
+    FOOTER,
+  ].join('\n');
+
+  return buildDoc({
+    title: `${name} — Everything Announced, Trailers & Reveals | Mythique`,
+    description: blurb,
+    path,
+    ogImage: `${SITE_URL}/og.png`,
+    ogType: 'article',
+    jsonLd: serializeLd({
+      '@context': 'https://schema.org',
+      '@type': 'Event',
+      name,
+      description: blurb,
+      url: `${SITE_URL}${path}`,
+      ...(liveFrom ? { startDate: liveFrom } : {}),
+      ...(liveTo ? { endDate: liveTo } : {}),
+      // Concluded, not cancelled or postponed: dates in the past plus
+      // EventScheduled is how schema.org describes an event that happened.
+      eventStatus: 'https://schema.org/EventScheduled',
+      eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+      organizer: { '@type': 'Organization', name: headline },
+    }),
+    body,
+  });
+}

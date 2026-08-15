@@ -46,6 +46,10 @@ const STATIC_ROUTES = [
   // The index the per-house pages hang off, so a crawler reaching /house/<slug>
   // from houses.xml can also see the set they belong to.
   { loc: '/house', changefreq: 'weekly', priority: '0.6' },
+  // Same job for events. It matters more here than for houses, because /event
+  // has no inbound link anywhere in the app either — without this entry the
+  // whole events tree is reachable only by typing a URL.
+  { loc: '/event', changefreq: 'daily', priority: '0.6' },
   { loc: '/privacy', changefreq: 'yearly', priority: '0.3' },
   { loc: '/terms', changefreq: 'yearly', priority: '0.3' },
 ];
@@ -314,6 +318,46 @@ async function main() {
       indexFiles.push('houses.xml');
     } catch (err) {
       console.warn('[sitemap] houses skipped:', err?.message ?? err);
+    }
+
+    // Events: the series hubs, and every frozen EDITION.
+    //
+    // The editions are the point. A hub is "D23" and changes meaning every
+    // August; an edition is "D23 2026" and never does, which is the only kind of
+    // URL that can hold a ranking for a year-qualified query — and "what
+    // happened at d23 2026" is a query with real intent behind it.
+    //
+    // Editions are `never` changefreq because a frozen snapshot genuinely does
+    // not change; the recomputed half improves as enrichment lands, but not on a
+    // cadence worth advertising to a crawler.
+    // Hubs are derived from the editions rather than read from watched_events:
+    // that table has RLS enabled with deliberately NO policies (the app reads it
+    // only through security-definer RPCs), so an anon fetch here would return
+    // zero rows and silently emit an events file with nothing in it. Deriving is
+    // also the more correct list — a watched event with no editions yet is an
+    // empty page, and advertising it to a crawler is worse than omitting it.
+    try {
+      const editions = await fetchRows('event_editions', 'slug,edition_slug', '', 'slug');
+      const hubs = [...new Set(editions.map((e) => String(e.slug)))];
+      await writeFile(
+        join(SITEMAP_DIR, 'events.xml'),
+        urlSet([
+          ...hubs.map((slug) => ({
+            loc: `/event/${encodeURIComponent(slug)}`,
+            changefreq: 'daily',
+          })),
+          ...editions.map((e) => ({
+            loc: `/event/${encodeURIComponent(String(e.slug))}/${encodeURIComponent(
+              String(e.edition_slug),
+            )}`,
+            changefreq: 'never',
+          })),
+        ]),
+        'utf8',
+      );
+      indexFiles.push('events.xml');
+    } catch (err) {
+      console.warn('[sitemap] events skipped:', err?.message ?? err);
     }
 
     // Characters, WITH portrait images for the Google Images vertical. Quality

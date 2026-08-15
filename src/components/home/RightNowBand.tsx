@@ -62,6 +62,9 @@ export interface RightNowBandProps {
   onIssuePress: (issueId: string) => void;
   /** A live event → its permanent page at /event/[slug]. */
   onEventPress: (slug: string) => void;
+  /** Forwarded to the rail's trailing card. See PulseRail — /event had no
+   *  inbound link anywhere in the app before this. */
+  onArchivePress?: () => void;
   disabled?: boolean;
 }
 
@@ -262,6 +265,7 @@ export function RightNowBand({
   onTitlePress,
   onIssuePress,
   onEventPress,
+  onArchivePress,
   disabled = false,
 }: RightNowBandProps) {
   const hasAny =
@@ -309,6 +313,7 @@ export function RightNowBand({
         onTitlePress={onTitlePress}
         onIssuePress={onIssuePress}
         onEventPress={onEventPress}
+        onArchivePress={onArchivePress}
         onHeroPress={onHeroPress}
         disabled={disabled}
       />

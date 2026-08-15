@@ -1695,6 +1695,7 @@ export default function WebHomeScreen() {
             onTitlePress={handleTitlePress}
             onIssuePress={handleIssuePress}
             onEventPress={(slug) => router.push(`/event/${slug}`)}
+            onArchivePress={() => router.push('/event')}
           />
 
           {/* Beige canvas — owns the carousel surface so the dark scroll
