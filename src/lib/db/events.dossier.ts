@@ -229,6 +229,9 @@ export interface EventIndexEntry {
   /** The loudest year this event has ever had — the row's one boast. */
   bestPeak: number | null;
   bestSpike: number | null;
+  /** 1-12, the month it usually lands in, derived from its frozen windows.
+   *  Null before an event has any editions. */
+  typicalMonth: number | null;
 }
 
 export interface EventIndex {
@@ -267,6 +270,7 @@ export function mapEventIndex(raw: unknown): EventIndex {
         lastYear: (e.last_year as string) ?? null,
         bestPeak: num(e.best_peak),
         bestSpike: num(e.best_spike),
+        typicalMonth: num(e.typical_month),
         viewsDaily: (Array.isArray(e.views_daily)
           ? (e.views_daily as Record<string, unknown>[])
           : []

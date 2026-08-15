@@ -14,7 +14,7 @@ import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constan
 import { EventCurve } from './EventCurve';
 import { EVENT_STAGE, EVENT_INDEX } from '../../constants/eventGeometry';
 import { formatWindow } from '../../hooks/useEventDossier';
-import type { EventIndex } from '../../lib/db/events.dossier';
+import type { EventIndex, EventIndexEntry } from '../../lib/db/events.dossier';
 
 export interface EventIndexListProps {
   index: EventIndex;
@@ -25,6 +25,71 @@ export interface EventIndexListProps {
    *  stopping mid-screen and reverting to ink. */
   viewportHeight?: number;
   onEventPress: (slug: string) => void;
+}
+
+/**
+ * One event, carried by its own mark.
+ *
+ * Twenty stacked detection curves was a scroll through abstraction: the shape of
+ * a 2019 spike is not what makes anyone open a 2019 page, and a wall of
+ * identical charts reads as one undifferentiated thing. Every watched event
+ * already has a single-path mark that paints with currentColor, so each tile
+ * takes the event's own accent as a wash — which is what makes twenty different
+ * logos read as one designed set rather than a sponsor wall.
+ */
+function EventTile({
+  e,
+  cell,
+  onPress,
+}: {
+  e: EventIndexEntry;
+  cell: number;
+  onPress: (slug: string) => void;
+}) {
+  const accent = e.accent ?? COLORS.goldAccent;
+  const brand = brandForEvent(e.slug);
+  const artH = Math.round(cell * 0.62);
+  const span =
+    e.editions > 1 && e.firstYear && e.lastYear
+      ? `${e.editions} editions · ${e.firstYear}–${e.lastYear}`
+      : e.editions === 1 && e.lastYear
+        ? `One edition · ${e.lastYear}`
+        : null;
+
+  return (
+    <Pressable
+      style={[s.tile, { width: cell }]}
+      onPress={() => onPress(e.slug)}
+      accessibilityRole="button"
+      accessibilityLabel={`${e.headline}${span ? `, ${span}` : ''}`}
+    >
+      <View style={[s.tileArt, { height: artH, borderColor: `${accent}33` }]}>
+        <LinearGradient
+          colors={[`${accent}2b`, `${accent}0a`]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        {brand ? (
+          <brand.mark {...fitMark(brand, cell - 30, artH - 28)} color={accent} fill={accent} />
+        ) : (
+          // A row can land in watched_events before its mark does; the name is
+          // the fallback, not a gap.
+          <Text style={[s.tileFallback, { color: accent }]} numberOfLines={2}>
+            {e.headline}
+          </Text>
+        )}
+      </View>
+      <Text style={s.tileName} numberOfLines={1}>
+        {e.headline}
+      </Text>
+      <Text style={s.tileMeta} numberOfLines={1}>
+        {[span, e.bestSpike && e.bestSpike > 1 ? `best ${e.bestSpike}×` : null]
+          .filter(Boolean)
+          .join('  ·  ')}
+      </Text>
+    </Pressable>
+  );
 }
 
 export function EventIndexList({
@@ -53,6 +118,30 @@ export function EventIndexList({
   const tileCell = Math.floor((avail - tileGap * (tileCols - 1)) / tileCols);
   const live = events.filter((e) => e.isLive);
   const rest = events.filter((e) => !e.isLive);
+  // The fan year. With 128 frozen windows the season is a derived fact, and it
+  // is the most interesting thing this page can say: eight of twenty events land
+  // in July-September and three in April-June. An A-to-Z grid hides that; a
+  // calendar states it. Quarters rather than months because a month view is
+  // mostly empty rows, and rather than named seasons because "summer" is a
+  // hemisphere's opinion where a month range is a fact.
+  const QUARTERS: { label: string; note: string; months: number[] }[] = [
+    { label: 'January – March', note: 'The quiet start', months: [1, 2, 3] },
+    { label: 'April – June', note: 'The showcases begin', months: [4, 5, 6] },
+    { label: 'July – September', note: 'Peak season', months: [7, 8, 9] },
+    { label: 'October – December', note: 'The long tail', months: [10, 11, 12] },
+  ];
+  const quarters = QUARTERS.map((q) => ({
+    ...q,
+    events: rest.filter((e) => e.typicalMonth !== null && q.months.includes(e.typicalMonth)),
+  })).filter((q) => q.events.length > 0);
+  // An event with no window yet belongs to no month; it still belongs on the
+  // page rather than being silently dropped.
+  const undated = rest.filter((e) => e.typicalMonth === null);
+  const totalEditions = events.reduce((n, e) => n + e.editions, 0);
+  const earliestYear = events.reduce<string | null>(
+    (y, e) => (e.firstYear && (!y || e.firstYear < y) ? e.firstYear : y),
+    null,
+  );
 
   return (
     <View>
@@ -68,6 +157,17 @@ export function EventIndexList({
         >
           <Text style={s.eyebrow}>The record</Text>
           <Text style={s.title}>Events we caught</Text>
+          {/* The page's own scale, stated. It holds 128 editions going back to
+              2018 and used to open by describing its method instead — a reader
+              cannot tell a rich archive from an empty one without being told
+              which it is. */}
+          {totalEditions > 0 && (
+            <Text style={s.scale}>
+              <Text style={s.scaleNum}>{events.length}</Text> events ·{' '}
+              <Text style={s.scaleNum}>{totalEditions}</Text> editions
+              {earliestYear ? ` · back to ${earliestYear}` : ''}
+            </Text>
+          )}
           {/* Fixed three-line box on phone, so the placeholder can mirror it
               exactly rather than approximate the font's own wrapping. */}
           <Text
@@ -101,6 +201,7 @@ export function EventIndexList({
               {live.map((e) => {
                 const accent = e.accent ?? COLORS.goldAccent;
                 const win = formatWindow(e.liveFrom, e.liveTo);
+                const liveBrand = brandForEvent(e.slug);
                 return (
                   <Pressable
                     key={e.slug}
@@ -110,7 +211,21 @@ export function EventIndexList({
                     accessibilityLabel={`${e.headline}, on now${win ? `, ${win}` : ''}`}
                   >
                     <View style={s.rowHead}>
-                      <Text style={s.rowTitle}>{e.headline}</Text>
+                      {/* The mark, not the name. This is the one event on the
+                          page that is happening, and it should look like the
+                          headline it is — the dossier and the rail both lead
+                          with the mark for the same reason. */}
+                      {liveBrand ? (
+                        <View style={s.liveMark}>
+                          <liveBrand.mark
+                            {...fitMark(liveBrand, 190, 56)}
+                            color={accent}
+                            fill={accent}
+                          />
+                        </View>
+                      ) : (
+                        <Text style={s.rowTitle}>{e.headline}</Text>
+                      )}
                       <View style={[s.livePip, { backgroundColor: accent }]}>
                         <Text style={s.livePipText}>On now</Text>
                       </View>
@@ -139,70 +254,35 @@ export function EventIndexList({
                 );
               })}
 
-              {rest.length > 0 && (
+              {(quarters.length > 0 || undated.length > 0) && (
                 <>
-                  {live.length > 0 && <Text style={s.gridHead}>Every event on record</Text>}
-                  {/* Tiles carrying each event's own mark.
-                      Twenty stacked detection curves was a scroll through
-                      abstraction: the shape of a 2019 spike is not what makes
-                      anyone open a 2019 page, and a wall of identical charts
-                      reads as one undifferentiated thing. The marks are what a
-                      fan recognises instantly, they exist for every watched
-                      event, and they are single-path silhouettes that take the
-                      event's own accent — so twenty of them read as one set
-                      rather than as a sponsor wall. */}
-                  <View style={[s.tileGrid, { gap: tileGap }]}>
-                    {rest.map((e) => {
-                      const accent = e.accent ?? COLORS.goldAccent;
-                      const brand = brandForEvent(e.slug);
-                      const artH = Math.round(tileCell * 0.62);
-                      const span =
-                        e.editions > 1 && e.firstYear && e.lastYear
-                          ? `${e.editions} editions · ${e.firstYear}–${e.lastYear}`
-                          : e.editions === 1 && e.lastYear
-                            ? `One edition · ${e.lastYear}`
-                            : null;
-                      return (
-                        <Pressable
-                          key={e.slug}
-                          style={[s.tile, { width: tileCell }]}
-                          onPress={() => onEventPress(e.slug)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`${e.headline}${span ? `, ${span}` : ''}`}
-                        >
-                          <View style={[s.tileArt, { height: artH, borderColor: `${accent}33` }]}>
-                            <LinearGradient
-                              colors={[`${accent}2b`, `${accent}0a`]}
-                              start={{ x: 0.1, y: 0 }}
-                              end={{ x: 0.9, y: 1 }}
-                              style={StyleSheet.absoluteFill}
-                            />
-                            {brand ? (
-                              <brand.mark
-                                {...fitMark(brand, tileCell - 30, artH - 28)}
-                                color={accent}
-                                fill={accent}
-                              />
-                            ) : (
-                              // A row can land in watched_events before its mark
-                              // does; the name is the fallback, not a gap.
-                              <Text style={[s.tileFallback, { color: accent }]} numberOfLines={2}>
-                                {e.headline}
-                              </Text>
-                            )}
-                          </View>
-                          <Text style={s.tileName} numberOfLines={1}>
-                            {e.headline}
-                          </Text>
-                          <Text style={s.tileMeta} numberOfLines={1}>
-                            {[span, e.bestSpike && e.bestSpike > 1 ? `best ${e.bestSpike}×` : null]
-                              .filter(Boolean)
-                              .join('  ·  ')}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
+                  {quarters.map((q) => (
+                    <View key={q.label}>
+                      <View style={s.seasonHead}>
+                        <Text style={s.seasonLabel}>{q.label}</Text>
+                        <View style={s.seasonRule} />
+                        <Text style={s.seasonNote}>{q.note}</Text>
+                      </View>
+                      <View style={[s.tileGrid, { gap: tileGap }]}>
+                        {q.events.map((e) => (
+                          <EventTile key={e.slug} e={e} cell={tileCell} onPress={onEventPress} />
+                        ))}
+                      </View>
+                    </View>
+                  ))}
+                  {undated.length > 0 && (
+                    <View>
+                      <View style={s.seasonHead}>
+                        <Text style={s.seasonLabel}>No window yet</Text>
+                        <View style={s.seasonRule} />
+                      </View>
+                      <View style={[s.tileGrid, { gap: tileGap }]}>
+                        {undated.map((e) => (
+                          <EventTile key={e.slug} e={e} cell={tileCell} onPress={onEventPress} />
+                        ))}
+                      </View>
+                    </View>
+                  )}
                 </>
               )}
             </>
@@ -302,6 +382,38 @@ const s = StyleSheet.create({
   },
   rowCurve: { marginTop: EVENT_INDEX.rowCurveGap, marginBottom: EVENT_INDEX.rowCurveGap },
 
+  scale: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14.5,
+    lineHeight: 21,
+    color: INK_TEXT.faint,
+    marginTop: 12,
+  },
+  scaleNum: { fontFamily: 'Nunito_700Bold', color: COLORS.beige },
+  liveMark: { justifyContent: 'center', minHeight: 56 },
+
+  seasonHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 30,
+    marginBottom: 14,
+  },
+  seasonLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: COLORS.deepNavy,
+  },
+  // The rule does the separating so the label can stay quiet — a calendar
+  // heading should not compete with the marks underneath it.
+  seasonRule: { flex: 1, height: 1, backgroundColor: 'rgba(11,24,32,0.12)' },
+  seasonNote: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: PAPER_TEXT.muted,
+  },
   gridHead: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
