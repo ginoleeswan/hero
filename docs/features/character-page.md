@@ -235,12 +235,18 @@ sheet when stacked, the body when split) now report their own offset through
 one `onSectionsLayout`, and the base is added at read time rather than baked in
 at layout time, because the two arrive in either order.
 
-**Still to do:** web's `sideCol` is `position: sticky` and native's is not, so
-once Quick Facts and Debut run out the right column is empty for the rest of
-the page — ~1200pt of it on a portrait iPad, where the main column is longest.
-RN has no sticky, so the equivalent is a clamped `translateY` on the column
-driven by the same `scrollY` the parallax already uses, bounded by
-`bodyHeight - sideColHeight`.
+**The side column travels, because RN has no `position: sticky`.** Web's
+`sideCol` is sticky, and without an equivalent the split is only half of web's
+layout: Quick Facts and Elsewhere run out long before the main column does, and
+the right third of the page is empty for everything after them — ~1200pt of it
+on a portrait iPad, which is where the main column is longest and the void
+therefore worst. The column is instead translated by the same `scrollY` the
+parallax already uses, clamped to `bodyHeight - sideColHeight - 2 * BODY_PAD`,
+so it stops when its bottom reaches the body's and then scrolls away with it —
+which is what sticky does at the end of its container. Both measurements come
+from `onLayout` (`onSectionsLayout` on the body, `onSideColLayout` on the
+column); a column taller than the body yields a travel of zero and simply does
+not move. The transform runs on the native driver, like the parallax.
 
 ## Editing and reporting
 

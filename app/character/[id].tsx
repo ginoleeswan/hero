@@ -106,6 +106,9 @@ const SHEET_OVERLAP = 28;
 const STAGE_MAX = 1180;
 const SIDE_COL = 300;
 const PORTRAIT_OVERLAP = 132;
+/** `bodyInner`'s padding — shared with the sticky side column's travel maths,
+ *  which has to know where the body's content box starts and ends. */
+const BODY_PAD = 24;
 // Sheet's top offset within the scroll content (hero spacer height − the lip),
 // added to each section's local onLayout y so the quick-nav anchors stay correct.
 
@@ -842,11 +845,40 @@ export default function CharacterScreen() {
   // quick-nav jump was landing hundreds of points past the section it named,
   // and the nav itself only faded in after half an art block that does not
   // exist. Measured instead, so the two layouts cannot disagree with it.
-  const [anchorBase, setAnchorBase] = useState(0);
+  const [sectionsBox, setSectionsBox] = useState({ y: 0, h: 0 });
   const onSectionsLayout = (e: LayoutChangeEvent) => {
     const y = Math.round(e.nativeEvent.layout.y);
-    setAnchorBase((prev) => (prev === y ? prev : y));
+    const h = Math.round(e.nativeEvent.layout.height);
+    setSectionsBox((prev) => (prev.y === y && prev.h === h ? prev : { y, h }));
   };
+  const anchorBase = sectionsBox.y;
+  // ── The side column travels ─────────────────────────────────────────────
+  // Web's `sideCol` is `position: sticky`; RN has no sticky, so the column is
+  // translated by the scroll instead and clamped to its own container. Without
+  // it the split is only half web's layout: Quick Facts and Debut run out long
+  // before the main column does, and the right third of the page is empty for
+  // everything after them — measured at ~1200pt on a portrait iPad, which is
+  // where the main column is longest and the void therefore worst.
+  //
+  // `travel` is how far the column can go before its bottom would leave the
+  // body; zero (or negative, when the column is the taller of the two) parks it
+  // and the interpolation below degenerates to a constant.
+  const SIDE_STICKY_TOP = insets.top + 56;
+  const [sideColH, setSideColH] = useState(0);
+  const onSideColLayout = (e: LayoutChangeEvent) => {
+    const h = Math.round(e.nativeEvent.layout.height);
+    setSideColH((prev) => (prev === h ? prev : h));
+  };
+  const sideTravel = Math.max(0, sectionsBox.h - sideColH - BODY_PAD * 2);
+  const sideStart = Math.max(0, sectionsBox.y + BODY_PAD - SIDE_STICKY_TOP);
+  const sideTranslate = scrollY.interpolate({
+    // A zero-width input range is invalid, so the parked case still spans a
+    // point — it just maps both ends to no movement.
+    inputRange: [sideStart, sideStart + Math.max(1, sideTravel)],
+    outputRange: [0, sideTravel],
+    extrapolate: 'clamp',
+  });
+
   // Split's fold is the identity band, which is what `anchorBase` measures.
   const fold = split ? anchorBase || HERO_IMAGE_HEIGHT : HERO_IMAGE_HEIGHT;
 
@@ -1860,7 +1892,10 @@ export default function CharacterScreen() {
             <View style={styles.body} onLayout={onSectionsLayout}>
               <View style={styles.bodyInner}>
                 <View style={styles.mainCol}>{sheetContent}</View>
-                <View style={styles.sideCol}>
+                <Animated.View
+                  style={[styles.sideCol, { transform: [{ translateY: sideTranslate }] }]}
+                  onLayout={onSideColLayout}
+                >
                   {/* The portrait, as a card that hangs up into the band. The
                       negative margin is the overlap web calls `portraitOverlap`
                       — it is what stitches the band to the body instead of
@@ -1908,7 +1943,7 @@ export default function CharacterScreen() {
                       <HeroLinksRow links={links!} contentInset={0} />
                     </PaperCard>
                   ) : null}
-                </View>
+                </Animated.View>
               </View>
             </View>
           </>
@@ -2097,8 +2132,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 24,
-    paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingHorizontal: BODY_PAD,
+    paddingTop: BODY_PAD,
   },
   // NO `gap` here. `sheetContent` is a fragment and the split branch nests
   // another inside it, so the cards are not the direct children a column `gap`
