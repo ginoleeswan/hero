@@ -68,7 +68,12 @@ serve(async (req: Request) => {
     const b = await req.json().catch(() => ({}));
     if (typeof b?.limit === 'number') limit = Math.min(Math.max(1, b.limit), 500);
     if (typeof b?.aheadDays === 'number') aheadDays = Math.min(Math.max(0, b.aheadDays), 1095);
-    if (typeof b?.behindDays === 'number') behindDays = Math.min(Math.max(0, b.behindDays), 1095);
+    // Cap raised from 1095 (3 years) so a backfill can reach the whole
+    // catalogue. TMDB holds videos for old titles and this sweep had never
+    // asked: 2,482 of 2,675 titles had videos_checked_at null, which is why
+    // an event page for 2019 showed three trailers and 2026 showed 160.
+    // The cron passes neither value and keeps its 60/365 window.
+    if (typeof b?.behindDays === 'number') behindDays = Math.min(Math.max(0, b.behindDays), 4200);
     if (typeof b?.triggeredBy === 'string') triggeredBy = b.triggeredBy;
   } catch {
     /* empty body ok */

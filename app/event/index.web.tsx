@@ -3,10 +3,10 @@
 // scroll container — web screens must scroll the DOCUMENT, never a vertical RN
 // ScrollView.
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
-import { Text } from '../../src/components/ui/Text';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../src/constants/colors';
 import { EventIndexList } from '../../src/components/event/EventIndexList';
+import { EventIndexSkeleton } from '../../src/components/skeletons/EventSkeleton';
 import { PageEndCap } from '../../src/components/web/PageEndCap';
 import { useEventIndex } from '../../src/hooks/useEventDossier';
 
@@ -20,7 +20,10 @@ export default function EventIndexPageWeb() {
     <View style={s.screen as object}>
       {/* The web masthead is fixed, so a page starting at 0 renders underneath it. */}
       <View style={s.column as object}>
-        {loading && !index && <Text style={s.muted as object}>Loading…</Text>}
+        {/* A skeleton, not the word "Loading". Every native event route has had
+            one; the web routes — the ones actually being looked at — rendered a
+            grey string on an empty page. */}
+        {loading && !index && <EventIndexSkeleton />}
         {index && (
           <EventIndexList
             index={index}

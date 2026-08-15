@@ -13,6 +13,7 @@ import { EventDossier } from '../../../src/components/event/EventDossier';
 import { EventHub, EditionList } from '../../../src/components/event/EventHub';
 import { useEventDossier } from '../../../src/hooks/useEventDossier';
 import { useEventHub } from '../../../src/hooks/useEventEditions';
+import { EventHubSkeleton } from '../../../src/components/skeletons/EventSkeleton';
 import { PageEndCap } from '../../../src/components/web/PageEndCap';
 
 export default function EventPageWeb() {
@@ -32,9 +33,9 @@ export default function EventPageWeb() {
   return (
     <View style={s.screen as object}>
       <View style={s.column as object}>
-        {(loading || hubLoading) && !hub && !dossier && (
-          <Text style={s.muted as object}>Loading…</Text>
-        )}
+        {/* The hub shape: liveness is unknown until the hub resolves, and 19 of
+            20 events are not live. */}
+        {(loading || hubLoading) && !hub && !dossier && <EventHubSkeleton />}
         {notFound && !hub && <Text style={s.muted as object}>No page for this event yet.</Text>}
         {/* A failed fetch is not a dead link — the native twin offers a retry,
             so this does too rather than leaving an empty column. */}

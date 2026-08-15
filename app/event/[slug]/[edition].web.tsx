@@ -8,6 +8,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS, INK_TEXT } from '../../../src/constants/colors';
 import { EventDossier } from '../../../src/components/event/EventDossier';
 import { useEventEdition } from '../../../src/hooks/useEventEditions';
+import { EventDossierSkeleton } from '../../../src/components/skeletons/EventSkeleton';
 import { PageEndCap } from '../../../src/components/web/PageEndCap';
 
 export default function EventEditionPageWeb() {
@@ -23,7 +24,7 @@ export default function EventEditionPageWeb() {
   return (
     <View style={s.screen as object}>
       <View style={s.column as object}>
-        {loading && <Text style={s.muted as object}>Loading…</Text>}
+        {loading && <EventDossierSkeleton />}
         {notFound && (
           <View style={s.failed as object}>
             <Text style={s.muted as object}>No record of that edition.</Text>
