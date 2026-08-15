@@ -20,7 +20,10 @@ import { EventHub, EditionList } from '../../../src/components/event/EventHub';
 import { useEventDossier } from '../../../src/hooks/useEventDossier';
 import { useEventHub } from '../../../src/hooks/useEventEditions';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import { EventDossierSkeleton } from '../../../src/components/skeletons/EventSkeleton';
+import {
+  EventDossierSkeleton,
+  EventHubSkeleton,
+} from '../../../src/components/skeletons/EventSkeleton';
 import { FadeOutSkeleton } from '../../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../../src/hooks/useSkeletonTransition';
 import { ShareHeaderButton } from '../../../src/components/ui/ShareHeaderButton';
@@ -78,7 +81,9 @@ export default function EventPage() {
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
         {/* Bleed the ink stage under the status bar — the page opens on ink. */}
         <View style={{ height: insets.top, backgroundColor: COLORS.deepNavy }} />
-        {(loading || hubLoading) && phase === 'skeleton' && <EventDossierSkeleton />}
+        {/* The hub shape while loading: liveness is unknown until the hub
+            resolves, and 19 of 20 events are not live. */}
+        {(loading || hubLoading) && phase === 'skeleton' && <EventHubSkeleton />}
 
         {notFound && !hub && (
           <EmptyState

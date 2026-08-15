@@ -24,6 +24,7 @@ import { EVENT_STAGE, EVENT_PAPER, EVENT_INDEX, EVENT_INK } from '../../constant
 const PAD = EVENT_STAGE.pad;
 
 // Placeholder fill for the ink band, where the beige base would glow.
+const TILE_ART_H = 104;
 const INK_TINT = 'rgba(245,235,220,0.10)';
 
 // The lead trailer's backdrop is `aspectRatio: 16/8` at the gutter's width, so
@@ -139,27 +140,87 @@ export function EventIndexSkeleton() {
             style={styles.indexMethod}
             widths={['100%', '96%', '62%']}
           />
+          {/* The live event's spotlight, which lives on ink above the seam. */}
+          <View style={styles.spotRule} />
+          <TextLine box={16} ink={11} width={150} tint={INK_TINT} />
+          <Skeleton width={200} height={62} borderRadius={8} style={styles.spotMark} />
+          <TextLine box={21} ink={14} width="58%" tint={INK_TINT} style={styles.spotStat} />
+        </View>
+        <View style={styles.seam} />
+        {/* Two quarters of tiles. The real page groups events by the quarter
+            they happen in and renders each as a mark on an accent wash, so the
+            placeholder is a season heading over a two-up grid — mirroring the
+            layout rather than approximating an older one. It used to mirror
+            four full-width curve rows, which the page no longer has. */}
+        <View style={styles.indexPaper}>
+          {Array.from({ length: 2 }).map((_, q) => (
+            <View key={q}>
+              <View style={styles.seasonHead}>
+                <TextLine box={18} ink={11} width={104} radius={3} />
+                <View style={styles.seasonRule} />
+              </View>
+              <View style={styles.tileGrid}>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <View key={i} style={styles.tile}>
+                    {/* Ink ground, mirroring the real tile — otherwise the grid appears
+                        to darken on load. */}
+                    <Skeleton width="100%" height={TILE_ART_H} borderRadius={12} color={INK_TINT} />
+                    <TextLine box={20} ink={15} width="72%" radius={4} />
+                    <TextLine box={15} ink={11} width="88%" />
+                  </View>
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    </SkeletonProvider>
+  );
+}
+
+/**
+ * app/event/[slug]/index.tsx when the event is NOT live — the series hub.
+ *
+ * It was borrowing EventDossierSkeleton, which promises a stat rail, a curve and
+ * four content sections the hub does not have. A placeholder that mirrors a
+ * different page is worse than none: it makes the real page look like it lost
+ * something on arrival.
+ */
+export function EventHubSkeleton() {
+  return (
+    <SkeletonProvider>
+      <View>
+        <View style={styles.indexStage}>
+          <TextLine
+            box={EVENT_INDEX.eyebrowLine}
+            ink={EVENT_INK.eyebrow}
+            width={120}
+            tint={INK_TINT}
+            style={styles.indexEyebrow}
+          />
+          {/* The mark, which is what the hub leads with. */}
+          <Skeleton width={200} height={72} borderRadius={8} />
+          <Paragraph
+            lines={3}
+            box={EVENT_INDEX.methodLine}
+            ink={EVENT_INK.method}
+            tint={INK_TINT}
+            style={styles.indexMethod}
+            widths={['100%', '94%', '48%']}
+          />
         </View>
         <View style={styles.seam} />
         <View style={styles.indexPaper}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <View key={i} style={styles.indexRow}>
-              <TextLine
-                box={EVENT_INDEX.rowTitleLine}
-                ink={EVENT_INK.sectionTitle}
-                width="58%"
-                radius={5}
-              />
-              <TextLine box={EVENT_INDEX.rowWindowLine} ink={EVENT_INK.window} width="42%" />
-              {/* The real row's curve bleeds past the gutter to the band's
-                  edges, which on a phone is the screen's edge. */}
-              <Skeleton
-                width="100%"
-                height={EVENT_INDEX.rowCurveH}
-                borderRadius={0}
-                style={styles.indexRowCurve}
-              />
-              <TextLine box={EVENT_INDEX.rowStatLine} ink={EVENT_INK.method} width="66%" />
+          <TextLine box={30} ink={23} width={128} radius={5} />
+          <TextLine box={18} ink={13} width={186} style={styles.hubNote} />
+          {/* Edition rows: a year, a window, and a line of counts. */}
+          {Array.from({ length: 5 }).map((_, i) => (
+            <View key={i} style={styles.hubRow}>
+              <View style={styles.hubRowMain}>
+                <TextLine box={30} ink={23} width={72} radius={5} />
+                <TextLine box={16} ink={12} width={148} />
+              </View>
+              <TextLine box={17} ink={13} width="76%" />
             </View>
           ))}
         </View>
@@ -291,6 +352,30 @@ const styles = StyleSheet.create({
     paddingTop: EVENT_INDEX.paperPaddingTop,
     paddingBottom: EVENT_INDEX.paperPaddingBottom,
   },
+  spotRule: {
+    height: 1,
+    backgroundColor: 'rgba(245,235,220,0.16)',
+    marginTop: 24,
+    marginBottom: 18,
+  },
+  spotMark: { marginTop: 12 },
+  spotStat: { marginTop: 14 },
+  seasonHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 30,
+    marginBottom: 14,
+  },
+  seasonRule: { flex: 1, height: 1, backgroundColor: 'rgba(11,24,32,0.12)' },
+  tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  // Two-up, matching the real grid's minimum column count.
+  tile: { width: '47%', gap: 7 },
+
+  hubNote: { marginTop: 4, marginBottom: 20 },
+  hubRow: { paddingVertical: 14, borderTopWidth: 1, borderTopColor: 'rgba(11,24,32,0.10)', gap: 5 },
+  hubRowMain: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+
   indexRow: {
     paddingVertical: EVENT_INDEX.rowPaddingVertical,
     gap: EVENT_INDEX.rowGap,

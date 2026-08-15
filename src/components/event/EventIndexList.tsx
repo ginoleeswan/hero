@@ -63,11 +63,17 @@ function EventTile({
       accessibilityRole="button"
       accessibilityLabel={`${e.headline}${span ? `, ${span}` : ''}`}
     >
-      <View style={[s.tileArt, { height: artH, borderColor: `${accent}33` }]}>
+      {/* Ink, not a pale wash. These marks were traced to sit on the dark Pulse
+          card and they were being asked to carry a beige page: at 17% accent on
+          paper they read as faint stains rather than logos. On ink they glow in
+          their own accent, and a grid of dark cards on warm paper is the app's
+          own ink/paper duality doing the work — the same reason the dossier
+          puts the evidence on ink and the record on paper. */}
+      <View style={[s.tileArt, { height: artH, borderColor: `${accent}40` }]}>
         <LinearGradient
-          colors={[`${accent}2b`, `${accent}0a`]}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.9, y: 1 }}
+          colors={[`${accent}26`, 'transparent']}
+          start={{ x: 0.15, y: 0 }}
+          end={{ x: 0.85, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
         {brand ? (
@@ -103,11 +109,6 @@ export function EventIndexList({
   const pad = wide ? EVENT_STAGE.padWide : EVENT_STAGE.pad;
   const measure = Math.min(maxContentWidth ?? contentWidth, contentWidth);
   const inner = { width: '100%' as const, maxWidth: measure, alignSelf: 'center' as const };
-  // The curve bleeds to the band's edges rather than sitting inset. Boxed inside
-  // the gutter it read as a floating rectangle; edge to edge it reads as a
-  // measurement the row is made of — and on a phone the band edge IS the screen
-  // edge, which is where the drama is.
-  const bleed = Math.max(0, measure);
   const { events, watching } = index;
   // Two up on a phone, more as the measure grows. Derived rather than fixed, so
   // every row reaches both edges at every width — the same rule the dossier's
@@ -137,6 +138,10 @@ export function EventIndexList({
   // An event with no window yet belongs to no month; it still belongs on the
   // page rather than being silently dropped.
   const undated = rest.filter((e) => e.typicalMonth === null);
+  const spotlight = live[0] ?? null;
+  const spotAccent = spotlight?.accent ?? COLORS.goldAccent;
+  const spotBrand = spotlight ? brandForEvent(spotlight.slug) : undefined;
+  const spotWindow = spotlight ? formatWindow(spotlight.liveFrom, spotlight.liveTo) : null;
   const totalEditions = events.reduce((n, e) => n + e.editions, 0);
   const earliestYear = events.reduce<string | null>(
     (y, e) => (e.firstYear && (!y || e.firstYear < y) ? e.firstYear : y),
@@ -146,6 +151,29 @@ export function EventIndexList({
   return (
     <View>
       <View style={s.stage}>
+        {/* The live event's curve, drawn full-bleed as the stage's texture and
+            pinned to its floor — the dossier does exactly this, and it is what
+            stops the masthead being a block of type. */}
+        {spotlight && spotlight.viewsDaily.length > 0 && (
+          <>
+            <View style={[s.stageCurve, { height: EVENT_INDEX.rowCurveH }]} pointerEvents="none">
+              <EventCurve
+                series={spotlight.viewsDaily}
+                from={spotlight.liveFrom}
+                to={spotlight.liveTo}
+                accent={spotAccent}
+                width={contentWidth}
+                height={EVENT_INDEX.rowCurveH}
+              />
+            </View>
+            <LinearGradient
+              colors={[SURFACE.ink, `${SURFACE.ink}cc`, 'transparent']}
+              locations={[0, 0.42, 1]}
+              style={[s.stageScrim, { height: EVENT_INDEX.rowCurveH + 36 }]}
+              pointerEvents="none"
+            />
+          </>
+        )}
         <View
           style={[
             inner,
@@ -167,6 +195,48 @@ export function EventIndexList({
               <Text style={s.scaleNum}>{totalEditions}</Text> editions
               {earliestYear ? ` · back to ${earliestYear}` : ''}
             </Text>
+          )}
+
+          {/* The spotlight. It belongs on INK, not as the first row of the
+              archive: this page's grammar is ink = the claim, paper = the
+              record, and an event that is happening right now is a claim. On
+              paper it was a row that happened to be first; here it is what the
+              page opens on, in the event's own mark and its own accent — the
+              same treatment the dossier masthead and the Pulse card give it. */}
+          {spotlight && (
+            <Pressable
+              style={s.spot}
+              onPress={() => onEventPress(spotlight.slug)}
+              accessibilityRole="button"
+              accessibilityLabel={`${spotlight.headline}, on now`}
+            >
+              <View style={s.spotRule} />
+              <View style={s.spotRow}>
+                <View style={[s.spotPip, { backgroundColor: spotAccent }]} />
+                <Text style={[s.spotNow, { color: spotAccent }]}>On now</Text>
+                {!!spotWindow && <Text style={s.spotWindow}>{spotWindow}</Text>}
+              </View>
+              {spotBrand ? (
+                <View style={s.spotMark}>
+                  <spotBrand.mark
+                    {...fitMark(spotBrand, wide ? 300 : 220, wide ? 96 : 74)}
+                    color={spotAccent}
+                    fill={spotAccent}
+                  />
+                </View>
+              ) : (
+                <Text style={[s.spotName, { color: spotAccent }]}>{spotlight.headline}</Text>
+              )}
+              {spotlight.spikeRatio !== null && spotlight.spikeRatio > 1 && (
+                <Text style={s.spotStat}>
+                  <Text style={[s.spotStatNum, { color: spotAccent }]}>
+                    {spotlight.spikeRatio}×
+                  </Text>{' '}
+                  usual readership
+                  {spotlight.peak ? ` · peak ${spotlight.peak.toLocaleString()} a day` : ''}
+                </Text>
+              )}
+            </Pressable>
           )}
           {/* Fixed three-line box on phone, so the placeholder can mirror it
               exactly rather than approximate the font's own wrapping. */}
@@ -196,64 +266,6 @@ export function EventIndexList({
             </Text>
           ) : (
             <>
-              {/* The live event keeps the full treatment: the curve IS the news
-                  while it is happening. */}
-              {live.map((e) => {
-                const accent = e.accent ?? COLORS.goldAccent;
-                const win = formatWindow(e.liveFrom, e.liveTo);
-                const liveBrand = brandForEvent(e.slug);
-                return (
-                  <Pressable
-                    key={e.slug}
-                    style={s.row}
-                    onPress={() => onEventPress(e.slug)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${e.headline}, on now${win ? `, ${win}` : ''}`}
-                  >
-                    <View style={s.rowHead}>
-                      {/* The mark, not the name. This is the one event on the
-                          page that is happening, and it should look like the
-                          headline it is — the dossier and the rail both lead
-                          with the mark for the same reason. */}
-                      {liveBrand ? (
-                        <View style={s.liveMark}>
-                          <liveBrand.mark
-                            {...fitMark(liveBrand, 190, 56)}
-                            color={accent}
-                            fill={accent}
-                          />
-                        </View>
-                      ) : (
-                        <Text style={s.rowTitle}>{e.headline}</Text>
-                      )}
-                      <View style={[s.livePip, { backgroundColor: accent }]}>
-                        <Text style={s.livePipText}>On now</Text>
-                      </View>
-                    </View>
-                    {!!win && <Text style={s.rowWindow}>{win}</Text>}
-                    <View style={[s.rowCurve, { marginHorizontal: -pad }]}>
-                      <EventCurve
-                        series={e.viewsDaily}
-                        from={e.liveFrom}
-                        to={e.liveTo}
-                        accent={accent}
-                        width={bleed}
-                        height={wide ? EVENT_INDEX.rowCurveHWide : EVENT_INDEX.rowCurveH}
-                      />
-                    </View>
-                    {e.spikeRatio !== null && e.spikeRatio > 1 && (
-                      <Text style={s.rowStat}>
-                        <Text style={[s.rowStatNum, { color: COLORS.deepNavy }]}>
-                          {e.spikeRatio}×
-                        </Text>{' '}
-                        usual readership
-                        {e.peak ? ` · peak ${e.peak.toLocaleString()} a day` : ''}
-                      </Text>
-                    )}
-                  </Pressable>
-                );
-              })}
-
               {(quarters.length > 0 || undated.length > 0) && (
                 <>
                   {quarters.map((q) => (
@@ -313,7 +325,6 @@ export function EventIndexList({
 const s = StyleSheet.create({
   // Explicit line boxes throughout — see EVENT_INDEX. Left to the font's own
   // metrics they were unknowable to the placeholder that has to mirror them.
-  stage: { backgroundColor: SURFACE.ink, paddingBottom: EVENT_INDEX.stagePaddingBottom },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
@@ -382,6 +393,41 @@ const s = StyleSheet.create({
   },
   rowCurve: { marginTop: EVENT_INDEX.rowCurveGap, marginBottom: EVENT_INDEX.rowCurveGap },
 
+  // The stage owns the curve, so it must clip and stack.
+  stage: { backgroundColor: SURFACE.ink, paddingBottom: 28, overflow: 'hidden' },
+  stageCurve: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  stageScrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+
+  spot: { marginTop: 24 },
+  // A hairline rather than a card. The spotlight is part of the masthead, not a
+  // panel sitting on it — a boxed card here would read as an advert.
+  spotRule: { height: 1, backgroundColor: 'rgba(245,235,220,0.16)', marginBottom: 18 },
+  spotRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  spotPip: { width: 7, height: 7, borderRadius: 4 },
+  spotNow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  spotWindow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.6)',
+  },
+  spotMark: { alignItems: 'flex-start', justifyContent: 'center', minHeight: 74 },
+  spotName: { fontFamily: 'Flame-Regular', fontSize: 38, lineHeight: 46 },
+  spotStat: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14.5,
+    lineHeight: 21,
+    color: 'rgba(245,235,220,0.72)',
+    marginTop: 14,
+  },
+  spotStatNum: { fontFamily: 'Nunito_700Bold', fontSize: 18 },
+
   scale: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14.5,
@@ -435,6 +481,7 @@ const s = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: SURFACE.ink,
   },
   tileFallback: {
     fontFamily: 'Flame-Regular',
