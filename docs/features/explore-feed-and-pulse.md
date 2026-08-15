@@ -135,6 +135,28 @@ an index at `/event` (`get_event_index`), both platform-paired.
   (`get_trending_for_user`, `src/lib/db/trending.ts`), recently viewed
   (`useRecentlyViewed` over `user_view_history`, `src/lib/db/viewHistory.ts`).
 
+## Tablets: the daily pair, and why nothing else pairs
+
+At `breakpointFor(width) === 'wide'` (≥1024) `app/(tabs)/explore.tsx` renders
+**Today's Matchup** and the dailies banner (`DailyChallengeBanner`) side by
+side in one row instead of two stacked full-width bands — the feed's
+virtualised item list gains a paired-item entry for `wide`, and below 1024 the
+original stacked rendering is reproduced verbatim. `HomeSkeleton` mirrors the
+pairing so the placeholder doesn't stack and then jump to a paired row on
+handoff. Verified on an iPad Pro 13" landscape (1376pt): the two columns
+balance at 892pt and 890pt; the right column sits empty below the banner
+because the banner is genuinely shorter than the matchup card — that's
+correct, not a bug.
+
+**Only this pair.** `RightNowBand`, `HomeHeroRow`, `TitlePosterRail` and
+`CoverGallery` are deliberately never paired into a half-width column — each
+carries a horizontal rail, and a rail in a half-width column is exactly the
+"broken carousel" failure `src/constants/layout.ts` was written to prevent
+(see its header comment: a proportion-scaled card stops reading as a rail card
+and starts reading as one and a half). The two rows that do pair are both
+compact, self-contained cards with no rail inside them — that's the test for
+whether a future row is a pairing candidate, not just whether it "fits."
+
 ## Category pages: never filter on an embedded resource
 
 `/category/[slug]` shares `getCategoryPage` with the universe, franchise and
@@ -279,6 +301,8 @@ Historical specs and plans (status lines in them may be stale):
   `docs/superpowers/specs/2026-07-27-pulse-return-design.md` — the Pulse arc.
 - `docs/superpowers/specs/2026-08-14-ipad-spotlight-deck-design.md` — the
   billboard's deck above 720pt.
+- `docs/superpowers/specs/2026-08-15-tablet-adaptation-design.md` — the daily
+  pair at `wide`.
 
 ## The skeleton handoff
 

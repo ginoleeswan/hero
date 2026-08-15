@@ -63,6 +63,16 @@ Signed-out users get `GuestProfileScreen` (defined inside
 anon-friendly, but favourites, takes, contributions, and profile edits require
 auth — check `useAuth().user` and route to `/(auth)/login`.
 
+## Tablets: the content column is capped
+
+Both `app/(tabs)/profile.tsx` and `app/(tabs)/profile.web.tsx` wrap the
+scrolling content — signed-in and `GuestProfileScreen` alike — in
+`PageColumn` (`src/components/ui/PageColumn.tsx`). Below its 900pt cap it's a
+no-op by construction, so phones are unchanged; above it, rows and buttons
+stop stretching edge to edge on a landscape iPad. The cover image and any
+full-bleed chrome stay outside the column. See
+`docs/features/platform-and-motion.md` for the general rule this follows.
+
 ## Taste — "Your Universe"
 
 `get_my_taste_profile` (migration `20260617140000_taste_profile_rpc.sql`)
@@ -166,3 +176,5 @@ status lines may be stale):
 - `docs/superpowers/specs/2026-07-11-matchup-takes-daily-debate-design.md`
 - `docs/superpowers/specs/2026-04-21-donation-row-design.md` and `2026-07-06-donation-surfacing-design.md`
 - `docs/superpowers/specs/2026-07-16-monetization-options.md`
+- `docs/superpowers/specs/2026-08-15-tablet-adaptation-design.md` — Profile
+  through `PageColumn`.

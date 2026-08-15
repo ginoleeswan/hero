@@ -341,6 +341,20 @@ somewhere between the hairline and the chin. Every other fighter card in the app
 that reason; these were the exception. The squad placeholders stay short because
 there is nothing in them to see.
 
+## Tablets: one gutter, and cards that are cards
+
+`versus.tsx` used to apply `PageColumn` per section, which stepped the left
+edge between a 16pt inset and a centred column down the screen. It's now
+hoisted once, around the whole stage's content, so the title, showdown and
+ledger share a single measure — the gradient behind them stays full-bleed. The
+battle-builder cards in `MakeAFight` (`src/components/versus/MakeAFight.tsx`)
+moved off a window proportion onto `railCardWidth(width)` from
+`src/constants/layout.ts`, so above the tablet threshold they're a fixed size
+rather than a fraction of the window. Verified on an iPad Pro 13" landscape
+(1376pt): builder cards render at 258pt (was ~840pt), sections share one edge
+at ~329pt. **Known remainder:** "Make a fight" itself still sits at ~343pt, a
+~14pt step against the sections above it — not yet fixed.
+
 ## History
 
 Historical specs (status lines in them may be stale):
@@ -355,4 +369,6 @@ Historical specs (status lines in them may be stale):
 `docs/superpowers/specs/2026-06-24-battle-builder-mobile-guided-duel-design.md`,
 `docs/superpowers/specs/2026-06-24-versus-battle-discovery-feed-design.md`,
 `docs/superpowers/specs/2026-07-11-matchup-takes-daily-debate-design.md`,
-`docs/superpowers/specs/2026-08-14-user-blocking-design.md`.
+`docs/superpowers/specs/2026-08-14-user-blocking-design.md`,
+`docs/superpowers/specs/2026-08-15-tablet-adaptation-design.md` — one gutter,
+sized builder cards.

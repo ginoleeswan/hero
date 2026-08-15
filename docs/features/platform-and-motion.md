@@ -988,6 +988,8 @@ Design docs under `docs/superpowers/` (historical; statuses may be stale):
 - `docs/superpowers/specs/2026-06-18-mobile-web-audit.md` — where the chrome/scroll rules were learned
 - `docs/superpowers/specs/2026-07-06-nebula-loader-design.md` — LogoLoader
 - `docs/superpowers/specs/2026-07-16-web-motion-polish-plan.md` — motion.ts, Reveal, view transitions, skeleton system
+- `docs/superpowers/specs/2026-08-14-ipad-spotlight-deck-design.md` — the billboard's deck above 720pt
+- `docs/superpowers/specs/2026-08-15-tablet-adaptation-design.md` — the adoption rule: `PageColumn` at the screen, `railCardWidth` for cards, width for density
 
 ## Dynamic Type
 
@@ -1085,6 +1087,42 @@ to edge while they agree. They used to agree by both being frozen at launch. The
 ratio is now one exported function imported by both, clamped to 1.1–1.5 because
 the raw `height * 0.66 / width` **inverts** on a landscape iPad and turns the
 portrait card landscape.
+
+### The adoption rule: cap once, size cards, spend width on density
+
+Profile, Arena, Compare and Explore were brought up to the two rules above
+(`docs/superpowers/specs/2026-08-15-tablet-adaptation-design.md`). The change
+itself is unremarkable per screen — that's the point, the primitives already
+existed — but three things came out of doing it four times that the *next*
+screen should follow directly, rather than rediscover:
+
+- **`PageColumn` goes at the screen, not per section.** Arena originally
+  wrapped each section in its own `PageColumn`, which centres each to the same
+  *cap* but not to the same *edge* — a card narrower than the cap centres
+  differently from one that fills it, so the left edge stepped between a 16pt
+  inset and a centred column down the screen. One `PageColumn` around the
+  screen's whole content column, with only genuinely full-bleed chrome (a
+  cover image, a gradient stage) outside it, gives every section the same left
+  edge by construction. Wrapping twice doesn't just look the same and cost
+  more — it's a visible bug.
+- **Anything card-shaped takes `railCardWidth(width)`, never a proportion of
+  the window.** This is rule 2 above, restated as a checklist item: if a
+  card's width is computed from `width * <ratio>`, that's the tell.
+- **Width buys density, not size.** The difference between web's desktop
+  layout and a native screen that merely stretched is exactly this: Explore
+  pairs **Today's Battle** and **Guess the Hero** side by side at `wide`
+  rather than rendering either one bigger, because `layout.ts`'s rail
+  principle — "the same physical card, more of them" — applies to rows the
+  same way it applies to cards. A screen that finds itself with spare width
+  should ask what else can fit beside the thing that's there, not how much
+  bigger to draw the thing that's there.
+
+**Only a handful of screens have been through this.** Two were already
+width-aware before this pass (`search`, `character`) and four more just were.
+Everything else — most of the app — still has no notion of width at all and
+will render a stretched phone at tablet widths until it is. When you touch a
+screen that hasn't been adapted, assume it needs to be, not that it already
+was.
 
 ### The daily game goes two-panel
 
