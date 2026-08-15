@@ -152,10 +152,15 @@ const s = StyleSheet.create({
   rankLead: {
     color: 'rgba(245,235,220,0.55)',
   } as object,
-  // Fill dropped — a head needs no plate — but the ring stays: it carries
-  // rank. HeroAvatar renders a sized image, so the slot must centre it.
+  // An avatar is already a finished mark: no plate, no ring, no glow — a circle
+  // around it only crops the silhouette it was drawn with. The art itself is the
+  // slot; the slot just centres it. Rank is carried by the number and the lane.
   faceBare: {
     backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderRadius: 0,
+    overflow: 'visible',
+    boxShadow: 'none',
     alignItems: 'center',
     justifyContent: 'center',
   } as object,
