@@ -63,17 +63,16 @@ function EventTile({
       accessibilityRole="button"
       accessibilityLabel={`${e.headline}${span ? `, ${span}` : ''}`}
     >
-      {/* Ink, not a pale wash. These marks were traced to sit on the dark Pulse
-          card and they were being asked to carry a beige page: at 17% accent on
-          paper they read as faint stains rather than logos. On ink they glow in
-          their own accent, and a grid of dark cards on warm paper is the app's
-          own ink/paper duality doing the work — the same reason the dossier
-          puts the evidence on ink and the record on paper. */}
-      <View style={[s.tileArt, { height: artH, borderColor: `${accent}40` }]}>
+      {/* A pale wash of the event's own accent, NOT ink. Judged side by side on
+          device: dark tiles read as holes punched in a warm page, where the wash
+          sits with the paper and lets twenty different logos look like one set.
+          The marks are legible at this size — the earlier "they wash out" call
+          was made from a small crop with a browser toolbar over it. */}
+      <View style={[s.tileArt, { height: artH, borderColor: `${accent}33` }]}>
         <LinearGradient
-          colors={[`${accent}26`, 'transparent']}
-          start={{ x: 0.15, y: 0 }}
-          end={{ x: 0.85, y: 1 }}
+          colors={[`${accent}2b`, `${accent}0a`]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
         {brand ? (
@@ -197,6 +196,19 @@ export function EventIndexList({
             </Text>
           )}
 
+          {/* Fixed three-line box on phone, so the placeholder can mirror it
+              exactly rather than approximate the font's own wrapping. */}
+          <Text
+            style={[
+              s.method,
+              wide ? null : { height: EVENT_INDEX.methodLine * EVENT_INDEX.methodLines },
+            ]}
+            numberOfLines={wide ? undefined : EVENT_INDEX.methodLines}
+          >
+            No calendar tells us a convention has started. Each one is watched through its own
+            Wikipedia article, and appears here when the readership says so.
+          </Text>
+
           {/* The spotlight. It belongs on INK, not as the first row of the
               archive: this page's grammar is ink = the claim, paper = the
               record, and an event that is happening right now is a claim. On
@@ -219,7 +231,7 @@ export function EventIndexList({
               {spotBrand ? (
                 <View style={s.spotMark}>
                   <spotBrand.mark
-                    {...fitMark(spotBrand, wide ? 300 : 220, wide ? 96 : 74)}
+                    {...fitMark(spotBrand, wide ? 260 : 196, wide ? 84 : 64)}
                     color={spotAccent}
                     fill={spotAccent}
                   />
@@ -238,18 +250,6 @@ export function EventIndexList({
               )}
             </Pressable>
           )}
-          {/* Fixed three-line box on phone, so the placeholder can mirror it
-              exactly rather than approximate the font's own wrapping. */}
-          <Text
-            style={[
-              s.method,
-              wide ? null : { height: EVENT_INDEX.methodLine * EVENT_INDEX.methodLines },
-            ]}
-            numberOfLines={wide ? undefined : EVENT_INDEX.methodLines}
-          >
-            No calendar tells us a convention has started. Each one is watched through its own
-            Wikipedia article, and appears here when the readership says so.
-          </Text>
         </View>
       </View>
 
@@ -398,11 +398,14 @@ const s = StyleSheet.create({
   stageCurve: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   stageScrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 
-  spot: { marginTop: 24 },
+  // Bottom clearance is deliberate: the curve is pinned to the stage floor at
+  // 76pt, so without it the stat line sits on top of the plot. The dossier
+  // solves the same collision with EVENT_STAGE.curveClearance.
+  spot: { marginTop: 22, marginBottom: EVENT_INDEX.rowCurveH * 0.5 },
   // A hairline rather than a card. The spotlight is part of the masthead, not a
   // panel sitting on it — a boxed card here would read as an advert.
-  spotRule: { height: 1, backgroundColor: 'rgba(245,235,220,0.16)', marginBottom: 18 },
-  spotRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  spotRule: { height: 1, backgroundColor: 'rgba(245,235,220,0.16)', marginBottom: 16 },
+  spotRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 10 },
   spotPip: { width: 7, height: 7, borderRadius: 4 },
   spotNow: {
     fontFamily: 'Nunito_700Bold',
@@ -417,14 +420,14 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
     color: 'rgba(245,235,220,0.6)',
   },
-  spotMark: { alignItems: 'flex-start', justifyContent: 'center', minHeight: 74 },
+  spotMark: { alignItems: 'flex-start', justifyContent: 'center', minHeight: 64 },
   spotName: { fontFamily: 'Flame-Regular', fontSize: 38, lineHeight: 46 },
   spotStat: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14.5,
     lineHeight: 21,
     color: 'rgba(245,235,220,0.72)',
-    marginTop: 14,
+    marginTop: 12,
   },
   spotStatNum: { fontFamily: 'Nunito_700Bold', fontSize: 18 },
 
@@ -481,7 +484,6 @@ const s = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: SURFACE.ink,
   },
   tileFallback: {
     fontFamily: 'Flame-Regular',
