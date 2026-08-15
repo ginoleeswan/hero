@@ -29,7 +29,7 @@ export default function EventIndexPageWeb() {
             index={index}
             wide={wide}
             contentWidth={width}
-            maxContentWidth={900}
+            maxContentWidth={1180}
             topPad={14}
             viewportHeight={height}
             onEventPress={(slug) => router.push(`/event/${encodeURIComponent(slug)}`)}

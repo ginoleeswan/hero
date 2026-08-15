@@ -55,6 +55,43 @@ export interface EventDossierProps {
   onIndexPress?: () => void;
 }
 
+/**
+ * A set of cards that scrolls sideways on a phone and wraps on a desktop.
+ *
+ * The rail is the right pattern on touch: it bleeds to the physical screen edge
+ * so the next card peeks, which is the cue that says "swipe". On a pointer
+ * device the same component is a liability — there is no swipe, the horizontal
+ * scrollbar is easy to miss, and inside a capped reading measure the last
+ * visible card is sliced by the measure's edge rather than by the screen's, so
+ * it reads as a clipping bug instead of an affordance. Wide widths have the room
+ * to show the whole set, so they do.
+ */
+function RailOrWrap({
+  wide,
+  pad,
+  railStyle,
+  wrapStyle,
+  children,
+}: {
+  wide: boolean;
+  pad: number;
+  railStyle: object;
+  wrapStyle: object;
+  children: React.ReactNode;
+}) {
+  if (wide) return <View style={wrapStyle}>{children}</View>;
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={{ marginHorizontal: -pad }}
+      contentContainerStyle={[railStyle, { paddingHorizontal: pad }]}
+    >
+      {children}
+    </ScrollView>
+  );
+}
+
 export function EventDossier({
   dossier,
   windowLabel,
@@ -86,21 +123,70 @@ export function EventDossier({
     const cols = Math.max(min, Math.floor((avail + gap) / (ideal + gap)));
     return { cols, cell: Math.floor((avail - gap * (cols - 1)) / cols), gap };
   };
-  const posterGrid = grid(14, 150);
-  const faceGrid = grid(14, 132, 3);
-
-  const [lead, ...rest] = trailers;
-  // One entry per thing announced, not per clip. See groupAnnouncements.
-  const [leadNews, ...restNews] = groupAnnouncements(announcements);
-  // Wide enough that a 16:9 still reads, narrow enough that the next card
+  // Posters are high-resolution and are the best images on the page, so a wide
+  // measure buys FEWER, BIGGER ones rather than more small ones: at an ideal of
+  // 150 a 1,100pt row produced six 170pt thumbnails, which is a contact sheet.
+  const posterGrid = grid(16, wide ? 240 : 150);
+  // Phone: wide enough that a 16:9 still reads, narrow enough that the next card
   // peeks — the cue that says the row scrolls.
-  const newsCardW = Math.min(232, Math.round(avail * 0.62));
+  // Desktop: no peek to signal, because it is a grid. Cards divide the measure
+  // exactly instead, using the same helper as the posters — a fixed 232 left a
+  // 136pt ragged gutter at the end of every row.
+  const newsGrid = grid(14, 250);
+  const newsCardW = wide ? newsGrid.cell : Math.min(232, Math.round(avail * 0.62));
+
+  // Never upscale a 480-wide YouTube still past roughly its native width.
+  const LEAD_ART_MAX = 560;
+  const leadArtW = Math.min(LEAD_ART_MAX, Math.round(avail * 0.52));
+  // How many cards a section shows after its lead.
+  //
+  // Both image sections were unbounded, and D23 has 15 announcements and 10
+  // trailers. On a phone they were rails, so the length was hidden behind a
+  // scroll; widening them into grids put all 25 on screen at once and turned
+  // two thirds of the page into a wall of identical rectangles — the exact
+  // "changelog" failure the rail was introduced to avoid, reintroduced by
+  // making the rail a grid. An editorial page runs the best few, large; the
+  // full set belongs on the title pages these link to.
+  const REST_CAP = wide ? 8 : 12;
+
+  const [lead, ...allRest] = trailers;
+  // Desktop shows the lead and ONE row beneath it. Posters are tall — a 240pt
+  // ideal makes them ~390pt each — so two rows plus a full-measure lead turned
+  // "What dropped" into 1,400pt, roughly a third of the page, for the section
+  // that is the least specific to this event. One row is a shelf; two is a
+  // warehouse.
+  // Two rows on a phone, one on a desktop — whole rows either way, and never a
+  // wall. Uncapped, a phone drew nine posters in a two-column grid: five rows,
+  // about a thousand points of scrolling for the section least specific to this
+  // event.
+  const rest = allRest.slice(0, posterGrid.cols * (wide ? 1 : 2));
+  // One entry per thing announced, not per clip. See groupAnnouncements.
+  const [leadNews, ...allRestNews] = groupAnnouncements(announcements);
+  // Trimmed to whole rows on desktop: a grid whose final row holds two of four
+  // reads as a set that ran out, not as an edit.
+  const newsCap = wide
+    ? Math.max(
+        newsGrid.cols,
+        Math.floor(Math.min(allRestNews.length, REST_CAP) / newsGrid.cols) * newsGrid.cols,
+      )
+    : REST_CAP;
+  const restNews = allRestNews.slice(0, newsCap);
   // A backfilled edition is the readership record and little else: announcements
   // come from channel_videos, which only starts the day that pipeline shipped,
   // and movers cannot be reconstructed because heroes.views_daily is a rolling
   // window. Saying so beats a page that merely looks broken — and the curve
   // above IS the record, which is the honest thing to point at.
   const recordOnly = announcements.length === 0 && revealed.length === 0 && surges.length === 0;
+
+  // Ordered by the multiple, descending.
+  //
+  // The stored order is pulse_face_weight — fame blended with spike — which was
+  // right when this section was a gallery of faces: show the recognisable ones
+  // first, because a wall of portraits is browsed, not read. As a ranked list it
+  // is wrong, and visibly so. The multiple is now the largest thing on each row,
+  // and a column reading 527, 51.1, 33.2, 33.8, 134 does not look like a
+  // deliberate ordering by something else; it looks like a sort that failed.
+  const rankedSurges = [...surges].sort((a, b) => (b.spike ?? 0) - (a.spike ?? 0));
 
   return (
     <View>
@@ -157,65 +243,87 @@ export function EventDossier({
             )}
           </View>
 
-          {brand ? (
-            <View style={s.markBox}>
-              <brand.mark
-                {...fitMark(brand, wide ? 300 : 200, wide ? 108 : 78)}
-                color={accent}
-                fill={accent}
-              />
-            </View>
-          ) : (
-            <Text style={[s.title, { color: accent }]}>{event.headline}</Text>
-          )}
-
-          {!!windowLabel && (
-            <Text style={s.window}>
-              {windowLabel}
-              {windowDays ? ` · ${windowDays} day${windowDays === 1 ? '' : 's'}` : ''}
-            </Text>
-          )}
-
-          {/* Phone widths get a fixed three-line box, and the clamp to match.
-              The sentence is a constant, so its height is knowable — but only
-              if it is stated rather than left to font metrics, which is what
-              the skeleton has to mirror. Wide widths have room for the measure
-              to breathe and no skeleton to keep in step with. */}
-          <Text
-            style={[
-              s.method,
-              wide ? null : { height: EVENT_STAGE.methodLine * EVENT_STAGE.methodLines },
-            ]}
-            numberOfLines={wide ? undefined : EVENT_STAGE.methodLines}
-          >
-            {/* On a frozen edition the recap outranks the method note. How the
-                window was found is worth saying about an event we are still
-                measuring; about 2019 the reader wants to know what happened,
-                and the method has already been said on the hub above. Falls
-                back where no recap could be written honestly. */}
-            {event.recap ??
-              'No calendar told us this was on. The window is inferred from readership on the event’s own Wikipedia article.'}
-          </Text>
-
-          {/* The measurements, given the weight they deserve. The multiplier is
-              the claim; the other two are its supporting evidence. */}
+          {/* Desktop splits the stage in two. A phone stacks identity over
+              measurement because it has no choice; a 1440px window running the
+              same stack leaves the right 45% of the masthead as empty navy with
+              a curve behind it, which is the single clearest tell that a layout
+              was designed for a phone and let out at the seams. Identity left,
+              evidence right, both sitting on the same floor. */}
           <View
-            style={[
-              s.stats,
-              {
-                marginTop: wide ? EVENT_STAGE.statsGapWide : EVENT_STAGE.statsGap,
-                marginBottom:
-                  curveH * (wide ? EVENT_STAGE.curveClearanceWide : EVENT_STAGE.curveClearance),
-              },
-            ]}
+            style={
+              wide
+                ? [s.stageCols, { marginBottom: curveH * EVENT_STAGE.curveClearanceWide }]
+                : undefined
+            }
           >
-            {event.spikeRatio !== null && (
-              <Stat value={`${event.spikeRatio}×`} label="usual readership" accent={accent} big />
-            )}
-            {!!event.peak && <Stat value={event.peak.toLocaleString()} label="peak day" />}
-            {!!event.editsRecent && (
-              <Stat value={String(event.editsRecent)} label="article edits" />
-            )}
+            <View style={wide ? s.stageIdentity : undefined}>
+              {brand ? (
+                <View style={s.markBox}>
+                  <brand.mark
+                    {...fitMark(brand, wide ? 300 : 200, wide ? 108 : 78)}
+                    color={accent}
+                    fill={accent}
+                  />
+                </View>
+              ) : (
+                <Text style={[s.title, { color: accent }]}>{event.headline}</Text>
+              )}
+
+              {!!windowLabel && (
+                <Text style={s.window}>
+                  {windowLabel}
+                  {windowDays ? ` · ${windowDays} day${windowDays === 1 ? '' : 's'}` : ''}
+                </Text>
+              )}
+
+              {/* The recap, where there is one. On a frozen edition it outranks
+                  everything else the masthead could say: how the window was
+                  found is worth stating about an event still being measured,
+                  but about 2019 the reader wants to know what happened.
+
+                  Phone widths get a fixed box and the clamp to match, so the
+                  skeleton can mirror a knowable height. */}
+              {!!event.recap && (
+                <Text
+                  style={[
+                    s.recap,
+                    wide ? null : { height: EVENT_STAGE.methodLine * EVENT_STAGE.methodLines },
+                  ]}
+                  numberOfLines={wide ? undefined : EVENT_STAGE.methodLines}
+                >
+                  {event.recap}
+                </Text>
+              )}
+            </View>
+
+            {/* The measurements. On desktop they become the right-hand column
+                and sit on the identity block's baseline; on a phone they stay
+                where they were, under the sentence. */}
+            {/* The clearance that reserves room for the curve lives on the ROW
+                above, not here. It used to sit on this box, which was fine while
+                the stats were the last thing in a stack — but inside a
+                flex-end row a bottom margin lifts only THIS column, so the stats
+                floated 84pt off the floor while the identity column ran to the
+                container's edge and straight through the seam. */}
+            <View
+              style={[
+                s.stats,
+                wide
+                  ? null
+                  : {
+                      marginTop: EVENT_STAGE.statsGap,
+                      marginBottom: curveH * EVENT_STAGE.curveClearance,
+                    },
+              ]}
+            >
+              {event.spikeRatio !== null && (
+                <Stat value={`${event.spikeRatio}×`} label="usual readership" accent={accent} big />
+              )}
+              {!!event.peak && <Stat value={event.peak.toLocaleString()} label="peak day" />}
+              {!!event.editsRecent && (
+                <Stat value={String(event.editsRecent)} label="article edits" />
+              )}
+            </View>
           </View>
         </View>
       </View>
@@ -244,10 +352,19 @@ export function EventDossier({
               title="What was announced"
               note="From the studios' own channels, during the window"
             >
-              {/* The lead gets the room. This is the section a reader came for,
-                  and it was rendering as the smallest thing on the page. */}
+              {/* The lead gets the room — but only as much as the picture can
+                  actually fill. These are YouTube `hqdefault` stills, which are
+                  480x360. A phone asks for ~354 and gets a sharp image; a
+                  desktop stack asked for the full 1,100pt measure and upscaled
+                  the same file 2.3x, so the most prominent image on the page was
+                  also the blurriest thing on it, and it ate the entire fold.
+
+                  Capped at LEAD_ART_MAX and paired with its text beside it
+                  rather than stacked above it. Two columns is also simply the
+                  better editorial shape at this width: the headline sits at the
+                  top of the image instead of a screen-height below it. */}
               <Pressable
-                style={s.newsLead}
+                style={[s.newsLead, wide ? s.newsLeadWide : null]}
                 onPress={() => onTitlePress(leadNews.titleId)}
                 accessibilityRole="button"
                 accessibilityLabel={`${leadNews.titleName}, announced at this event`}
@@ -255,16 +372,21 @@ export function EventDossier({
                 {!!(leadNews.thumbnailUrl ?? leadNews.posterUrl) && (
                   <Image
                     source={{ uri: (leadNews.thumbnailUrl ?? leadNews.posterUrl) as string }}
-                    style={[s.newsLeadArt, { height: Math.round(avail * 0.5625) }]}
+                    style={[
+                      s.newsLeadArt,
+                      wide
+                        ? { width: leadArtW, height: Math.round(leadArtW * 0.5625) }
+                        : { width: '100%', height: Math.round(avail * 0.5625) },
+                    ]}
                     contentFit="cover"
                     transition={160}
                   />
                 )}
-                <View style={s.newsLeadBody}>
+                <View style={[s.newsLeadBody, wide ? s.newsLeadBodyWide : null]}>
                   <Text style={s.newsLeadTitle} numberOfLines={2}>
                     {leadNews.titleName}
                   </Text>
-                  <Text style={s.newsCaption} numberOfLines={2}>
+                  <Text style={s.newsCaption} numberOfLines={wide ? 4 : 2}>
                     {leadNews.caption}
                   </Text>
                   <Text style={s.newsMeta}>{sourceLine(leadNews)}</Text>
@@ -279,12 +401,7 @@ export function EventDossier({
                   Escapes the parent's gutter so cards run to the physical screen
                   edge while the first still lines up with the page inset. */}
               {restNews.length > 0 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={{ marginHorizontal: -pad }}
-                  contentContainerStyle={[s.newsRail, { paddingHorizontal: pad }]}
-                >
+                <RailOrWrap wide={wide} pad={pad} railStyle={s.newsRail} wrapStyle={s.newsWrap}>
                   {restNews.map((a) => (
                     <Pressable
                       key={a.titleId}
@@ -312,7 +429,7 @@ export function EventDossier({
                       </Text>
                     </Pressable>
                   ))}
-                </ScrollView>
+                </RailOrWrap>
               )}
             </Section>
           )}
@@ -328,22 +445,27 @@ export function EventDossier({
               studio SAYING a name outranks a curve that moved afterwards. */}
           {revealed.length > 0 && (
             <Section title="Who they named" note="Characters called out in what was announced">
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginHorizontal: -pad }}
-                contentContainerStyle={[s.castRail, { paddingHorizontal: pad }]}
-              >
+              {/* A rail on a phone, a wrapped row on desktop. A horizontal
+                  scroller is a touch affordance — on a pointer device it hides
+                  half its contents behind a gesture nobody makes, and here it
+                  was also being clipped mid-face at the reading measure's edge.
+                  Wide has the room to just show them all. */}
+              <RailOrWrap wide={wide} pad={pad} railStyle={s.castRail} wrapStyle={s.castWrap}>
                 {revealed.map((r) => (
                   <Pressable
                     key={r.heroId}
-                    style={s.castCell}
+                    style={[s.castCell, wide ? s.castCellWide : null]}
                     onPress={() => onHeroPress(r.heroId)}
                     accessibilityRole="button"
                     accessibilityLabel={`${r.name}${r.titleName ? `, named in ${r.titleName}` : ''}`}
                   >
                     {!!r.portraitUrl && (
-                      <HeroFace uri={r.portraitUrl} avatar={r.avatar} size={66} name={r.name} />
+                      <HeroFace
+                        uri={r.portraitUrl}
+                        avatar={r.avatar}
+                        size={wide ? 104 : 66}
+                        name={r.name}
+                      />
                     )}
                     <Text style={s.castName} numberOfLines={2}>
                       {r.name}
@@ -353,7 +475,7 @@ export function EventDossier({
                     </Text>
                   </Pressable>
                 ))}
-              </ScrollView>
+              </RailOrWrap>
 
               {/* Two named characters is a matchup the app can already run, and
                   this is the only place on an event page that hands the reader
@@ -378,7 +500,7 @@ export function EventDossier({
             <Section title="What dropped" note="Trailers published inside the window">
               {/* The lead gets its backdrop at size — these are the best images
                   on the page and a 52px thumbnail wasted them. */}
-              <LeadTrailer trailer={lead} onPress={onTitlePress} accent={accent} />
+              <LeadTrailer trailer={lead} onPress={onTitlePress} accent={accent} wide={wide} />
               {rest.length > 0 && (
                 <View style={[s.posterRow, { gap: posterGrid.gap }]}>
                   {rest.map((t) => (
@@ -413,43 +535,44 @@ export function EventDossier({
 
           {surges.length > 0 && (
             <Section title="Who it moved" note="Readership that broke out during the window">
-              <View style={[s.faceGrid, { gap: faceGrid.gap }]}>
-                {surges.map((sg) => (
+              {/* A ranking, drawn as one.
+                  It used to be a gallery of 132pt faces with the multiple
+                  tucked into a pip badge in the corner — which inverted the
+                  section: the spike IS the claim, and it was set smaller than
+                  everything around it. A gallery also has to be full to look
+                  right, so a window that moved one character rendered as a
+                  single cell marooned in an empty row.
+                  As rows, the figure leads, one entry is a normal-looking
+                  thing, and the same component reads on a phone (one column)
+                  and a desktop (two). */}
+              <View style={[s.moverGrid, wide ? s.moverGridWide : null]}>
+                {rankedSurges.map((sg) => (
                   <Pressable
                     key={sg.heroId}
-                    style={[s.faceCell, { width: faceGrid.cell }]}
+                    style={[s.moverRow, wide ? s.moverRowWide : null]}
                     onPress={() => onHeroPress(sg.heroId)}
                     accessibilityRole="button"
                     accessibilityLabel={`${sg.name}, ${sg.spike}× reads`}
                   >
-                    <View style={[s.faceWrap, { width: faceGrid.cell, height: faceGrid.cell }]}>
-                      {/* HeroFace picks the shape from the KIND of picture the
-                          RPC found: an avatar is a flat mark and is drawn flat,
-                          a fallback portrait is a rectangular illustration and
-                          keeps the circle it has always had. */}
-                      {!!sg.portraitUrl && (
-                        <HeroFace
-                          uri={sg.portraitUrl}
-                          avatar={sg.avatar}
-                          size={faceGrid.cell}
-                          name={sg.name}
-                        />
-                      )}
-                      {sg.spike !== null && (
-                        <View style={[s.spikePip, { backgroundColor: accent }]}>
-                          <Text style={s.spikePipText}>{sg.spike}×</Text>
-                        </View>
-                      )}
+                    {/* HeroFace picks the shape from the KIND of picture the
+                        RPC found: an avatar is a flat mark and is drawn flat, a
+                        fallback portrait is a rectangular illustration and keeps
+                        the circle it has always had. */}
+                    {!!sg.portraitUrl && (
+                      <HeroFace uri={sg.portraitUrl} avatar={sg.avatar} size={54} name={sg.name} />
+                    )}
+                    <View style={s.moverText}>
+                      <Text style={s.moverName} numberOfLines={1}>
+                        {sg.name}
+                      </Text>
+                      {/* Temporal, never causal — the join proves sequence, not cause. */}
+                      <Text style={s.moverCause} numberOfLines={1}>
+                        {sg.causeLabel ? `after ${sg.causeLabel}` : (sg.publisher ?? '')}
+                      </Text>
                     </View>
-                    {/* Two lines: at three columns on a phone a longer name
-                        ("William Leather") was being cut mid-word. */}
-                    <Text style={s.faceName} numberOfLines={2}>
-                      {sg.name}
-                    </Text>
-                    {/* Temporal, never causal — the join proves sequence, not cause. */}
-                    <Text style={s.faceCause} numberOfLines={2}>
-                      {sg.causeLabel ? `after ${sg.causeLabel}` : (sg.publisher ?? '')}
-                    </Text>
+                    {sg.spike !== null && (
+                      <Text style={[s.moverSpike, { color: accent }]}>{sg.spike}×</Text>
+                    )}
                   </Pressable>
                 ))}
               </View>
@@ -482,19 +605,26 @@ function Stat({
   );
 }
 
+/** The lead trailer's height, capped. At the full 1,100pt measure a 16:8 lead is
+ *  550pt tall — half a laptop viewport for one image, before the row of posters
+ *  under it. The cap keeps the shape and stops it dominating. */
+const LEAD_MAX_H = 380;
+
 function LeadTrailer({
   trailer,
   onPress,
   accent,
+  wide,
 }: {
   trailer: EventTrailer;
   onPress: (id: string) => void;
   accent: string;
+  wide?: boolean;
 }) {
   const art = trailer.backdropUrl ?? trailer.posterUrl;
   return (
     <Pressable
-      style={s.lead}
+      style={[s.lead, wide ? { aspectRatio: undefined, height: LEAD_MAX_H } : null]}
       onPress={() => onPress(trailer.titleId)}
       accessibilityRole="button"
       accessibilityLabel={`${trailer.title}, ${trailer.videoType ?? 'trailer'}`}
@@ -618,7 +748,26 @@ const s = StyleSheet.create({
     maxWidth: 520,
     marginTop: EVENT_STAGE.methodGap,
   },
-  stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 30 },
+  // Desktop stage: two columns on one floor. `flex-end` is what puts the stat
+  // rail's baseline on the identity block's rather than at the top of the band.
+  stageCols: { flexDirection: 'row', alignItems: 'flex-end', gap: 48 },
+  stageIdentity: { flex: 1, minWidth: 0 },
+  // The edition's recap, which replaces the method note in the masthead. Full
+  // strength rather than INK_TEXT.faint: this is the page's headline claim, not
+  // a footnote about the instrument.
+  recap: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 15,
+    lineHeight: EVENT_STAGE.methodLine,
+    color: 'rgba(245,235,220,0.90)',
+    maxWidth: 560,
+    marginTop: EVENT_STAGE.methodGap,
+  },
+  // `flex-end`, so the three columns hang from a common floor and the LABELS
+  // line up. Left to the default they top-aligned, which put the two 26pt
+  // figures 17pt above the 40pt one and set their labels on a different line
+  // from its — three stats, three baselines, no rail.
+  stats: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: 34 },
   stat: { gap: EVENT_STAGE.statInnerGap },
   statBig: { fontFamily: 'Flame-Regular', fontSize: 40, lineHeight: EVENT_STAGE.statBigLine },
   statValue: {
@@ -685,10 +834,12 @@ const s = StyleSheet.create({
   // push the following row out of alignment.
   // The lead announcement, at the size the news deserves.
   newsLead: { gap: 0 },
+  newsLeadWide: { flexDirection: 'row', alignItems: 'center', gap: 26 },
   // 16:9 — the shape YouTube returns. A square crop takes the title card out of
   // the middle of a trailer thumbnail.
-  newsLeadArt: { width: '100%', borderRadius: 12, backgroundColor: '#00000010' },
+  newsLeadArt: { borderRadius: 12, backgroundColor: '#00000010' },
   newsLeadBody: { gap: 4, paddingTop: 10 },
+  newsLeadBodyWide: { flex: 1, minWidth: 0, paddingTop: 0 },
   newsLeadTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 23,
@@ -719,6 +870,7 @@ const s = StyleSheet.create({
   },
 
   newsRail: { gap: 12, paddingTop: 20 },
+  newsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, paddingTop: 20 },
   newsCard: { gap: 7 },
   newsCardArt: { borderRadius: 12, backgroundColor: '#00000010' },
   newsCardTitle: {
@@ -749,11 +901,17 @@ const s = StyleSheet.create({
   },
 
   castRail: { gap: 14, paddingTop: 20 },
+  castWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 22, paddingTop: 22 },
   castCell: { width: 78, gap: 4, alignItems: 'center' },
+  // Given room on desktop. This is the only section on the page where the
+  // catalogue is named by the rights holder rather than inferred from a
+  // measurement, and at 66pt in a thin strip it read as a footnote between two
+  // walls of film stills.
+  castCellWide: { width: 128 },
   castName: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 17,
     color: COLORS.deepNavy,
     textAlign: 'center',
   },
@@ -787,25 +945,35 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
-  faceGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  faceCell: { gap: 7 },
-  faceWrap: {},
-  spikePip: {
-    position: 'absolute',
-    right: -2,
-    bottom: 2,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 9,
+  // ── who it moved ──
+  moverGrid: { gap: 2, paddingTop: 20 },
+  moverGridWide: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 28 },
+  moverRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(11,24,32,0.10)',
   },
-  spikePipText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.deepNavy },
-  faceName: { fontFamily: 'Flame-Regular', fontSize: 16, lineHeight: 20, color: COLORS.deepNavy },
-  faceCause: {
+  // Two columns on desktop. 48 is the row gap doubled plus the column gap, so
+  // the pair divides the measure exactly rather than leaving a ragged edge.
+  moverRowWide: { width: '47%', flexGrow: 1 },
+  moverText: { flex: 1, minWidth: 0, gap: 1 },
+  moverName: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14.5,
+    lineHeight: 19,
+    color: COLORS.deepNavy,
+  },
+  moverCause: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 11.5,
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 16,
     color: PAPER_TEXT.muted,
   },
+  // The claim, finally set like one.
+  moverSpike: { fontFamily: 'Flame-Regular', fontSize: 23, lineHeight: 30 },
 
   covers: { flexDirection: 'row', flexWrap: 'wrap' },
   cover: { borderRadius: 7, backgroundColor: 'rgba(11,24,32,0.08)' },

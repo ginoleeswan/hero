@@ -52,7 +52,7 @@ export default function EventEditionPageWeb() {
             windowDays={windowDays}
             wide={wide}
             contentWidth={width}
-            maxContentWidth={900}
+            maxContentWidth={1180}
             topPad={14}
             viewportHeight={height}
             onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}

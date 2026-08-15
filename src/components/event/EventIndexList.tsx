@@ -202,18 +202,14 @@ export function EventIndexList({
             </Text>
           )}
 
-          {/* Fixed three-line box on phone, so the placeholder can mirror it
-              exactly rather than approximate the font's own wrapping. */}
-          <Text
-            style={[
-              s.method,
-              wide ? null : { height: EVENT_INDEX.methodLine * EVENT_INDEX.methodLines },
-            ]}
-            numberOfLines={wide ? undefined : EVENT_INDEX.methodLines}
-          >
-            No calendar tells us a convention has started. Each one is watched through its own
-            Wikipedia article, and appears here when the readership says so.
-          </Text>
+          {/* No method paragraph here any more.
+              It read "No calendar tells us a convention has started. Each one is
+              watched through its own Wikipedia article, and appears here when
+              the readership says so." — three lines explaining our instrument
+              to a reader who came to see conventions, in the most valuable
+              position on the page, directly under a headline and a count that
+              already say what this is. It reassured the builder, not the fan.
+              The scale line above carries the meaning that mattered. */}
 
           {/* The spotlight. It belongs on INK, not as the first row of the
               archive: this page's grammar is ink = the claim, paper = the

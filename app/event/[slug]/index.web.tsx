@@ -56,7 +56,7 @@ export default function EventPageWeb() {
               windowDays={windowDays}
               wide={wide}
               contentWidth={width}
-              maxContentWidth={900}
+              maxContentWidth={1180}
               topPad={14}
               viewportHeight={height}
               onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}
@@ -86,7 +86,7 @@ export default function EventPageWeb() {
             hub={hub}
             wide={wide}
             contentWidth={width}
-            maxContentWidth={900}
+            maxContentWidth={1180}
             topPad={14}
             viewportHeight={height}
             onEditionPress={goEdition}
@@ -130,7 +130,7 @@ const s = StyleSheet.create({
   editionsBlock: { backgroundColor: SURFACE.paper, paddingTop: 8, paddingBottom: 52 } as object,
   editionsInner: {
     width: '100%',
-    maxWidth: 900,
+    maxWidth: 1180,
     alignSelf: 'center',
     paddingHorizontal: 32,
   } as object,

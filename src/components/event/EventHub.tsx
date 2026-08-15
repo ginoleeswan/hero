@@ -63,7 +63,11 @@ export function EventHub({
   // The span the record covers. When the event is not live this is what the left
   // of the eyebrow row says — without it the row is a lone right-aligned pill
   // floating over an empty line, which is why the pill read as unmoored.
-  const years = hub.editions.map((e) => e.editionSlug).filter((y) => /^\d{4}$/.test(y));
+  // Read off the WINDOW, not the slug: an edition_slug is '2020-01' when a year
+  // holds two shows, and a slug-shaped filter dropped those from the span.
+  const years = hub.editions
+    .map((e) => (e.liveFrom ?? e.editionSlug).slice(0, 4))
+    .filter((y) => /^\d{4}$/.test(y));
   const span =
     years.length > 1
       ? `${years[years.length - 1]}–${years[0]}`
@@ -155,6 +159,7 @@ export function EventHub({
               editions={hub.editions}
               accent={accent}
               bestSpike={hub.bestSpike}
+              wide={wide}
               onEditionPress={onEditionPress}
             />
           )}
@@ -175,12 +180,16 @@ export function EditionList({
   editions,
   accent,
   bestSpike,
+  wide = false,
   onEditionPress,
 }: {
   editions: Hub['editions'];
   accent: string;
   /** The event's loudest edition, for drawing each row in proportion. */
   bestSpike?: number | null;
+  /** Desktop measure. Moves the faces from the top line to the row's own
+   *  centre — see the layout note below. */
+  wide?: boolean;
   onEditionPress: (editionSlug: string) => void;
 }) {
   return (
@@ -192,42 +201,29 @@ export function EditionList({
         // mark rather than nothing.
         const share =
           bestSpike && e.spikeRatio ? Math.max(0.06, Math.min(1, e.spikeRatio / bestSpike)) : 0;
-        return (
-          <Pressable
-            key={e.editionSlug}
-            style={s.row}
-            onPress={() => onEditionPress(e.editionSlug)}
-            accessibilityRole="button"
-            accessibilityLabel={`${e.headline} ${e.editionSlug}`}
-          >
-            <View style={s.rowTop}>
-              <View style={s.rowMain}>
-                <Text style={[s.year, { color: accent }]}>{e.editionSlug}</Text>
-                <Text style={s.rowWindow} numberOfLines={1}>
-                  {formatWindow(e.liveFrom, e.liveTo) ?? '—'}
-                </Text>
-              </View>
-              {/* The faces say what the year was about. Eight lines of
-                  multiples do not, and this is the hub's only route into a
-                  character page.
+        const faces = e.faces.length > 0 && (
+          <View style={s.faces}>
+            {e.faces.map((f) => (
+              <HeroFace
+                key={f.heroId}
+                uri={f.portraitUrl}
+                avatar={f.avatar}
+                size={34}
+                name={f.name}
+              />
+            ))}
+          </View>
+        );
 
-                  `flexShrink: 0` on the faces and `flex: 1, minWidth: 0` on the
-                  text beside them is what stops the third face being sliced off
-                  at the screen edge: without it the date wraps to its natural
-                  width first and pushes the faces out of the row. */}
-              {e.faces.length > 0 && (
-                <View style={s.faces}>
-                  {e.faces.map((f) => (
-                    <HeroFace
-                      key={f.heroId}
-                      uri={f.portraitUrl}
-                      avatar={f.avatar}
-                      size={34}
-                      name={f.name}
-                    />
-                  ))}
-                </View>
-              )}
+        // The text block, which is the row. Written once and placed in two
+        // arrangements rather than twice — see the note on `faces` below.
+        const body = (
+          <View style={s.rowBody}>
+            <View style={s.rowMain}>
+              <Text style={[s.year, { color: accent }]}>{e.editionSlug}</Text>
+              <Text style={s.rowWindow} numberOfLines={1}>
+                {formatWindow(e.liveFrom, e.liveTo) ?? '—'}
+              </Text>
             </View>
 
             {/* The one line on this row that is not a measurement, and the only
@@ -251,6 +247,41 @@ export function EditionList({
                 .filter(Boolean)
                 .join('  ·  ')}
             </Text>
+          </View>
+        );
+
+        return (
+          <Pressable
+            key={e.editionSlug}
+            style={s.row}
+            onPress={() => onEditionPress(e.editionSlug)}
+            accessibilityRole="button"
+            accessibilityLabel={`${e.headline} ${e.editionSlug}`}
+          >
+            {/* The faces say what the year was about, and this is the hub's only
+                route into a character page.
+
+                WHERE they sit depends on the measure, because the same
+                arrangement fails at both ends. Pinned to the top line they read
+                as belonging to the year — right on a phone, where the row is
+                barely wider than the text. At 900+ that same pin strands them
+                a quarter of the page away from the sentence they illustrate,
+                with nothing in between. On desktop they are centred against the
+                whole row instead, so they relate to the block rather than to
+                the first line of it. */}
+            {wide ? (
+              <View style={s.rowWide}>
+                {body}
+                {faces}
+              </View>
+            ) : (
+              <>
+                <View style={s.rowTop}>
+                  {body}
+                  {faces}
+                </View>
+              </>
+            )}
 
             {share > 0 && (
               <View style={s.barTrack}>
@@ -371,13 +402,18 @@ const s = StyleSheet.create({
   },
   barFill: { height: 3, borderRadius: 999, opacity: 0.75 },
 
+  // The text block. flex:1/minWidth:0 lets it give way to the faces instead of
+  // pushing them out of the row — which is what sliced the third face off at the
+  // screen edge on a phone.
+  rowBody: { flex: 1, minWidth: 0, gap: 4 },
+  // Desktop: the faces sit against the centre of the whole row rather than
+  // against its first line.
+  rowWide: { flexDirection: 'row', alignItems: 'center', gap: 20 },
   rowMain: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 12,
     flexWrap: 'wrap',
-    flex: 1,
-    minWidth: 0,
   },
   year: { fontFamily: 'Flame-Regular', fontSize: 23, lineHeight: 30 },
   rowWindow: {

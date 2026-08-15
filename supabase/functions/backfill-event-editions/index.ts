@@ -106,12 +106,23 @@ export function findEditions(series: Day[]): HistoricalEdition[] {
   });
   if (cur) runs.push(cur);
 
-  // 2 + 3. biggest qualifying run per calendar year
+  // 2 + 3. biggest qualifying run per calendar year.
+  //
+  // Keyed on the year of the PEAK, not of the run's first day. A run opens on
+  // the quiet slope before the event and can therefore start on the far side of
+  // New Year — which is how a Nintendo Direct held on 9 January 2020 came to be
+  // labelled 2019, and Emerald City Comic Con 2019 came to be labelled 2018.
+  // The peak IS the event; the run's edges are just where the noise floor is.
+  const peakIndex = (r: { from: number; to: number }) => {
+    let p = r.from;
+    for (let i = r.from; i <= r.to; i++) if (series[i].views > series[p].views) p = i;
+    return p;
+  };
   const best = new Map<string, { from: number; to: number; peak: number }>();
   for (const r of runs) {
     const days = r.to - r.from + 1;
     if (days < MIN_RUN_DAYS || r.peak < PEAK_MULT * med) continue;
-    const year = series[r.from].date.slice(0, 4);
+    const year = series[peakIndex(r)].date.slice(0, 4);
     const held = best.get(year);
     if (!held || r.peak > held.peak) best.set(year, r);
   }
@@ -119,8 +130,7 @@ export function findEditions(series: Day[]): HistoricalEdition[] {
   // 4. narrow to the core around the peak
   const out: HistoricalEdition[] = [];
   for (const [year, r] of [...best.entries()].sort()) {
-    let peakIdx = r.from;
-    for (let i = r.from; i <= r.to; i++) if (series[i].views > series[peakIdx].views) peakIdx = i;
+    const peakIdx = peakIndex(r);
     const floor = Math.max(RUN_ENTER * med, CORE_SHARE * r.peak);
     let lo = peakIdx;
     let hi = peakIdx;

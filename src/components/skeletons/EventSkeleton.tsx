@@ -23,6 +23,30 @@ import { EVENT_STAGE, EVENT_PAPER, EVENT_INDEX, EVENT_INK } from '../../constant
 
 const PAD = EVENT_STAGE.pad;
 
+/**
+ * The band geometry the real components lay out from, at the CURRENT width.
+ *
+ * The placeholders were phone-only: every band hardcoded the 18pt phone gutter
+ * and ran full-bleed, while EventDossier/EventHub/EventIndexList switch to a
+ * 40pt gutter at 900 and centre themselves in a 900pt measure. On a desktop
+ * window that meant a wall of edge-to-edge bars handing over to a narrow centred
+ * column — the single most visible thing a placeholder can get wrong, because
+ * the jump is horizontal and affects every line at once.
+ *
+ * Same rule as the vertical geometry: read it from where the page reads it.
+ */
+function useStageMetrics() {
+  const { width } = useWindowDimensions();
+  const wide = width >= 900;
+  return {
+    wide,
+    pad: wide ? EVENT_STAGE.padWide : EVENT_STAGE.pad,
+    // The routes cap the reading measure and centre it. Same number here or the
+    // placeholder is a different width from the page it stands in for.
+    band: { width: '100%' as const, maxWidth: 1180, alignSelf: 'center' as const },
+  };
+}
+
 // Placeholder fill for the ink band, where the beige base would glow.
 const TILE_ART_H = 104;
 const INK_TINT = 'rgba(245,235,220,0.10)';
@@ -31,7 +55,8 @@ const INK_TINT = 'rgba(245,235,220,0.10)';
 // the placeholder is derived from the same ratio rather than guessed.
 function useLeadHeight() {
   const { width } = useWindowDimensions();
-  return Math.round((width - PAD * 2) / EVENT_PAPER.leadAspect);
+  const pad = width >= 900 ? EVENT_STAGE.padWide : EVENT_STAGE.pad;
+  return Math.round((Math.min(width, 1180) - pad * 2) / EVENT_PAPER.leadAspect);
 }
 
 /**
@@ -58,6 +83,30 @@ function TextLine({
   return (
     <View style={[styles.lineBox, { height: box }, style]}>
       <Skeleton width={width} height={ink} borderRadius={radius} color={tint} />
+    </View>
+  );
+}
+
+/**
+ * One full-width tone band with the reading measure centred inside it.
+ *
+ * The tone (ink or paper) has to bleed edge to edge; the CONTENT inside it has
+ * to sit in the same centred, gutter-padded column the real page uses. Two
+ * views, exactly as EventDossier and EventHub do it.
+ */
+function Band({
+  tone,
+  style,
+  children,
+}: {
+  tone: object;
+  style?: object;
+  children: React.ReactNode;
+}) {
+  const m = useStageMetrics();
+  return (
+    <View style={[tone, style]}>
+      <View style={[m.band, { paddingHorizontal: m.pad }]}>{children}</View>
     </View>
   );
 }
@@ -117,7 +166,7 @@ export function EventIndexSkeleton() {
   return (
     <SkeletonProvider>
       <View>
-        <View style={styles.indexStage}>
+        <Band tone={styles.indexStage}>
           <TextLine
             box={EVENT_INDEX.eyebrowLine}
             ink={EVENT_INK.eyebrow}
@@ -145,14 +194,14 @@ export function EventIndexSkeleton() {
           <TextLine box={16} ink={11} width={150} tint={INK_TINT} />
           <Skeleton width={200} height={62} borderRadius={8} style={styles.spotMark} />
           <TextLine box={21} ink={14} width="58%" tint={INK_TINT} style={styles.spotStat} />
-        </View>
+        </Band>
         <View style={styles.seam} />
         {/* Two quarters of tiles. The real page groups events by the quarter
             they happen in and renders each as a mark on an accent wash, so the
             placeholder is a season heading over a two-up grid — mirroring the
             layout rather than approximating an older one. It used to mirror
             four full-width curve rows, which the page no longer has. */}
-        <View style={styles.indexPaper}>
+        <Band tone={styles.indexPaper}>
           {Array.from({ length: 2 }).map((_, q) => (
             <View key={q}>
               <View style={styles.seasonHead}>
@@ -172,7 +221,7 @@ export function EventIndexSkeleton() {
               </View>
             </View>
           ))}
-        </View>
+        </Band>
       </View>
     </SkeletonProvider>
   );
@@ -187,43 +236,70 @@ export function EventIndexSkeleton() {
  * something on arrival.
  */
 export function EventHubSkeleton() {
+  const { wide } = useStageMetrics();
   return (
     <SkeletonProvider>
       <View>
-        <View style={styles.indexStage}>
-          <TextLine
-            box={EVENT_INDEX.eyebrowLine}
-            ink={EVENT_INK.eyebrow}
-            width={120}
-            tint={INK_TINT}
-            style={styles.indexEyebrow}
+        <Band tone={styles.hubStage}>
+          {/* The eyebrow row: a standing line on the left, the "All events"
+              pill on the right. Both are real elements at this width, so both
+              are reserved — the pill especially, since it is the only thing in
+              the masthead a reader can click. */}
+          <View style={styles.hubEyebrowRow}>
+            <TextLine
+              box={EVENT_STAGE.eyebrowLine}
+              ink={EVENT_INK.eyebrow}
+              width={128}
+              tint={INK_TINT}
+            />
+            <Skeleton width={104} height={26} borderRadius={999} color={INK_TINT} />
+          </View>
+          {/* The mark. Boxed at markMinHeight rather than the fitted height of
+              whichever brand is coming — that is not knowable before the hub
+              resolves, and the reservation has to be the same for all of them. */}
+          <Skeleton
+            width={wide ? 300 : 200}
+            height={EVENT_STAGE.markMinHeight}
+            borderRadius={8}
+            color={INK_TINT}
           />
-          {/* The mark, which is what the hub leads with. */}
-          <Skeleton width={200} height={72} borderRadius={8} />
           <Paragraph
             lines={3}
-            box={EVENT_INDEX.methodLine}
+            box={EVENT_STAGE.methodLine}
             ink={EVENT_INK.method}
             tint={INK_TINT}
-            style={styles.indexMethod}
+            style={styles.hubMethod}
             widths={['100%', '94%', '48%']}
           />
-        </View>
+        </Band>
         <View style={styles.seam} />
-        <View style={styles.indexPaper}>
+        <Band tone={styles.hubPaper}>
           <TextLine box={30} ink={23} width={128} radius={5} />
           <TextLine box={18} ink={13} width={186} style={styles.hubNote} />
-          {/* Edition rows: a year, a window, and a line of counts. */}
+          {/* An edition row, as it is actually built now: year and window on
+              one line with a face strip opposite, the recap under it, then the
+              counts and the proportion bar. Mirroring the pre-recap two-line
+              row left every row ~40pt short, so the whole list jumped up on
+              arrival. */}
           {Array.from({ length: 5 }).map((_, i) => (
             <View key={i} style={styles.hubRow}>
-              <View style={styles.hubRowMain}>
-                <TextLine box={30} ink={23} width={72} radius={5} />
-                <TextLine box={16} ink={12} width={148} />
+              <View style={styles.hubRowTop}>
+                <View style={styles.hubRowMain}>
+                  <TextLine box={30} ink={23} width={72} radius={5} />
+                  <TextLine box={16} ink={12} width={148} />
+                </View>
+                <View style={styles.hubFaces}>
+                  {Array.from({ length: 3 }).map((_, f) => (
+                    <Skeleton key={f} width={34} height={34} borderRadius={999} />
+                  ))}
+                </View>
               </View>
-              <TextLine box={17} ink={13} width="76%" />
+              <TextLine box={19} ink={14} width="88%" />
+              <TextLine box={17} ink={13} width="52%" />
+              <Skeleton width="100%" height={3} borderRadius={999} style={styles.hubBar} />
             </View>
           ))}
-        </View>
+        </Band>
       </View>
     </SkeletonProvider>
   );
@@ -235,7 +311,7 @@ export function EventDossierSkeleton() {
   return (
     <SkeletonProvider>
       <View>
-        <View style={styles.stage}>
+        <Band tone={styles.stage}>
           <TextLine
             box={EVENT_STAGE.eyebrowLine}
             ink={EVENT_INK.eyebrow}
@@ -285,9 +361,9 @@ export function EventDossierSkeleton() {
               />
             ))}
           </View>
-        </View>
+        </Band>
         <View style={styles.seam} />
-        <View style={styles.paper}>
+        <Band tone={styles.paper}>
           <TextLine
             box={EVENT_PAPER.sectionTitleLine}
             ink={EVENT_INK.sectionTitle}
@@ -301,7 +377,7 @@ export function EventDossierSkeleton() {
             style={styles.sectionNote}
           />
           <Skeleton width="100%" height={leadHeight} borderRadius={EVENT_PAPER.leadRadius} />
-        </View>
+        </Band>
       </View>
     </SkeletonProvider>
   );
@@ -315,7 +391,6 @@ const styles = StyleSheet.create({
   // No paddingBottom: the real stage closes on the stat rail's curve clearance.
   stage: {
     backgroundColor: SURFACE.ink,
-    paddingHorizontal: PAD,
     paddingTop: EVENT_STAGE.paddingTop,
   },
   eyebrow: { marginBottom: EVENT_STAGE.eyebrowGap },
@@ -331,7 +406,6 @@ const styles = StyleSheet.create({
   stat: { gap: EVENT_STAGE.statInnerGap },
   paper: {
     backgroundColor: SURFACE.paper,
-    paddingHorizontal: PAD,
     paddingTop: EVENT_PAPER.paddingTop,
     paddingBottom: EVENT_PAPER.paddingBottom,
   },
@@ -340,7 +414,6 @@ const styles = StyleSheet.create({
   // ── index ──
   indexStage: {
     backgroundColor: SURFACE.ink,
-    paddingHorizontal: PAD,
     paddingTop: EVENT_STAGE.paddingTop,
     paddingBottom: EVENT_INDEX.stagePaddingBottom,
   },
@@ -348,7 +421,6 @@ const styles = StyleSheet.create({
   indexMethod: { marginTop: EVENT_INDEX.methodGap },
   indexPaper: {
     backgroundColor: SURFACE.paper,
-    paddingHorizontal: PAD,
     paddingTop: EVENT_INDEX.paperPaddingTop,
     paddingBottom: EVENT_INDEX.paperPaddingBottom,
   },
@@ -372,9 +444,38 @@ const styles = StyleSheet.create({
   // Two-up, matching the real grid's minimum column count.
   tile: { width: '47%', gap: 7 },
 
+  // ── hub ──
+  // Its own stage rather than the index's: the hub leads with a mark and a
+  // method paragraph where the index leads with a headline and a spotlight, so
+  // borrowing the index's rhythm put the seam in the wrong place.
+  hubStage: {
+    backgroundColor: SURFACE.ink,
+    paddingTop: EVENT_STAGE.paddingTop,
+    paddingBottom: 34,
+  },
+  hubEyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: EVENT_STAGE.eyebrowGap,
+  },
+  hubMethod: { marginTop: EVENT_STAGE.methodGap },
+  hubPaper: {
+    backgroundColor: SURFACE.paper,
+    paddingTop: 30,
+    paddingBottom: 48,
+  },
   hubNote: { marginTop: 4, marginBottom: 20 },
-  hubRow: { paddingVertical: 14, borderTopWidth: 1, borderTopColor: 'rgba(11,24,32,0.10)', gap: 5 },
-  hubRowMain: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  hubRow: { paddingVertical: 14, borderTopWidth: 1, borderTopColor: 'rgba(11,24,32,0.10)', gap: 4 },
+  hubRowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  hubRowMain: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 },
+  hubFaces: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
+  hubBar: { marginTop: 6 },
 
   indexRow: {
     paddingVertical: EVENT_INDEX.rowPaddingVertical,
