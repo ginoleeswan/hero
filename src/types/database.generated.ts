@@ -109,8 +109,10 @@ export type Database = {
       }
       channel_videos: {
         Row: {
+          cast_hero_ids: string[] | null
           channel_id: string
           description: string | null
+          discovery_at: string | null
           first_seen_at: string
           id: string
           matched_at: string | null
@@ -120,8 +122,10 @@ export type Database = {
           title_id: string | null
         }
         Insert: {
+          cast_hero_ids?: string[] | null
           channel_id: string
           description?: string | null
+          discovery_at?: string | null
           first_seen_at?: string
           id: string
           matched_at?: string | null
@@ -131,8 +135,10 @@ export type Database = {
           title_id?: string | null
         }
         Update: {
+          cast_hero_ids?: string[] | null
           channel_id?: string
           description?: string | null
+          discovery_at?: string | null
           first_seen_at?: string
           id?: string
           matched_at?: string | null
@@ -603,6 +609,48 @@ export type Database = {
         }
         Relationships: []
       }
+      edition_mover_hits: {
+        Row: {
+          edition_slug: string
+          found_at: string
+          hero_id: string
+          peak: number
+          slug: string
+          spike: number
+        }
+        Insert: {
+          edition_slug: string
+          found_at?: string
+          hero_id: string
+          peak: number
+          slug: string
+          spike: number
+        }
+        Update: {
+          edition_slug?: string
+          found_at?: string
+          hero_id?: string
+          peak?: number
+          slug?: string
+          spike?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "edition_mover_hits_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "hero_cast_untagged"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "edition_mover_hits_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrichment_run_heroes: {
         Row: {
           hero_id: string
@@ -700,10 +748,16 @@ export type Database = {
           live_from: string
           live_to: string
           peak: number | null
+          recap: string | null
           shape: string | null
           slug: string
           spike_ratio: number | null
+          suppressed_reason: string | null
           surges: Json
+          venue: string | null
+          venue_city: string | null
+          venue_lat: number | null
+          venue_lon: number | null
           views_daily: Json
         }
         Insert: {
@@ -717,10 +771,16 @@ export type Database = {
           live_from: string
           live_to: string
           peak?: number | null
+          recap?: string | null
           shape?: string | null
           slug: string
           spike_ratio?: number | null
+          suppressed_reason?: string | null
           surges?: Json
+          venue?: string | null
+          venue_city?: string | null
+          venue_lat?: number | null
+          venue_lon?: number | null
           views_daily: Json
         }
         Update: {
@@ -734,10 +794,16 @@ export type Database = {
           live_from?: string
           live_to?: string
           peak?: number | null
+          recap?: string | null
           shape?: string | null
           slug?: string
           spike_ratio?: number | null
+          suppressed_reason?: string | null
           surges?: Json
+          venue?: string | null
+          venue_city?: string | null
+          venue_lat?: number | null
+          venue_lon?: number | null
           views_daily?: Json
         }
         Relationships: [
@@ -1382,6 +1448,7 @@ export type Database = {
           intelligence: number | null
           issue_count: number | null
           issue_covers: Json | null
+          movers_backfilled_at: string | null
           movie_count: number | null
           movies: Json[] | null
           name: string
@@ -1468,6 +1535,7 @@ export type Database = {
           intelligence?: number | null
           issue_count?: number | null
           issue_covers?: Json | null
+          movers_backfilled_at?: string | null
           movie_count?: number | null
           movies?: Json[] | null
           name: string
@@ -1554,6 +1622,7 @@ export type Database = {
           intelligence?: number | null
           issue_count?: number | null
           issue_covers?: Json | null
+          movers_backfilled_at?: string | null
           movie_count?: number | null
           movies?: Json[] | null
           name?: string
@@ -2654,6 +2723,7 @@ export type Database = {
           approval_at: string | null
           baseline: number | null
           blurb: string | null
+          channel_slugs: string[] | null
           checked_at: string | null
           created_at: string
           edit_burst_ratio: number | null
@@ -2666,6 +2736,7 @@ export type Database = {
           live_to: string | null
           ongoing: boolean
           peak: number | null
+          publishers: string[] | null
           shape: string | null
           slug: string
           spike_ratio: number | null
@@ -2678,6 +2749,7 @@ export type Database = {
           approval_at?: string | null
           baseline?: number | null
           blurb?: string | null
+          channel_slugs?: string[] | null
           checked_at?: string | null
           created_at?: string
           edit_burst_ratio?: number | null
@@ -2690,6 +2762,7 @@ export type Database = {
           live_to?: string | null
           ongoing?: boolean
           peak?: number | null
+          publishers?: string[] | null
           shape?: string | null
           slug: string
           spike_ratio?: number | null
@@ -2702,6 +2775,7 @@ export type Database = {
           approval_at?: string | null
           baseline?: number | null
           blurb?: string | null
+          channel_slugs?: string[] | null
           checked_at?: string | null
           created_at?: string
           edit_burst_ratio?: number | null
@@ -2714,6 +2788,7 @@ export type Database = {
           live_to?: string | null
           ongoing?: boolean
           peak?: number | null
+          publishers?: string[] | null
           shape?: string | null
           slug?: string
           spike_ratio?: number | null
@@ -2803,6 +2878,7 @@ export type Database = {
           approval_at: string | null
           baseline: number | null
           blurb: string | null
+          channel_slugs: string[] | null
           checked_at: string | null
           created_at: string
           edit_burst_ratio: number | null
@@ -2815,6 +2891,7 @@ export type Database = {
           live_to: string | null
           ongoing: boolean
           peak: number | null
+          publishers: string[] | null
           shape: string | null
           slug: string
           spike_ratio: number | null
@@ -2919,6 +2996,7 @@ export type Database = {
         }
         Returns: string
       }
+      apply_backfilled_movers: { Args: never; Returns: Json }
       attribute_surge: {
         Args: { p_breakout: string; p_hero_id: string }
         Returns: {
@@ -2984,6 +3062,14 @@ export type Database = {
         }
         Returns: Json
       }
+      channel_videos_needing_discovery: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          matched_title: string
+          title: string
+        }[]
+      }
       compute_admin_community_overview: { Args: never; Returns: Json }
       compute_catalog_health: { Args: never; Returns: Json }
       compute_enrichment_progress: { Args: never; Returns: Json }
@@ -3002,6 +3088,7 @@ export type Database = {
       }
       compute_get_source_coverage: { Args: never; Returns: Json }
       enrichment_progress: { Args: never; Returns: Json }
+      extract_revealed_cast: { Args: { p_text: string }; Returns: string[] }
       find_duplicate_heroes: {
         Args: { p_limit?: number }
         Returns: {
@@ -3406,6 +3493,21 @@ export type Database = {
       mark_hero_unresolved: { Args: { p_hero_id: string }; Returns: undefined }
       match_channel_videos: { Args: never; Returns: Json }
       match_title_for_video: { Args: { p_text: string }; Returns: string }
+      merge_backfilled_edition: {
+        Args: {
+          p_accent: string
+          p_baseline: number
+          p_curve: Json
+          p_edition: string
+          p_headline: string
+          p_live_from: string
+          p_live_to: string
+          p_peak: number
+          p_slug: string
+          p_spike: number
+        }
+        Returns: string
+      }
       nightly_maintenance: { Args: never; Returns: undefined }
       normalize_match_text: { Args: { p_text: string }; Returns: string }
       pick_daily_debate: { Args: never; Returns: undefined }
@@ -3459,6 +3561,7 @@ export type Database = {
         Args: { p_hero_id: string; p_qid: string }
         Returns: undefined
       }
+      resolve_revealed_cast: { Args: { p_names: string[] }; Returns: string[] }
       search_heroes: {
         Args: {
           alignment_filter?: string

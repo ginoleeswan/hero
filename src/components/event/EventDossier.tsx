@@ -20,6 +20,7 @@ import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { HeroFace } from './HeroFace';
 import { CountUp } from './CountUp';
+import { VenueMap } from './VenueMap';
 import { Section } from './EventSection';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -552,6 +553,27 @@ export function EventDossier({
               )}
               {!!event.editsRecent && (
                 <Stat value={String(event.editsRecent)} label="article edits" />
+              )}
+
+              {/* Where it happened, as the rail's last fact and the only human
+                  one in it. The other two are readings off an instrument; this
+                  is a place a reader could have stood.
+
+                  It earns the space because for three of the watched events the
+                  venue MOVES, and the archive was carrying that in prose — D23
+                  2018's recap is literally "held at the Tokyo Disney Resort
+                  rather than Anaheim", which is a sentence doing a picture's
+                  job. Absent for a broadcast, which is honest rather than
+                  missing: a Nintendo Direct happened nowhere. */}
+              {!!event.venue && event.venueLat !== null && event.venueLon !== null && (
+                <VenueMap
+                  venue={event.venue}
+                  city={event.venueCity}
+                  lat={event.venueLat}
+                  lon={event.venueLon}
+                  accent={accent}
+                  width={wide ? 208 : 168}
+                />
               )}
             </View>
           </View>

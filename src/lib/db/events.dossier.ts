@@ -27,6 +27,16 @@ export interface EventDossierEvent {
   /** Editorial: one sentence on what actually happened. Only ever set on a
    *  frozen edition — a live event has not finished happening yet. */
   recap: string | null;
+  /** Where it was held. NULL is a real answer, not missing data: a Nintendo
+   *  Direct and DC FanDome are broadcasts, and gamescom 2020/21 ran with no show
+   *  floor. Only ever set on a frozen edition — the venue belongs to the year,
+   *  not to the series, which is the whole reason it lives here. D23 alone has
+   *  been to Anaheim, Tokyo and Walt Disney World. */
+  venue: string | null;
+  /** City and country as a reader would say it: "Chiba, Japan". */
+  venueCity: string | null;
+  venueLat: number | null;
+  venueLon: number | null;
 }
 
 /**
@@ -162,6 +172,12 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
         .filter((d) => d.date),
       firstDetectedAt: (e.first_detected_at as string) ?? null,
       recap: typeof e.recap === 'string' && e.recap ? e.recap : null,
+      // Tolerates a payload with no venue keys, so an unapplied migration
+      // renders no map rather than throwing on a shared route.
+      venue: typeof e.venue === 'string' && e.venue ? e.venue : null,
+      venueCity: typeof e.venue_city === 'string' && e.venue_city ? e.venue_city : null,
+      venueLat: num(e.venue_lat),
+      venueLon: num(e.venue_lon),
     },
     // Defensive against an unapplied migration: an older RPC has no
     // `announcements` key at all, and the section must then render nothing

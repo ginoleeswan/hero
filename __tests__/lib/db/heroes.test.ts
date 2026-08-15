@@ -249,6 +249,7 @@ describe('heroRowToCharacterData', () => {
     reign_start: null,
     reign_end: null,
     views_daily: null,
+    movers_backfilled_at: null,
   } satisfies Hero;
 
   it('maps powerstats to string values', () => {
@@ -455,6 +456,7 @@ const baseHero: HeroRow = {
   reign_start: null,
   reign_end: null,
   views_daily: null,
+  movers_backfilled_at: null,
 };
 
 describe('heroRowToCharacterData — powers mapping', () => {

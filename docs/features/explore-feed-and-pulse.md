@@ -175,6 +175,21 @@ them from the frozen window at read time and old editions keep _improving_ as
 enrichment fills in. Copying the catalogue would freeze the rosters at their
 worst.
 
+**An edition happened somewhere** (`20260816090000_editions_happened_somewhere.sql`).
+`venue`, `venue_city`, `venue_lat`, `venue_lon` live on `event_editions`, not on
+`watched_events`, because three of the twenty-one watched events genuinely move:
+D23 alone has been to Anaheim, the Tokyo Disney Resort and Walt Disney World, so
+a hub-level venue would be wrong for three of its eight editions. Star Wars
+Celebration changes country by design, and PAX is several shows under one name
+(East in Boston, West in Seattle), attributed by the window's season.
+
+**NULL is a real answer, not missing data.** A Nintendo Direct and DC FanDome are
+broadcasts, and gamescom 2020/21 ran with no show floor — a pin on Cologne would
+say a crowd was there. 15 of 132 rows are deliberately NULL and the page renders
+no map for them. `VenueMap` draws ~40 hand-authored coastline rings in
+equirectangular projection: no tiles, because tiles need the network, would not
+survive the crawler surface's CSP, and arrive in somebody else's palette.
+
 Two rules that are load-bearing:
 
 - **Keyed `(slug, edition_slug)`, matched by proximity, not by `live_from`.** The

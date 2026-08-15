@@ -62,6 +62,9 @@ export const HERO_ROW_COLUMNS = [
   'movies',
   'teams',
   'movie_count',
+  // Set by apply_backfilled_movers so a re-run can tell "already grown" from
+  // "never attempted" — see 20260815161014_backfilled_movers_can_grow.sql.
+  'movers_backfilled_at',
   'comicvine_id',
   'stats_source',
   'ai_stats_status',
