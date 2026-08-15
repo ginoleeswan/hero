@@ -178,12 +178,18 @@ serve(async (req: Request) => {
         failed.push(`${ch.name}:${res.status}`);
         continue;
       }
-      const entries = parseFeed(await res.text());
+      const xml = await res.text();
+      const entries = parseFeed(xml);
       fetched += entries.length;
       if (entries.length === 0) {
-        // A live channel always has entries, so zero means the feed shape moved
-        // or the id is wrong. Surfaced rather than silently counted as success.
-        failed.push(`${ch.name}:empty`);
+        // Zero entries has two very different causes, and conflating them makes
+        // this list useless. A VALID feed carries <yt:channelId> even when the
+        // channel simply has no recent uploads — Netflix Geeked returns exactly
+        // that. Reporting a healthy-but-quiet channel as a failure every hour is
+        // how a failure list becomes something nobody reads. Only a response
+        // that is not a feed at all — wrong id, changed shape, error page — is
+        // worth surfacing.
+        if (!xml.includes('<yt:channelId>')) failed.push(`${ch.name}:not-a-feed`);
       }
 
       if (entries.length) {

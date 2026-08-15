@@ -208,6 +208,7 @@ on native. Don't remove these without a replacement:
   needs no cap — its row is a sideways-scrolling rail, which already costs the
   grid nothing. If you change the card width, change `HOUSE_CARD_W` in
   `app/category/[slug].web.tsx` with it or the cap and the wrap disagree.
+
 - **Character page** — `HouseLinks` in the family section. Both platform files.
 
 ### The house card is cut from its surface

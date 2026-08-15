@@ -1703,6 +1703,24 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance_runs: {
+        Row: {
+          job: string
+          last_result: Json | null
+          last_run_at: string
+        }
+        Insert: {
+          job: string
+          last_result?: Json | null
+          last_run_at?: string
+        }
+        Update: {
+          job?: string
+          last_result?: Json | null
+          last_run_at?: string
+        }
+        Relationships: []
+      }
       matchup_takes: {
         Row: {
           agree_count: number
@@ -3378,6 +3396,7 @@ export type Database = {
       }
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
       link_tmdb_cast: { Args: never; Returns: number }
+      link_tmdb_cast_if_new_enrichment: { Args: never; Returns: Json }
       mark_hero_unresolved: { Args: { p_hero_id: string }; Returns: undefined }
       match_channel_videos: { Args: never; Returns: Json }
       match_title_for_video: { Args: { p_text: string }; Returns: string }
