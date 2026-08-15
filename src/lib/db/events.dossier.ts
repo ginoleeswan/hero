@@ -97,22 +97,12 @@ export interface EventSurge {
   causeLabel: string | null;
 }
 
-export interface EventIssue {
-  id: string;
-  volumeName: string | null;
-  issueNumber: string | null;
-  coverUrl: string | null;
-  publisher: string | null;
-  storeDate: string | null;
-}
-
 export interface EventDossier {
   event: EventDossierEvent;
   announcements: EventAnnouncement[];
   revealed: EventRevealed[];
   trailers: EventTrailer[];
   surges: EventSurge[];
-  issues: EventIssue[];
 }
 
 const num = (v: unknown): number | null => {
@@ -202,14 +192,6 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
       causeKind: (s.cause_kind as string) ?? null,
       causeLabel: (s.cause_label as string) ?? null,
     })),
-    issues: arr(r.issues).map((i) => ({
-      id: String(i.id ?? ''),
-      volumeName: (i.volume_name as string) ?? null,
-      issueNumber: (i.issue_number as string) ?? null,
-      coverUrl: (i.cover_url as string) ?? null,
-      publisher: (i.publisher as string) ?? null,
-      storeDate: (i.store_date as string) ?? null,
-    })),
   };
 }
 
@@ -230,6 +212,7 @@ export interface EventIndexEntry {
   slug: string;
   headline: string;
   accent: string | null;
+  /** The MOST RECENT edition's window — what a row describes. */
   liveFrom: string | null;
   liveTo: string | null;
   ongoing: boolean;
@@ -238,6 +221,14 @@ export interface EventIndexEntry {
   /** Still inside the detection window — the rail is showing it right now. */
   isLive: boolean;
   viewsDaily: { date: string; views: number }[];
+  /** Years on record. The backfill took this from 1 to as many as 9, which is
+   *  what turns the index from a status board into a library. */
+  editions: number;
+  firstYear: string | null;
+  lastYear: string | null;
+  /** The loudest year this event has ever had — the row's one boast. */
+  bestPeak: number | null;
+  bestSpike: number | null;
 }
 
 export interface EventIndex {
@@ -271,6 +262,11 @@ export function mapEventIndex(raw: unknown): EventIndex {
         spikeRatio: num(e.spike_ratio),
         peak: num(e.peak),
         isLive: e.is_live === true,
+        editions: num(e.editions) ?? 0,
+        firstYear: (e.first_year as string) ?? null,
+        lastYear: (e.last_year as string) ?? null,
+        bestPeak: num(e.best_peak),
+        bestSpike: num(e.best_spike),
         viewsDaily: (Array.isArray(e.views_daily)
           ? (e.views_daily as Record<string, unknown>[])
           : []

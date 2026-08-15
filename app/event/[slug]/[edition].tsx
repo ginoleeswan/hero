@@ -95,7 +95,6 @@ export default function EventEditionPage() {
               viewportHeight={height}
               onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}
               onHeroPress={(id) => router.push(`/character/${encodeURIComponent(id)}`)}
-              onIssuePress={(id) => router.push(`/issue/${encodeURIComponent(id)}`)}
               // Back to the series, not the global index: from an edition the
               // useful neighbours are the other years of the same event.
               onArenaPress={(a, b) =>

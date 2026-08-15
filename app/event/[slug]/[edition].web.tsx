@@ -55,7 +55,6 @@ export default function EventEditionPageWeb() {
             viewportHeight={height}
             onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}
             onHeroPress={(id) => router.push(`/character/${encodeURIComponent(id)}`)}
-            onIssuePress={(id) => router.push(`/issue/${encodeURIComponent(id)}`)}
             onArenaPress={(a, b) =>
               router.push(`/compare/${encodeURIComponent(a)}/${encodeURIComponent(b)}`)
             }

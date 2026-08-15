@@ -42,7 +42,6 @@ export interface EventDossierProps {
   viewportHeight?: number;
   onTitlePress: (titleId: string) => void;
   onHeroPress: (heroId: string) => void;
-  onIssuePress: (issueId: string) => void;
   /** Two revealed characters → the Arena. Optional: the section renders without
    *  it, minus the call to action. */
   onArenaPress?: (heroA: string, heroB: string) => void;
@@ -60,11 +59,10 @@ export function EventDossier({
   viewportHeight,
   onTitlePress,
   onHeroPress,
-  onIssuePress,
   onArenaPress,
   onIndexPress,
 }: EventDossierProps) {
-  const { event, announcements, revealed, trailers, surges, issues } = dossier;
+  const { event, announcements, revealed, trailers, surges } = dossier;
   const accent = event.accent ?? COLORS.goldAccent;
   const brand = brandForEvent(event.slug);
   const pad = wide ? EVENT_STAGE.padWide : EVENT_STAGE.pad;
@@ -83,11 +81,16 @@ export function EventDossier({
   };
   const posterGrid = grid(14, 150);
   const faceGrid = grid(14, 132, 3);
-  const coverGrid = grid(10, 104, 3);
 
   const [lead, ...rest] = trailers;
   // One entry per thing announced, not per clip. See groupAnnouncements.
   const [leadNews, ...restNews] = groupAnnouncements(announcements);
+  // A backfilled edition is the readership record and little else: announcements
+  // come from channel_videos, which only starts the day that pipeline shipped,
+  // and movers cannot be reconstructed because heroes.views_daily is a rolling
+  // window. Saying so beats a page that merely looks broken — and the curve
+  // above IS the record, which is the honest thing to point at.
+  const recordOnly = announcements.length === 0 && revealed.length === 0 && surges.length === 0;
 
   return (
     <View>
@@ -211,6 +214,16 @@ export function EventDossier({
               SAID. Everything below it is derived from attention — a spike, a
               curve, whose readership moved — which records that something
               happened and never what it was. */}
+          {recordOnly && (
+            <View style={s.recordOnly}>
+              <Text style={s.recordOnlyText}>
+                {trailers.length > 0
+                  ? 'The readership record for this edition, and what dropped inside its window. Mythique began capturing studio announcements in August 2026, so earlier years are measurement only.'
+                  : 'The readership record for this edition. Mythique began capturing studio announcements in August 2026, so earlier years are measurement only — the curve above is what was observed.'}
+              </Text>
+            </View>
+          )}
+
           {leadNews && (
             <Section
               title="What was announced"
@@ -421,33 +434,6 @@ export function EventDossier({
                     <Text style={s.faceCause} numberOfLines={2}>
                       {sg.causeLabel ? `after ${sg.causeLabel}` : (sg.publisher ?? '')}
                     </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </Section>
-          )}
-
-          {issues.length > 0 && (
-            <Section title="On shelves that week" note="Comics that shipped alongside it">
-              <View style={[s.covers, { gap: coverGrid.gap }]}>
-                {issues.map((i) => (
-                  <Pressable
-                    key={i.id}
-                    onPress={() => onIssuePress(i.id)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${i.volumeName} ${i.issueNumber ?? ''}`}
-                  >
-                    {!!i.coverUrl && (
-                      <Image
-                        source={{ uri: i.coverUrl }}
-                        style={[
-                          s.cover,
-                          { width: coverGrid.cell, height: Math.round(coverGrid.cell * 1.52) },
-                        ]}
-                        contentFit="cover"
-                        transition={160}
-                      />
-                    )}
                   </Pressable>
                 ))}
               </View>
@@ -700,6 +686,20 @@ const s = StyleSheet.create({
     fontSize: 14.5,
     lineHeight: 20,
     color: PAPER_TEXT.muted,
+  },
+
+  recordOnly: {
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(11,24,32,0.14)',
+    paddingLeft: 14,
+    marginBottom: 26,
+  },
+  recordOnlyText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14.5,
+    lineHeight: 21,
+    color: PAPER_TEXT.muted,
+    maxWidth: 520,
   },
 
   newsList: { gap: 14, marginTop: 4 },

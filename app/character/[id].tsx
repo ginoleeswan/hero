@@ -1775,6 +1775,11 @@ export default function CharacterScreen() {
                       — it is what stitches the band to the body instead of
                       leaving a hard seam between two colours. */}
                   <View style={styles.portraitCard}>
+                    {/* absoluteFill on the zoom target, not just on the image.
+                        The target is a plain View with no intrinsic size, so an
+                        image set to 100%/100% inside it resolves against an
+                        auto-sized parent and lands smaller than the card — the
+                        navy backing then shows as a frame around the art. */}
                     <Link.AppleZoomTarget>
                       <HeroImage
                         id={id ?? 'hero'}
@@ -1783,7 +1788,13 @@ export default function CharacterScreen() {
                         portraitUrl={heroPortraitUrl}
                         contentFit="cover"
                         contentPosition="top"
-                        style={styles.heroImage}
+                        // absoluteFill, not 100%/100%. AppleZoomTarget takes no
+                        // style and has no intrinsic size, so a percentage
+                        // resolves against an auto-sized parent and the image
+                        // lands smaller than the card — the navy backing then
+                        // shows as a frame around the art. Absolute positioning
+                        // escapes it and fills the card itself.
+                        style={StyleSheet.absoluteFill as object}
                         recyclingKey={id ?? 'hero'}
                       />
                     </Link.AppleZoomTarget>

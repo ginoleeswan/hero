@@ -66,7 +66,6 @@ describe('mapEventDossier', () => {
     expect(d?.event.viewsDaily).toHaveLength(1);
     expect(d?.trailers).toEqual([]);
     expect(d?.surges).toEqual([]);
-    expect(d?.issues).toEqual([]);
   });
 
   it('maps announcements — the only part of the page that says what was SAID', () => {

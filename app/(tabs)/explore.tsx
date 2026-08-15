@@ -557,9 +557,16 @@ export default function HomeScreen() {
                   <TodaysMatchup matchup={item.matchup} onOpen={handleOpenPath} />
                 </View>
                 <View style={styles.engageDaily}>
+                  {/* `tall` is the variant this row was built for and native
+                      never passed: tile + text up top, CTA pinned to the
+                      bottom, space-between filling whatever height the matchup
+                      sets. Web passes `tall={!isMobile}`. Without it the banner
+                      stretched but its CONTENT stayed centred, so the card had
+                      dead space above and below instead of below. */}
                   <DailyChallengeBanner
+                    tall
                     onPress={() => handleOpenPath('/play')}
-                    style={[styles.dailyOnDark, styles.dailyFill]}
+                    style={[styles.dailyOnDark, styles.dailyPaired]}
                   />
                 </View>
               </View>
@@ -573,9 +580,16 @@ export default function HomeScreen() {
                   </SkeletonProvider>
                 </View>
                 <View style={styles.engageDaily}>
+                  {/* `tall` is the variant this row was built for and native
+                      never passed: tile + text up top, CTA pinned to the
+                      bottom, space-between filling whatever height the matchup
+                      sets. Web passes `tall={!isMobile}`. Without it the banner
+                      stretched but its CONTENT stayed centred, so the card had
+                      dead space above and below instead of below. */}
                   <DailyChallengeBanner
+                    tall
                     onPress={() => handleOpenPath('/play')}
-                    style={[styles.dailyOnDark, styles.dailyFill]}
+                    style={[styles.dailyOnDark, styles.dailyPaired]}
                   />
                 </View>
               </View>
@@ -893,11 +907,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 16,
   },
-  // Paired with the matchup, the banner has to FILL its column or it bottoms
-  // out early and leaves a hole under the CTA — web's `dailyBannerGlass` sets
-  // flex: 1 for exactly this. Stretching the row is only half the fix; the
-  // child has to accept the height.
-  dailyFill: { flex: 1, marginTop: 0, marginBottom: 0 },
+  // Paired with the matchup the banner owns its column's full height, so the
+  // stacked layout's vertical margins would show as a gap inside the row.
+  dailyPaired: { marginTop: 0, marginBottom: 0 },
   // `wide` pairing of TodaysMatchup + the daily banner (see the 'engage' row
   // type above). flex:1 on each half is what makes them split the width evenly
   // minus the gap — neither card is told a width directly.

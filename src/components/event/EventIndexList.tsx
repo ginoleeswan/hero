@@ -87,64 +87,95 @@ export function EventIndexList({
             events.map((e) => {
               const accent = e.accent ?? COLORS.goldAccent;
               const win = formatWindow(e.liveFrom, e.liveTo);
-              return (
-                <Pressable
-                  key={e.slug}
-                  style={s.row}
-                  onPress={() => onEventPress(e.slug)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${e.headline}${win ? `, ${win}` : ''}`}
-                >
-                  <View style={s.rowHead}>
-                    {/* The name, not the mark. A boxed logo like SDCC's renders
-                        as a muddy dark stamp at row height — the fine "SAN DIEGO
-                        / INTERNATIONAL" rules mush — and a list wants to be
-                        scannable. The mark belongs to the destination. */}
-                    <Text style={s.rowTitle}>{e.headline}</Text>
-                    {e.isLive && (
+              // The years-on-record line. This is the whole point of the page
+              // after the backfill: "7 editions · 2018–2026" says there is
+              // something to read here, where a lone date says only that we
+              // noticed once.
+              const span =
+                e.editions > 1 && e.firstYear && e.lastYear
+                  ? `${e.editions} editions · ${e.firstYear}–${e.lastYear}`
+                  : e.editions === 1 && e.lastYear
+                    ? `One edition · ${e.lastYear}`
+                    : null;
+
+              // A live event keeps the full treatment — the curve is the news.
+              // The other nineteen do not: twenty full-bleed charts is a scroll
+              // through abstraction, and the shape of a 2019 spike is not what
+              // makes someone open a 2019 page.
+              if (e.isLive) {
+                return (
+                  <Pressable
+                    key={e.slug}
+                    style={s.row}
+                    onPress={() => onEventPress(e.slug)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${e.headline}, on now${win ? `, ${win}` : ''}`}
+                  >
+                    <View style={s.rowHead}>
+                      <Text style={s.rowTitle}>{e.headline}</Text>
                       <View style={[s.livePip, { backgroundColor: accent }]}>
                         <Text style={s.livePipText}>On now</Text>
                       </View>
-                    )}
-                  </View>
-
-                  {!!win && <Text style={s.rowWindow}>{win}</Text>}
-
-                  {/* The measurement, at a glance. Two events differ by the shape
-                      of their spike more than by their name. */}
-                  <View style={[s.rowCurve, { marginHorizontal: -pad }]}>
-                    <EventCurve
-                      series={e.viewsDaily}
-                      from={e.liveFrom}
-                      to={e.liveTo}
-                      accent={accent}
-                      width={bleed}
-                      height={wide ? EVENT_INDEX.rowCurveHWide : EVENT_INDEX.rowCurveH}
-                    />
-                  </View>
-
-                  {/* Only when it is a rise. A caught event can carry a ratio
-                      BELOW 1 — SDCC 2026 was detected at 3.35x and its row read
-                      "0.82x usual readership", because the spike rolled out of
-                      the rolling curve after detection. A sub-1 multiple on a
-                      page about an event reads as a broken number. The peak is
-                      still worth stating on its own: it is a fact either way. */}
-                  {e.spikeRatio !== null && e.spikeRatio > 1 ? (
+                    </View>
+                    {!!win && <Text style={s.rowWindow}>{win}</Text>}
+                    <View style={[s.rowCurve, { marginHorizontal: -pad }]}>
+                      <EventCurve
+                        series={e.viewsDaily}
+                        from={e.liveFrom}
+                        to={e.liveTo}
+                        accent={accent}
+                        width={bleed}
+                        height={wide ? EVENT_INDEX.rowCurveHWide : EVENT_INDEX.rowCurveH}
+                      />
+                    </View>
                     <Text style={s.rowStat}>
-                      <Text style={[s.rowStatNum, { color: COLORS.deepNavy }]}>
-                        {e.spikeRatio}×
-                      </Text>{' '}
-                      usual readership
-                      {e.peak ? ` · peak ${e.peak.toLocaleString()} a day` : ''}
+                      {e.spikeRatio !== null && e.spikeRatio > 1 ? (
+                        <>
+                          <Text style={[s.rowStatNum, { color: COLORS.deepNavy }]}>
+                            {e.spikeRatio}×
+                          </Text>{' '}
+                          usual readership
+                        </>
+                      ) : e.peak ? (
+                        <>
+                          <Text style={[s.rowStatNum, { color: COLORS.deepNavy }]}>
+                            {e.peak.toLocaleString()}
+                          </Text>{' '}
+                          readers on its busiest day
+                        </>
+                      ) : null}
+                      {span ? `  ·  ${span}` : ''}
                     </Text>
-                  ) : e.peak ? (
-                    <Text style={s.rowStat}>
-                      <Text style={[s.rowStatNum, { color: COLORS.deepNavy }]}>
-                        {e.peak.toLocaleString()}
-                      </Text>{' '}
-                      readers on its busiest day
+                  </Pressable>
+                );
+              }
+
+              // Everything else: one compact, scannable line per event.
+              return (
+                <Pressable
+                  key={e.slug}
+                  style={s.compact}
+                  onPress={() => onEventPress(e.slug)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${e.headline}${span ? `, ${span}` : ''}`}
+                >
+                  <View style={[s.spine, { backgroundColor: accent }]} />
+                  <View style={s.compactBody}>
+                    <Text style={s.compactTitle} numberOfLines={1}>
+                      {e.headline}
                     </Text>
-                  ) : null}
+                    <Text style={s.compactMeta} numberOfLines={1}>
+                      {[
+                        span,
+                        // The loudest year it ever had. A number a reader can
+                        // compare across rows, which a date cannot be.
+                        e.bestSpike && e.bestSpike > 1 ? `best ${e.bestSpike}×` : null,
+                      ]
+                        .filter(Boolean)
+                        .join('  ·  ')}
+                    </Text>
+                  </View>
+                  <Text style={[s.compactYear, { color: accent }]}>{e.lastYear ?? ''}</Text>
                 </Pressable>
               );
             })
@@ -243,6 +274,40 @@ const s = StyleSheet.create({
     color: PAPER_TEXT.muted,
   },
   rowCurve: { marginTop: EVENT_INDEX.rowCurveGap, marginBottom: EVENT_INDEX.rowCurveGap },
+  // A compact row for an event that is not on right now. Nineteen full-bleed
+  // detection curves is a scroll through abstraction; the shape of a 2019 spike
+  // is not what makes anyone open a 2019 page. The accent spine keeps each event
+  // identifiable at a glance without spending a whole band on it.
+  compact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 13,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(11,24,32,0.09)',
+  },
+  spine: { width: 3, alignSelf: 'stretch', borderRadius: 4 },
+  compactBody: { flex: 1, minWidth: 0, gap: 2 },
+  compactTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 18,
+    // Clamped Flame needs >= 1.22x fontSize or numberOfLines shears descenders.
+    lineHeight: 23,
+    color: COLORS.deepNavy,
+  },
+  compactMeta: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    lineHeight: 16,
+    color: PAPER_TEXT.muted,
+  },
+  compactYear: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 18,
+    lineHeight: 23,
+    fontVariant: ['tabular-nums'],
+  },
+
   rowStat: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
