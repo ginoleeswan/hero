@@ -1,29 +1,28 @@
 // app/event/[slug]/index.tsx
-// Native event page. Thin view over useEventHub + useEventDossier — expo-router
-// resolves by platform extension and BOTH files must exist or it throws.
+// The series hub — /event/d23. Thin view over useEventHub; expo-router resolves
+// by platform extension and BOTH files must exist or it throws.
 //
-// One route, two tenses. While the detector calls the event live this renders the
-// live dossier, because that is what the Pulse rail links to and a reader mid-D23
-// wants the news, not a table of contents. Once it is over the same URL becomes
-// the series hub: what this event is, and every edition on record.
+// ONE URL, ONE MEANING. This route used to be two pages: the live dossier while
+// the detector called the event on, and the hub once it was over. That put the
+// current edition's content at two addresses at the same time — here and at
+// /event/d23/2026, which exists and is refrozen every 30 minutes while the show
+// runs — and then silently changed what the URL meant when the event ended.
+// A reader landing here mid-event was reading 2026 with a link to 2026 in the
+// archive below it, and a search engine was ranking a page whose subject changed
+// without the URL doing so.
 //
-// The alternative — a permanent hub with the live page one click deeper — was
-// rejected because it puts a menu between the rail and the thing the rail is
-// advertising, on the one day of the year anybody is looking.
+// The old arrangement was chosen to keep the Pulse rail one tap from the news on
+// the one day of the year anybody is looking. That cost is now paid by the stage
+// instead: while an event is live the hub opens on a route straight into the
+// running edition, which orients a reader rather than dropping them mid-dossier.
 import { View, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../../src/constants/colors';
-import { EventDossier } from '../../../src/components/event/EventDossier';
-import { EventHub, EditionsArchive } from '../../../src/components/event/EventHub';
-import { useEventDossier } from '../../../src/hooks/useEventDossier';
+import { EventHub } from '../../../src/components/event/EventHub';
 import { useEventHub } from '../../../src/hooks/useEventEditions';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
-import {
-  EventDossierSkeleton,
-  EventHubSkeleton,
-} from '../../../src/components/skeletons/EventSkeleton';
-import { FadeOutSkeleton } from '../../../src/components/ui/FadeOutSkeleton';
+import { EventHubSkeleton } from '../../../src/components/skeletons/EventSkeleton';
 import { useSkeletonTransition } from '../../../src/hooks/useSkeletonTransition';
 import { ShareHeaderButton } from '../../../src/components/ui/ShareHeaderButton';
 import { eventShareLine, shareLink } from '../../../src/lib/share';
@@ -45,14 +44,10 @@ export default function EventPage() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { hub, loading: hubLoading } = useEventHub(slug);
-  const { dossier, loading, notFound, failed, retry, windowLabel, windowDays } =
-    useEventDossier(slug);
-  // pre → bare ink page, so a cached dossier never blinks a skeleton.
-  const phase = useSkeletonTransition(loading || hubLoading);
+  const { hub, loading, notFound, failed, retry } = useEventHub(slug);
+  // pre → bare ink page, so a cached hub never blinks a skeleton.
+  const phase = useSkeletonTransition(loading);
 
-  const live = !!hub?.isLive && !!dossier;
-  const headline = hub?.headline ?? dossier?.event.headline;
   const goEdition = (edition: string) =>
     router.push(`/event/${encodeURIComponent(slug)}/${encodeURIComponent(edition)}`);
 
@@ -61,36 +56,33 @@ export default function EventPage() {
       <Stack.Screen
         options={{
           ...headerOptions,
-          title: headline ?? 'Event',
+          title: hub?.headline ?? 'Event',
           // Only once there is something to read: a share button that sends a
           // link to a page still loading is a link to nothing worth reading.
-          headerRight:
-            hub || dossier
-              ? () => (
-                  <ShareHeaderButton
-                    message={eventShareLine(headline ?? 'Event', !!hub?.isLive)}
-                    url={shareLink.event(slug)}
-                    label="Share this event"
-                  />
-                )
-              : undefined,
+          headerRight: hub
+            ? () => (
+                <ShareHeaderButton
+                  message={eventShareLine(hub.headline, hub.isLive)}
+                  url={shareLink.event(slug)}
+                  label="Share this event"
+                />
+              )
+            : undefined,
         }}
       />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
         {/* Bleed the ink stage under the status bar — the page opens on ink. */}
         <View style={{ height: insets.top, backgroundColor: COLORS.deepNavy }} />
-        {/* The hub shape while loading: liveness is unknown until the hub
-            resolves, and 19 of 20 events are not live. */}
-        {(loading || hubLoading) && phase === 'skeleton' && <EventHubSkeleton />}
+        {loading && phase === 'skeleton' && <EventHubSkeleton />}
 
-        {notFound && !hub && (
+        {notFound && (
           <EmptyState
             icon="calendar-outline"
             title="No page for this event yet."
             body="An event gets a page once its readership is detected as moving."
           />
         )}
-        {failed && !hub && !dossier && (
+        {failed && !hub && (
           // The event may well exist — this is a failed fetch, not a dead link,
           // so it offers a retry rather than the "no page yet" copy.
           <EmptyState
@@ -101,46 +93,15 @@ export default function EventPage() {
           />
         )}
 
-        {live && dossier ? (
-          <View>
-            <EventDossier
-              dossier={dossier}
-              windowLabel={windowLabel}
-              windowDays={windowDays}
-              contentWidth={width}
-              viewportHeight={height}
-              onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}
-              onHeroPress={(id) => router.push(`/character/${encodeURIComponent(id)}`)}
-              onArenaPress={(a, b) =>
-                router.push(`/compare/${encodeURIComponent(a)}/${encodeURIComponent(b)}`)
-              }
-              onIndexPress={() => router.push('/event')}
-            />
-            {/* Past years, under the live page. The current edition is being
-                frozen every 30 minutes as this runs, so it appears here too — it
-                is the archive catching up in real time, not a duplicate.
-                One band, shared with the hub: built by hand here it had no
-                chart and no seam under the ink above it. */}
-            {!!hub && hub.editions.length > 0 && (
-              <EditionsArchive hub={hub} contentWidth={width} onEditionPress={goEdition} />
-            )}
-          </View>
-        ) : hub ? (
-          <View>
-            <EventHub
-              hub={hub}
-              contentWidth={width}
-              viewportHeight={height}
-              onEditionPress={goEdition}
-              onIndexPress={() => router.push('/event')}
-            />
-            {phase === 'crossfade' ? (
-              <FadeOutSkeleton>
-                <EventDossierSkeleton />
-              </FadeOutSkeleton>
-            ) : null}
-          </View>
-        ) : null}
+        {hub && (
+          <EventHub
+            hub={hub}
+            contentWidth={width}
+            viewportHeight={height}
+            onEditionPress={goEdition}
+            onIndexPress={() => router.push('/event')}
+          />
+        )}
       </ScrollView>
     </View>
   );

@@ -66,6 +66,15 @@ export function EventHub({
   // floating over an empty line, which is why the pill read as unmoored.
   // Read off the WINDOW, not the slug: an edition_slug is '2020-01' when a year
   // holds two shows, and a slug-shaped filter dropped those from the span.
+  //
+  // The edition currently running. Matched on the window rather than assumed to
+  // be the newest row: the freeze job writes the live edition as it goes, and a
+  // hub that sent a reader to the wrong year during the one event of the year it
+  // matters would be the worst possible time to be approximately right.
+  const liveEdition = hub.isLive
+    ? (hub.editions.find((e) => !!hub.liveFrom && e.liveFrom === hub.liveFrom) ?? hub.editions[0])
+    : null;
+
   const years = hub.editions
     .map((e) => (e.liveFrom ?? e.editionSlug).slice(0, 4))
     .filter((y) => /^\d{4}$/.test(y));
@@ -123,10 +132,31 @@ export function EventHub({
             <Text style={[s.title, { color: accent }]}>{hub.headline}</Text>
           )}
 
-          {/* Live gets the current window and a route into the live page; the
-              rest of the time the hub is a table of contents and says so. */}
+          {/* Live gets the current window and a route into the running edition.
+              This button is what pays for the hub being permanent: the old
+              arrangement made THIS url the live dossier so the Pulse rail landed
+              on the news, at the cost of the same content living at two
+              addresses. One filled control, above the fold, in the event's own
+              accent is not a menu — it is the shortest possible path to the
+              thing the rail is advertising, and it orients the reader on the way
+              rather than dropping them into the middle of a dossier. */}
           {hub.isLive ? (
-            <Text style={s.window}>{formatWindow(hub.liveFrom, hub.liveTo) ?? 'Running now'}</Text>
+            <>
+              <Text style={s.window}>
+                {formatWindow(hub.liveFrom, hub.liveTo) ?? 'Running now'}
+              </Text>
+              {!!liveEdition && (
+                <Pressable
+                  style={[s.liveCta, { backgroundColor: accent }]}
+                  onPress={() => onEditionPress(liveEdition.editionSlug)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`See what is dropping at ${hub.headline} right now`}
+                >
+                  <Text style={s.liveCtaText}>See what’s dropping</Text>
+                  <Ionicons name="arrow-forward" size={15} color={COLORS.deepNavy} />
+                </Pressable>
+              )}
+            </>
           ) : null}
 
           <Text style={s.method} numberOfLines={wide ? undefined : 3}>
@@ -150,24 +180,22 @@ export function EventHub({
 }
 
 /**
- * The archive, as its own band: seam, paper, masthead, chart, list.
+ * The archive, as its own band: seam, paper, masthead, timeline.
  *
- * It exists because three surfaces render this exact block — the hub, and both
- * halves of the live route — and all three had built it by hand. They had
- * already drifted: the native live page had no chart and never passed `wide`,
- * so a desktop reader on a live event got the phone rows while the same event's
- * hub got the desktop ones. The live pages also cut straight from the ink of
- * "Who it moved" into beige with no seam and a different, smaller heading, which
- * is what made the boundary read as weak — every other ink-to-paper edge in this
- * app is the orange hairline, and the section above it had already moved to the
- * rule-and-note masthead while this one was still a 23pt title with a caption
- * under it.
+ * Three surfaces used to render this block and all three had built it by hand,
+ * which is exactly how they drifted: the native live page had no chart and never
+ * passed `wide`, so a desktop reader on a live event got the phone rows while
+ * the same event's hub got the desktop ones, and both live pages cut straight
+ * from the ink of "Who it moved" into beige with no seam and a heading two steps
+ * smaller than the section above.
  *
- * Owning the seam here rather than in the callers is the point: the transition
- * belongs to the thing arriving, so it cannot be forgotten by the next surface
- * that renders an archive.
+ * There is one surface now — the hub — because that is where an archive belongs,
+ * and the live route no longer exists to carry a second copy. It stays a
+ * component rather than being inlined because it owns the SEAM, and the seam
+ * belongs to the thing arriving: whatever renders an archive next cannot forget
+ * the transition into it.
  */
-export function EditionsArchive({
+function EditionsArchive({
   hub,
   wide = false,
   contentWidth,
@@ -215,6 +243,7 @@ export function EditionsArchive({
                 editions={hub.editions}
                 accent={accent}
                 bestSpike={hub.bestSpike}
+                liveFrom={hub.isLive ? hub.liveFrom : null}
                 wide={wide}
                 onEditionPress={onEditionPress}
               />
@@ -250,6 +279,7 @@ export function EditionList({
   editions,
   accent,
   bestSpike,
+  liveFrom = null,
   wide = false,
   onEditionPress,
 }: {
@@ -258,6 +288,10 @@ export function EditionList({
   /** The event's loudest edition. Marks one entry, rather than scaling all of
    *  them against a measure the page no longer prints. */
   bestSpike?: number | null;
+  /** The running edition's window, when one is running. The entry it matches is
+   *  marked live rather than dated — during the one event of the year anybody is
+   *  looking, "Happening now" is the only line on the page worth reading. */
+  liveFrom?: string | null;
   /** Desktop gives the year its own column beside the spine. A phone has no
    *  room for one, so the year leads the entry instead. */
   wide?: boolean;
@@ -269,6 +303,7 @@ export function EditionList({
         // The one year worth naming. A ranking phrase on every row is not a
         // ranking; on exactly one it is.
         const biggest = !!bestSpike && e.spikeRatio === bestSpike;
+        const live = !!liveFrom && e.liveFrom === liveFrom;
         const first = i === 0;
         const last = i === editions.length - 1;
         const year = e.editionSlug.slice(0, 4);
@@ -279,13 +314,15 @@ export function EditionList({
         // number rather than a year. The window beside it tells the two apart,
         // and it does that better.
         const yearText = (
-          <Text style={[s.year, wide ? s.yearWide : null, biggest ? { color: accent } : null]}>
+          <Text
+            style={[s.year, wide ? s.yearWide : null, live || biggest ? { color: accent } : null]}
+          >
             {year}
           </Text>
         );
 
         const faces = e.faces.length > 0 && (
-          <View style={s.faces}>
+          <View style={[s.faces, wide ? null : s.facesUnder]}>
             {e.faces.map((f) => (
               <HeroFace
                 key={f.heroId}
@@ -304,7 +341,7 @@ export function EditionList({
             style={s.entry}
             onPress={() => onEditionPress(e.editionSlug)}
             accessibilityRole="button"
-            accessibilityLabel={`${e.headline} ${year}${biggest ? ', the biggest year on record' : ''}`}
+            accessibilityLabel={`${e.headline} ${year}${live ? ', happening now' : biggest ? ', the biggest year on record' : ''}`}
           >
             {/* Desktop: the year hangs in its own column, right-aligned against
                 the spine, so eight of them make a readable column of dates down
@@ -319,7 +356,14 @@ export function EditionList({
             <View style={s.spineCol}>
               {!first && <View style={s.spineUp} />}
               <View
-                style={[s.dot, biggest ? { backgroundColor: accent, borderColor: accent } : null]}
+                style={[
+                  s.dot,
+                  live || biggest ? { backgroundColor: accent, borderColor: accent } : null,
+                  // A ring around the running edition's marker, so the eye lands
+                  // on it before it lands on the biggest year — one of these is
+                  // news and the other is history.
+                  live ? [s.dotLive, { shadowColor: accent }] : null,
+                ]}
               />
               {!last && <View style={s.spineDown} />}
             </View>
@@ -327,14 +371,9 @@ export function EditionList({
             <View style={s.entryBody}>
               <View style={s.entryHead}>
                 {!wide && yearText}
-                <Text style={s.entryWindow} numberOfLines={1}>
-                  {formatWindow(e.liveFrom, e.liveTo) ?? '—'}
+                <Text style={[s.entryWindow, live ? { color: accent } : null]} numberOfLines={1}>
+                  {live ? 'Happening now' : (formatWindow(e.liveFrom, e.liveTo) ?? '—')}
                 </Text>
-                {/* A phone puts the faces on the head line, where they belong to
-                    the year. At 900+ that same pin strands them a quarter of the
-                    page from the sentence they illustrate, so they move to the
-                    right of the body instead. */}
-                {!wide && <View style={s.headFaces}>{faces}</View>}
               </View>
 
               {/* The only line here that is not metadata, and the only one that
@@ -355,7 +394,8 @@ export function EditionList({
                   made a rough signal look like a laboratory result. */}
               <Text style={s.meta}>
                 {[
-                  biggest && e.spikeRatio !== null && e.spikeRatio > 1
+                  live ? (formatWindow(e.liveFrom, e.liveTo) ?? null) : null,
+                  !live && biggest && e.spikeRatio !== null && e.spikeRatio > 1
                     ? 'Biggest year on record'
                     : null,
                   e.announcements > 0
@@ -368,6 +408,15 @@ export function EditionList({
                   .filter(Boolean)
                   .join('  ·  ')}
               </Text>
+
+              {/* Desktop pins the faces to the right of the entry, where they
+                  read against the whole block. A phone has no right-hand column,
+                  and pinning them to the head line made the arrangement depend on
+                  the length of the date beside them — "30 AUGUST – 1 SEPTEMBER
+                  2025" wrapped them onto a line of their own while a shorter
+                  window kept them inline, so no two entries matched. Under the
+                  entry they land in the same place every time. */}
+              {!wide && faces}
             </View>
 
             {wide && faces}
@@ -442,6 +491,26 @@ const s = StyleSheet.create({
     marginTop: EVENT_STAGE.methodGap,
   },
 
+  // Filled, not outlined. Every other control on this stage is a hairline pill;
+  // this one is the page's only action while an event is running, and it has to
+  // win against a wordmark set 300pt wide directly above it.
+  liveCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    borderRadius: 999,
+  },
+  liveCtaText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14.5,
+    letterSpacing: 0.2,
+    color: COLORS.deepNavy,
+  },
+
   seam: { height: 1, backgroundColor: SEAM_COLOR },
 
   // Section owns the masthead's own bottom margin, so the band's floor is the
@@ -482,10 +551,18 @@ const s = StyleSheet.create({
     borderColor: 'rgba(11,24,32,0.28)',
     backgroundColor: SURFACE.paper,
   },
+  // No animation. A pulsing marker is the most literal thing Reduce Motion
+  // exists to suppress, and it would be a `withRepeat(-1)` on a page that is
+  // otherwise still — a glow states the same thing and states it at rest.
+  dotLive: {
+    shadowOpacity: 0.9,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 3,
+  },
 
   entryBody: { flex: 1, minWidth: 0, gap: 4, paddingLeft: 20 },
   entryHead: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
-  headFaces: { marginLeft: 'auto' },
   entryWindow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
@@ -521,4 +598,7 @@ const s = StyleSheet.create({
     flexShrink: 0,
     paddingLeft: 20,
   },
+  // Under the entry on a phone, so it needs the gap above it that the desktop
+  // arrangement gets from sitting in its own column.
+  facesUnder: { paddingLeft: 0, marginTop: 8 },
 });

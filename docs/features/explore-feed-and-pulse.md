@@ -118,9 +118,10 @@ Real-world events (SDCC, a Direct) are _detected_ from Wikipedia attention, not
 read from a calendar: the `sync-watched-events` edge function writes detector
 state into `watched_events`, and `get_live_events` returns anything the detector
 calls `live` **unless it was explicitly rejected**
-(`20260726150000_watched_events.sql`). Each event gets
-a dossier page at `/event/[slug]` (`useEventDossier` → `get_event_dossier`) and
-an index at `/event` (`get_event_index`), both platform-paired.
+(`20260726150000_watched_events.sql`). Each event gets a permanent series hub at
+`/event/[slug]` (`useEventHub` → `get_event_hub`), a page per edition at
+`/event/[slug]/[edition]` (`get_event_edition`), and an index at `/event`
+(`get_event_index`) — all platform-paired.
 
 **Approval is a veto, not a prerequisite** — inverted by
 `20260815080000_live_events_publish_by_default.sql`, whose header carries the
@@ -208,6 +209,23 @@ threshold on this one.
 `get_event_edition` back `app/event/[slug]/index.tsx` and
 `app/event/[slug]/[edition].tsx`, each with its `.web` twin — expo-router throws
 if only one of a pair exists, so a route pair is added whole or not at all.
+
+**`/event/[slug]` is ALWAYS the hub.** It briefly rendered two different pages —
+the live dossier while the detector called the event on, the hub once it was over
+— to keep the Pulse rail one tap from the news. That put the running edition's
+content at two addresses simultaneously (here _and_ `/event/d23/2026`, which
+exists and is refrozen every 30 minutes while the show runs), listed the live
+edition in an archive underneath its own content, and changed what the URL meant
+without the URL changing. The tap is paid for on the stage instead: while an
+event is live the hub opens on a filled, accent-coloured route straight into the
+running edition, and that edition is marked "Happening now" in the timeline. The
+crawler surface already assumed this shape — `buildEventHubBotPage` has always
+described `/event/[slug]` as the series, so the app was the half that disagreed.
+
+The live dossier reader (`useEventDossier` → `get_event_dossier`) now has no
+caller. Kept deliberately: an edition page reads the frozen snapshot, so while an
+event runs it can be up to 30 minutes stale, and the live reader is what a
+"refresh the running edition from `watched_events`" path would use.
 
 Worth knowing before building it: **`/event` has no inbound links anywhere.**
 Nothing in `app/` or `src/` routes to it, so the index is reachable only by

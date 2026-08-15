@@ -70,7 +70,7 @@ app/
   versus/team/         Team battles (daily [battleId] + drafted)
   play.tsx(.web)       Daily "Guess the Hero" → docs/features/dailies-and-streaks.md
   house/               Family dynasties (index + [slug]) → docs/architecture/family-trees-and-houses.md
-  event/               Live-event dossiers (index + [slug])
+  event/               Live events — index, series hub [slug], edition [slug]/[edition]
   category/[slug]      One source-aware browse screen — universe/ and franchise/ re-export it
   team/[id] · title/[id] · issue/[id] · film/[tmdbId] (legacy redirect)
   admin/health         Web-only command center → docs/features/admin-command-center.md

@@ -1,17 +1,25 @@
 // app/event/[slug]/index.web.tsx
-// Web event page. Same hooks and same bodies as the native route; the difference
-// is the scroll container — web screens must scroll the DOCUMENT, never a vertical
-// RN ScrollView, so this renders a plain View and lets the page grow.
+// The series hub on web — /event/d23. Same hook and body as the native route;
+// the difference is the scroll container, because web screens must scroll the
+// DOCUMENT rather than a vertical RN ScrollView.
 //
-// One route, two tenses — see the native twin for why the live dossier keeps this
-// URL while the event is on, and the hub takes it over afterwards.
+// ONE URL, ONE MEANING. This route used to be two pages: the live dossier while
+// the detector called the event on, and the hub once it was over. That put the
+// current edition's content at two addresses at the same time — here and at
+// /event/d23/2026, which exists and is refrozen every 30 minutes while the show
+// runs — and then silently changed what the URL meant when the event ended.
+// A reader landing here mid-event was reading 2026 with a link to 2026 in the
+// archive below it, and a search engine was ranking a page whose subject
+// changed without the URL doing so.
+//
+// The hub is now permanent: what this event is, and every edition of it. The
+// live one is the first entry and says so, and the stage carries a route
+// straight into it.
 import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS, INK_TEXT } from '../../../src/constants/colors';
-import { EventDossier } from '../../../src/components/event/EventDossier';
-import { EventHub, EditionsArchive } from '../../../src/components/event/EventHub';
-import { useEventDossier } from '../../../src/hooks/useEventDossier';
+import { EventHub } from '../../../src/components/event/EventHub';
 import { useEventHub } from '../../../src/hooks/useEventEditions';
 import { EventHubSkeleton } from '../../../src/components/skeletons/EventSkeleton';
 import { PageEndCap } from '../../../src/components/web/PageEndCap';
@@ -20,25 +28,20 @@ export default function EventPageWeb() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { hub, loading: hubLoading } = useEventHub(slug);
-  const { dossier, loading, notFound, failed, retry, windowLabel, windowDays } =
-    useEventDossier(slug);
+  const { hub, loading, notFound, failed, retry } = useEventHub(slug);
   const wide = width >= 900;
 
-  const live = !!hub?.isLive && !!dossier;
   const goEdition = (edition: string) =>
     router.push(`/event/${encodeURIComponent(slug)}/${encodeURIComponent(edition)}`);
 
   return (
     <View style={s.screen as object}>
       <View style={s.column as object}>
-        {/* The hub shape: liveness is unknown until the hub resolves, and 19 of
-            20 events are not live. */}
-        {(loading || hubLoading) && !hub && !dossier && <EventHubSkeleton />}
-        {notFound && !hub && <Text style={s.muted as object}>No page for this event yet.</Text>}
+        {loading && !hub && <EventHubSkeleton />}
+        {notFound && <Text style={s.muted as object}>No page for this event yet.</Text>}
         {/* A failed fetch is not a dead link — the native twin offers a retry,
             so this does too rather than leaving an empty column. */}
-        {failed && !hub && !dossier && (
+        {failed && !hub && (
           <View style={s.failed as object}>
             <Text style={s.muted as object}>Couldn’t load this event.</Text>
             <Pressable onPress={retry} accessibilityRole="button" style={s.retry as object}>
@@ -47,39 +50,7 @@ export default function EventPageWeb() {
           </View>
         )}
 
-        {live && dossier ? (
-          <View>
-            <EventDossier
-              dossier={dossier}
-              windowLabel={windowLabel}
-              windowDays={windowDays}
-              wide={wide}
-              contentWidth={width}
-              maxContentWidth={1180}
-              topPad={14}
-              viewportHeight={height}
-              onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}
-              onHeroPress={(id) => router.push(`/character/${encodeURIComponent(id)}`)}
-              onArenaPress={(a, b) =>
-                router.push(`/compare/${encodeURIComponent(a)}/${encodeURIComponent(b)}`)
-              }
-              onIndexPress={() => router.push('/event')}
-            />
-            {/* The same band the hub renders, seam included — this route used
-                to assemble it by hand, which is how it ended up with no chart,
-                a heading two steps smaller than the section above it, a gutter
-                8pt out of line, and no seam at all under the ink. */}
-            {!!hub && hub.editions.length > 0 && (
-              <EditionsArchive
-                hub={hub}
-                wide={wide}
-                contentWidth={width}
-                maxContentWidth={1180}
-                onEditionPress={goEdition}
-              />
-            )}
-          </View>
-        ) : hub ? (
+        {hub && (
           <EventHub
             hub={hub}
             wide={wide}
@@ -90,23 +61,21 @@ export default function EventPageWeb() {
             onEditionPress={goEdition}
             onIndexPress={() => router.push('/event')}
           />
-        ) : null}
+        )}
       </View>
       {/* Closes the beige sheet onto the app's ink floor. Without it the page
           ended on raw beige, which in an iOS Safari tab puts a hard beige→navy
           cut right under the toolbar — the exact case PageEndCap documents. */}
-      {(hub || dossier) && <PageEndCap />}
+      {!!hub && <PageEndCap />}
     </View>
   );
 }
 
 const s = StyleSheet.create({
   screen: { backgroundColor: COLORS.deepNavy, minHeight: '100%' } as object,
-  // The web masthead is fixed, so a page that starts at 0 renders underneath it.
-  // 84 is the same offset the house page's scrollMarginTop uses.
-  // Exactly the fixed masthead's height (TOPBAR_HEIGHT). The stage supplies
-  // the breathing gap via `topPad`; 84 here plus the stage's own 28-44 left
-  // ~120pt of dead ink above every event page's first word.
+  // Exactly the fixed masthead's height (TOPBAR_HEIGHT). The stage supplies the
+  // breathing gap via `topPad`; 84 here plus the stage's own 28-44 left ~120pt
+  // of dead ink above every event page's first word.
   column: { width: '100%', alignSelf: 'center', paddingTop: 64 } as object,
   failed: { alignItems: 'flex-start' },
   retry: {
