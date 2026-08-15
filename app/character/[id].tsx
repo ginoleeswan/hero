@@ -987,11 +987,22 @@ export default function CharacterScreen() {
                 </Text>
               ) : null}
 
+              {/* Web carries the narrative trait in the BAND, directly under the
+                  alias — its `stageTraits`. It has to sit INSIDE the identity
+                  and before the stats row, not after it: rendered after, the
+                  stats row's height opens a hole between the alias and the
+                  chip and the chip reads as orphaned at the band's floor. */}
+              {split && narrative && narrative.tags.length > 0 ? (
+                <View style={styles.stageTraits}>
+                  <TraitBand tags={narrative.tags} />
+                </View>
+              ) : null}
+
               {/* Vitals + credit form a left column; the chip stack sits
                     in a right column against the whole block, so its height
                     never dictates the credit's spacing. */}
-              <View style={styles.statsRow}>
-                <View style={styles.statsCol}>
+              <View style={[styles.statsRow, split && styles.statsRowSplit]}>
+                <View style={[styles.statsCol, split && styles.statsColSplit]}>
                   <VitalsStrip
                     powerTotal={powerTotal}
                     issueCount={data.details.issueCount}
@@ -1766,18 +1777,7 @@ export default function CharacterScreen() {
              scrolls that happen to sit side by side. ─────────────────────── */
           <>
             <View style={[styles.stage, { paddingTop: insets.top + 52 }]}>
-              <View style={styles.stageInner}>
-                {identityNode}
-                {/* Web carries the narrative trait in the BAND, under the alias
-                    — its `stageTraits`. Native had it atop the main column,
-                    which reads as a property of the dossier rather than of the
-                    character. */}
-                {narrative && narrative.tags.length > 0 ? (
-                  <View style={styles.stageTraits}>
-                    <TraitBand tags={narrative.tags} />
-                  </View>
-                ) : null}
-              </View>
+              <View style={styles.stageInner}>{identityNode}</View>
             </View>
             <View style={styles.body}>
               <View style={styles.bodyInner}>
@@ -1995,12 +1995,13 @@ const styles = StyleSheet.create({
     maxWidth: STAGE_MAX,
     width: '100%',
     alignSelf: 'center',
-    // 44, not 24. The BODY's text starts at 24 (bodyInner) + 20 (every section
-    // pads itself) = 44, so a band padded to 24 puts the name 20pt left of the
-    // lede beneath it — two left edges, which is the exact raggedness the
-    // gutter work has been removing everywhere else. The band matches the text
-    // it introduces, not the box it sits in.
-    paddingLeft: 44,
+    // 24 — the same as `bodyInner`, so the name and the CARD EDGES below it are
+    // flush. Measured on web: "Hulk" and the Power Profile card both start at
+    // x=175. This was 44 for a while, aligning the name with the card's inner
+    // TEXT instead, which put a 17pt step between the name and every card on
+    // the page. Text inside a card is meant to be inset from the card; the
+    // heading above it is not.
+    paddingLeft: 24,
     // Reserve the portrait's column, exactly as web's `identityColDesktop` does.
     // Without it the alignment chip and the vitals run under the floating card:
     // the identity fills the band, and the band is wider than the identity's
@@ -2152,6 +2153,21 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 8,
   },
+  // In the band the vitals and the credit belong on the RIGHT, beside the
+  // alignment chip — web's arrangement. Left where the phone has them, the
+  // band's right-hand 376pt held two small chips and nothing else, which read
+  // as an unfinished half rather than a composition.
+  //
+  // `row-reverse` with the children in DOM order (stats, chips) renders
+  // chips-then-stats, which is web's left-to-right order in that pill row:
+  // alignment first, then the numbers.
+  statsRowSplit: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    gap: 20,
+  },
+  statsColSplit: { flex: 0, alignItems: 'flex-end' },
   // Stacked on the right (shortest label on top), so "Created by" reclaims the
   // full-width horizontal room instead of sharing the line with two side-by-side
   // pills. align-end keeps the stack flush to the right edge.
