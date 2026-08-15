@@ -198,6 +198,16 @@ on native. Don't remove these without a replacement:
   the character grid, and nothing at all for the ~200 universes with no houses.
   The row lands on **ink** on web and on the **beige sheet** on native, so the
   web file passes `tone="ink"` and native takes the `paper` default — see below.
+
+  **The band is one row and stays one row.** Game of Thrones charts fourteen
+  houses; wrapped, that pushed 323 characters — what the page is _for_ — two
+  screens down. Web computes `housesPerRow` from the band's own width (the same
+  arithmetic flex-wrap would do, run ahead of it) and shows that many, with a
+  "Show all N" disclosure for the rest; houses arrive biggest-first from
+  `listHousesForUniverse`, so the row is the houses that carry the world. Native
+  needs no cap — its row is a sideways-scrolling rail, which already costs the
+  grid nothing. If you change the card width, change `HOUSE_CARD_W` in
+  `app/category/[slug].web.tsx` with it or the cap and the wrap disagree.
 - **Character page** — `HouseLinks` in the family section. Both platform files.
 
 ### The house card is cut from its surface

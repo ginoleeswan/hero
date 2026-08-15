@@ -385,7 +385,12 @@ export default function CategoryScreen() {
             them — and it is the only route to the family trees from here. */}
         {houses.length > 0 && (
           <View style={styles.housesRow}>
-            <Text style={styles.housesLabel}>{houses.length === 1 ? 'House' : 'Houses'}</Text>
+            {/* The native row is already a one-line rail that scrolls sideways,
+                so it costs the grid nothing and needs no cap — but it carries
+                the web band's head so the section reads the same on both. */}
+            <Text style={styles.housesLabel}>
+              {houses.length === 1 ? 'House' : `Houses · ${houses.length} charted`}
+            </Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}

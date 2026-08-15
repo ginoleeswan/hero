@@ -61,6 +61,10 @@ import { useHeroMorph } from '../../src/hooks/useHeroMorph';
 
 // Publishers (marvel/dc/image/dark-horse) are NOT here — they're universes now,
 // served by /universe/[slug] (this same screen, resolved via the registry).
+/** House-band card geometry. Shared by the row-capacity arithmetic and the cards. */
+const HOUSE_CARD_W = 186;
+const HOUSE_CARD_GAP = 14;
+
 const VALID_SLUGS = new Set<CategorySlug>([
   'popular',
   'villain',
@@ -314,6 +318,7 @@ export default function WebCategoryScreen() {
   const hasBanner = !!categorySlug || !!universeTerm || !!franchiseTerm;
   // Charted houses for this world — empty for almost every universe.
   const houses = useUniverseHouses(universeTerm ?? franchiseTerm);
+  const [allHouses, setAllHouses] = useState(false);
 
   const { filters, setFilter, reset } = useCategoryFilters(categorySlug);
   const activeChips = activeFilterList(categorySlug, filters);
@@ -538,6 +543,16 @@ export default function WebCategoryScreen() {
 
   const contentPad = isDesktop ? 32 : 16;
 
+  // How many house cards the band's own width fits on ONE line — the same
+  // arithmetic flex-wrap would do, run ahead of it so the overflow becomes a
+  // disclosure instead of a second and third row. Two is the floor: a "band"
+  // of one card is just a card.
+  const housesTrackWidth = Math.min(CONTENT_MAX_WIDTH, Math.max(0, width - contentPad * 2));
+  const housesPerRow = Math.max(
+    2,
+    Math.floor((housesTrackWidth + HOUSE_CARD_GAP) / (HOUSE_CARD_W + HOUSE_CARD_GAP)),
+  );
+
   const grid = (
     <View style={[gridStyle, showingStale && { opacity: 0.55 }] as object}>
       {heroes.map((hero, i) => (
@@ -727,15 +742,43 @@ export default function WebCategoryScreen() {
       {/* Houses, where this world has any. Above the grid because a dynasty is a
           way INTO the characters rather than a sibling of them — and it's the
           only route from here to the family trees. Renders nothing for the ~200
-          universes with no houses charted. */}
+          universes with no houses charted.
+
+          ONE ROW, always. Game of Thrones charts fourteen houses, which wrapped
+          to three rows and pushed 323 characters — the thing the page is for —
+          two screens down. The band is a SELECTION now, not an inventory: the
+          houses arrive biggest-first, so the row is the ones that carry the
+          world, and the rest are one click away instead of one scroll. The
+          inventory reading still exists; it lives on /house, where houses are
+          the subject rather than the way in. */}
       {houses.length > 0 && (
-        <View style={[styles.housesRow, { paddingHorizontal: contentPad }] as object}>
-          <Text style={styles.housesLabel as object}>
-            {houses.length === 1 ? 'House' : 'Houses'}
-          </Text>
+        <View style={[styles.housesBand, { paddingHorizontal: contentPad }] as object}>
+          <View style={styles.housesHead as object}>
+            <Text style={styles.housesLabel as object}>
+              {houses.length === 1 ? 'House' : `Houses · ${houses.length} charted`}
+            </Text>
+            {houses.length > housesPerRow && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setAllHouses((v) => !v)}
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [styles.housesToggle, hovered && (styles.housesToggleHover as object)] as object
+                }
+              >
+                <Text style={styles.housesToggleText as object}>
+                  {allHouses ? 'Show fewer' : `Show all ${houses.length}`}
+                </Text>
+                <Ionicons
+                  name={allHouses ? 'chevron-up' : 'chevron-down'}
+                  size={13}
+                  color={COLORS.goldAccent}
+                />
+              </Pressable>
+            )}
+          </View>
           <View style={styles.housesTrack as object}>
-            {houses.map((h) => (
-              <HouseCard key={h.slug} house={h} width={186} tone="ink" />
+            {(allHouses ? houses : houses.slice(0, housesPerRow)).map((h) => (
+              <HouseCard key={h.slug} house={h} width={HOUSE_CARD_W} tone="ink" />
             ))}
           </View>
         </View>
@@ -892,12 +935,23 @@ export default function WebCategoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  housesRow: {
+  // A band, not a section: the hairline under it is what ends it, so the
+  // results bar below reads as the start of the grid rather than as more of
+  // the same list.
+  housesBand: {
     width: '100%',
     maxWidth: CONTENT_MAX_WIDTH,
     alignSelf: 'center',
-    paddingTop: 10,
+    paddingTop: 12,
     paddingBottom: 22,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(245,235,220,0.07)',
+  },
+  housesHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 12,
   },
   housesLabel: {
@@ -907,7 +961,25 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: '#a99b84',
   },
-  housesTrack: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  housesToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginRight: -8,
+    borderRadius: 999,
+    cursor: 'pointer',
+    transition: 'background-color 160ms ease',
+  } as object,
+  housesToggleHover: { backgroundColor: 'rgba(206,155,51,0.12)' } as object,
+  housesToggleText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    letterSpacing: 0.3,
+    color: COLORS.goldAccent,
+  },
+  housesTrack: { flexDirection: 'row', flexWrap: 'wrap', gap: HOUSE_CARD_GAP },
   // Grows with content (not `flex: 1`, which clamps to one viewport and breaks
   // the sticky controls bar past the first screen of scroll — the document, not
   // this View, is the scroller).
