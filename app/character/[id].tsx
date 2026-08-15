@@ -1223,46 +1223,41 @@ export default function CharacterScreen() {
             </View>
           </PaperCard>
 
-          {/* Did You Know — swipeable trivia deck (the one playful module).
-          Full-bleed so the deck owns its own edge insets + peek. */}
-          {narrative && narrative.didYouKnow.length > 0 ? (
-            <View onLayout={registerAnchor('narrative')} style={styles.bleedSection}>
-              <SectionHeader title="Did You Know" />
-              <DidYouKnowDeck facts={narrative.didYouKnow} />
+          {/* Dossier — the bio infobox, collapsed by default.
+          NOT in `split`: the landscape layout puts the same fields in the side
+          column's Quick Facts card, and rendering both showed a reader the same
+          data twice — once as an open grid and once as a bar promising it. Web
+          has exactly one, in the sideCol. */}
+          {split ? null : (
+            <View onLayout={registerAnchor('dossier')}>
+              <Dossier
+                data={data}
+                includeFirstAppearance={!hasFirstVisual}
+                eraSummary={narrative?.eraSummary}
+                editValues={{
+                  // Profile
+                  full_name: data.stats.biography['full-name'],
+                  alter_egos: data.stats.biography['alter-egos'],
+                  aliases: (data.stats.biography.aliases ?? []).filter(valid).join('\n'),
+                  place_of_birth: data.stats.biography['place-of-birth'],
+                  first_appearance: data.stats.biography['first-appearance'],
+                  origin: data.details.origin,
+                  // Appearance
+                  gender: data.stats.appearance.gender,
+                  race: data.stats.appearance.race,
+                  height_imperial: data.stats.appearance.height?.[0],
+                  weight_imperial: data.stats.appearance.weight?.[0],
+                  eye_color: data.stats.appearance['eye-color'],
+                  hair_color: data.stats.appearance['hair-color'],
+                  // Connections
+                  occupation: data.stats.work.occupation,
+                  base: data.stats.work.base,
+                  group_affiliation: data.stats.connections['group-affiliation'],
+                }}
+                onEditField={(field, current) => setEditTarget({ field, current })}
+              />
             </View>
-          ) : null}
-
-          {/* Dossier — the bio infobox (Profile + Appearance + Connections),
-          collapsed by default. Caps the intrinsic-character block before
-          the relational/media sections below. */}
-          <View onLayout={registerAnchor('dossier')}>
-            <Dossier
-              data={data}
-              includeFirstAppearance={!hasFirstVisual}
-              eraSummary={narrative?.eraSummary}
-              editValues={{
-                // Profile
-                full_name: data.stats.biography['full-name'],
-                alter_egos: data.stats.biography['alter-egos'],
-                aliases: (data.stats.biography.aliases ?? []).filter(valid).join('\n'),
-                place_of_birth: data.stats.biography['place-of-birth'],
-                first_appearance: data.stats.biography['first-appearance'],
-                origin: data.details.origin,
-                // Appearance
-                gender: data.stats.appearance.gender,
-                race: data.stats.appearance.race,
-                height_imperial: data.stats.appearance.height?.[0],
-                weight_imperial: data.stats.appearance.weight?.[0],
-                eye_color: data.stats.appearance['eye-color'],
-                hair_color: data.stats.appearance['hair-color'],
-                // Connections
-                occupation: data.stats.work.occupation,
-                base: data.stats.work.base,
-                group_affiliation: data.stats.connections['group-affiliation'],
-              }}
-              onEditField={(field, current) => setEditTarget({ field, current })}
-            />
-          </View>
+          )}
 
           {/* Enemies, Allies & Teams — full-bleed card strips off the
           relationship graph (same-universe, popularity-ranked). */}
@@ -1397,11 +1392,15 @@ export default function CharacterScreen() {
             </View>
           ) : null}
 
-          {/* Links — debut year + external links (Wikidata-sourced) */}
-          {heroLinksHasContent(links) ? (
-            <View style={styles.section}>
-              <SectionHeader title="Links" />
-              <HeroLinksRow links={links!} contentInset={0} />
+          {/* Did You Know sits HERE, not after Abilities, because web nests it
+          in `sec-legend` — the late block that gathers the trivia and the first
+          appearance. Early, it interrupts the run from Abilities into
+          Relations; here it is the pause before In Print. Full-bleed so the
+          deck owns its own edge insets and peek. */}
+          {narrative && narrative.didYouKnow.length > 0 ? (
+            <View onLayout={registerAnchor('narrative')} style={styles.bleedSection}>
+              <SectionHeader title="Did You Know" />
+              <DidYouKnowDeck facts={narrative.didYouKnow} />
             </View>
           ) : null}
 
@@ -1796,6 +1795,17 @@ export default function CharacterScreen() {
                       accent={theme.accentWash}
                     />
                   ) : null}
+                  {/* Web's third sideCol item, and it is called "Elsewhere"
+                      there — the debut year plus the outbound links. It failed
+                      here once as a bare `SectionHeader` over a rule, which is
+                      a device built for a full-width sheet; in a 300pt column
+                      it needs the card the rest of the column has. */}
+                  {heroLinksHasContent(links) ? (
+                    <PaperCard>
+                      <Text style={styles.sideCardTitle}>Elsewhere</Text>
+                      <HeroLinksRow links={links!} contentInset={0} />
+                    </PaperCard>
+                  ) : null}
                 </View>
               </View>
             </View>
@@ -1989,6 +1999,15 @@ const styles = StyleSheet.create({
   // card's is dropped and the section's kept — otherwise every card is 36pt
   // inside and the dials lose a column.
   mainCard: { padding: 0, paddingVertical: 6 },
+  // Matches QuickFacts' own heading so the side column has one voice.
+  sideCardTitle: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    color: PAPER_TEXT.faint,
+    marginBottom: 12,
+  },
   sideCol: { width: SIDE_COL, flexShrink: 0, gap: 16 },
   // Hangs up into the band. The negative margin is web's `portraitOverlap`: it
   // stitches the two colours together instead of leaving a hard seam, and it is
