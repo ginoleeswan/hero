@@ -37,10 +37,11 @@ import { useSignalFirstPaint } from '../../src/components/ui/BootStage';
 import { DUR, STAGGER, SPRING_SETTLE } from '../../src/lib/nativeMotion';
 import * as Haptics from 'expo-haptics';
 import { COLORS, ORANGE_INK } from '../../src/constants/colors';
+import { breakpointFor } from '../../src/constants/layout';
 import { HomeSkeleton, MatchupSkeleton } from '../../src/components/skeletons/HomeSkeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { SpotlightCarousel, spotlightHeight } from '../../src/components/home/SpotlightCarousel';
-import { SPOTLIGHT } from '../../src/components/home/homeGeometry';
+import { ENGAGE_ROW_GAP, SPOTLIGHT } from '../../src/components/home/homeGeometry';
 import { PaperSurface } from '../../src/components/home/PaperSurface';
 import { rowStyle } from '../../src/lib/home/rowStyle';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
@@ -86,6 +87,12 @@ type FeedRow =
   | { type: 'matchup'; matchup: Matchup }
   | { type: 'matchupPending' }
   | { type: 'daily' }
+  // At `wide` (≥1024) TodaysMatchup and the daily banner pair into one row —
+  // the same physical cards, side by side, rather than each claiming a full
+  // 1376pt-wide band for a few hundred points of content. Below `wide` the
+  // 'matchup' / 'matchupPending' / 'daily' rows above are used, untouched.
+  | { type: 'engage'; matchup: Matchup }
+  | { type: 'engagePending' }
   | { type: 'ticker'; heroCount: number; newlyAddedCount: number }
   | { type: 'recent'; heroes: RowHero[] }
   | { type: 'foryou'; heroes: RowHero[] }
@@ -128,6 +135,8 @@ const DARK_ROWS = new Set<FeedRow['type']>([
   // Omitting it would put a navy-tinted shimmer on beige paper AND make it the
   // first beige row, which is the one that carries the seam.
   'matchupPending',
+  'engage',
+  'engagePending',
   'daily',
   'ticker',
   'rightnow',
@@ -303,6 +312,11 @@ export default function HomeScreen() {
     [router],
   );
 
+  // Width, not device — a Split View column stays 'phone' however big the iPad
+  // is. `winW` already tracks the live window (see the band-bug note above),
+  // so this stays correct through rotation without a second dimensions read.
+  const isWide = breakpointFor(winW) === 'wide';
+
   // The feed as a flat list of rows. A deliberate, chaptered sequence: billboard →
   // today's battle → the dynamic "Right Now" zone → your personal rows → the
   // Library (browse) → curated catalogue rows → "Beyond the Page" editorial
@@ -315,9 +329,18 @@ export default function HomeScreen() {
     // already draws that distinction, so hold the slot for the first and skip
     // it for the second. Without this the card arrives late and moves the whole
     // feed under the reader's thumb.
-    if (matchup) out.push({ type: 'matchup', matchup });
-    else if (matchup === undefined) out.push({ type: 'matchupPending' });
-    out.push({ type: 'daily' });
+    //
+    // At `wide`, pair the matchup card with the daily banner into one row —
+    // but only when there IS a matchup card to pair with (truthy or pending).
+    // A resolved-but-none matchup leaves nothing to sit beside the banner, so
+    // it falls back to the plain full-width 'daily' row, same as below `wide`.
+    if (isWide && matchup) out.push({ type: 'engage', matchup });
+    else if (isWide && matchup === undefined) out.push({ type: 'engagePending' });
+    else {
+      if (matchup) out.push({ type: 'matchup', matchup });
+      else if (matchup === undefined) out.push({ type: 'matchupPending' });
+      out.push({ type: 'daily' });
+    }
     if (heroCount > 0) out.push({ type: 'ticker', heroCount, newlyAddedCount: newlyAdded.length });
     if (
       campaigns[0] ||
@@ -376,6 +399,7 @@ export default function HomeScreen() {
   }, [
     spotlightPool,
     matchup,
+    isWide,
     heroCount,
     recentlyViewed,
     favourites,
@@ -492,6 +516,43 @@ export default function HomeScreen() {
               <SkeletonProvider>
                 <MatchupSkeleton />
               </SkeletonProvider>
+            );
+          case 'engage':
+            // The `wide` pairing. Neither card takes a width prop — each is
+            // simply the flex:1 child of a row, exactly as they are the sole
+            // child of a full-width row below `wide`. Their own hMargin
+            // (matchupCard/dailyBanner in homeGeometry) still reads the WINDOW
+            // width, not this half column, so each keeps its usual edge
+            // padding rather than being told to recompute against a value
+            // neither component is given.
+            return (
+              <View style={styles.engageRow}>
+                <View style={styles.engageHalf}>
+                  <TodaysMatchup matchup={item.matchup} onOpen={handleOpenPath} />
+                </View>
+                <View style={styles.engageHalf}>
+                  <DailyChallengeBanner
+                    onPress={() => handleOpenPath('/play')}
+                    style={styles.dailyOnDark}
+                  />
+                </View>
+              </View>
+            );
+          case 'engagePending':
+            return (
+              <View style={styles.engageRow}>
+                <View style={styles.engageHalf}>
+                  <SkeletonProvider>
+                    <MatchupSkeleton />
+                  </SkeletonProvider>
+                </View>
+                <View style={styles.engageHalf}>
+                  <DailyChallengeBanner
+                    onPress={() => handleOpenPath('/play')}
+                    style={styles.dailyOnDark}
+                  />
+                </View>
+              </View>
             );
           case 'ticker':
             return (
@@ -778,6 +839,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 16,
   },
+  // `wide` pairing of TodaysMatchup + the daily banner (see the 'engage' row
+  // type above). flex:1 on each half is what makes them split the width evenly
+  // minus the gap — neither card is told a width directly.
+  engageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: ENGAGE_ROW_GAP },
+  engageHalf: { flex: 1, minWidth: 0 },
   // No transformOrigin — the top anchor is computed in spotlightParallax so it
   // does not depend on a style property we cannot verify is honoured here.
   spotlightWrap: {},

@@ -140,3 +140,11 @@ export function heroRow(width: number, height: number) {
 
 /** The rounded beige seam where the Library zone begins. */
 export const PAPER_SEAM_RADIUS = 24;
+
+/**
+ * At the `wide` breakpoint (≥1024), TodaysMatchup and DailyChallengeBanner
+ * pair into one row instead of stacking — the width goes to density, not
+ * size (see constants/layout.ts). Shared so explore.tsx's real row and
+ * HomeSkeleton's placeholder row use the same gap and can't drift apart.
+ */
+export const ENGAGE_ROW_GAP = 16;

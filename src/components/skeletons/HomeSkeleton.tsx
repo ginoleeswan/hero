@@ -18,10 +18,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { COLORS } from '../../constants/colors';
+import { breakpointFor } from '../../constants/layout';
 import { spotlightHeight } from '../home/SpotlightCarousel';
 import {
   dailyBanner,
   DAILY_BANNER,
+  ENGAGE_ROW_GAP,
   FEED_H_PAD,
   heroRow,
   matchupCard,
@@ -188,6 +190,13 @@ interface HomeSkeletonProps {
 }
 
 export function HomeSkeleton({ insetTop }: HomeSkeletonProps) {
+  // At `wide` the real feed pairs the matchup card and the daily banner into
+  // one row (see explore.tsx's 'engage' row type) instead of stacking them —
+  // this placeholder has to pair them too, or the skeleton→feed handoff jumps
+  // from two stacked bands to one paired row the moment data lands. Below
+  // `wide` this stays the original stacked pair, untouched.
+  const { width } = useWindowDimensions();
+  const wide = breakpointFor(width) === 'wide';
   return (
     <SkeletonProvider>
       <ScrollView scrollEnabled={false} showsVerticalScrollIndicator={false} style={styles.scroll}>
@@ -195,8 +204,21 @@ export function HomeSkeleton({ insetTop }: HomeSkeletonProps) {
         {/* The dark stage — the same row types the real feed keeps on navy. */}
         <View style={styles.stage}>
           <PublisherGridSkeleton />
-          <MatchupSkeleton />
-          <DailyBannerSkeleton />
+          {wide ? (
+            <View style={styles.engageRow}>
+              <View style={styles.engageHalf}>
+                <MatchupSkeleton />
+              </View>
+              <View style={styles.engageHalf}>
+                <DailyBannerSkeleton />
+              </View>
+            </View>
+          ) : (
+            <>
+              <MatchupSkeleton />
+              <DailyBannerSkeleton />
+            </>
+          )}
         </View>
         {/* Beige paper begins where the real first Library row does. */}
         <View style={styles.sheet}>
@@ -251,6 +273,11 @@ const styles = StyleSheet.create({
   },
   darkSection: { paddingTop: 12, paddingBottom: 4 },
   matchupWrap: {},
+  // `wide` pairing — mirrors explore.tsx's engageRow/engageHalf exactly
+  // (same shared ENGAGE_ROW_GAP), so the placeholder row is the same width
+  // split as the real one that replaces it.
+  engageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: ENGAGE_ROW_GAP },
+  engageHalf: { flex: 1, minWidth: 0 },
   headerLeft: { gap: 2, paddingHorizontal: FEED_H_PAD, marginBottom: 10 },
   titleGap: { marginTop: 2 },
   dailyBanner: {
