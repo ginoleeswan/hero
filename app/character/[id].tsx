@@ -973,30 +973,35 @@ export default function CharacterScreen() {
           const hasCreators = !!data.details.creators?.length;
           return (
             <>
-              <UniverseEyebrow
-                publisher={data.stats.biography.publisher}
-                franchise={heroRow?.franchise}
-                textStyle={styles.eyebrow}
-              />
+              {/* The band's LEFT column. In `split` the identity is a row, so
+                  these four have to be one child or they lay out horizontally
+                  beside the meta instead of stacking under the name. */}
+              <View style={split ? styles.stageTitleCol : undefined}>
+                <UniverseEyebrow
+                  publisher={data.stats.biography.publisher}
+                  franchise={heroRow?.franchise}
+                  textStyle={styles.eyebrow}
+                />
 
-              <Text style={styles.heroName}>{displayName}</Text>
+                <Text style={styles.heroName}>{displayName}</Text>
 
-              {hasAlias ? (
-                <Text style={styles.heroAlias} numberOfLines={1}>
-                  {fullName}
-                </Text>
-              ) : null}
+                {hasAlias ? (
+                  <Text style={styles.heroAlias} numberOfLines={1}>
+                    {fullName}
+                  </Text>
+                ) : null}
 
-              {/* Web carries the narrative trait in the BAND, directly under the
+                {/* Web carries the narrative trait in the BAND, directly under the
                   alias — its `stageTraits`. It has to sit INSIDE the identity
                   and before the stats row, not after it: rendered after, the
                   stats row's height opens a hole between the alias and the
                   chip and the chip reads as orphaned at the band's floor. */}
-              {split && narrative && narrative.tags.length > 0 ? (
-                <View style={styles.stageTraits}>
-                  <TraitBand tags={narrative.tags} />
-                </View>
-              ) : null}
+                {split && narrative && narrative.tags.length > 0 ? (
+                  <View style={styles.stageTraits}>
+                    <TraitBand tags={narrative.tags} />
+                  </View>
+                ) : null}
+              </View>
 
               {/* Vitals + credit form a left column; the chip stack sits
                     in a right column against the whole block, so its height
@@ -2096,7 +2101,19 @@ const styles = StyleSheet.create({
   // In the band the stage owns the gutter and the bottom rhythm. The stacked
   // layout's own padding exists because the beige sheet rides up over it —
   // there is no sheet here, so it is 68pt of dead navy under the credit line.
-  identitySplit: { paddingHorizontal: 0, paddingBottom: 0 },
+  // A ROW in the band: title stack left, meta right, sharing a baseline.
+  // As a column the meta group fell BELOW the title stack, which left the two
+  // halves staggered and ~105pt of navy under the left one. `flex-end` is what
+  // puts the trait chip and the vitals on the same line.
+  identitySplit: {
+    paddingHorizontal: 0,
+    paddingBottom: 0,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 24,
+  },
+  stageTitleCol: { gap: 8, flexShrink: 1, minWidth: 0 },
   // A vertical chip stack is right on a portrait, where the column is narrow.
   // In the band there is a whole row, and stacking pushes the second chip below
   // the credit line where it reads as a stray.
