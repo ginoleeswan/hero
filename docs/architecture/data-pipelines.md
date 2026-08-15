@@ -113,7 +113,33 @@ Fold **new SQL housekeeping here. Do not add new crons for it.**
   drops generic role credits (Narrator, Scientist, Mom), which exist as hero rows
   here and would otherwise match thousands of parts. Parenthetical suffixes
   (`(voice)`, `(uncredited)`) are stripped before matching.
+
+  A fourth shape covers **live action**, which credits one actor per character so
+  the whole credit is a bare single word (`Supergirl` 2026 ships as
+  `["Supergirl","Lobo","Zor-El","Superman", …]`). Those need a guard that fame
+  cannot provide — ranking by fame gives `Luigi` → Cars and `Bishop` → Aliens,
+  because the famous character is precisely the one that wins a cross-universe
+  name collision. The working guard is **universe coherence**: take a bare
+  single-word credit only when the title already links a hero of the same
+  `publisher`. That plus a `fame_score` floor of 20 measured ~95% precision;
+  fame alone measured ~70%.
   Reversible: `delete … where source='tmdb_cast'`.
+
+  Not attempted, deliberately: matching against `heroes.aliases`. It measures
+  ~70% precision and the failure is structural, not tunable — when a credit says
+  "Wolverine" the canonical hero holds that as his **name**, so only successors
+  and variants carry it as an **alias**, and fame ranking then routes the credit
+  to the derivative (`diana prince` → Kingdom Come Wonder Woman, `barry allen` →
+  Black Flash). Those land on the highest-traffic pages.
+
+- **`heroes.movies` backfill** (migrations `20260815120000` / `20260815130000`)
+  swept the legacy ComicVine movie array into `hero_media_appearances`
+  (`source='comicvine'`). `register_media_match()` only fans these out when a NEW
+  title is matched, so any hero enriched after its films were already in `titles`
+  was never fanned out — 4,231 pairs ComicVine explicitly asserted sat unlinked.
+  The hero side needs no name resolution (the array hangs off the row), so the
+  only ambiguity is the title side; names resolving to more than one title are
+  skipped rather than guessed.
 
 ## Signal / freshness syncs
 
