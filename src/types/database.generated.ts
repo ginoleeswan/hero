@@ -107,6 +107,57 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_videos: {
+        Row: {
+          channel_id: string
+          description: string | null
+          first_seen_at: string
+          id: string
+          matched_at: string | null
+          published_at: string
+          thumbnail_url: string | null
+          title: string
+          title_id: string | null
+        }
+        Insert: {
+          channel_id: string
+          description?: string | null
+          first_seen_at?: string
+          id: string
+          matched_at?: string | null
+          published_at: string
+          thumbnail_url?: string | null
+          title: string
+          title_id?: string | null
+        }
+        Update: {
+          channel_id?: string
+          description?: string | null
+          first_seen_at?: string
+          id?: string
+          matched_at?: string | null
+          published_at?: string
+          thumbnail_url?: string | null
+          title?: string
+          title_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_videos_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "media_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_videos_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_errors: {
         Row: {
           created_at: string
@@ -1695,6 +1746,39 @@ export type Database = {
         }
         Relationships: []
       }
+      media_channels: {
+        Row: {
+          checked_at: string | null
+          created_at: string
+          enabled: boolean
+          id: string
+          last_video_at: string | null
+          name: string
+          official: boolean
+          slug: string
+        }
+        Insert: {
+          checked_at?: string | null
+          created_at?: string
+          enabled?: boolean
+          id: string
+          last_video_at?: string | null
+          name: string
+          official?: boolean
+          slug: string
+        }
+        Update: {
+          checked_at?: string | null
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_video_at?: string | null
+          name?: string
+          official?: boolean
+          slug?: string
+        }
+        Relationships: []
+      }
       page_views: {
         Row: {
           created_at: string
@@ -3228,6 +3312,8 @@ export type Database = {
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
       link_tmdb_cast: { Args: never; Returns: number }
       mark_hero_unresolved: { Args: { p_hero_id: string }; Returns: undefined }
+      match_channel_videos: { Args: never; Returns: Json }
+      match_title_for_video: { Args: { p_text: string }; Returns: string }
       nightly_maintenance: { Args: never; Returns: undefined }
       pick_daily_debate: { Args: never; Returns: undefined }
       post_take: {

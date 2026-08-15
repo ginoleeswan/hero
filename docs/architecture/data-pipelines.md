@@ -104,14 +104,57 @@ Fold **new SQL housekeeping here. Do not add new crons for it.**
   under an ACCESS EXCLUSIVE lock → **daily only**. Must run after any
   enrich/merge that changes those arrays, or the cards stay empty.
 - **`link_tmdb_cast()`** writes `titles.cast_members` → `hero_media_appearances`
-  (`source='tmdb_cast'`). Matches the alias part of a "Civilian / Hero Alias"
-  credit for precision. Reversible: `delete … where source='tmdb_cast'`.
+  (`source='tmdb_cast'`). Matches a credit segment against `heroes.name`, taking
+  the most famous hero per name. Three segment shapes qualify: any segment after
+  the first ("Civilian / **Hero Alias**"), the first segment of a split credit
+  ("**Batman** / Bruce Wayne" — in an animated film this is the lead), and an
+  unsplit credit that is multi-word ("Severus Snape"). A bare one-word segment is
+  trusted only as a first segment and only above `fame_score` 10; a blocklist
+  drops generic role credits (Narrator, Scientist, Mom), which exist as hero rows
+  here and would otherwise match thousands of parts. Parenthetical suffixes
+  (`(voice)`, `(uncredited)`) are stripped before matching.
+  Reversible: `delete … where source='tmdb_cast'`.
 
 ## Signal / freshness syncs
 
 `sync-new-comics-hourly`, `sync-tmdb-trending-daily`, `refresh-tmdb-trending`
 (weekly) keep the discovery surfaces fresh. These are **pushes** (pull a feed,
 upsert), not per-row drains.
+
+### Trailers come from two sources, and only one of them is fast
+
+`sync-title-videos-hourly` sweeps TMDB `/videos`; `sync-channel-videos-hourly`
+reads the official studio channels' YouTube RSS feeds. Both are needed, and the
+split is not redundancy:
+
+- **TMDB is richer and slower.** It is community-maintained, so on 2026-08-15 —
+  hours into D23 — it held no Avengers: Doomsday "Special Look", no Ahsoka
+  season-2 teaser and no VisionQuest trailer. The sweep was correct, current, and
+  empty. You cannot sweep your way to data the source does not have.
+- **YouTube RSS is immediate and thin.** `youtube.com/feeds/videos.xml?channel_id=`
+  needs **no API key and has no quota**, and returns the 15 newest uploads with
+  exact publish times. Marvel's own channel had the Doomsday Special Look at
+  04:06 UTC that morning.
+
+`sync-channel-videos` only ingests, into `channel_videos`. All judgement lives in
+`match_channel_videos()` so it can be re-run over history without re-fetching:
+
+1. **Match** — longest catalogue title contained in the video title, but ranked
+   **active-first** (`20260815102000_…`). Length alone matched Star Wars' own
+   "Star Wars: Ahsoka Season 2 | Teaser Trailer" to _Star Wars_ (1977), because
+   that is the longer substring.
+2. **Promote** — only trailer-shaped videos, only onto titles that could still be
+   getting a trailer, into `title_videos` as `yt:<videoId>` so the Pulse trailer
+   lane needs no changes at all. Marvel's "The X-Men are coming to the MCU."
+   matches _X-Men (2000)_ and is correctly never promoted.
+
+Matching is cheap to get wrong (a bad row in a table nothing renders); promoting
+is expensive (a false "New trailer" on the front page). Hence two stages with
+different tolerances.
+
+**Known gap:** the rail's `trailer_cast` join is an INNER join, so a title with
+no `hero_media_appearances` is dropped however good its trailer is. VisionQuest
+has zero and does not appear. That is an enrichment gap, not a rail bug.
 
 ## Maturity & roadmap
 
