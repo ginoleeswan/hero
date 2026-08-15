@@ -132,6 +132,21 @@ curated 20-row watch list and the `detect.ts` thresholds), not on each firing.
 `admin_set_watched_event_approval` still sets `rejected` as a kill switch. A
 human gate is still right for anything irreversible: **push must keep its own.**
 
+**Three functions read `approval` and must move together** — `get_live_events`
+(the rail), `get_event_dossier` (`/event/[slug]`) and `get_event_index`
+(`/event`). There is no shared predicate; the `where` is inlined in each, which
+is exactly how the first pass drifted: inverting only the rail shipped a
+tappable D23 card pointing at a dossier that returned null
+(`20260815093000_event_pages_follow_the_veto_gate.sql`). The admin RPCs
+deliberately don't filter — they show the whole table, rejections included.
+
+The index's `caught` arm additionally requires `first_detected_at is not null`
+(`20260815094500_…`). `live_from` alone marks any contiguous run above
+`WINDOW_ENTER`, which a quiet article clears in a slow week; `first_detected_at`
+is stamped only when a row is first judged `live`, so it means "this really was
+an event" and it survives the event ending. `watching` is kept as the exact
+complement of `caught`, so the two arms still sum to the enabled row count.
+
 Copy has to stay honest in _both_ directions. Pageviews lag reality by 1–2 days,
 so a running event's inferred window can close before the event does; a
 `sustained` shape (the detector's "this run reaches my newest day") therefore
