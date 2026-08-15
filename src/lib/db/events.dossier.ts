@@ -70,6 +70,9 @@ export interface EventRevealed {
   name: string;
   publisher: string | null;
   portraitUrl: string | null;
+  /** True when portraitUrl is heroes.avatar_url — a flat mark, not a picture.
+   *  The two need opposite shapes; see HeroFace. */
+  avatar: boolean;
   fameScore: number | null;
   /** What they were revealed FOR, when the video could be attached to a title. */
   titleId: string | null;
@@ -93,6 +96,9 @@ export interface EventSurge {
   name: string;
   publisher: string | null;
   portraitUrl: string | null;
+  /** True when portraitUrl is heroes.avatar_url — a flat mark, not a picture.
+   *  The two need opposite shapes; see HeroFace. */
+  avatar: boolean;
   spike: number | null;
   pageviewsWeek: number | null;
   started: string | null;
@@ -169,6 +175,7 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
         name: String(v.name ?? ''),
         publisher: (v.publisher as string) ?? null,
         portraitUrl: (v.portrait_url as string) ?? null,
+        avatar: v.avatar === true,
         fameScore: num(v.fame_score),
         titleId: (v.title_id as string) ?? null,
         titleName: (v.title_name as string) ?? null,
@@ -190,6 +197,7 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
       name: String(s.name ?? ''),
       publisher: (s.publisher as string) ?? null,
       portraitUrl: (s.portrait_url as string) ?? null,
+      avatar: s.avatar === true,
       spike: num(s.spike),
       pageviewsWeek: num(s.pageviews_week),
       started: (s.started as string) ?? null,

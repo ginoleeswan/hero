@@ -13,7 +13,7 @@
 // event. The hub is the thing that accrues; the editions are what it accrues.
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text } from '../ui/Text';
-import { Image } from 'expo-image';
+import { HeroFace } from './HeroFace';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
@@ -203,22 +203,27 @@ export function EditionList({
             <View style={s.rowTop}>
               <View style={s.rowMain}>
                 <Text style={[s.year, { color: accent }]}>{e.editionSlug}</Text>
-                <Text style={s.rowWindow}>{formatWindow(e.liveFrom, e.liveTo) ?? '—'}</Text>
+                <Text style={s.rowWindow} numberOfLines={1}>
+                  {formatWindow(e.liveFrom, e.liveTo) ?? '—'}
+                </Text>
               </View>
               {/* The faces say what the year was about. Eight lines of
                   multiples do not, and this is the hub's only route into a
-                  character page. `contain`, not `cover`: an avatar is a whole
-                  mark and cropping it to a square box clips the silhouette. */}
+                  character page.
+
+                  `flexShrink: 0` on the faces and `flex: 1, minWidth: 0` on the
+                  text beside them is what stops the third face being sliced off
+                  at the screen edge: without it the date wraps to its natural
+                  width first and pushes the faces out of the row. */}
               {e.faces.length > 0 && (
                 <View style={s.faces}>
                   {e.faces.map((f) => (
-                    <Image
+                    <HeroFace
                       key={f.heroId}
-                      source={{ uri: f.portraitUrl }}
-                      style={s.face}
-                      contentFit="contain"
-                      transition={160}
-                      accessibilityLabel={f.name}
+                      uri={f.portraitUrl}
+                      avatar={f.avatar}
+                      size={34}
+                      name={f.name}
                     />
                   ))}
                 </View>
@@ -353,16 +358,10 @@ const s = StyleSheet.create({
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   // Overlapped, like a credits strip — three separate circles read as three
   // things, an overlapped set reads as "the cast of that year".
-  // The RPC serves heroes.avatar_url first — a flat head-icon on a transparent
-  // ground, which is what survives being 30pt wide. Avatars are drawn to sit
-  // FLAT on the page: no disc, no ring, no tint behind them. A circular crop
-  // would cut the silhouette they were designed to keep, and a fill behind a
-  // transparent PNG turns a mark into a sticker.
-  //
-  // That rules out the overlapped credits strip — flat cut-outs with no edge
-  // merge into one blob — so the faces are spaced instead.
-  faces: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  face: { width: 34, height: 34 },
+  // Spaced, not overlapped: flat avatar cut-outs with no edge merge into one
+  // blob when they overlap, so the credits-strip look is off the table here.
+  // flexShrink 0 keeps the set intact when the date beside it is long.
+  faces: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
   barTrack: {
     height: 3,
     borderRadius: 999,
@@ -372,7 +371,14 @@ const s = StyleSheet.create({
   },
   barFill: { height: 3, borderRadius: 999, opacity: 0.75 },
 
-  rowMain: { flexDirection: 'row', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' },
+  rowMain: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 12,
+    flexWrap: 'wrap',
+    flex: 1,
+    minWidth: 0,
+  },
   year: { fontFamily: 'Flame-Regular', fontSize: 23, lineHeight: 30 },
   rowWindow: {
     fontFamily: 'Nunito_700Bold',

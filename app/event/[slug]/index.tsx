@@ -125,7 +125,12 @@ export default function EventPage() {
               <View style={s.editionsBlock}>
                 <Text style={s.editionsTitle}>Editions</Text>
                 <Text style={s.editionsNote}>Every year of this event on record.</Text>
-                <EditionList editions={hub.editions} accent={accent} onEditionPress={goEdition} />
+                <EditionList
+                  editions={hub.editions}
+                  accent={accent}
+                  bestSpike={hub.bestSpike}
+                  onEditionPress={goEdition}
+                />
               </View>
             )}
           </View>

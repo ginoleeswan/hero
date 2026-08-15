@@ -71,7 +71,12 @@ export default function EventPageWeb() {
                 <View style={s.editionsInner as object}>
                   <Text style={s.editionsTitle as object}>Editions</Text>
                   <Text style={s.editionsNote as object}>Every year of this event on record.</Text>
-                  <EditionList editions={hub.editions} accent={accent} onEditionPress={goEdition} />
+                  <EditionList
+                    editions={hub.editions}
+                    accent={accent}
+                    bestSpike={hub.bestSpike}
+                    onEditionPress={goEdition}
+                  />
                 </View>
               </View>
             )}

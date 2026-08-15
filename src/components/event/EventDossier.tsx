@@ -16,6 +16,7 @@
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
+import { HeroFace } from './HeroFace';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
@@ -342,12 +343,7 @@ export function EventDossier({
                     accessibilityLabel={`${r.name}${r.titleName ? `, named in ${r.titleName}` : ''}`}
                   >
                     {!!r.portraitUrl && (
-                      <Image
-                        source={{ uri: r.portraitUrl }}
-                        style={s.castFace}
-                        contentFit="contain"
-                        transition={160}
-                      />
+                      <HeroFace uri={r.portraitUrl} avatar={r.avatar} size={66} name={r.name} />
                     )}
                     <Text style={s.castName} numberOfLines={2}>
                       {r.name}
@@ -427,15 +423,16 @@ export function EventDossier({
                     accessibilityLabel={`${sg.name}, ${sg.spike}× reads`}
                   >
                     <View style={[s.faceWrap, { width: faceGrid.cell, height: faceGrid.cell }]}>
-                      {/* Flat and uncropped: no circular mask, no fill. The
-                          avatar is already a finished mark and a round crop
-                          shears the silhouette it was drawn to keep. */}
+                      {/* HeroFace picks the shape from the KIND of picture the
+                          RPC found: an avatar is a flat mark and is drawn flat,
+                          a fallback portrait is a rectangular illustration and
+                          keeps the circle it has always had. */}
                       {!!sg.portraitUrl && (
-                        <Image
-                          source={{ uri: sg.portraitUrl }}
-                          style={[s.face, { width: faceGrid.cell, height: faceGrid.cell }]}
-                          contentFit="contain"
-                          transition={160}
+                        <HeroFace
+                          uri={sg.portraitUrl}
+                          avatar={sg.avatar}
+                          size={faceGrid.cell}
+                          name={sg.name}
                         />
                       )}
                       {sg.spike !== null && (
@@ -753,8 +750,6 @@ const s = StyleSheet.create({
 
   castRail: { gap: 14, paddingTop: 20 },
   castCell: { width: 78, gap: 4, alignItems: 'center' },
-  // Flat, uncropped, no fill — see `face`.
-  castFace: { width: 66, height: 66 },
   castName: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
@@ -795,11 +790,6 @@ const s = StyleSheet.create({
   faceGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   faceCell: { gap: 7 },
   faceWrap: {},
-  // No fill. These are heroes.avatar_url — flat head-icons on a transparent
-  // ground, and they are meant to sit directly on the page. A tint behind one
-  // turns the mark into a sticker, and the loading grey it used to carry was
-  // visible through every transparent pixel of the art.
-  face: {},
   spikePip: {
     position: 'absolute',
     right: -2,

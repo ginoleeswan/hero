@@ -43,7 +43,7 @@ export interface EventEditionSummary {
   /** Up to three movers with portraits, in the archive's own ranking. A row of
    *  faces is what tells a reader what a year was ABOUT — eight lines of
    *  multiples do not. */
-  faces: { heroId: string; name: string; portraitUrl: string }[];
+  faces: { heroId: string; name: string; portraitUrl: string; avatar: boolean }[];
 }
 
 export interface EventHub {
@@ -105,6 +105,9 @@ export function mapEventHub(raw: unknown): EventHub | null {
             heroId: String(f.hero_id ?? ''),
             name: String(f.name ?? ''),
             portraitUrl: String(f.portrait_url ?? ''),
+            // Which KIND of picture the RPC resolved. Drives the shape, not the
+            // source — see HeroFace.
+            avatar: f.avatar === true,
           }))
           .filter((f) => f.heroId && f.portraitUrl),
       }))
