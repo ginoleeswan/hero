@@ -219,6 +219,58 @@ interface WatchedRow {
   first_detected_at: string | null;
 }
 
+/**
+ * Tell a person when an event starts publishing itself.
+ *
+ * Approval is a veto rather than a prerequisite (20260815080000), which is the
+ * right default — the opt-in gate was unreachable and D23 sat unpublished
+ * through its own weekend. But a veto nobody hears about is only exercisable by
+ * someone who happens to be looking at the admin screen, and D23 went live at
+ * 00:07 UTC. This is the channel that reaches someone who is not looking.
+ *
+ * Fail-soft in every direction. No BREVO_API_KEY (it is set manually and may not
+ * be) means the sweep still succeeds; a send failure is swallowed. Detection is
+ * the job, and it must never fail because a mail server did.
+ */
+async function alertNewlyLive(events: { slug: string; spike: number }[]): Promise<void> {
+  const apiKey = Deno.env.get('BREVO_API_KEY') ?? '';
+  if (!apiKey) return;
+  const to = Deno.env.get('REPORT_ALERT_TO') ?? 'ginoswanepoel@gmail.com';
+  const senderEmail = Deno.env.get('REPORT_ALERT_FROM') ?? 'reports@mythique.app';
+  const senderName = Deno.env.get('REPORT_ALERT_FROM_NAME') ?? 'Mythique';
+
+  const rows = events
+    .map(
+      (e) =>
+        `<li><strong>${e.slug}</strong> — ${e.spike.toFixed(2)}× usual readership ` +
+        `(<a href="https://mythique.app/event/${encodeURIComponent(e.slug)}">page</a>)</li>`,
+    )
+    .join('');
+  const html =
+    `<p>Detected as live and <strong>already publishing</strong> to Explore:</p>` +
+    `<ul>${rows}</ul>` +
+    `<p>Nothing is required of you. If one of these is wrong, veto it in ` +
+    `<a href="https://mythique.app/admin/health?domain=pipelines&sub=signals">Build → Signals</a>.</p>`;
+
+  try {
+    await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': apiKey, 'Content-Type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({
+        sender: { name: senderName, email: senderEmail },
+        to: [{ email: to }],
+        subject:
+          events.length === 1
+            ? `Now live on Mythique: ${events[0].slug}`
+            : `${events.length} events now live on Mythique`,
+        htmlContent: html,
+      }),
+    });
+  } catch {
+    /* a mail failure must never fail the detection sweep */
+  }
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
@@ -248,6 +300,7 @@ serve(async (req: Request) => {
 
   const asOf = new Date().toISOString().slice(0, 10);
   const live: string[] = [];
+  const newlyLive: { slug: string; spike: number }[] = [];
   let processed = 0;
 
   for (const row of rows) {
@@ -282,7 +335,16 @@ serve(async (req: Request) => {
         })
         .eq('slug', row.slug);
 
-      if (d.verdict === 'live') live.push(row.slug);
+      if (d.verdict === 'live') {
+        live.push(row.slug);
+        // Newly live THIS pass — the same transition first_detected_at marks.
+        // Publishing is automatic now, so this mail is not a request for
+        // permission; it is the notification that makes the veto reachable.
+        // Without it "rejected" is a control that can only be exercised by
+        // someone who happened to be looking, which is how D23 published itself
+        // at 00:07 with nobody told.
+        if (row.verdict !== 'live') newlyLive.push({ slug: row.slug, spike: d.spikeRatio });
+      }
       processed++;
     } catch (_e) {
       // Transient network/parse failure: leave the row's last-known state and
@@ -290,6 +352,13 @@ serve(async (req: Request) => {
     }
     // Wikimedia asks for courteous pacing; this job is tiny and never urgent.
     await sleep(150);
+  }
+
+  // One mail per pass, however many events turned over. A per-event mail during
+  // a convention season is a mail nobody reads, and this is the only channel
+  // that reaches a person who is not already looking at the admin screen.
+  if (newlyLive.length > 0) {
+    await alertNewlyLive(newlyLive);
   }
 
   if (processed > 0) {
