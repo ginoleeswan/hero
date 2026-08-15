@@ -3072,6 +3072,11 @@ export type Database = {
         }[]
       }
       get_event_dossier: { Args: { p_slug: string }; Returns: Json }
+      get_event_edition: {
+        Args: { p_edition: string; p_slug: string }
+        Returns: Json
+      }
+      get_event_hub: { Args: { p_slug: string }; Returns: Json }
       get_event_index: { Args: never; Returns: Json }
       get_explore_bundle: {
         Args: { p_browse_per_slug?: number; p_browse_slugs: string[] }
