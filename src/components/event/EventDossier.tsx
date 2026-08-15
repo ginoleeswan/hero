@@ -443,6 +443,7 @@ export function EventDossier({
             <Section
               title="What was announced"
               note="From the studios' own channels, during the window"
+              wide={wide}
             >
               {/* The lead gets the room — but only as much as the picture can
                   actually fill. These are YouTube `hqdefault` stills, which are
@@ -537,7 +538,7 @@ export function EventDossier({
               studio SAYING a name outranks a curve that moved afterwards. */}
 
           {trailers.length > 0 && (
-            <Section title="What dropped" note="Trailers published inside the window">
+            <Section title="What dropped" note="Trailers published inside the window" wide={wide}>
               {/* One grid, not a banner over a grid.
                   Measured at 1512: the lead was 1100x380 = 418,000 square
                   points against 415,540 for the entire four-poster row beneath
@@ -636,6 +637,7 @@ export function EventDossier({
                 title="Who they named"
                 note="Characters called out in what was announced"
                 onInk
+                wide={wide}
               >
                 {/* A rail on a phone, a wrapped row on desktop. A horizontal
                       scroller is a touch affordance — on a pointer device it hides
@@ -713,6 +715,7 @@ export function EventDossier({
                 title="Who it moved"
                 note="Readership that broke out during the window"
                 onInk
+                wide={wide}
               >
                 {/* A ranking, drawn as one.
                       It used to be a gallery of 132pt faces with the multiple
@@ -899,10 +902,30 @@ function sourceLine(a: AnnouncementGroup): string {
 /** A heading plus the one line that says what the list is made of. Not
  *  decoration: each list has a different rule behind it and the reader has no
  *  other way to know that. */
+/**
+ * A section's masthead.
+ *
+ * It used to be a 26pt title with a 13pt note stacked under it and nothing else
+ * — no rule, no top edge, about 200 of the measure's 1,100 points used, and the
+ * identical treatment on all seven sections. Stacked down a page that reads as a
+ * CMS template rather than a designed thing: no boundary says where one section
+ * ends and the next begins except the size of the gap, and nothing says which
+ * of them matters.
+ *
+ * The device here is the one EventIndexList already uses for its quarters —
+ * label, hairline, note — so the two event pages finally share one grammar
+ * instead of two. The rule does the work: it draws a hard top edge across the
+ * full measure, and it carries the note out to the right margin where it reads
+ * as a caption on the section rather than as a second heading under the first.
+ *
+ * A phone has no room for three things on a line, so the rule goes above and the
+ * note below — same edge, stacked.
+ */
 function Section({
   title,
   note,
   onInk = false,
+  wide = false,
   children,
 }: {
   title: string;
@@ -910,12 +933,29 @@ function Section({
   /** Sections sit on paper by default. The measurement band is ink, and the
    *  heading has to invert with it or it disappears into the ground. */
   onInk?: boolean;
+  wide?: boolean;
   children: React.ReactNode;
 }) {
+  const rule = <View style={[s.sectionRule, onInk ? s.sectionRuleInk : null]} />;
   return (
     <View style={s.section}>
-      <Text style={[s.sectionTitle, onInk ? s.sectionTitleInk : null]}>{title}</Text>
-      <Text style={[s.sectionNote, onInk ? s.sectionNoteInk : null]}>{note}</Text>
+      {wide ? (
+        <View style={s.sectionHead}>
+          <Text style={[s.sectionTitle, onInk ? s.sectionTitleInk : null]}>{title}</Text>
+          {rule}
+          <Text style={[s.sectionNote, onInk ? s.sectionNoteInk : null]} numberOfLines={1}>
+            {note}
+          </Text>
+        </View>
+      ) : (
+        <>
+          {rule}
+          <Text style={[s.sectionTitle, onInk ? s.sectionTitleInk : null, s.sectionTitleStacked]}>
+            {title}
+          </Text>
+          <Text style={[s.sectionNote, onInk ? s.sectionNoteInk : null]}>{note}</Text>
+        </>
+      )}
       <View style={s.sectionBody}>{children}</View>
     </View>
   );
@@ -1037,18 +1077,24 @@ const s = StyleSheet.create({
     paddingBottom: EVENT_PAPER.paddingBottom,
   },
   section: { marginBottom: EVENT_PAPER.sectionMarginBottom },
+  // Baseline-aligned with the rule and the note beside it.
+  sectionHead: { flexDirection: 'row', alignItems: 'baseline', gap: 14 },
+  sectionRule: { flex: 1, height: 1, backgroundColor: 'rgba(11,24,32,0.16)' },
+  sectionRuleInk: { backgroundColor: 'rgba(245,235,220,0.20)' },
   sectionTitle: {
     fontFamily: 'Flame-Regular',
-    fontSize: 26,
+    fontSize: 30,
     lineHeight: EVENT_PAPER.sectionTitleLine,
     color: COLORS.deepNavy,
   },
+  sectionTitleStacked: { marginTop: 14 },
   sectionNote: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
     lineHeight: EVENT_PAPER.sectionNoteLine,
     color: PAPER_TEXT.muted,
     marginTop: EVENT_PAPER.sectionNoteGap,
+    flexShrink: 0,
   },
   sectionTitleInk: { color: 'rgba(245,235,220,0.96)' },
   sectionNoteInk: { color: INK_TEXT.faint },
