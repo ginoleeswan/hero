@@ -2184,7 +2184,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 20,
   },
-  statsColSplit: { flex: 0, alignItems: 'flex-end' },
+  // `column-reverse` puts the CREDIT above the numbers, which is web's order
+  // and not a cosmetic preference: web's header is ranked by weight. The name
+  // is the subject, so it is large and left. The right side is secondary, so it
+  // is small and right-aligned — and inside it the creators line is the
+  // quietest element, so it caps the group, while the stats anchor the bottom
+  // level with the taxonomy chip opposite. Native had the numbers on top and
+  // the credit beneath, which reads as two competing headlines.
+  statsColSplit: { flex: 0, alignItems: 'flex-end', flexDirection: 'column-reverse' },
   // Stacked on the right (shortest label on top), so "Created by" reclaims the
   // full-width horizontal room instead of sharing the line with two side-by-side
   // pills. align-end keeps the stack flush to the right edge.
