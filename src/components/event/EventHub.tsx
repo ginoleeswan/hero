@@ -156,7 +156,13 @@ export function EditionList({
             {/* Counts rather than adjectives: they are what tells a reader which
                 year is worth opening. */}
             {[
-              e.spikeRatio !== null ? `${e.spikeRatio}× readership` : null,
+              // Only when it is actually a rise. A frozen edition can hold a
+              // ratio BELOW 1 — SDCC 2026 was detected at 3.35x and its stored
+              // figure is 0.82, because the spike rolled out of the rolling
+              // 27-day curve before the edition was captured. "0.82x readership"
+              // on a page about an event reads as a broken number, and it is
+              // not a fact worth leading a row with either way.
+              e.spikeRatio !== null && e.spikeRatio > 1 ? `${e.spikeRatio}× readership` : null,
               e.announcements > 0
                 ? `${e.announcements} announcement${e.announcements === 1 ? '' : 's'}`
                 : null,
