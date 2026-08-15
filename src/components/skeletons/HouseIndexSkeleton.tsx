@@ -5,12 +5,13 @@
 // Tiles carry HouseCard's geometry from src/components/family/HouseIndex.tsx —
 // the same flexGrow/flexBasis 190/maxWidth 260 wrapping grid, 14px gap and 20px
 // radius — so the crests land without a reflow. Height is that card's content
-// box: 22 pad + 78 crest + 12 gap + ~61 of meta + 22 pad.
+// box: the field (20 pad + 72 crest + 18 pad), the division hairline, and the
+// plinth (12 pad + 23 name + 18 words + count + 14 pad).
 import { View, StyleSheet } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
 
-const TILE_H = 195;
+const TILE_H = 200;
 
 export function HouseIndexSkeleton({ tiles = 6 }: { tiles?: number }) {
   return (

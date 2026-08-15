@@ -43,7 +43,7 @@ import { publisherBySlug, brandForPublisher } from '../../src/constants/publishe
 import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { HeroImage } from '../../src/components/HeroImage';
 import { BrandLogoView } from '../../src/components/PublisherBadge';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, HOUSE_INK } from '../../src/constants/colors';
 import { CategorySkeleton } from '../../src/components/skeletons/CategorySkeleton';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
@@ -656,7 +656,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.6,
     textTransform: 'uppercase',
-    color: '#a99b84',
+    // The row sits on the beige sheet here (the web page runs it on ink), where
+    // #a99b84 measured 2.31:1 — the houses module's own taupe, darkened.
+    color: HOUSE_INK,
     paddingHorizontal: 16,
   },
   housesTrack: { flexDirection: 'row', gap: 12, paddingHorizontal: 16 },

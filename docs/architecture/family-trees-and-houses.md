@@ -196,7 +196,38 @@ on native. Don't remove these without a replacement:
 - **`/house`** — the index, in the sitemap's core routes.
 - **Universe / franchise pages** — `useUniverseHouses` renders a card row above
   the character grid, and nothing at all for the ~200 universes with no houses.
+  The row lands on **ink** on web and on the **beige sheet** on native, so the
+  web file passes `tone="ink"` and native takes the `paper` default — see below.
 - **Character page** — `HouseLinks` in the family section. Both platform files.
+
+### The house card is cut from its surface
+
+`HouseCard` (`src/components/family/HouseIndex.tsx`) is a **hanging banner**: a
+field washed with the house's `sigil_tint` carrying the crest, a hairline
+division, then a plinth with the name, the motto and the member count. It takes
+a `tone` — `paper` (default) or `ink` — and every colour on it is that tint
+blended into the host surface, so the same component sits down on the universe
+page's ink floor and on the parchment index without either being special-cased.
+
+Three things are load-bearing and easy to undo:
+
+- **`tone` must match the host.** The card used to be a flat white plate, which
+  on the ink universe page made twelve rectangles brighter than the character
+  grid they were introducing. If you add a third host, pass the tone it sits on
+  rather than letting it default.
+- **`carryable()` floors the tint's luminance on ink.** Greyjoy's `#1f2d3a` is
+  within a hair of `deepNavy`; a plate blended from it is an _invisible_ card,
+  not a subtle one. Any new house with a near-black sigil depends on this.
+- **The field wash is backed off in proportion to the tint's luminance.**
+  Baratheon's gold at the same strength as Targaryen's red goes olive over deep
+  navy — a colour that house does not own. Drop `soften` and the pale tints muddy.
+
+`HouseCrest`'s `outline` prop exists for the same reason: the beige edge that
+lifts the shield off an ink band is the same value as a parchment plate, so the
+crest loses its contour there. On `paper` the edge is cut from the tint instead.
+
+Card geometry is mirrored in `HouseIndexSkeleton` — change one, change both, or
+the crests reflow when the query settles.
 
 `TopResult` is a discriminated union on purpose: adding the `house` variant made
 the compiler name all four exhaustive switches that needed the case. Keep it a

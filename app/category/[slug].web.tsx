@@ -735,7 +735,7 @@ export default function WebCategoryScreen() {
           </Text>
           <View style={styles.housesTrack as object}>
             {houses.map((h) => (
-              <HouseCard key={h.slug} house={h} width={186} />
+              <HouseCard key={h.slug} house={h} width={186} tone="ink" />
             ))}
           </View>
         </View>

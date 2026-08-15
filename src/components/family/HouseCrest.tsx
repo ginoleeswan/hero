@@ -50,16 +50,43 @@ export function mixHex(hex: string, towards: string, amount: number): string {
   return `#${ch(0)}${ch(1)}${ch(2)}`;
 }
 
+/** Relative luminance (WCAG) of a hex colour, 0–1. Returns 0 if it isn't one. */
+export function hexLuminance(hex: string): number {
+  if (!HEX.test(hex)) return 0;
+  const s = hex.replace('#', '');
+  const full =
+    s.length === 3
+      ? s
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : s;
+  const chan = (i: number) => {
+    const v = parseInt(full.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * chan(0) + 0.7152 * chan(2) + 0.0722 * chan(4);
+}
+
 export function HouseCrest({
   name,
   tint,
   size = 104,
+  outline = 'light',
 }: {
   name: string;
   /** houses.sigil_tint — the house's own colour. */
   tint: string;
   /** Rendered height in points; the shield's width follows its aspect. */
   size?: number;
+  /**
+   * Which way the shield's edge reads. The beige `light` edge is what lifts the
+   * crest off an ink band; on a pale plate it is the same value as the plate, so
+   * the shield loses its outline entirely and reads as a flat sticker. `dark`
+   * cuts the edge from the house's own tint instead, so the crest keeps a
+   * contour on parchment without borrowing a colour that isn't the house's.
+   */
+  outline?: 'light' | 'dark';
 }) {
   // useId keeps the gradient unique when two crests share a document (the
   // roster rail, a future index of houses) — a duplicate id silently repaints
@@ -67,6 +94,9 @@ export function HouseCrest({
   const gradientId = `crest-${useId().replace(/:/g, '')}`;
   const width = Math.round((size * VIEW_W) / VIEW_H);
   const letter = crestMonogram(name);
+  const light = outline === 'light';
+  const edge = light ? 'rgba(245,235,220,0.6)' : mixHex(tint, '#241b12', 0.5);
+  const orle = light ? 'rgba(245,235,220,0.3)' : mixHex(tint, '#241b12', 0.34);
 
   return (
     <View style={{ width, height: size }} accessibilityLabel={`${name} crest`}>
@@ -80,11 +110,11 @@ export function HouseCrest({
         <Path
           d={SHIELD}
           fill={`url(#${gradientId})`}
-          stroke="rgba(245,235,220,0.6)"
+          stroke={edge}
           strokeWidth={2.4}
           strokeLinejoin="round"
         />
-        <Path d={ORLE} fill="none" stroke="rgba(245,235,220,0.3)" strokeWidth={1.1} />
+        <Path d={ORLE} fill="none" stroke={orle} strokeWidth={1.1} strokeOpacity={light ? 1 : 0.6} />
       </Svg>
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <Text
