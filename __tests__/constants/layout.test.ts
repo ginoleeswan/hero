@@ -12,6 +12,8 @@ import {
   sectionGutter,
   snappedColumns,
   spotlightHeightFor,
+  tabletShape,
+  heroBlock,
 } from '../../src/constants/layout';
 import { podTile } from '../../src/components/home/podGrid';
 
@@ -275,5 +277,96 @@ describe('the browse grid tiles evenly', () => {
   it('snaps past an illegal count rather than rounding into it', () => {
     expect(snappedColumns(1240, 32, [2, 3, 4, 6])).toBe(6);
     expect(Math.round((1240 - 64) / 220)).toBe(5);
+  });
+});
+
+describe('tabletShape', () => {
+  // The gap this closes: an iPad Pro 13" is 1032x1376 in portrait and
+  // 1376x1032 in landscape, and `breakpointFor` calls BOTH of them 'wide'.
+  // They are opposite shapes, and on a screen built around one big portrait
+  // the shape is what decides the layout.
+  it('separates the two orientations breakpointFor conflates', () => {
+    expect(breakpointFor(1032)).toBe('wide');
+    expect(breakpointFor(1376)).toBe('wide');
+    expect(tabletShape(1032, 1376)).toBe('tall');
+    expect(tabletShape(1376, 1032)).toBe('wide');
+  });
+
+  it('calls every phone none, in either orientation', () => {
+    expect(tabletShape(IPHONE, 844)).toBe('none');
+    expect(tabletShape(SPLIT_THIRD, 1194)).toBe('none');
+  });
+
+  // The trap this gate exists for. `isTabletWidth(844)` is already TRUE — the
+  // 700 threshold does not clear a phone in landscape, whatever the comment on
+  // BREAKPOINTS says. Keying the split on it would hand an 844x390 window a
+  // two-column layout 390pt tall. Gating on BREAKPOINTS.wide cannot: the widest
+  // phone is ~956pt and the narrowest iPad in landscape is the mini at 1133.
+  it('never gives a landscape phone the split', () => {
+    expect(isTabletWidth(844)).toBe(true);
+    expect(tabletShape(844, 390)).toBe('tall');
+    expect(tabletShape(956, 440)).toBe('tall');
+    expect(tabletShape(1133, 744)).toBe('wide');
+  });
+
+  it('treats a tablet in portrait as tall at every iPad width', () => {
+    for (const [w, h] of [
+      [IPAD_MINI_PORTRAIT, 1133],
+      [IPAD_PORTRAIT, 1194],
+      [1032, 1376],
+    ]) {
+      expect(tabletShape(w, h)).toBe('tall');
+    }
+  });
+});
+
+describe('heroBlock', () => {
+  // The bug, stated as a number. `heroImageAspect` floors at 1.1, so a
+  // full-bleed hero on a landscape iPad asks for 1376 * 1.1 = 1514pt of image
+  // inside a 1032pt viewport: one and a half screens of portrait before a word
+  // of content.
+  it('is the fault it fixes, at 147% of the viewport', () => {
+    expect(Math.round(1376 * heroImageAspect(1376, 1032))).toBe(1514);
+    expect(1514 / 1032).toBeGreaterThan(1.4);
+  });
+
+  it('fits the whole block on screen in landscape', () => {
+    const b = heroBlock(1376, 1032);
+    expect(b.shape).toBe('wide');
+    expect(b.height).toBeLessThan(1032);
+    expect(b.width).toBeLessThan(1376);
+  });
+
+  // The load-bearing property, and the reason the block narrows instead of
+  // being height-capped: the Apple Zoom morph needs the rail card and the hero
+  // image to be the SAME SHAPE, or navy shows through mid-flight. Deriving the
+  // aspect from the block's own width keeps that true at every size.
+  it('keeps the rail card aspect at every window', () => {
+    for (const [w, h] of [
+      [IPHONE, 844],
+      [IPAD_PORTRAIT, 1194],
+      [1032, 1376],
+      [1376, 1032],
+      [SPLIT_THIRD, 1194],
+    ]) {
+      const b = heroBlock(w, h);
+      expect(b.height / b.width).toBeCloseTo(heroImageAspect(b.width, h), 2);
+      // The clamp's own bounds, with a point of slack for the integer rounding:
+      // 834 * 1.1 is 917.4, and a whole-pixel 917 reads back as 1.0995.
+      expect(b.height / b.width).toBeGreaterThan(1.09);
+      expect(b.height / b.width).toBeLessThan(1.51);
+    }
+  });
+
+  // Phone and tablet-portrait both stay full-bleed: the block IS the window.
+  it.each([
+    [SPLIT_THIRD, 1194],
+    [IPHONE, 844],
+    [428, 926],
+    [IPAD_PORTRAIT, 1194],
+    [1032, 1376],
+  ])('stays full-bleed at %ix%i', (w, h) => {
+    expect(heroBlock(w, h).width).toBe(w);
+    expect(heroBlock(w, h).height).toBe(Math.round(w * heroImageAspect(w, h)));
   });
 });

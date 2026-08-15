@@ -49,6 +49,35 @@ export function breakpointFor(width: number): Breakpoint {
 export const isTabletWidth = (width: number): boolean => width >= BREAKPOINTS.tablet;
 
 /**
+ * A tablet's SHAPE, which the width alone cannot tell you — and on a screen
+ * built around one big portrait, the shape is the thing that decides the
+ * layout.
+ *
+ * An iPad Pro 13" is 1032×1376 in portrait and 1376×1032 in landscape. Both are
+ * `wide` by `breakpointFor`, so a width-keyed layout gives them the same
+ * treatment — and they are opposite shapes. The character page is where that
+ * bites hardest: its hero is `width × aspect`, and because `heroImageAspect`
+ * floors at 1.1, landscape asks for a **1514pt-tall** image inside a 1032pt
+ * viewport. One and a half screens of portrait before a word of content.
+ *
+ * - `tall` — stack. Art above, content below, the same structure as a phone.
+ * - `wide` — split. Art holds one column at full height, content scrolls beside
+ *   it. A column is itself a portrait, so the Apple Zoom target keeps a
+ *   portrait aspect and the morph still lands.
+ *
+ * The `wide` case is gated on `BREAKPOINTS.wide`, not on `tablet`, so a phone
+ * in landscape can never reach it: the widest is ~956pt and every iPad in
+ * landscape is at least 1133pt (mini). Keying on `isTabletWidth` instead would
+ * hand an 844×390 window a two-column layout 390pt tall.
+ */
+export type TabletShape = 'none' | 'tall' | 'wide';
+
+export function tabletShape(width: number, height: number): TabletShape {
+  if (width >= BREAKPOINTS.wide && width > height) return 'wide';
+  return isTabletWidth(width) ? 'tall' : 'none';
+}
+
+/**
  * The page gutter. Wider on a tablet because a 15pt margin on a 1024pt page
  * reads as text that has been pushed against the bezel.
  */
@@ -162,6 +191,36 @@ export function heroImageAspect(width: number, height: number): number {
  * where it would leave nothing else on screen. Capped against the width too, so
  * the hero image keeps a sane aspect instead of becoming a letterbox.
  */
+/**
+ * The character page's hero block: how wide the art is, and how tall that makes
+ * it.
+ *
+ * The aspect is always `heroImageAspect` of the block's OWN width, never the
+ * window's — that is what keeps the Apple Zoom morph honest. The rail card and
+ * the hero image have to be the same shape or navy shows through mid-flight
+ * (see `heroImageAspect` above), and the way to keep that true while shrinking
+ * the block is to shrink its width and let the height follow, rather than
+ * capping the height and squashing the aspect.
+ *
+ * - Phone and tablet `tall`: full-bleed, `width × aspect`, exactly as before.
+ *   An iPad in portrait is 1032×1376, so the art is 82% of the fold — more than
+ *   the phone's 66%, but the identity block and the sheet's lip are both still
+ *   on screen, and the page reads as the phone's design at a larger size. That
+ *   is the point of keeping portrait stacked. Inset it and it stops being
+ *   full-bleed art for a few points of scroll nobody asked for.
+ * - Tablet `wide`: the art is a COLUMN, 44% of the window. At 1376×1032 that is
+ *   a 605×666 portrait, which fits the viewport whole — the thing the
+ *   full-bleed 1514pt version could never do.
+ */
+export function heroBlock(
+  width: number,
+  height: number,
+): { width: number; height: number; shape: TabletShape } {
+  const shape = tabletShape(width, height);
+  const w = shape === 'wide' ? Math.round(width * 0.44) : width;
+  return { width: w, height: Math.round(w * heroImageAspect(w, height)), shape };
+}
+
 export function spotlightHeightFor(width: number, height: number, insetTop = 0): number {
   const half = height * 0.5;
   const capped = isTabletWidth(width) ? Math.min(half, width * 0.62) : half;

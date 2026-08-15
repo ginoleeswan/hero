@@ -79,7 +79,7 @@ import { ImageLightbox } from '../../src/components/ImageLightbox';
 import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import type { CharacterData } from '../../src/types';
-import { heroImageAspect } from '../../src/constants/layout';
+import { heroBlock, sectionGutter, PROSE_MAX_WIDTH } from '../../src/constants/layout';
 
 // One tint for BOTH sides of the header bar. The back chevron takes it via
 // `headerTintColor`; the share glyph has to be told explicitly, because a
@@ -636,7 +636,19 @@ export default function CharacterScreen() {
   // used to agree by both being frozen at launch; on an iPad that stops being
   // true the first time it rotates.
   const { width: winW, height: winH } = useWindowDimensions();
-  const HERO_IMAGE_HEIGHT = Math.round(winW * heroImageAspect(winW, winH));
+  // The hero's art block, and with it the whole page's structure.
+  //
+  // `wide` is a landscape tablet, and it is the case the old `winW * aspect`
+  // could not survive: `heroImageAspect` floors at 1.1, so a full-bleed hero on
+  // a 1376x1032 iPad asked for a **1514pt-tall** image — one and a half screens
+  // of portrait before a word of content. Phone and tablet-portrait are
+  // untouched; there the block still IS the window.
+  const hero = heroBlock(winW, winH);
+  const HERO_IMAGE_HEIGHT = hero.height;
+  // In `wide` the art becomes a fixed left column and the sheet scrolls beside
+  // it, so the identity moves out of the scroll flow and onto that column.
+  const split = hero.shape === 'wide';
+  const gutter = sectionGutter(winW, 20);
   const SHEET_TOP = HERO_IMAGE_HEIGHT - SHEET_OVERLAP;
   const compareStripStyle = [styles.compareStrip, { paddingBottom: insets.bottom || 16 }];
   const {
@@ -933,6 +945,76 @@ export default function CharacterScreen() {
     );
   }
 
+  // The identity block — eyebrow, name, alias, vitals, taxonomy chips.
+  //
+  // Hoisted out of the JSX because it now has two homes: stacked at the bottom
+  // of the hero spacer (phone, tablet portrait) and pinned to the bottom of the
+  // art column (tablet landscape). One definition, so the two can never drift.
+  const identityNode = displayName ? (
+    <View style={styles.identity}>
+      {data ? (
+        (() => {
+          const alignment = data.stats.biography.alignment;
+          const origin = data.details.origin;
+          const taxoChips = resolveTaxoChips(alignment, origin);
+          const hasBadges = taxoChips.length > 0;
+          const fullName = data.stats.biography['full-name'];
+          const hasAlias = isPresentableFact(fullName);
+          const hasCreators = !!data.details.creators?.length;
+          return (
+            <>
+              <UniverseEyebrow
+                publisher={data.stats.biography.publisher}
+                franchise={heroRow?.franchise}
+                textStyle={styles.eyebrow}
+              />
+
+              <Text style={styles.heroName}>{displayName}</Text>
+
+              {hasAlias ? (
+                <Text style={styles.heroAlias} numberOfLines={1}>
+                  {fullName}
+                </Text>
+              ) : null}
+
+              {/* Vitals + credit form a left column; the chip stack sits
+                    in a right column against the whole block, so its height
+                    never dictates the credit's spacing. */}
+              <View style={styles.statsRow}>
+                <View style={styles.statsCol}>
+                  <VitalsStrip
+                    powerTotal={powerTotal}
+                    issueCount={data.details.issueCount}
+                    movieCount={data.details.movieCount ?? data.details.movies?.length ?? null}
+                  />
+                  {hasCreators ? (
+                    <Text style={styles.createdBy} numberOfLines={2}>
+                      Created by {formatCreators(data.details.creators!)}
+                    </Text>
+                  ) : null}
+                </View>
+                {hasBadges ? (
+                  <View style={styles.chipRow}>
+                    {taxoChips.map((c) => (
+                      <View
+                        key={c.key}
+                        style={[styles.taxoBadge, { backgroundColor: c.bg, borderColor: c.color }]}
+                      >
+                        <Text style={[styles.taxoBadgeText, { color: c.color }]}>{c.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            </>
+          );
+        })()
+      ) : (
+        <Text style={styles.heroName}>{displayName}</Text>
+      )}
+    </View>
+  ) : null;
+
   return (
     <View style={styles.container}>
       {/* Native header — transparent over image, fades to beige on scroll */}
@@ -1018,7 +1100,15 @@ export default function CharacterScreen() {
         style={[
           styles.heroImageContainer,
           { height: HERO_IMAGE_HEIGHT },
-          { transform: [{ translateY: imageTranslateY }, { scale: imageScale }] },
+          // In `wide` the art is a column, not a band: it claims a width and
+          // releases the right edge so the sheet can scroll beside it. The
+          // parallax transform is dropped there too — the art no longer sits
+          // behind the scrolling sheet, so there is nothing to parallax
+          // against, and a translating column would just drift off its own
+          // column.
+          split
+            ? { width: hero.width, right: undefined, bottom: 0 }
+            : { transform: [{ translateY: imageTranslateY }, { scale: imageScale }] },
         ]}
       >
         {/* Apple Zoom target: marks the hero-image region as what the source
@@ -1058,10 +1148,29 @@ export default function CharacterScreen() {
         />
       </Animated.View>
 
+      {/* In `wide` the identity rides the art column instead of the scroll, so
+          the name stays with the face while the dossier scrolls past it. Pinned
+          rather than placed inside the zoom target's container, which must keep
+          exactly one full-size child or the morph measures the wrong frame. */}
+      {split && identityNode ? (
+        <View
+          style={[styles.identityColumn, { width: hero.width, height: hero.height }]}
+          pointerEvents="box-none"
+        >
+          {identityNode}
+        </View>
+      ) : null}
+
       <Animated.ScrollView
         ref={scrollRef}
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 96,
+          // In `wide` the hero spacer is gone, and it was what pushed the
+          // sheet clear of the status bar and the transparent header. Without
+          // this the first trait chip renders under the clock.
+          ...(split ? { paddingLeft: hero.width, paddingTop: insets.top + 44 } : null),
+        }}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         // Idiomatic RN Animated.event: useNativeDriver wires the scroll offset
@@ -1074,644 +1183,587 @@ export default function CharacterScreen() {
         })}
       >
         {/* Hero spacer — transparent over the parallaxing image; the identity sits
-            at its bottom, on the dark scrim. Name paints instantly from params. */}
-        <View style={[styles.heroSpacer, { minHeight: HERO_IMAGE_HEIGHT }]}>
-          {displayName ? (
-            <View style={styles.identity}>
-              {data ? (
-                (() => {
-                  const alignment = data.stats.biography.alignment;
-                  const origin = data.details.origin;
-                  const taxoChips = resolveTaxoChips(alignment, origin);
-                  const hasBadges = taxoChips.length > 0;
-                  const fullName = data.stats.biography['full-name'];
-                  const hasAlias = isPresentableFact(fullName);
-                  const hasCreators = !!data.details.creators?.length;
-                  return (
-                    <>
-                      <UniverseEyebrow
-                        publisher={data.stats.biography.publisher}
-                        franchise={heroRow?.franchise}
-                        textStyle={styles.eyebrow}
-                      />
-
-                      <Text style={styles.heroName}>{displayName}</Text>
-
-                      {hasAlias ? (
-                        <Text style={styles.heroAlias} numberOfLines={1}>
-                          {fullName}
-                        </Text>
-                      ) : null}
-
-                      {/* Vitals + credit form a left column; the chip stack sits
-                          in a right column against the whole block, so its height
-                          never dictates the credit's spacing. */}
-                      <View style={styles.statsRow}>
-                        <View style={styles.statsCol}>
-                          <VitalsStrip
-                            powerTotal={powerTotal}
-                            issueCount={data.details.issueCount}
-                            movieCount={
-                              data.details.movieCount ?? data.details.movies?.length ?? null
-                            }
-                          />
-                          {hasCreators ? (
-                            <Text style={styles.createdBy} numberOfLines={2}>
-                              Created by {formatCreators(data.details.creators!)}
-                            </Text>
-                          ) : null}
-                        </View>
-                        {hasBadges ? (
-                          <View style={styles.chipRow}>
-                            {taxoChips.map((c) => (
-                              <View
-                                key={c.key}
-                                style={[
-                                  styles.taxoBadge,
-                                  { backgroundColor: c.bg, borderColor: c.color },
-                                ]}
-                              >
-                                <Text style={[styles.taxoBadgeText, { color: c.color }]}>
-                                  {c.label}
-                                </Text>
-                              </View>
-                            ))}
-                          </View>
-                        ) : null}
-                      </View>
-                    </>
-                  );
-                })()
-              ) : (
-                <Text style={styles.heroName}>{displayName}</Text>
-              )}
-            </View>
-          ) : null}
-        </View>
+            at its bottom, on the dark scrim. Name paints instantly from params.
+            In `wide` the art is a column beside this scroll rather than behind
+            it, so there is nothing to reserve and the identity has already been
+            drawn on that column. */}
+        {split ? null : (
+          <View style={[styles.heroSpacer, { minHeight: HERO_IMAGE_HEIGHT }]}>{identityNode}</View>
+        )}
 
         {/* Beige content sheet — opaque, rounded top; rises over the hero on scroll.
             The shell (hero image + skeleton) paints instantly so the navigation
             transition is always cheap; the real content then cross-dissolves in as
             it resolves (Apple TV / Disney+ pattern) instead of hard-popping. */}
         <View style={[styles.sheet, { minHeight: Math.round(winH * 0.6) }]}>
-          {!data ? (
-            <ReAnimated.View exiting={FadeOut.duration(180)}>
-              <CharacterSkeleton hideNameBlock />
-            </ReAnimated.View>
-          ) : (
-            <ReAnimated.View entering={FadeIn.duration(320)}>
-              {/* Theme trait band — colour-coded by vocab category; sits at the
+          {/* The tablet gutter, applied once here rather than to each of the
+              eight section styles that hard-code 20. `gutter - 20` because every
+              section already pads itself by 20 — the delta lands them all on the
+              feed's gutter, and on a phone the delta is zero. */}
+          <View style={[styles.sheetColumn, { paddingHorizontal: gutter - 20 }]}>
+            {!data ? (
+              <ReAnimated.View exiting={FadeOut.duration(180)}>
+                <CharacterSkeleton hideNameBlock />
+              </ReAnimated.View>
+            ) : (
+              <ReAnimated.View entering={FadeIn.duration(320)}>
+                {/* Theme trait band — colour-coded by vocab category; sits at the
                   top of the sheet as a sibling to the identity header badges. */}
-              {narrative && narrative.tags.length > 0 ? (
-                <View style={styles.traitBandWrap}>
-                  <TraitBand tags={narrative.tags} />
-                </View>
-              ) : null}
-
-              {/* Summary — the lede; shows skeleton lines while ComicVine loads. A
-                  subtle pencil at the top-right edits it (the lede has no header). */}
-              <View onLayout={registerAnchor('summary')}>
-                {comicVineLoading ? (
-                  <SkeletonProvider>
-                    <View style={styles.summaryBlock}>
-                      <Skeleton
-                        width="100%"
-                        height={12}
-                        borderRadius={5}
-                        style={{ marginBottom: 7 }}
-                      />
-                      <Skeleton
-                        width="88%"
-                        height={12}
-                        borderRadius={5}
-                        style={{ marginBottom: 7 }}
-                      />
-                      <Skeleton width="65%" height={12} borderRadius={5} />
-                    </View>
-                  </SkeletonProvider>
-                ) : data.details.summary || data.details.hasBiography ? (
-                  <View style={styles.summaryBlock}>
-                    <PullQuoteBio
-                      flat
-                      summary={data.details.summary ?? ''}
-                      accent={theme.accent}
-                      hasBiography={data.details.hasBiography}
-                      onReadMore={() => router.push(`/biography/${id}`)}
-                      onEdit={() =>
-                        setEditTarget({
-                          field: SUMMARY_FIELD,
-                          current: data.details.summary ?? null,
-                        })
-                      }
-                    />
+                {narrative && narrative.tags.length > 0 ? (
+                  <View style={styles.traitBandWrap}>
+                    <TraitBand tags={narrative.tags} />
                   </View>
                 ) : null}
-              </View>
 
-              {/* Power Stats — circular dials, 3×2 grid + percentile hook. The
-                  admin pencil swaps the dials for an editable 0–100 list. */}
-              <View onLayout={registerAnchor('stats')}>
-                <Section
-                  title="Power Stats"
-                  action={
-                    isAdmin ? (
-                      <SectionPencil
-                        active={statsEditing}
-                        onPress={() => setStatsEditing((s) => !s)}
-                        label="Edit power stats"
-                      />
-                    ) : undefined
-                  }
-                >
-                  {isAdmin && statsEditing ? (
-                    <View style={styles.statsCard}>
-                      {STAT_FIELDS.map((f) => {
-                        const cur =
-                          (data.stats.powerstats as Record<string, string>)[f.field] ?? '0';
-                        return (
-                          <TouchableOpacity
-                            key={f.field}
-                            onPress={() => setEditTarget({ field: f, current: cur })}
-                            style={styles.editRow}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={styles.editRowLabel}>{f.label}</Text>
-                            <View style={styles.editRowRight}>
-                              <Text style={styles.editRowValue}>{cur}</Text>
-                              <Ionicons name="pencil" size={14} color={COLORS.orange} />
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  ) : (
-                    <View
-                      style={[styles.statsCard, { borderColor: theme.accent + '2b' }] as object}
-                    >
-                      <View style={styles.statsGrid}>
-                        {STAT_CONFIG.map(({ key, label, tint }) => (
-                          <StatDial
-                            key={key}
-                            label={label}
-                            value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
-                            tint={tint}
-                          />
-                        ))}
+                {/* Summary — the lede; shows skeleton lines while ComicVine loads. A
+                  subtle pencil at the top-right edits it (the lede has no header). */}
+                <View onLayout={registerAnchor('summary')}>
+                  {comicVineLoading ? (
+                    <SkeletonProvider>
+                      <View style={styles.summaryBlock}>
+                        <Skeleton
+                          width="100%"
+                          height={12}
+                          borderRadius={5}
+                          style={{ marginBottom: 7 }}
+                        />
+                        <Skeleton
+                          width="88%"
+                          height={12}
+                          borderRadius={5}
+                          style={{ marginBottom: 7 }}
+                        />
+                        <Skeleton width="65%" height={12} borderRadius={5} />
                       </View>
-                      {powerTotal > 0 ? (
-                        <View style={styles.statTotalRow}>
-                          <Text style={styles.statTotal}>Total {powerTotal} / 600</Text>
-                          {percentile != null && percentile > 0 ? (
-                            <View
-                              style={
-                                [
-                                  styles.statPercentileBadge,
-                                  {
-                                    backgroundColor: theme.accent + '14',
-                                    borderColor: theme.accent + '3d',
-                                  },
-                                ] as object
-                              }
+                    </SkeletonProvider>
+                  ) : data.details.summary || data.details.hasBiography ? (
+                    <View style={styles.summaryBlock}>
+                      <PullQuoteBio
+                        flat
+                        summary={data.details.summary ?? ''}
+                        accent={theme.accent}
+                        hasBiography={data.details.hasBiography}
+                        onReadMore={() => router.push(`/biography/${id}`)}
+                        onEdit={() =>
+                          setEditTarget({
+                            field: SUMMARY_FIELD,
+                            current: data.details.summary ?? null,
+                          })
+                        }
+                      />
+                    </View>
+                  ) : null}
+                </View>
+
+                {/* Power Stats — circular dials, 3×2 grid + percentile hook. The
+                  admin pencil swaps the dials for an editable 0–100 list. */}
+                <View onLayout={registerAnchor('stats')}>
+                  <Section
+                    title="Power Stats"
+                    action={
+                      isAdmin ? (
+                        <SectionPencil
+                          active={statsEditing}
+                          onPress={() => setStatsEditing((s) => !s)}
+                          label="Edit power stats"
+                        />
+                      ) : undefined
+                    }
+                  >
+                    {isAdmin && statsEditing ? (
+                      <View style={styles.statsCard}>
+                        {STAT_FIELDS.map((f) => {
+                          const cur =
+                            (data.stats.powerstats as Record<string, string>)[f.field] ?? '0';
+                          return (
+                            <TouchableOpacity
+                              key={f.field}
+                              onPress={() => setEditTarget({ field: f, current: cur })}
+                              style={styles.editRow}
+                              activeOpacity={0.7}
                             >
-                              <Ionicons name="flash" size={11} color={theme.accent} />
-                              <Text
+                              <Text style={styles.editRowLabel}>{f.label}</Text>
+                              <View style={styles.editRowRight}>
+                                <Text style={styles.editRowValue}>{cur}</Text>
+                                <Ionicons name="pencil" size={14} color={COLORS.orange} />
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    ) : (
+                      <View
+                        style={[styles.statsCard, { borderColor: theme.accent + '2b' }] as object}
+                      >
+                        <View style={styles.statsGrid}>
+                          {STAT_CONFIG.map(({ key, label, tint }) => (
+                            <StatDial
+                              key={key}
+                              label={label}
+                              value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
+                              tint={tint}
+                            />
+                          ))}
+                        </View>
+                        {powerTotal > 0 ? (
+                          <View style={styles.statTotalRow}>
+                            <Text style={styles.statTotal}>Total {powerTotal} / 600</Text>
+                            {percentile != null && percentile > 0 ? (
+                              <View
                                 style={
                                   [
-                                    styles.statPercentileBadgeText,
-                                    { color: theme.accent },
+                                    styles.statPercentileBadge,
+                                    {
+                                      backgroundColor: theme.accent + '14',
+                                      borderColor: theme.accent + '3d',
+                                    },
                                   ] as object
                                 }
                               >
-                                Stronger than {percentile}%
-                              </Text>
-                            </View>
-                          ) : null}
-                        </View>
-                      ) : null}
-                    </View>
-                  )}
-                </Section>
-              </View>
+                                <Ionicons name="flash" size={11} color={theme.accent} />
+                                <Text
+                                  style={
+                                    [
+                                      styles.statPercentileBadgeText,
+                                      { color: theme.accent },
+                                    ] as object
+                                  }
+                                >
+                                  Stronger than {percentile}%
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
+                        ) : null}
+                      </View>
+                    )}
+                  </Section>
+                </View>
 
-              {/* Abilities — signature tier headlines (blurb-backed powers) above
+                {/* Abilities — signature tier headlines (blurb-backed powers) above
                   the categorized grid; header pencil edits the whole list. */}
-              <View onLayout={registerAnchor('abilities')}>
-                {!comicVineLoading &&
-                pickSignaturePowers(data.details.powers, narrative?.powerExplainers ?? []).length >
-                  0 ? (
-                  <View style={styles.signatureWrap}>
-                    <SignaturePowerTiles
-                      powers={data.details.powers}
-                      explainers={narrative?.powerExplainers ?? []}
-                      accent={theme.accent}
-                    />
+                <View onLayout={registerAnchor('abilities')}>
+                  {!comicVineLoading &&
+                  pickSignaturePowers(data.details.powers, narrative?.powerExplainers ?? [])
+                    .length > 0 ? (
+                    <View style={styles.signatureWrap}>
+                      <SignaturePowerTiles
+                        powers={data.details.powers}
+                        explainers={narrative?.powerExplainers ?? []}
+                        accent={theme.accent}
+                      />
+                    </View>
+                  ) : null}
+                  <AbilitiesSection
+                    powers={data.details.powers}
+                    loading={comicVineLoading}
+                    explainers={narrative?.powerExplainers ?? []}
+                    onEdit={() =>
+                      setEditTarget({
+                        field: POWERS_FIELD,
+                        current: data.details.powers?.length
+                          ? data.details.powers.join('\n')
+                          : null,
+                      })
+                    }
+                  />
+                </View>
+
+                {/* Did You Know — swipeable trivia deck (the one playful module).
+                  Full-bleed so the deck owns its own edge insets + peek. */}
+                {narrative && narrative.didYouKnow.length > 0 ? (
+                  <View onLayout={registerAnchor('narrative')} style={styles.bleedSection}>
+                    <SectionHeader title="Did You Know" />
+                    <DidYouKnowDeck facts={narrative.didYouKnow} />
                   </View>
                 ) : null}
-                <AbilitiesSection
-                  powers={data.details.powers}
-                  loading={comicVineLoading}
-                  explainers={narrative?.powerExplainers ?? []}
-                  onEdit={() =>
-                    setEditTarget({
-                      field: POWERS_FIELD,
-                      current: data.details.powers?.length ? data.details.powers.join('\n') : null,
-                    })
-                  }
-                />
-              </View>
 
-              {/* Did You Know — swipeable trivia deck (the one playful module).
-                  Full-bleed so the deck owns its own edge insets + peek. */}
-              {narrative && narrative.didYouKnow.length > 0 ? (
-                <View onLayout={registerAnchor('narrative')} style={styles.bleedSection}>
-                  <SectionHeader title="Did You Know" />
-                  <DidYouKnowDeck facts={narrative.didYouKnow} />
-                </View>
-              ) : null}
-
-              {/* Dossier — the bio infobox (Profile + Appearance + Connections),
+                {/* Dossier — the bio infobox (Profile + Appearance + Connections),
                   collapsed by default. Caps the intrinsic-character block before
                   the relational/media sections below. */}
-              <View onLayout={registerAnchor('dossier')}>
-                <Dossier
-                  data={data}
-                  includeFirstAppearance={!hasFirstVisual}
-                  eraSummary={narrative?.eraSummary}
-                  editValues={{
-                    // Profile
-                    full_name: data.stats.biography['full-name'],
-                    alter_egos: data.stats.biography['alter-egos'],
-                    aliases: (data.stats.biography.aliases ?? []).filter(valid).join('\n'),
-                    place_of_birth: data.stats.biography['place-of-birth'],
-                    first_appearance: data.stats.biography['first-appearance'],
-                    origin: data.details.origin,
-                    // Appearance
-                    gender: data.stats.appearance.gender,
-                    race: data.stats.appearance.race,
-                    height_imperial: data.stats.appearance.height?.[0],
-                    weight_imperial: data.stats.appearance.weight?.[0],
-                    eye_color: data.stats.appearance['eye-color'],
-                    hair_color: data.stats.appearance['hair-color'],
-                    // Connections
-                    occupation: data.stats.work.occupation,
-                    base: data.stats.work.base,
-                    group_affiliation: data.stats.connections['group-affiliation'],
-                  }}
-                  onEditField={(field, current) => setEditTarget({ field, current })}
-                />
-              </View>
+                <View onLayout={registerAnchor('dossier')}>
+                  <Dossier
+                    data={data}
+                    includeFirstAppearance={!hasFirstVisual}
+                    eraSummary={narrative?.eraSummary}
+                    editValues={{
+                      // Profile
+                      full_name: data.stats.biography['full-name'],
+                      alter_egos: data.stats.biography['alter-egos'],
+                      aliases: (data.stats.biography.aliases ?? []).filter(valid).join('\n'),
+                      place_of_birth: data.stats.biography['place-of-birth'],
+                      first_appearance: data.stats.biography['first-appearance'],
+                      origin: data.details.origin,
+                      // Appearance
+                      gender: data.stats.appearance.gender,
+                      race: data.stats.appearance.race,
+                      height_imperial: data.stats.appearance.height?.[0],
+                      weight_imperial: data.stats.appearance.weight?.[0],
+                      eye_color: data.stats.appearance['eye-color'],
+                      hair_color: data.stats.appearance['hair-color'],
+                      // Connections
+                      occupation: data.stats.work.occupation,
+                      base: data.stats.work.base,
+                      group_affiliation: data.stats.connections['group-affiliation'],
+                    }}
+                    onEditField={(field, current) => setEditTarget({ field, current })}
+                  />
+                </View>
 
-              {/* Enemies, Allies & Teams — full-bleed card strips off the
+                {/* Enemies, Allies & Teams — full-bleed card strips off the
                   relationship graph (same-universe, popularity-ranked). */}
-              <View onLayout={registerAnchor('allies')} style={styles.bleedSection}>
-                {comicVineLoading ? (
-                  <SkeletonProvider>
-                    <SectionHeader title="Enemies, Allies & Teams" />
-                    <View style={styles.bleedPad}>
-                      <Skeleton
-                        width={50}
-                        height={9}
-                        borderRadius={4}
-                        style={{ marginBottom: 10 }}
-                      />
-                    </View>
-                    <ScrollView
-                      horizontal
-                      scrollEnabled={false}
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.bleedRow}
-                    >
-                      {[0, 1, 2, 3].map((i) => (
-                        <Skeleton key={i} width={104} height={140} borderRadius={14} />
-                      ))}
-                    </ScrollView>
-                  </SkeletonProvider>
-                ) : enemyNames.length || allyNames.length || teammateNames.length ? (
-                  <>
-                    <SectionHeader title="Enemies, Allies & Teams" />
-                    {enemyNames.length ? (
-                      <RelatedHeroStrip
-                        label="Enemies"
-                        names={enemyNames}
-                        heroMap={relatedHeroMap}
-                        kind="enemy"
-                        edgeTint
-                        monogramTiles
-                        onPressHero={(h) =>
-                          router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                        }
-                      />
-                    ) : null}
-                    {allyNames.length ? (
-                      <RelatedHeroStrip
-                        label="Allies"
-                        names={allyNames}
-                        heroMap={relatedHeroMap}
-                        kind="ally"
-                        edgeTint
-                        monogramTiles
-                        onPressHero={(h) =>
-                          router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                        }
-                      />
-                    ) : null}
-                    {teammateNames.length ? (
-                      <RelatedHeroStrip
-                        label="Teammates"
-                        names={teammateNames}
-                        heroMap={relatedHeroMap}
-                        kind="teammate"
-                        edgeTint
-                        monogramTiles
-                        onPressHero={(h) =>
-                          router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                        }
-                      />
-                    ) : null}
-                  </>
-                ) : null}
-              </View>
-
-              {/* The character's universe — constellation preview that taps
-                  through to the /social-web explorer. Web has had this doorway
-                  (SocialWebPreview) since launch; native was missing it. */}
-              <SocialWebPortal
-                heroId={id}
-                accent={theme.accent}
-                onExplore={() =>
-                  router.push(`/social-web/${id}` as Parameters<typeof router.push>[0])
-                }
-              />
-
-              {/* On Screen — full-bleed movie strip */}
-              <View onLayout={registerAnchor('screen')} style={styles.bleedSection}>
-                {comicVineLoading ? (
-                  <SkeletonProvider>
-                    <SectionHeader title="On Screen" />
-                    <ScrollView
-                      horizontal
-                      scrollEnabled={false}
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.bleedRow}
-                    >
-                      {[0, 1, 2].map((i) => (
-                        <View key={i} style={{ alignItems: 'center', gap: 6 }}>
-                          <Skeleton width={80} height={120} borderRadius={8} />
-                          <Skeleton width={60} height={10} borderRadius={4} />
-                        </View>
-                      ))}
-                    </ScrollView>
-                  </SkeletonProvider>
-                ) : titles && titles.length > 0 ? (
-                  (() => {
-                    const groups = groupTitlesByMedia(titles);
-                    return (
-                      <>
-                        {groups.film.length > 0 ? (
-                          <>
-                            <SectionHeader title={`On Screen (${groups.film.length})`} />
-                            <MovieStrip
-                              titles={groups.film}
-                              totalCount={groups.film.length}
-                              contentInset={20}
-                            />
-                          </>
-                        ) : null}
-                        {groups.tv.length > 0 ? (
-                          <View
-                            style={groups.film.length > 0 ? styles.onScreenSubsection : undefined}
-                          >
-                            <SectionHeader title={`Television (${groups.tv.length})`} />
-                            <MovieStrip
-                              titles={groups.tv}
-                              totalCount={groups.tv.length}
-                              contentInset={20}
-                            />
-                          </View>
-                        ) : null}
-                      </>
-                    );
-                  })()
-                ) : null}
-              </View>
-
-              {/* Portrayed By — performers + voice actors */}
-              {portrayals &&
-              (portrayals.performers.length > 0 || portrayals.voiceActors.length > 0) ? (
-                <View style={styles.section}>
-                  <SectionHeader title="Portrayed By" />
-                  <PortrayedBySection portrayals={portrayals} contentInset={0} />
-                </View>
-              ) : null}
-
-              {/* Links — debut year + external links (Wikidata-sourced) */}
-              {heroLinksHasContent(links) ? (
-                <View style={styles.section}>
-                  <SectionHeader title="Links" />
-                  <HeroLinksRow links={links!} contentInset={0} />
-                </View>
-              ) : null}
-
-              {/* In Print — what's on shelves now, then the debut + the run that
-                  followed (mirrors the web character page). */}
-              {newIssues.length > 0 ||
-              hasFirstVisual ||
-              (galleryImages && galleryImages.length > 0) ||
-              (galleryImages === null && galleryLoading) ? (
-                <View onLayout={registerAnchor('print')} style={styles.bleedSection}>
-                  <View style={styles.sectionHeaderPad}>
-                    <View style={styles.inPrintHeader}>
-                      {data.firstIssue?.coverDate ? (
-                        <Text style={styles.inPrintSince}>
-                          Since {data.firstIssue.coverDate.slice(0, 4)}
-                        </Text>
-                      ) : (
-                        <View />
-                      )}
-                      <Text style={styles.sectionTitle}>In Print</Text>
-                    </View>
-                    <View style={styles.divider} />
-                  </View>
-
-                  {/* On shelves now — recent issues featuring this character */}
-                  {newIssues.length > 0 ? (
-                    <ComicCoverRail
-                      comics={newIssues}
-                      onLight
-                      onIssuePress={(issueId) =>
-                        router.push(`/issue/${issueId}` as Parameters<typeof router.push>[0])
-                      }
-                    />
-                  ) : null}
-
-                  {/* Debut — the first issue, given hero treatment */}
-                  {hasFirstVisual ? (
-                    <View style={styles.bleedPad}>
-                      <TouchableOpacity
-                        onPress={() =>
-                          router.push(
-                            `/issue/cvi:${data.firstIssue!.id}` as Parameters<
-                              typeof router.push
-                            >[0],
-                          )
-                        }
-                        activeOpacity={0.85}
-                        accessibilityRole="button"
-                        accessibilityLabel="View first appearance issue"
-                      >
-                        <View
-                          style={[styles.debutCard, { borderColor: theme.accent + '2b' }] as object}
-                        >
-                          <View style={styles.debutCover}>
-                            <Image
-                              source={{ uri: data.firstIssue!.imageUrl! }}
-                              contentFit="cover"
-                              contentPosition="top"
-                              style={styles.debutCoverImg}
-                              cachePolicy="memory-disk"
-                              recyclingKey={`comic-${id}`}
-                              transition={200}
-                            />
-                          </View>
-                          <View style={styles.debutMeta}>
-                            <View style={styles.debutBadgeRow}>
-                              <Ionicons name="ribbon" size={12} color={COLORS.orange} />
-                              <Text style={styles.debutBadgeText}>1st Appearance</Text>
-                            </View>
-                            <Text style={styles.debutTitle} numberOfLines={3}>
-                              {data.firstIssue!.name
-                                ? data.firstIssue!.name.split(';')[0].trim()
-                                : 'First Appearance'}
-                            </Text>
-                            {data.firstIssue!.coverDate ? (
-                              <Text style={styles.debutYear}>
-                                {data.firstIssue!.issueNumber
-                                  ? `Issue #${data.firstIssue!.issueNumber} · `
-                                  : ''}
-                                {data.firstIssue!.coverDate.slice(0, 4)}
-                              </Text>
-                            ) : null}
-                            <View style={styles.debutCta}>
-                              <Text style={styles.debutCtaText}>View issue</Text>
-                              <Ionicons name="chevron-forward" size={14} color={COLORS.orange} />
-                            </View>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  ) : null}
-
-                  {/* Gallery — character art + covers (multi-source) */}
-                  {galleryImages === null && galleryLoading ? (
+                <View onLayout={registerAnchor('allies')} style={styles.bleedSection}>
+                  {comicVineLoading ? (
                     <SkeletonProvider>
-                      {hasFirstVisual ? (
-                        <Text style={styles.inPrintGalleryLabel}>Gallery</Text>
-                      ) : null}
+                      <SectionHeader title="Enemies, Allies & Teams" />
+                      <View style={styles.bleedPad}>
+                        <Skeleton
+                          width={50}
+                          height={9}
+                          borderRadius={4}
+                          style={{ marginBottom: 10 }}
+                        />
+                      </View>
                       <ScrollView
                         horizontal
                         scrollEnabled={false}
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.bleedRow}
                       >
-                        {[0, 1, 2, 3, 4].map((i) => (
-                          <Skeleton key={i} width={80} height={110} borderRadius={8} />
+                        {[0, 1, 2, 3].map((i) => (
+                          <Skeleton key={i} width={104} height={140} borderRadius={14} />
                         ))}
                       </ScrollView>
                     </SkeletonProvider>
-                  ) : galleryImages && galleryImages.length > 0 ? (
+                  ) : enemyNames.length || allyNames.length || teammateNames.length ? (
                     <>
-                      {hasFirstVisual ? (
-                        <Text style={styles.inPrintGalleryLabel}>
-                          Gallery · {galleryImages.length}
-                        </Text>
-                      ) : null}
-                      <GalleryStrip
-                        images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
-                        onPress={(i) => {
-                          const issueId = galleryImages[i]?.issueId;
-                          if (issueId) {
-                            router.push(
-                              `/issue/cvi:${issueId}` as Parameters<typeof router.push>[0],
-                            );
-                            return;
+                      <SectionHeader title="Enemies, Allies & Teams" />
+                      {enemyNames.length ? (
+                        <RelatedHeroStrip
+                          label="Enemies"
+                          names={enemyNames}
+                          heroMap={relatedHeroMap}
+                          kind="enemy"
+                          edgeTint
+                          monogramTiles
+                          onPressHero={(h) =>
+                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                           }
-                          setLightboxImages(
-                            galleryImages.map((g) => ({ url: g.url, caption: g.caption })),
-                          );
-                          setLightboxIndex(i);
-                        }}
-                      />
+                        />
+                      ) : null}
+                      {allyNames.length ? (
+                        <RelatedHeroStrip
+                          label="Allies"
+                          names={allyNames}
+                          heroMap={relatedHeroMap}
+                          kind="ally"
+                          edgeTint
+                          monogramTiles
+                          onPressHero={(h) =>
+                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                          }
+                        />
+                      ) : null}
+                      {teammateNames.length ? (
+                        <RelatedHeroStrip
+                          label="Teammates"
+                          names={teammateNames}
+                          heroMap={relatedHeroMap}
+                          kind="teammate"
+                          edgeTint
+                          monogramTiles
+                          onPressHero={(h) =>
+                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                          }
+                        />
+                      ) : null}
                     </>
                   ) : null}
                 </View>
-              ) : null}
 
-              {/* Family tree */}
-              {family.length > 0 ? (
-                <View onLayout={registerAnchor('family')} style={styles.section}>
-                  <FamilyCanvas
-                    heroName={data.stats.name}
-                    heroImage={data.stats.image.portraitUrl || data.stats.image.url || null}
-                    heroAvatar={heroRow?.avatar_url ?? null}
-                    heroId={heroRow?.id ?? null}
-                    members={family}
-                  />
-                  {/* The way out into the whole dynasty. Web has had this since
-                      the house pages shipped; native didn't, which left them
-                      unreachable on a phone. */}
-                  <HouseLinks houses={heroHouses} heroId={heroRow?.id ?? null} />
+                {/* The character's universe — constellation preview that taps
+                  through to the /social-web explorer. Web has had this doorway
+                  (SocialWebPreview) since launch; native was missing it. */}
+                <SocialWebPortal
+                  heroId={id}
+                  accent={theme.accent}
+                  onExplore={() =>
+                    router.push(`/social-web/${id}` as Parameters<typeof router.push>[0])
+                  }
+                />
+
+                {/* On Screen — full-bleed movie strip */}
+                <View onLayout={registerAnchor('screen')} style={styles.bleedSection}>
+                  {comicVineLoading ? (
+                    <SkeletonProvider>
+                      <SectionHeader title="On Screen" />
+                      <ScrollView
+                        horizontal
+                        scrollEnabled={false}
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.bleedRow}
+                      >
+                        {[0, 1, 2].map((i) => (
+                          <View key={i} style={{ alignItems: 'center', gap: 6 }}>
+                            <Skeleton width={80} height={120} borderRadius={8} />
+                            <Skeleton width={60} height={10} borderRadius={4} />
+                          </View>
+                        ))}
+                      </ScrollView>
+                    </SkeletonProvider>
+                  ) : titles && titles.length > 0 ? (
+                    (() => {
+                      const groups = groupTitlesByMedia(titles);
+                      return (
+                        <>
+                          {groups.film.length > 0 ? (
+                            <>
+                              <SectionHeader title={`On Screen (${groups.film.length})`} />
+                              <MovieStrip
+                                titles={groups.film}
+                                totalCount={groups.film.length}
+                                contentInset={20}
+                              />
+                            </>
+                          ) : null}
+                          {groups.tv.length > 0 ? (
+                            <View
+                              style={groups.film.length > 0 ? styles.onScreenSubsection : undefined}
+                            >
+                              <SectionHeader title={`Television (${groups.tv.length})`} />
+                              <MovieStrip
+                                titles={groups.tv}
+                                totalCount={groups.tv.length}
+                                contentInset={20}
+                              />
+                            </View>
+                          ) : null}
+                        </>
+                      );
+                    })()
+                  ) : null}
                 </View>
-              ) : null}
 
-              {/* Open invitation to contribute — expands into a small menu of the
-                  contributions not tied to a section (a fact, or a report). */}
-              <View style={styles.contributeFooter}>
-                <TouchableOpacity
-                  style={styles.contributeBtn}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                    setContributeMenu((o) => !o);
-                  }}
-                >
-                  <Ionicons name="sparkles-outline" size={15} color={COLORS.orange} />
-                  <Text style={styles.contributeBtnText}>Contribute to this character</Text>
-                  <Ionicons
-                    name={contributeMenu ? 'chevron-up' : 'chevron-down'}
-                    size={15}
-                    color={COLORS.orange}
-                  />
-                </TouchableOpacity>
-                {contributeMenu ? (
-                  <View style={styles.contributeMenu}>
-                    <TouchableOpacity
-                      style={styles.contributeMenuItem}
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        setContributeMenu(false);
-                        setEditTarget({ field: null, current: null });
-                      }}
-                    >
-                      <Ionicons name="bulb-outline" size={17} color={COLORS.navy} />
-                      <Text style={styles.contributeMenuText}>Add a “Did You Know” fact</Text>
-                    </TouchableOpacity>
-                    <View style={styles.contributeMenuDivider} />
-                    <TouchableOpacity
-                      style={styles.contributeMenuItem}
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        setContributeMenu(false);
-                        setReportCtx({ context: 'page' });
-                      }}
-                    >
-                      <Ionicons name="flag-outline" size={17} color={COLORS.navy} />
-                      <Text style={styles.contributeMenuText}>Report a problem</Text>
-                    </TouchableOpacity>
+                {/* Portrayed By — performers + voice actors */}
+                {portrayals &&
+                (portrayals.performers.length > 0 || portrayals.voiceActors.length > 0) ? (
+                  <View style={styles.section}>
+                    <SectionHeader title="Portrayed By" />
+                    <PortrayedBySection portrayals={portrayals} contentInset={0} />
                   </View>
                 ) : null}
-              </View>
-            </ReAnimated.View>
-          )}
+
+                {/* Links — debut year + external links (Wikidata-sourced) */}
+                {heroLinksHasContent(links) ? (
+                  <View style={styles.section}>
+                    <SectionHeader title="Links" />
+                    <HeroLinksRow links={links!} contentInset={0} />
+                  </View>
+                ) : null}
+
+                {/* In Print — what's on shelves now, then the debut + the run that
+                  followed (mirrors the web character page). */}
+                {newIssues.length > 0 ||
+                hasFirstVisual ||
+                (galleryImages && galleryImages.length > 0) ||
+                (galleryImages === null && galleryLoading) ? (
+                  <View onLayout={registerAnchor('print')} style={styles.bleedSection}>
+                    <View style={styles.sectionHeaderPad}>
+                      <View style={styles.inPrintHeader}>
+                        {data.firstIssue?.coverDate ? (
+                          <Text style={styles.inPrintSince}>
+                            Since {data.firstIssue.coverDate.slice(0, 4)}
+                          </Text>
+                        ) : (
+                          <View />
+                        )}
+                        <Text style={styles.sectionTitle}>In Print</Text>
+                      </View>
+                      <View style={styles.divider} />
+                    </View>
+
+                    {/* On shelves now — recent issues featuring this character */}
+                    {newIssues.length > 0 ? (
+                      <ComicCoverRail
+                        comics={newIssues}
+                        onLight
+                        onIssuePress={(issueId) =>
+                          router.push(`/issue/${issueId}` as Parameters<typeof router.push>[0])
+                        }
+                      />
+                    ) : null}
+
+                    {/* Debut — the first issue, given hero treatment */}
+                    {hasFirstVisual ? (
+                      <View style={styles.bleedPad}>
+                        <TouchableOpacity
+                          onPress={() =>
+                            router.push(
+                              `/issue/cvi:${data.firstIssue!.id}` as Parameters<
+                                typeof router.push
+                              >[0],
+                            )
+                          }
+                          activeOpacity={0.85}
+                          accessibilityRole="button"
+                          accessibilityLabel="View first appearance issue"
+                        >
+                          <View
+                            style={
+                              [styles.debutCard, { borderColor: theme.accent + '2b' }] as object
+                            }
+                          >
+                            <View style={styles.debutCover}>
+                              <Image
+                                source={{ uri: data.firstIssue!.imageUrl! }}
+                                contentFit="cover"
+                                contentPosition="top"
+                                style={styles.debutCoverImg}
+                                cachePolicy="memory-disk"
+                                recyclingKey={`comic-${id}`}
+                                transition={200}
+                              />
+                            </View>
+                            <View style={styles.debutMeta}>
+                              <View style={styles.debutBadgeRow}>
+                                <Ionicons name="ribbon" size={12} color={COLORS.orange} />
+                                <Text style={styles.debutBadgeText}>1st Appearance</Text>
+                              </View>
+                              <Text style={styles.debutTitle} numberOfLines={3}>
+                                {data.firstIssue!.name
+                                  ? data.firstIssue!.name.split(';')[0].trim()
+                                  : 'First Appearance'}
+                              </Text>
+                              {data.firstIssue!.coverDate ? (
+                                <Text style={styles.debutYear}>
+                                  {data.firstIssue!.issueNumber
+                                    ? `Issue #${data.firstIssue!.issueNumber} · `
+                                    : ''}
+                                  {data.firstIssue!.coverDate.slice(0, 4)}
+                                </Text>
+                              ) : null}
+                              <View style={styles.debutCta}>
+                                <Text style={styles.debutCtaText}>View issue</Text>
+                                <Ionicons name="chevron-forward" size={14} color={COLORS.orange} />
+                              </View>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
+
+                    {/* Gallery — character art + covers (multi-source) */}
+                    {galleryImages === null && galleryLoading ? (
+                      <SkeletonProvider>
+                        {hasFirstVisual ? (
+                          <Text style={styles.inPrintGalleryLabel}>Gallery</Text>
+                        ) : null}
+                        <ScrollView
+                          horizontal
+                          scrollEnabled={false}
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={styles.bleedRow}
+                        >
+                          {[0, 1, 2, 3, 4].map((i) => (
+                            <Skeleton key={i} width={80} height={110} borderRadius={8} />
+                          ))}
+                        </ScrollView>
+                      </SkeletonProvider>
+                    ) : galleryImages && galleryImages.length > 0 ? (
+                      <>
+                        {hasFirstVisual ? (
+                          <Text style={styles.inPrintGalleryLabel}>
+                            Gallery · {galleryImages.length}
+                          </Text>
+                        ) : null}
+                        <GalleryStrip
+                          images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
+                          onPress={(i) => {
+                            const issueId = galleryImages[i]?.issueId;
+                            if (issueId) {
+                              router.push(
+                                `/issue/cvi:${issueId}` as Parameters<typeof router.push>[0],
+                              );
+                              return;
+                            }
+                            setLightboxImages(
+                              galleryImages.map((g) => ({ url: g.url, caption: g.caption })),
+                            );
+                            setLightboxIndex(i);
+                          }}
+                        />
+                      </>
+                    ) : null}
+                  </View>
+                ) : null}
+
+                {/* Family tree */}
+                {family.length > 0 ? (
+                  <View onLayout={registerAnchor('family')} style={styles.section}>
+                    <FamilyCanvas
+                      heroName={data.stats.name}
+                      heroImage={data.stats.image.portraitUrl || data.stats.image.url || null}
+                      heroAvatar={heroRow?.avatar_url ?? null}
+                      heroId={heroRow?.id ?? null}
+                      members={family}
+                    />
+                    {/* The way out into the whole dynasty. Web has had this since
+                      the house pages shipped; native didn't, which left them
+                      unreachable on a phone. */}
+                    <HouseLinks houses={heroHouses} heroId={heroRow?.id ?? null} />
+                  </View>
+                ) : null}
+
+                {/* Open invitation to contribute — expands into a small menu of the
+                  contributions not tied to a section (a fact, or a report). */}
+                <View style={styles.contributeFooter}>
+                  <TouchableOpacity
+                    style={styles.contributeBtn}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                      setContributeMenu((o) => !o);
+                    }}
+                  >
+                    <Ionicons name="sparkles-outline" size={15} color={COLORS.orange} />
+                    <Text style={styles.contributeBtnText}>Contribute to this character</Text>
+                    <Ionicons
+                      name={contributeMenu ? 'chevron-up' : 'chevron-down'}
+                      size={15}
+                      color={COLORS.orange}
+                    />
+                  </TouchableOpacity>
+                  {contributeMenu ? (
+                    <View style={styles.contributeMenu}>
+                      <TouchableOpacity
+                        style={styles.contributeMenuItem}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setContributeMenu(false);
+                          setEditTarget({ field: null, current: null });
+                        }}
+                      >
+                        <Ionicons name="bulb-outline" size={17} color={COLORS.navy} />
+                        <Text style={styles.contributeMenuText}>Add a “Did You Know” fact</Text>
+                      </TouchableOpacity>
+                      <View style={styles.contributeMenuDivider} />
+                      <TouchableOpacity
+                        style={styles.contributeMenuItem}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setContributeMenu(false);
+                          setReportCtx({ context: 'page' });
+                        }}
+                      >
+                        <Ionicons name="flag-outline" size={17} color={COLORS.navy} />
+                        <Text style={styles.contributeMenuText}>Report a problem</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+                </View>
+              </ReAnimated.View>
+            )}
+          </View>
         </View>
       </Animated.ScrollView>
 
@@ -1831,6 +1883,20 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   heroImage: { width: '100%', height: '100%' },
+  // Carries the tablet gutter and nothing else — deliberately NOT capped and
+  // centred. Centring it would put the sheet's left edge at 78pt while the
+  // identity above sits at 20pt, which is the two-left-edges fault. The cap
+  // goes on the prose and on the button instead, where it costs no alignment.
+  sheetColumn: { width: '100%' },
+  // `wide` only: the identity, pinned to the bottom of the art column. Kept
+  // outside the zoom target's container — that view must hold exactly one
+  // full-size child or the Apple Zoom morph measures the wrong frame.
+  // `top: 0` + an explicit height, NOT `bottom: 0`. The art column is only as
+  // tall as the art; anchoring to the screen's bottom drops the identity onto
+  // the beige below it, where text coloured for a dark scrim is beige on beige
+  // and effectively invisible. The height is passed at the call site because it
+  // is the art's, not the window's.
+  identityColumn: { position: 'absolute', left: 0, top: 0, justifyContent: 'flex-end' },
   // Share + favourite sit side by side at the header's right edge.
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   // Fixed frame so the SF Symbol's intrinsic box (the up-arrow adds height)
@@ -2035,7 +2101,7 @@ const styles = StyleSheet.create({
   // Summary — gutter only. PullQuoteBio renders flat here (no card, no accent
   // bar): the white card was the single surface on this page that didn't use
   // the page's own card language, so it read as a foreign box on the beige.
-  summaryBlock: { paddingHorizontal: 20, paddingVertical: 8 },
+  summaryBlock: { paddingHorizontal: 20, paddingVertical: 8, maxWidth: PROSE_MAX_WIDTH + 40 },
   // Signature-power tiles above the abilities grid — same 20px section gutter.
   signatureWrap: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 },
 
@@ -2401,6 +2467,11 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     paddingVertical: 16,
     boxShadow: '0px 8px 20px rgba(41,60,67,0.28)',
+    // A pill is a target, not a band. Unbounded it is 1336pt wide on a landscape
+    // iPad — the same "iPhone app on an iPad" tell PageColumn was written for.
+    // Left-aligned with the sheet's gutter rather than centred, so it keeps the
+    // page's one left edge.
+    maxWidth: 420,
   },
   compareBtnText: {
     fontFamily: 'Nunito_700Bold',

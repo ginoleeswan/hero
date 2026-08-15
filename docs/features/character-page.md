@@ -6,7 +6,6 @@
 > anatomy below lets you jump straight to the part you need instead of reading
 > four thousand lines to find it.
 
-
 ## Progressive mount on `/biography/[id]`
 
 Native renders the document a couple of `<h2>` sections at a time
@@ -157,6 +156,65 @@ on the sheet it is a decorative stripe beside a paragraph. The pull-quote
 effect comes from the type — 23px Flame against 15px FlameSans — not from
 chrome. Desktop web keeps the card, where a wide column has room for it.
 
+## Tablets: one body, two stages
+
+`breakpointFor` is width-only, and that is not enough here. An iPad Pro 13" is
+1032x1376 in portrait and 1376x1032 in landscape; both are `wide`, and they are
+opposite shapes. On a screen built around one big portrait the **shape** is what
+decides the layout, so `tabletShape(width, height)` (`src/constants/layout.ts`)
+returns `tall` or `wide` and the page branches on that.
+
+**The fault it fixes, as a number.** The hero was `winW * heroImageAspect(...)`,
+and that aspect _floors at 1.1_. On a landscape iPad it therefore asked for a
+**1514pt-tall** image inside a 1032pt viewport — one and a half screens of
+portrait before a word of content. Portrait was 1135pt of 1376 (82%), which is
+more than a phone's 66% but still shows the identity and the sheet's lip, so it
+is left alone.
+
+|            | phone 390x844 | iPad portrait 1032x1376 | iPad landscape 1376x1032 |
+| ---------- | ------------- | ----------------------- | ------------------------ |
+| hero block | 390 x 557     | 1032 x 1135             | **605 x 666**            |
+| structure  | stacked       | stacked                 | split                    |
+
+**`heroBlock(width, height)` narrows the block; it never caps the height.** That
+is load-bearing, not a style choice: the Apple Zoom morph needs the rail card
+and the hero image to be the same shape or navy shows through mid-flight (see
+`heroImageAspect`'s own comment). Capping the height would squash the aspect and
+break the morph. Shrinking the width and letting `width * aspect` follow keeps
+the block a portrait at every size, which
+`__tests__/constants/layout.test.ts` asserts directly.
+
+**In `wide`:**
+
+- the art is a fixed left column and the sheet scrolls beside it
+  (`contentContainerStyle.paddingLeft = hero.width`);
+- the parallax transform is dropped — the art no longer sits behind the
+  scrolling sheet, so there is nothing to parallax against;
+- `identityNode` is hoisted out of the JSX because it now has two homes: the
+  bottom of the hero spacer when stacked, and the bottom of the art column when
+  split. **`identityColumn` anchors `top: 0` with an explicit height, never
+  `bottom: 0`** — the column is only as tall as the art, and anchoring to the
+  screen drops identity text coloured for a dark scrim onto the beige below it,
+  where it is beige on beige;
+- the scroll needs its own `paddingTop`. The hero spacer used to supply it, so
+  without it the first trait chip renders under the status bar.
+
+**The gutter and the two caps.** Eight section styles hard-code
+`paddingHorizontal: 20`; `sheetColumn` carries `sectionGutter(width, 20) - 20`
+once so they all land on the tablet gutter and the phone delta is zero. It is
+deliberately **not** capped and centred — that would put the sheet's left edge
+at 78pt while the identity sits at 20pt, which is the two-left-edges fault. The
+caps go where they cost no alignment: `PROSE_MAX_WIDTH` on the summary, and 420
+on the Compare pill (unbounded it is a 1336pt band, and a phone's 362pt is
+already under it).
+
+**Still to do:** web's desktop body is `mainCol` beside a 300pt sticky `sideCol`
+(`app/character/[id].web.tsx`), and native has no equivalent. It shows: in
+landscape there is ~450pt of empty beige under the art column that the side
+column is exactly the right shape to fill. Web splits from `width >= 700`, and
+at 1032 with our gutter that is a 644 + 300 division — so this applies to
+**both** tablet orientations, not just landscape.
+
 ## Editing and reporting
 
 Every editable section carries a `SectionPencil` (web: `WebSectionPencil`)
@@ -223,17 +281,17 @@ Desktop keeps its sticky numbered sidebar. Mobile — both platforms — gets
 bottom showing `n of m`, the current section name and a progress hairline,
 which opens into an ink `Sheet` listing every section. It hides on scroll-down,
 returns on scroll-up, and doesn't render below `MIN_SECTIONS_FOR_CONTENTS` (3)
-— which lives in `useBiography` because both screens gate on it *before* the
+— which lives in `useBiography` because both screens gate on it _before_ the
 pill exists. The chevron points **up**, and rotates down in the sheet header, so
 one glyph both opens and dismisses; a `›` would promise navigation to a page.
 
 The component is platform-neutral. The two things that genuinely differ are
 injected by the screens:
 
-| | Active section | Progress + hide | Jump |
-| --- | --- | --- | --- |
-| Web | `IntersectionObserver` on the `bio-s{n}` ids, `-45%` root margin | passive `scroll` listener | `scrollIntoView` |
-| Native | `measureLayout` per heading → offsets compared in a Reanimated worklet | same worklet | `scrollTo` |
+|        | Active section                                                         | Progress + hide           | Jump             |
+| ------ | ---------------------------------------------------------------------- | ------------------------- | ---------------- |
+| Web    | `IntersectionObserver` on the `bio-s{n}` ids, `-45%` root margin       | passive `scroll` listener | `scrollIntoView` |
+| Native | `measureLayout` per heading → offsets compared in a Reanimated worklet | same worklet              | `scrollTo`       |
 
 Native's half is the awkward one — RNRH exposes no node positions, so
 `SectionAnchor.tsx` supplies a custom `h2` renderer that wraps each heading and
