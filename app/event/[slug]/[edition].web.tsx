@@ -6,7 +6,7 @@ import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS, INK_TEXT } from '../../../src/constants/colors';
-import { EventDossier } from '../../../src/components/event/EventDossier';
+import { EventDossier, dossierEndsOnInk } from '../../../src/components/event/EventDossier';
 import { useEventEdition } from '../../../src/hooks/useEventEditions';
 import { EventDossierSkeleton } from '../../../src/components/skeletons/EventSkeleton';
 import { PageEndCap } from '../../../src/components/web/PageEndCap';
@@ -64,7 +64,11 @@ export default function EventEditionPageWeb() {
           />
         )}
       </View>
-      {!!dossier && <PageEndCap />}
+      {/* No beige foot when the dossier's last band is already ink — the cap's
+          rounded sheet-close would otherwise draw a 28pt strip of paper under
+          "Who it moved", which reads as a rendering seam rather than as the
+          page ending. */}
+      {!!dossier && <PageEndCap sheetFoot={!dossierEndsOnInk(dossier)} />}
     </View>
   );
 }

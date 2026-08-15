@@ -217,7 +217,8 @@ function EditionsArchive({
 
   return (
     <>
-      <View style={s.seam} />
+      {/* No seam element — it is the sheet's own top edge now, so it curves with
+          the corners instead of running flat across a rounded thing. */}
       <View style={[s.paper, viewportHeight ? { minHeight: viewportHeight * 0.5 } : null]}>
         <View style={[inner, { paddingHorizontal: pad }]}>
           <Section
@@ -513,9 +514,26 @@ const s = StyleSheet.create({
 
   seam: { height: 1, backgroundColor: SEAM_COLOR },
 
+  // The paper sheet, laid ON the ink stage — see the long note on the dossier's
+  // matching band for why the seam became a curved top edge and why the sheet
+  // overlaps the stage by exactly its radius.
+  //
+  // Rounded at the top ONLY. This band is the last thing on the hub, and
+  // PageEndCap already closes the sheet with its own rounded beige foot; two
+  // feet would stack into a beige lip on a beige lip.
+  //
   // Section owns the masthead's own bottom margin, so the band's floor is the
   // only padding left to set here.
-  paper: { backgroundColor: SURFACE.paper, paddingTop: 34, paddingBottom: 20 },
+  paper: {
+    backgroundColor: SURFACE.paper,
+    paddingTop: 34,
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: SEAM_COLOR,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -24,
+  },
   empty: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14.5,

@@ -269,6 +269,24 @@ function ArenaInvite({
   );
 }
 
+/**
+ * Whether this dossier's last band is ink rather than paper.
+ *
+ * The page's spine is ink → paper → ink: the measurement stage, the record, and
+ * then the two "who" sections back on ink. So a dossier with a cast or any
+ * movers ENDS dark — and the web end-cap, which exists to close a beige sheet
+ * onto the ink floor, was drawing its rounded beige foot underneath it. That is
+ * the 28pt strip of paper between "Who it moved" and the footer: not a gap, a
+ * lip belonging to a sheet that had already closed.
+ *
+ * Exported rather than inlined at the call site because the condition is a fact
+ * about this component's layout, and a route asserting it by hand is a route
+ * that goes stale the next time a band moves.
+ */
+export function dossierEndsOnInk(dossier: Dossier): boolean {
+  return dossier.revealed.length > 0 || dossier.surges.length > 0;
+}
+
 export function EventDossier({
   dossier,
   windowLabel,
@@ -538,9 +556,10 @@ export function EventDossier({
         </View>
       </View>
 
-      <View style={s.seam} />
-
       {/* ── paper: the record ─────────────────────────────────────────────── */}
+      {/* No seam element above this any more — the seam IS the sheet's top edge
+          now (a warm border on the band itself), so it curves with the corners
+          instead of running flat across a rounded thing. */}
       <View style={[s.paper, viewportHeight ? { minHeight: viewportHeight * 0.6 } : null]}>
         <View style={[inner, { paddingHorizontal: pad }]}>
           {/* First, because it is the only section that says what was actually
@@ -757,7 +776,11 @@ export function EventDossier({
           only edge either one needs. */}
       {(revealed.length > 0 || surges.length > 0) && (
         <>
-          <View style={s.seam} />
+          {/* No seam here either. Coming OFF paper is not the same event as
+              cutting into it: the sheet's own rounded foot and the shadow it
+              casts are what mark this edge, and a flat hairline drawn under a
+              rounded corner would read as the rule we just removed from between
+              the two "who" sections. */}
           <View style={s.whoBand}>
             {revealed.length > 0 && (
               <View style={[inner, { paddingHorizontal: pad }]}>
@@ -1148,10 +1171,54 @@ const s = StyleSheet.create({
   whoBand: { backgroundColor: SURFACE.ink, paddingTop: 44, paddingBottom: 52 },
 
   // ── paper ──
+  // A SHEET on a dark table, not a beige stripe between two navy ones.
+  //
+  // Both edges were flat, full-width colour changes: ink to beige above "What
+  // dropped", beige to ink under it. That is the harsh, boring division — two
+  // fields butted together with nothing to say which is on top of which.
+  //
+  // A wave was the other candidate and is wrong here. It is a landing-page
+  // device, it fights an editorial register, and it would have to be drawn at
+  // every one of these boundaries — novel once, tiresome by the third. The
+  // answer the app already owns is the rounded sheet close PageEndCap uses at
+  // the bottom of every detail page, and the reason it works is that it means
+  // something: paper is laid ON the ink.
+  //
+  // So the band is one whole sheet. The warm seam is no longer a separate
+  // element above it — it is this band's own top border, which curves with the
+  // corners instead of running flat across them — and the foot is a plain
+  // rounded edge with a shadow under it. Rounding only one end would have made
+  // it a sheet that arrives as a cut and leaves as paper.
   paper: {
     backgroundColor: SURFACE.paper,
     paddingTop: EVENT_PAPER.paddingTop,
     paddingBottom: EVENT_PAPER.paddingBottom,
+    borderTopWidth: 1,
+    borderTopColor: SEAM_COLOR,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    // LAID ON the stage, not butted against it. A rounded corner shows whatever
+    // is behind it, and behind it was the route's flat page navy (11,23,31)
+    // while the band it appears to lift off ends on the curve's teal-tinted ink
+    // (14,68,76). That mismatch is the black wedge either side of the lip: the
+    // corner was cutting a hole through to a different dark. Overlapping the
+    // stage by exactly the radius puts the corners over the stage's own
+    // gradient, which is continuous, so the curve simply runs under the sheet —
+    // which is what a sheet lying on something looks like.
+    marginTop: -24,
+    // Cast onto what is below, which is the half that makes it read as LIFTED
+    // rather than merely rounded. Pure black: the ground is already near-black,
+    // and anything lighter reads as a glow. Kept tight and pushed downward —
+    // wide and soft, it bled up past the top corners and darkened the stage
+    // there, which is the other half of the same complaint. This is a
+    // millimetre of paper, not a card floating off the page.
+    shadowColor: '#000',
+    shadowOpacity: 0.38,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
   },
   lead: {
     width: '100%',
@@ -1345,7 +1412,12 @@ const s = StyleSheet.create({
 
   // ── who it moved ──
   moverGrid: { gap: 2, paddingTop: 20 },
-  moverGridWide: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 28 },
+  // 72, not 28. The two columns meet at their loudest point: the left column
+  // ends on a 30pt display figure and the right one opens on a 54pt face, so a
+  // gap sized for text put "9.2×" almost against Jarvis's head and the pair read
+  // as one four-part row rather than as two rows in two columns. The gutter has
+  // to clear the two biggest things on the line, not the average one.
+  moverGridWide: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 72 },
   moverRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1355,9 +1427,12 @@ const s = StyleSheet.create({
     // On ink now, so the rule is a light hairline rather than a dark one.
     borderTopColor: 'rgba(245,235,220,0.13)',
   },
-  // Two columns on desktop. 48 is the row gap doubled plus the column gap, so
-  // the pair divides the measure exactly rather than leaving a ragged edge.
-  moverRowWide: { width: '47%', flexGrow: 1 },
+  // Two columns on desktop. Basis-plus-grow rather than a guessed percentage:
+  // both cells start under half, then share what the 72pt gutter leaves, so each
+  // settles at exactly (measure - gutter) / 2 at any width instead of leaving a
+  // ragged right edge. `width: '47%'` only looked right because the old gutter
+  // was small enough to hide the error.
+  moverRowWide: { flexBasis: '40%', flexGrow: 1, minWidth: 260 },
   moverText: { flex: 1, minWidth: 0, gap: 1 },
   moverName: {
     fontFamily: 'Nunito_700Bold',
