@@ -234,6 +234,23 @@ schedules never would.
   `contentContainerStyle={{ paddingHorizontal: H_PAD }}`.
   The rail's first card then aligns with the page inset, but content scrolls
   all the way to the physical screen edge.
+- **`gap` does nothing when the children arrive through a fragment.** A column
+  `gap` applies to a View's _direct_ children. Hoisting a screen's body into a
+  `const foo = (<>…</>)` and rendering `{foo}` — which the character page now
+  does three times, to share one definition across two layouts — puts the real
+  children behind a fragment, and the gap silently no-ops. It fails _invisibly_
+  on white cards over a light ground: the panels sit edge to edge separated by a
+  1px hairline, which looks like a gap at any screenshot scale. Put the spacing
+  on the child (`marginBottom`) whenever the children are not written inline.
+
+- **Judge spacing by sampling pixels, never by looking at a screenshot.** A
+  scaled screenshot cannot distinguish a 14pt gap from a 20pt gap from no gap at
+  all, and three separate claims in one session were wrong because of it. Read a
+  column of pixels down the rendered PNG and print where the colour changes.
+  Sample the actual colours rather than testing equality against the token —
+  shadows and scrims tint the ground, so an exact match reports "no gap" where a
+  gap exists.
+
 - **Every `withRepeat(..., -1)` needs a Reduce Motion check AND a resting value.** An endless loop is the most literal thing Reduce Motion exists to suppress — more so than any transition, because it never stops. Park it at the state that reads as CORRECT rather than wherever it was cancelled: full opacity for a live indicator (30% looks broken), the end state for a loader (0 is a loader that loads nothing), and don't draw a travelling highlight at all (held still it is a bright band at one edge, which reads as a rendering defect). Loops on a screen inside `NativeTabs` also need `useScreenFocused` — native tabs keep every screen mounted, so an unpaused loop runs forever on a tab nobody is looking at.
 
 - **Never put a `perspective`/`rotateX`/`rotateY` transform on a view a later transform scales up.** iOS rasterises a 3D-transformed layer differently, and a view magnified afterwards gets clipped — a hard straight edge through the artwork, on device only. Established by A/B in `BootStage` across four shipped builds: the 3D tilt was removed and the clipping stopped, restored on its own and it came straight back. The arithmetic said it was safe every time (bounded keystone, near edge at 16% of the camera distance, level before any large scale) and it clipped regardless — reasoning is not the missing ingredient here, a device is. If a depth cue is wanted, approximate it with a 2D affine (skew + axis-differential scale), which cannot change how the layer is rasterised. A smaller angle is not a fix.
