@@ -297,5 +297,23 @@ serve(async (req: Request) => {
       .from('api_usage')
       .insert({ api: 'wikimedia', endpoint: 'watched-events', units: processed * 2 });
   }
-  return json({ processed, live, triggeredBy });
+
+  // Snapshot every live event into event_editions before this row's state is
+  // overwritten by the next pass. watched_events holds one row per SERIES and
+  // this function is what overwrites it, so anything not captured here is
+  // unrecoverable a month later: views_daily is a rolling ~27-day series, and
+  // SDCC 2026's spike had already rolled out of its own row by 2026-08-15,
+  // leaving a stored spike_ratio of 0.82 for an event detected at 3.35x.
+  //
+  // Runs on every pass, not on a live→idle transition, so there is no single
+  // moment to miss and a flickering verdict cannot lose an edition. It also
+  // lets the frozen window follow the detector as lagging pageviews extend it.
+  const { data: frozen, error: freezeErr } = await sb.rpc('freeze_live_editions');
+
+  return json({
+    processed,
+    live,
+    editions: freezeErr ? { error: freezeErr.message } : frozen,
+    triggeredBy,
+  });
 });

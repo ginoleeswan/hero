@@ -35,6 +35,47 @@ const json = (d: unknown, s = 200) =>
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const FEED = 'https://www.youtube.com/feeds/videos.xml?channel_id=';
+const TMDB_API_KEY = Deno.env.get('TMDB_API_KEY') ?? '';
+const TMDB_BASE = 'https://api.themoviedb.org/3';
+
+/** Same shape test the promotion step uses. Discovery is only attempted for
+ *  videos that claim to be trailers, so a sizzle clip or a cast interview can
+ *  never mint a catalogue row. */
+const TRAILERISH =
+  /(official trailer|final trailer|new trailer|teaser|first look|special look|sneak peek)/i;
+
+/**
+ * A video title is a marketing string; TMDB wants a work's name.
+ *
+ * "Percy Jackson & the Olympians Season 3 | Teaser Trailer | Disney+" has to
+ * become "Percy Jackson & the Olympians". Take the first pipe-delimited segment
+ * (studios put the work first and the ceremony after), then strip the season
+ * marker and any remaining trailer vocabulary.
+ */
+/** Mirror of the SQL `normalize_match_text`. The discovery guard is only sound
+ *  if it applies the SAME test the matcher will: TMDB spells "Percy Jackson and
+ *  the Olympians" while the trailer says "&", so a literal containment check
+ *  rejects the correct series. Change both together. */
+export function normalizeMatchText(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+export function searchQueryFromVideoTitle(raw: string): string | null {
+  let s = raw.split('|')[0];
+  s = s.replace(/\b(season|series|part|chapter|vol\.?|volume)\s+\d+\b/gi, ' ');
+  s = s.replace(
+    /\b(official|final|new)?\s*(trailer|teaser|first look|special look|sneak peek|showcase)\b/gi,
+    ' ',
+  );
+  // Possessive studio prefixes: "Marvel Television's VisionQuest".
+  s = s.replace(/^.*?['’]s\s+/, '');
+  s = s.replace(/[-–—:]\s*$/, '').replace(/\s+/g, ' ').trim();
+  return s.length >= 5 ? s : null;
+}
 
 interface ChannelRow {
   id: string;
@@ -176,11 +217,105 @@ serve(async (req: Request) => {
   // One statement does all matching and promotion for everything ingested.
   const { data: matched, error: matchErr } = await sb.rpc('match_channel_videos');
 
+  // ── discovery ──────────────────────────────────────────────────────────────
+  // An unmatched TRAILER is not a failure, it is a finding: a studio is
+  // promoting something the catalogue does not have. Disney+ posted the Percy
+  // Jackson season-3 teaser and it matched nothing, because `titles` held only
+  // the 2010 and 2013 films — the Disney+ series was never ingested. Every such
+  // video is a title worth having, already filtered to things a studio thought
+  // worth cutting a trailer for.
+  //
+  // The guard against minting junk is deliberately circular: the TMDB result is
+  // only accepted if its name is CONTAINED in the video title, which is exactly
+  // the test match_title_for_video will apply afterwards. If it would not match
+  // once inserted, it does not get inserted.
+  const discovered: string[] = [];
+  if (TMDB_API_KEY) {
+    const { data: orphans } = await sb
+      .from('channel_videos')
+      .select('id, title')
+      .is('title_id', null)
+      .gt('published_at', new Date(Date.now() - 14 * 86_400_000).toISOString())
+      .order('published_at', { ascending: false })
+      .limit(40);
+
+    const rows: Record<string, unknown>[] = [];
+    // Videos that produced a title. Their `matched_at` is already set from the
+    // failed first attempt, and match_channel_videos only considers rows where
+    // it is null — so without clearing it the re-match below would be a no-op
+    // and the trailer would wait a whole sweep for the row minted for it.
+    const retry: string[] = [];
+    let calls = 0;
+    for (const o of (orphans ?? []) as unknown as { id: string; title: string }[]) {
+      if (calls >= 12) break;
+      if (!TRAILERISH.test(o.title)) continue;
+      const q = searchQueryFromVideoTitle(o.title);
+      if (!q) continue;
+      try {
+        calls++;
+        const r = await fetch(
+          `${TMDB_BASE}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(q)}`,
+        );
+        if (!r.ok) continue;
+        const body = await r.json();
+        const hit = (body.results ?? []).find((x: Record<string, unknown>) => {
+          if (x.media_type !== 'movie' && x.media_type !== 'tv') return false;
+          const name = (x.title ?? x.name) as string | undefined;
+          if (!name) return false;
+          const norm = normalizeMatchText(name);
+          if (norm.length < 5) return false;
+          return normalizeMatchText(o.title).includes(norm);
+        });
+        if (!hit) continue;
+        const mediaType = hit.media_type === 'tv' ? 'tv' : 'film';
+        const name = (hit.title ?? hit.name) as string;
+        rows.push({
+          id: `tmdb:${hit.id}`,
+          source: 'tmdb',
+          external_id: String(hit.id),
+          media_type: mediaType,
+          title: name,
+          release_date: hit.release_date || hit.first_air_date || null,
+          poster_url: hit.poster_path ? `https://image.tmdb.org/t/p/w500${hit.poster_path}` : null,
+          backdrop_url: hit.backdrop_path
+            ? `https://image.tmdb.org/t/p/w1280${hit.backdrop_path}`
+            : null,
+          overview: hit.overview || null,
+          // Thin row at `pending`; the existing enrich-tmdb drain fills in cast,
+          // images and the rest on its own schedule.
+          enrich_status: 'pending',
+        });
+        discovered.push(`${name} (${mediaType})`);
+        retry.push(o.id);
+        await sleep(120);
+      } catch {
+        /* one bad search never fails the sweep */
+      }
+    }
+
+    if (rows.length) {
+      // ignoreDuplicates: an existing row is already richer than this thin one.
+      await sb.from('titles').upsert(rows, { onConflict: 'id', ignoreDuplicates: true });
+      await sb.from('channel_videos').update({ matched_at: null }).in('id', retry);
+    }
+    if (calls > 0) {
+      await sb.from('api_usage').insert({ api: 'tmdb', endpoint: 'search/multi', units: calls });
+    }
+  }
+
+  // Re-match: anything just discovered can now find its title on this same pass,
+  // so a trailer is never a sweep behind the row that was minted for it.
+  const { data: rematched } = discovered.length
+    ? await sb.rpc('match_channel_videos')
+    : { data: null };
+
   return json({
     channels: channels?.length ?? 0,
     fetched,
     upserted,
     matched: matchErr ? { error: matchErr.message } : matched,
+    discovered,
+    rematched,
     failed,
     triggeredBy,
   });

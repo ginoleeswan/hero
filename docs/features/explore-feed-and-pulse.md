@@ -132,6 +132,41 @@ curated 20-row watch list and the `detect.ts` thresholds), not on each firing.
 `admin_set_watched_event_approval` still sets `rejected` as a kill switch. A
 human gate is still right for anything irreversible: **push must keep its own.**
 
+### Editions: why `/event/d23` is not "D23 2026"
+
+`watched_events` holds one row per **series** and `sync-watched-events`
+overwrites it every 30 minutes, so the live row is always "D23, currently" — next
+August it silently becomes D23 2027. `event_editions`
+(`20260815120000_event_editions.sql`) is the durable per-edition record, written
+by `freeze_event_edition()` on **every** sync pass while an event is live (not on
+a live→idle transition, so there is no moment to miss and a flickering verdict
+cannot lose an edition).
+
+It stores only what **perishes** — the event's own `views_daily` curve,
+baseline/peak/spike/edits, and the surge list, since `heroes.views_daily` is
+itself a rolling window. Trailers and issues are deliberately **not** copied:
+`title_videos` and `comic_issues` keep their history, so an edition page derives
+them from the frozen window at read time and old editions keep _improving_ as
+enrichment fills in. Copying the catalogue would freeze the rosters at their
+worst.
+
+Two rules that are load-bearing:
+
+- **Keyed `(slug, edition_slug)`, matched by proximity, not by `live_from`.** The
+  detector refines its window as lagging pageviews arrive, so `live_from` moves —
+  keying on it would fork a new row each time it shifted. A freeze within 45 days
+  of an existing edition updates it; further away starts a new one, which is also
+  what lets Comiket run twice in one calendar year.
+- **`peak`, `spike_ratio` and the surge list never shrink on re-freeze.** The
+  curve rolls off, so a later freeze legitimately observes a _smaller_ peak for
+  the same event, and a late re-freeze must not quietly rewrite history downward.
+
+The cost of not having had this: SDCC 2026 was detected at 3.35×, and by
+2026-08-15 its own row read `spike_ratio` **0.82** with `shape: flat` and zero
+movers, because the July spike had rolled out of the 27-day series. Its frozen
+edition records that damage honestly rather than restoring a number from a design
+doc. D23 2026 was captured with its full 27-day curve intact.
+
 **Three functions read `approval` and must move together** — `get_live_events`
 (the rail), `get_event_dossier` (`/event/[slug]`) and `get_event_index`
 (`/event`). There is no shared predicate; the `where` is inlined in each, which

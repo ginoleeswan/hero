@@ -688,6 +688,68 @@ export type Database = {
         }
         Relationships: []
       }
+      event_editions: {
+        Row: {
+          accent: string | null
+          baseline: number | null
+          edition_slug: string
+          edits_recent: number | null
+          first_detected_at: string | null
+          frozen_at: string
+          headline: string
+          live_from: string
+          live_to: string
+          peak: number | null
+          shape: string | null
+          slug: string
+          spike_ratio: number | null
+          surges: Json
+          views_daily: Json
+        }
+        Insert: {
+          accent?: string | null
+          baseline?: number | null
+          edition_slug: string
+          edits_recent?: number | null
+          first_detected_at?: string | null
+          frozen_at?: string
+          headline: string
+          live_from: string
+          live_to: string
+          peak?: number | null
+          shape?: string | null
+          slug: string
+          spike_ratio?: number | null
+          surges?: Json
+          views_daily: Json
+        }
+        Update: {
+          accent?: string | null
+          baseline?: number | null
+          edition_slug?: string
+          edits_recent?: number | null
+          first_detected_at?: string | null
+          frozen_at?: string
+          headline?: string
+          live_from?: string
+          live_to?: string
+          peak?: number | null
+          shape?: string | null
+          slug?: string
+          spike_ratio?: number | null
+          surges?: Json
+          views_daily?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_editions_slug_fkey"
+            columns: ["slug"]
+            isOneToOne: false
+            referencedRelation: "watched_events"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       explore_bundle_cache: {
         Row: {
           id: number
@@ -2340,6 +2402,7 @@ export type Database = {
           source: string
           stills: Json | null
           title: string
+          title_norm: string | null
           tmdb_id: string | null
           trailer_key: string | null
           trending_at: string | null
@@ -2367,6 +2430,7 @@ export type Database = {
           source: string
           stills?: Json | null
           title: string
+          title_norm?: string | null
           tmdb_id?: string | null
           trailer_key?: string | null
           trending_at?: string | null
@@ -2394,6 +2458,7 @@ export type Database = {
           source?: string
           stills?: Json | null
           title?: string
+          title_norm?: string | null
           tmdb_id?: string | null
           trailer_key?: string | null
           trending_at?: string | null
@@ -2932,6 +2997,8 @@ export type Database = {
           wikidata_qid: string
         }[]
       }
+      freeze_event_edition: { Args: { p_slug: string }; Returns: string }
+      freeze_live_editions: { Args: never; Returns: Json }
       get_active_campaigns: {
         Args: { p_chars?: number; p_limit?: number }
         Returns: {
@@ -3315,6 +3382,7 @@ export type Database = {
       match_channel_videos: { Args: never; Returns: Json }
       match_title_for_video: { Args: { p_text: string }; Returns: string }
       nightly_maintenance: { Args: never; Returns: undefined }
+      normalize_match_text: { Args: { p_text: string }; Returns: string }
       pick_daily_debate: { Args: never; Returns: undefined }
       post_take: {
         Args: { p_a: string; p_b: string; p_body: string; p_picked: string }
