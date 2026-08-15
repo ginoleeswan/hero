@@ -17,6 +17,7 @@ import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { HeroFace } from './HeroFace';
+import { CountUp } from './CountUp';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
@@ -27,6 +28,7 @@ import {
   groupAnnouncements,
   type EventDossier as Dossier,
   type EventTrailer,
+  type TrailerCastFace,
   type AnnouncementGroup,
 } from '../../lib/db/events.dossier';
 
@@ -89,6 +91,70 @@ function RailOrWrap({
     >
       {children}
     </ScrollView>
+  );
+}
+
+/**
+ * The catalogue's faces for one title, and how many more there are.
+ *
+ * This is the whole argument for the "What dropped" section looking like
+ * Mythique rather than like every other film grid on the internet. The poster is
+ * the studio's; the faces under it are ours, they are the reason a reader who
+ * came for a trailer stays for a character, and they are six routes into the app
+ * where the card previously offered one route out of it.
+ */
+function TrailerCast({
+  cast,
+  total,
+  size,
+  onHeroPress,
+  onInk = false,
+  interactive = true,
+}: {
+  cast: TrailerCastFace[];
+  total: number;
+  size: number;
+  onHeroPress: (heroId: string) => void;
+  onInk?: boolean;
+  /** False inside a card that is ITSELF pressable.
+   *
+   *  react-native-web renders Pressable as <button>, and a button inside a
+   *  button is invalid HTML — the browser reparents it, which broke the card's
+   *  own click target and logged "<button> cannot contain a nested <button>"
+   *  once per face. Where the strip can be a sibling of the card's button it
+   *  stays interactive and is six routes into the catalogue; where it sits over
+   *  the lead's artwork it is evidence, and the whole card goes to the title. */
+  interactive?: boolean;
+}) {
+  if (cast.length === 0) return null;
+  const more = Math.max(0, total - cast.length);
+  return (
+    <View style={s.castStrip}>
+      {cast.map((c) =>
+        interactive ? (
+          <Pressable
+            key={c.heroId}
+            onPress={() => onHeroPress(c.heroId)}
+            accessibilityRole="button"
+            accessibilityLabel={c.name}
+            hitSlop={4}
+          >
+            {/* The mapper drops faces without art, so the ?? '' is narrowing for
+                the type checker rather than a real branch. */}
+            <HeroFace uri={c.portraitUrl ?? ''} avatar={c.avatar} size={size} name={c.name} />
+          </Pressable>
+        ) : (
+          <HeroFace
+            key={c.heroId}
+            uri={c.portraitUrl ?? ''}
+            avatar={c.avatar}
+            size={size}
+            name={c.name}
+          />
+        ),
+      )}
+      {more > 0 && <Text style={[s.castMore, onInk ? s.castMoreInk : null]}>{`+${more}`}</Text>}
+    </View>
   );
 }
 
@@ -452,90 +518,64 @@ export function EventDossier({
 
               Placed before the trailers and the readership on purpose — a
               studio SAYING a name outranks a curve that moved afterwards. */}
-          {revealed.length > 0 && (
-            <Section title="Who they named" note="Characters called out in what was announced">
-              {/* A rail on a phone, a wrapped row on desktop. A horizontal
-                  scroller is a touch affordance — on a pointer device it hides
-                  half its contents behind a gesture nobody makes, and here it
-                  was also being clipped mid-face at the reading measure's edge.
-                  Wide has the room to just show them all. */}
-              <RailOrWrap wide={wide} pad={pad} railStyle={s.castRail} wrapStyle={s.castWrap}>
-                {revealed.map((r) => (
-                  <Pressable
-                    key={r.heroId}
-                    style={[s.castCell, wide ? s.castCellWide : null]}
-                    onPress={() => onHeroPress(r.heroId)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${r.name}${r.titleName ? `, named in ${r.titleName}` : ''}`}
-                  >
-                    {!!r.portraitUrl && (
-                      <HeroFace
-                        uri={r.portraitUrl}
-                        avatar={r.avatar}
-                        size={wide ? 104 : 66}
-                        name={r.name}
-                      />
-                    )}
-                    <Text style={s.castName} numberOfLines={2}>
-                      {r.name}
-                    </Text>
-                    <Text style={s.castTitle} numberOfLines={1}>
-                      {r.titleName ?? r.publisher ?? ''}
-                    </Text>
-                  </Pressable>
-                ))}
-              </RailOrWrap>
-
-              {/* Two named characters is a matchup the app can already run, and
-                  this is the only place on an event page that hands the reader
-                  something to DO with what they just read. */}
-              {!!onArenaPress && revealed.length >= 2 && (
-                <Pressable
-                  style={[s.arenaCta, { borderColor: `${accent}66` }]}
-                  onPress={() => onArenaPress(revealed[0].heroId, revealed[1].heroId)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Put ${revealed[0].name} against ${revealed[1].name} in the Arena`}
-                >
-                  <Text style={s.arenaCtaText}>
-                    {revealed[0].name} vs {revealed[1].name}
-                  </Text>
-                  <Text style={s.arenaCtaHint}>Settle it in the Arena</Text>
-                </Pressable>
-              )}
-            </Section>
-          )}
 
           {trailers.length > 0 && (
             <Section title="What dropped" note="Trailers published inside the window">
               {/* The lead gets its backdrop at size — these are the best images
                   on the page and a 52px thumbnail wasted them. */}
-              <LeadTrailer trailer={lead} onPress={onTitlePress} accent={accent} wide={wide} />
+              <LeadTrailer
+                trailer={lead}
+                onPress={onTitlePress}
+                onHeroPress={onHeroPress}
+                accent={accent}
+                wide={wide}
+              />
               {rest.length > 0 && (
                 <View style={[s.posterRow, { gap: posterGrid.gap }]}>
                   {rest.map((t) => (
-                    <Pressable
-                      key={t.titleId}
-                      style={[s.posterCell, { width: posterGrid.cell }]}
-                      onPress={() => onTitlePress(t.titleId)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${t.title}, ${t.videoType ?? 'trailer'}`}
-                    >
-                      {!!(t.posterUrl ?? t.backdropUrl) && (
-                        <Image
-                          source={{ uri: (t.posterUrl ?? t.backdropUrl) as string }}
-                          style={[
-                            s.poster,
-                            { width: posterGrid.cell, height: posterGrid.cell * 1.5 },
-                          ]}
-                          contentFit="cover"
-                          transition={160}
+                    // A plain View, with the poster+title as ONE button and the
+                    // face strip as its SIBLING. The card used to be a single
+                    // Pressable wrapping everything, which put the faces' own
+                    // buttons inside it — invalid HTML on web, and the browser's
+                    // reparenting broke the card's click target.
+                    <View key={t.titleId} style={[s.posterCell, { width: posterGrid.cell }]}>
+                      <Pressable
+                        onPress={() => onTitlePress(t.titleId)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${t.title}, ${t.videoType ?? 'trailer'}`}
+                        style={s.posterMain}
+                      >
+                        {!!(t.posterUrl ?? t.backdropUrl) && (
+                          <Image
+                            source={{ uri: (t.posterUrl ?? t.backdropUrl) as string }}
+                            style={[
+                              s.poster,
+                              { width: posterGrid.cell, height: posterGrid.cell * 1.5 },
+                            ]}
+                            contentFit="cover"
+                            transition={160}
+                          />
+                        )}
+                        <Text style={s.posterTitle} numberOfLines={2}>
+                          {t.title}
+                        </Text>
+                      </Pressable>
+                      {/* The faces replace the word "Trailer", which said
+                          nothing a reader could not see. "Buzz Lightyear,
+                          Woody, Jessie, Rex, +4" is specific, is ours, and is
+                          four more ways into the app than a poster. The kind
+                          survives only where there is no cast to show. */}
+                      {t.cast.length > 0 ? (
+                        <TrailerCast
+                          cast={t.cast}
+                          total={t.castCount}
+                          size={26}
+                          onHeroPress={onHeroPress}
                         />
+                      ) : (
+                        <Text style={s.posterMeta}>{t.videoType ?? 'Trailer'}</Text>
                       )}
-                      <Text style={s.posterTitle} numberOfLines={2}>
-                        {t.title}
-                      </Text>
-                      <Text style={s.posterMeta}>{t.videoType ?? 'Trailer'}</Text>
-                    </Pressable>
+                    </View>
                   ))}
                 </View>
               )}
@@ -543,6 +583,81 @@ export function EventDossier({
           )}
         </View>
       </View>
+
+      {/* ── ink: the catalogue, named ─────────────────────────────────────
+          The page's one section that is neither attention data nor a marketing
+          string: characters the rights holder itself put on a stage. "Marvel
+          named Storm, Jean Grey, Cyclops, Emma Frost and Rogue" is the moment a
+          fan came for, and it was a strip of small circles wedged between two
+          walls of film stills, on the same beige as everything else.
+
+          On ink, at 120pt, it is the beat between what was SAID and what it
+          DID — and the Arena button under it is the only thing on the page that
+          hands the reader something to do with what they just read. */}
+      {revealed.length > 0 && (
+        <>
+          <View style={s.seam} />
+          <View style={s.castBand}>
+            <View style={[inner, { paddingHorizontal: pad }]}>
+              <Section
+                title="Who they named"
+                note="Characters called out in what was announced"
+                onInk
+              >
+                {/* A rail on a phone, a wrapped row on desktop. A horizontal
+                      scroller is a touch affordance — on a pointer device it hides
+                      half its contents behind a gesture nobody makes, and here it
+                      was also being clipped mid-face at the reading measure's edge.
+                      Wide has the room to just show them all. */}
+                <RailOrWrap wide={wide} pad={pad} railStyle={s.castRail} wrapStyle={s.castWrap}>
+                  {revealed.map((r) => (
+                    <Pressable
+                      key={r.heroId}
+                      style={[s.castCell, wide ? s.castCellWide : null]}
+                      onPress={() => onHeroPress(r.heroId)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${r.name}${r.titleName ? `, named in ${r.titleName}` : ''}`}
+                    >
+                      {!!r.portraitUrl && (
+                        <HeroFace
+                          uri={r.portraitUrl}
+                          avatar={r.avatar}
+                          size={wide ? 104 : 66}
+                          name={r.name}
+                        />
+                      )}
+                      <Text style={s.castName} numberOfLines={2}>
+                        {r.name}
+                      </Text>
+                      <Text style={s.castTitle} numberOfLines={1}>
+                        {r.titleName ?? r.publisher ?? ''}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </RailOrWrap>
+
+                {/* Two named characters is a matchup the app can already run, and
+                      this is the only place on an event page that hands the reader
+                      something to DO with what they just read. */}
+                {!!onArenaPress && revealed.length >= 2 && (
+                  <Pressable
+                    style={[s.arenaCta, { borderColor: `${accent}66` }]}
+                    onPress={() => onArenaPress(revealed[0].heroId, revealed[1].heroId)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Put ${revealed[0].name} against ${revealed[1].name} in the Arena`}
+                  >
+                    <Text style={s.arenaCtaText}>
+                      {revealed[0].name} vs {revealed[1].name}
+                    </Text>
+                    <Text style={s.arenaCtaHint}>Settle it in the Arena</Text>
+                  </Pressable>
+                )}
+              </Section>
+            </View>
+          </View>
+          <View style={s.seam} />
+        </>
+      )}
 
       {/* ── ink again: what it did to the catalogue ───────────────────────
           The page's grammar is ink = measurement, paper = record, and this
@@ -577,7 +692,7 @@ export function EventDossier({
                       thing, and the same component reads on a phone (one column)
                       and a desktop (two). */}
                 <View style={[s.moverGrid, wide ? s.moverGridWide : null]}>
-                  {rankedSurges.map((sg) => (
+                  {rankedSurges.map((sg, i) => (
                     <Pressable
                       key={sg.heroId}
                       style={[s.moverRow, wide ? s.moverRowWide : null]}
@@ -607,7 +722,17 @@ export function EventDossier({
                         </Text>
                       </View>
                       {sg.spike !== null && (
-                        <Text style={[s.moverSpike, { color: accent }]}>{sg.spike}×</Text>
+                        // Counts up the first time the band is scrolled into
+                        // view, staggered down the list so it reads as a board
+                        // filling in rather than twelve numbers twitching at
+                        // once. Capped at eight steps — past that the last rows
+                        // are still counting long after the eye has arrived.
+                        <CountUp
+                          value={sg.spike}
+                          suffix="×"
+                          delay={Math.min(i, 8) * 70}
+                          style={[s.moverSpike, { color: accent }]}
+                        />
                       )}
                     </Pressable>
                   ))}
@@ -661,11 +786,13 @@ const LEAD_MAX_H = 380;
 function LeadTrailer({
   trailer,
   onPress,
+  onHeroPress,
   accent,
   wide,
 }: {
   trailer: EventTrailer;
   onPress: (id: string) => void;
+  onHeroPress: (heroId: string) => void;
   accent: string;
   wide?: boolean;
 }) {
@@ -692,8 +819,25 @@ function LeadTrailer({
         <Text style={s.leadTitle} numberOfLines={2}>
           {trailer.title}
         </Text>
-        {trailer.castCount > 0 && (
-          <Text style={s.leadMeta}>{trailer.castCount} characters in the catalogue</Text>
+        {/* The faces themselves, over the gradient, with the count as their
+            label. "9 characters in the catalogue" was the most Mythique-specific
+            line in the section and it was set as a caption; showing WHO turns it
+            from a statistic into the reason to keep reading. */}
+        {trailer.cast.length > 0 ? (
+          <View style={s.leadCast}>
+            <TrailerCast
+              cast={trailer.cast}
+              total={trailer.castCount}
+              size={34}
+              onHeroPress={onHeroPress}
+              onInk
+              interactive={false}
+            />
+          </View>
+        ) : (
+          trailer.castCount > 0 && (
+            <Text style={s.leadMeta}>{trailer.castCount} characters in the catalogue</Text>
+          )
         )}
       </View>
     </Pressable>
@@ -844,7 +988,8 @@ const s = StyleSheet.create({
   },
   seam: { height: 1, backgroundColor: SEAM_COLOR },
 
-  // ── the measurement band ──
+  // ── the two ink bands under the record ──
+  castBand: { backgroundColor: SURFACE.ink, paddingTop: 44, paddingBottom: 48 },
   moverBand: { backgroundColor: SURFACE.ink, paddingTop: 40, paddingBottom: 52 },
 
   // ── paper ──
@@ -882,6 +1027,7 @@ const s = StyleSheet.create({
   },
   leadArt: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   leadBody: { padding: 20, gap: 4 },
+  leadCast: { marginTop: 8 },
   leadKicker: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 2 },
   leadTitle: { fontFamily: 'Flame-Regular', fontSize: 28, lineHeight: 35, color: COLORS.beige },
   leadMeta: {
@@ -892,6 +1038,7 @@ const s = StyleSheet.create({
 
   posterRow: { flexDirection: 'row', flexWrap: 'wrap' },
   posterCell: { gap: 8 },
+  posterMain: { gap: 8 },
   poster: { borderRadius: 9, backgroundColor: 'rgba(11,24,32,0.08)' },
   // The lead announcement, at the size the news deserves.
   newsLead: { gap: 0 },
@@ -966,6 +1113,16 @@ const s = StyleSheet.create({
     color: PAPER_TEXT.muted,
   },
 
+  // The face strip on a trailer card.
+  castStrip: { flexDirection: 'row', alignItems: 'center', gap: 3, flexWrap: 'wrap' },
+  castMore: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: PAPER_TEXT.muted,
+    marginLeft: 3,
+  },
+  castMoreInk: { color: 'rgba(245,235,220,0.72)' },
+
   castRail: { gap: 14, paddingTop: 20 },
   castWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 22, paddingTop: 22 },
   castCell: { width: 78, gap: 4, alignItems: 'center' },
@@ -978,14 +1135,14 @@ const s = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
     lineHeight: 17,
-    color: COLORS.deepNavy,
+    color: 'rgba(245,235,220,0.94)',
     textAlign: 'center',
   },
   castTitle: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
     lineHeight: 15,
-    color: PAPER_TEXT.muted,
+    color: INK_TEXT.faint,
     textAlign: 'center',
   },
 
@@ -1002,13 +1159,17 @@ const s = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 18,
     lineHeight: 23,
-    color: COLORS.deepNavy,
+    // On ink now, with the rest of the cast band.
+    color: 'rgba(245,235,220,0.96)',
   },
   arenaCtaHint: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
+    // Stated rather than inherited: the band moved to ink, and an unset colour
+    // here fell back to the paper default and vanished into the ground.
+    color: INK_TEXT.faint,
   },
 
   // ── who it moved ──

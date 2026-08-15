@@ -111,7 +111,10 @@ export function EventCurve({ series, from, to, accent, width, height = 180 }: Ev
       />
 
       <Path d={area} fill="url(#evc-fill)" />
-      <Path d={line} stroke={accent} strokeWidth={2} fill="none" />
+      {/* 2.5 rather than 2. At 380pt tall the plot is the masthead's subject and
+          a hairline reads as a scratch across it; the extra half point is what
+          makes it read as a drawn line at hero scale. */}
+      <Path d={line} stroke={accent} strokeWidth={2.5} fill="none" />
     </Svg>
   );
 }

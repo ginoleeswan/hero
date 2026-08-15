@@ -10,7 +10,7 @@ import { Text } from '../../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS, INK_TEXT, SURFACE, PAPER_TEXT } from '../../../src/constants/colors';
 import { EventDossier } from '../../../src/components/event/EventDossier';
-import { EventHub, EditionList } from '../../../src/components/event/EventHub';
+import { EventHub, EditionList, EditionChart } from '../../../src/components/event/EventHub';
 import { useEventDossier } from '../../../src/hooks/useEventDossier';
 import { useEventHub } from '../../../src/hooks/useEventEditions';
 import { EventHubSkeleton } from '../../../src/components/skeletons/EventSkeleton';
@@ -71,10 +71,23 @@ export default function EventPageWeb() {
                 <View style={s.editionsInner as object}>
                   <Text style={s.editionsTitle as object}>Editions</Text>
                   <Text style={s.editionsNote as object}>Every year of this event on record.</Text>
+                  {/* Same pair the hub renders. This block was assembling the
+                      archive by hand and had drifted from EventHub: no chart,
+                      and no `wide`, so on a desktop the live page's rows used
+                      the phone layout while the hub's used the desktop one. */}
+                  {wide && hub.editions.length > 2 && (
+                    <EditionChart
+                      editions={hub.editions}
+                      accent={accent}
+                      bestSpike={hub.bestSpike}
+                      onEditionPress={goEdition}
+                    />
+                  )}
                   <EditionList
                     editions={hub.editions}
                     accent={accent}
                     bestSpike={hub.bestSpike}
+                    wide={wide}
                     onEditionPress={goEdition}
                   />
                 </View>

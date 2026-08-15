@@ -79,6 +79,15 @@ export interface EventRevealed {
   titleName: string | null;
 }
 
+/** One face on a trailer card — a character from the catalogue who appears in
+ *  the thing. Deliberately the minimum needed to draw a face and route to it. */
+export interface TrailerCastFace {
+  heroId: string;
+  name: string;
+  portraitUrl: string | null;
+  avatar: boolean;
+}
+
 export interface EventTrailer {
   titleId: string;
   title: string;
@@ -89,6 +98,9 @@ export interface EventTrailer {
   videoType: string | null;
   publishedAt: string | null;
   castCount: number;
+  /** The most famous few, for the card's face strip. `castCount` is the full
+   *  total, so "six faces and +20" is expressible. */
+  cast: TrailerCastFace[];
 }
 
 export interface EventSurge {
@@ -191,6 +203,16 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
       videoType: (t.video_type as string) ?? null,
       publishedAt: (t.published_at as string) ?? null,
       castCount: num(t.cast_count) ?? 0,
+      cast: arr(t.cast)
+        .map((c) => ({
+          heroId: String(c.hero_id ?? ''),
+          name: String(c.name ?? ''),
+          portraitUrl: (c.portrait_url as string) ?? null,
+          avatar: c.avatar === true,
+        }))
+        // A face with no id cannot be routed to and a face with no art cannot be
+        // drawn; either way it is not a face.
+        .filter((c) => c.heroId && c.portraitUrl),
     })),
     surges: arr(r.surges).map((s) => ({
       heroId: String(s.hero_id ?? ''),

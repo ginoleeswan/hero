@@ -48,9 +48,18 @@ export const EVENT_STAGE = {
   /** The readership curve is pinned to the stage floor and adds no height; the
    *  stat rail's bottom margin is what reserves room to read it over. */
   curveH: 150,
-  curveHWide: 190,
+  // The curve is the masthead's SUBJECT at desktop widths, not its texture. It
+  // is the only asset on this page no other site has — a convention's effect on
+  // the world's readership, measured daily — and it was a 190pt strip along the
+  // bottom edge with the type sitting on top of it. At 380 it is the thing the
+  // band is about, and the identity block sits inside it rather than above it.
+  curveHWide: 380,
   curveClearance: 0.6,
-  curveClearanceWide: 0.44,
+  // Lower than it looks, because the curve is now 380 rather than 190 and the
+  // type sits INSIDE its upper reaches rather than above it entirely — the ink
+  // scrim fades over the top of the plot precisely so it can. Kept as a ratio of
+  // the curve so the two stay locked when either is tuned.
+  curveClearanceWide: 0.3,
 } as const;
 
 /** The paper band below the seam. */

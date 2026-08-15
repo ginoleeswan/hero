@@ -155,16 +155,89 @@ export function EventHub({
               live.
             </Text>
           ) : (
-            <EditionList
-              editions={hub.editions}
-              accent={accent}
-              bestSpike={hub.bestSpike}
-              wide={wide}
-              onEditionPress={onEditionPress}
-            />
+            <>
+              {wide && hub.editions.length > 2 && (
+                <EditionChart
+                  editions={hub.editions}
+                  accent={accent}
+                  bestSpike={hub.bestSpike}
+                  onEditionPress={onEditionPress}
+                />
+              )}
+              <EditionList
+                editions={hub.editions}
+                accent={accent}
+                bestSpike={hub.bestSpike}
+                wide={wide}
+                onEditionPress={onEditionPress}
+              />
+            </>
           )}
         </View>
       </View>
+    </View>
+  );
+}
+
+/**
+ * Every edition as a column, height by readership multiple.
+ *
+ * The list below this states eight numbers; a reader has to hold all eight in
+ * their head to learn the one thing the archive actually knows — that 2024 was
+ * D23's loudest year by a factor of two, and that 2018 barely registered. A
+ * chart states it in one look, and this is a chart's exact job: same measure,
+ * many periods.
+ *
+ * Desktop only, and it does not REPLACE the list — the list carries the recaps,
+ * the faces and the dates, which no bar can. This is the summary that lets
+ * someone choose a year before reading eight of them.
+ */
+export function EditionChart({
+  editions,
+  accent,
+  bestSpike,
+  onEditionPress,
+}: {
+  editions: Hub['editions'];
+  accent: string;
+  bestSpike?: number | null;
+  onEditionPress: (editionSlug: string) => void;
+}) {
+  // Oldest to newest: a timeline reads left to right, where the list reads
+  // newest first. Reversing here rather than sorting the source keeps the list
+  // and the chart from disagreeing about anything but direction.
+  const cols = [...editions].reverse();
+  const top = bestSpike ?? Math.max(...cols.map((e) => e.spikeRatio ?? 0), 1);
+
+  return (
+    <View style={s.chart}>
+      {cols.map((e) => {
+        // Square-rooted. D23's range is 7x to 146x, and drawn linearly every
+        // year except the loudest collapses to a sliver — the chart would say
+        // "2024 happened and nothing else did", which is not what the numbers
+        // mean. A 6% floor keeps a quiet year visible as a mark.
+        const share = e.spikeRatio && top ? Math.max(0.06, Math.sqrt(e.spikeRatio / top)) : 0.06;
+        return (
+          <Pressable
+            key={e.editionSlug}
+            style={s.chartCol}
+            onPress={() => onEditionPress(e.editionSlug)}
+            accessibilityRole="button"
+            accessibilityLabel={`${e.editionSlug}, ${e.spikeRatio ?? 0}× readership`}
+          >
+            <Text style={s.chartValue}>{e.spikeRatio ? `${Math.round(e.spikeRatio)}×` : '—'}</Text>
+            <View style={s.chartTrack}>
+              <View
+                style={[
+                  s.chartBar,
+                  { height: `${Math.round(share * 100)}%`, backgroundColor: accent },
+                ]}
+              />
+            </View>
+            <Text style={s.chartYear}>{e.editionSlug.slice(0, 4)}</Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -410,6 +483,33 @@ const s = StyleSheet.create({
   // The text block. flex:1/minWidth:0 lets it give way to the faces instead of
   // pushing them out of the row — which is what sliced the third face off at the
   // screen edge on a phone.
+  // ── the archive chart ──
+  chart: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 10,
+    height: 190,
+    marginTop: 22,
+    marginBottom: 34,
+  },
+  chartCol: { flex: 1, alignItems: 'center', gap: 7, height: '100%' },
+  chartValue: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.4,
+    color: PAPER_TEXT.muted,
+  },
+  // The track is what gives every column the same floor and ceiling, so the
+  // bars are comparable rather than merely adjacent.
+  chartTrack: { flex: 1, width: '100%', justifyContent: 'flex-end' },
+  chartBar: { width: '100%', borderRadius: 4, opacity: 0.82 },
+  chartYear: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 1,
+    color: PAPER_TEXT.muted,
+  },
+
   rowBody: { flex: 1, minWidth: 0, gap: 4 },
   // Desktop: the faces sit against the centre of the whole row rather than
   // against its first line.
