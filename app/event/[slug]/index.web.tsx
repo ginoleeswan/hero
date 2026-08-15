@@ -8,9 +8,9 @@
 import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { COLORS, INK_TEXT, SURFACE, PAPER_TEXT } from '../../../src/constants/colors';
+import { COLORS, INK_TEXT } from '../../../src/constants/colors';
 import { EventDossier } from '../../../src/components/event/EventDossier';
-import { EventHub, EditionList, EditionChart } from '../../../src/components/event/EventHub';
+import { EventHub, EditionsArchive } from '../../../src/components/event/EventHub';
 import { useEventDossier } from '../../../src/hooks/useEventDossier';
 import { useEventHub } from '../../../src/hooks/useEventEditions';
 import { EventHubSkeleton } from '../../../src/components/skeletons/EventSkeleton';
@@ -26,7 +26,6 @@ export default function EventPageWeb() {
   const wide = width >= 900;
 
   const live = !!hub?.isLive && !!dossier;
-  const accent = hub?.accent ?? dossier?.event.accent ?? COLORS.goldAccent;
   const goEdition = (edition: string) =>
     router.push(`/event/${encodeURIComponent(slug)}/${encodeURIComponent(edition)}`);
 
@@ -66,33 +65,18 @@ export default function EventPageWeb() {
               }
               onIndexPress={() => router.push('/event')}
             />
+            {/* The same band the hub renders, seam included — this route used
+                to assemble it by hand, which is how it ended up with no chart,
+                a heading two steps smaller than the section above it, a gutter
+                8pt out of line, and no seam at all under the ink. */}
             {!!hub && hub.editions.length > 0 && (
-              <View style={s.editionsBlock as object}>
-                <View style={s.editionsInner as object}>
-                  <Text style={s.editionsTitle as object}>Editions</Text>
-                  <Text style={s.editionsNote as object}>Every year of this event on record.</Text>
-                  {/* Same pair the hub renders. This block was assembling the
-                      archive by hand and had drifted from EventHub: no chart,
-                      and no `wide`, so on a desktop the live page's rows used
-                      the phone layout while the hub's used the desktop one. */}
-                  {hub.editions.length > 2 && (
-                    <EditionChart
-                      editions={hub.editions}
-                      accent={accent}
-                      bestSpike={hub.bestSpike}
-                      width={Math.max(0, Math.min(width, 1180) - (wide ? 40 : 18) * 2)}
-                      onEditionPress={goEdition}
-                    />
-                  )}
-                  <EditionList
-                    editions={hub.editions}
-                    accent={accent}
-                    bestSpike={hub.bestSpike}
-                    wide={wide}
-                    onEditionPress={goEdition}
-                  />
-                </View>
-              </View>
+              <EditionsArchive
+                hub={hub}
+                wide={wide}
+                contentWidth={width}
+                maxContentWidth={1180}
+                onEditionPress={goEdition}
+              />
             )}
           </View>
         ) : hub ? (
@@ -141,24 +125,4 @@ const s = StyleSheet.create({
     color: INK_TEXT.faint,
     padding: 32,
   } as object,
-  editionsBlock: { backgroundColor: SURFACE.paper, paddingTop: 8, paddingBottom: 52 } as object,
-  editionsInner: {
-    width: '100%',
-    maxWidth: 1180,
-    alignSelf: 'center',
-    paddingHorizontal: 32,
-  } as object,
-  editionsTitle: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 23,
-    lineHeight: 30,
-    color: COLORS.deepNavy,
-  },
-  editionsNote: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    lineHeight: 18,
-    color: PAPER_TEXT.muted,
-    marginTop: 4,
-  },
 });

@@ -14,6 +14,7 @@
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text } from '../ui/Text';
 import { HeroFace } from './HeroFace';
+import { Section } from './EventSection';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
@@ -135,36 +136,81 @@ export function EventHub({
         </View>
       </View>
 
-      <View style={s.seam} />
-
       {/* ── paper: every edition caught ───────────────────────────────────── */}
+      <EditionsArchive
+        hub={hub}
+        wide={wide}
+        contentWidth={contentWidth}
+        maxContentWidth={maxContentWidth}
+        viewportHeight={viewportHeight}
+        onEditionPress={onEditionPress}
+      />
+    </View>
+  );
+}
+
+/**
+ * The archive, as its own band: seam, paper, masthead, chart, list.
+ *
+ * It exists because three surfaces render this exact block — the hub, and both
+ * halves of the live route — and all three had built it by hand. They had
+ * already drifted: the native live page had no chart and never passed `wide`,
+ * so a desktop reader on a live event got the phone rows while the same event's
+ * hub got the desktop ones. The live pages also cut straight from the ink of
+ * "Who it moved" into beige with no seam and a different, smaller heading, which
+ * is what made the boundary read as weak — every other ink-to-paper edge in this
+ * app is the orange hairline, and the section above it had already moved to the
+ * rule-and-note masthead while this one was still a 23pt title with a caption
+ * under it.
+ *
+ * Owning the seam here rather than in the callers is the point: the transition
+ * belongs to the thing arriving, so it cannot be forgotten by the next surface
+ * that renders an archive.
+ */
+export function EditionsArchive({
+  hub,
+  wide = false,
+  contentWidth,
+  maxContentWidth,
+  viewportHeight,
+  onEditionPress,
+}: {
+  hub: Hub;
+  wide?: boolean;
+  contentWidth: number;
+  maxContentWidth?: number;
+  viewportHeight?: number;
+  onEditionPress: (editionSlug: string) => void;
+}) {
+  const accent = hub.accent ?? COLORS.goldAccent;
+  const pad = wide ? EVENT_STAGE.padWide : EVENT_STAGE.pad;
+  const measure = Math.min(maxContentWidth ?? contentWidth, contentWidth);
+  const inner = { width: '100%' as const, maxWidth: measure, alignSelf: 'center' as const };
+
+  return (
+    <>
+      <View style={s.seam} />
       <View style={[s.paper, viewportHeight ? { minHeight: viewportHeight * 0.5 } : null]}>
         <View style={[inner, { paddingHorizontal: pad }]}>
-          <Text style={s.sectionTitle}>Editions</Text>
-          <Text style={s.sectionNote}>
-            {hub.editions.length === 1
-              ? 'One edition on record so far.'
-              : `${hub.editions.length} editions on record.`}
-          </Text>
-
-          {hub.editions.length === 0 ? (
-            // Not an error: a watched event that has not fired yet has nothing to
-            // archive, and saying so beats an empty panel that reads as broken.
-            <Text style={s.empty}>
-              Nothing archived yet. An edition is frozen the first time this event is detected as
-              live.
-            </Text>
-          ) : (
-            <>
-              {hub.editions.length > 2 && (
-                <EditionChart
-                  editions={hub.editions}
-                  accent={accent}
-                  bestSpike={hub.bestSpike}
-                  width={Math.max(0, measure - pad * 2)}
-                  onEditionPress={onEditionPress}
-                />
-              )}
+          <Section
+            title="Editions"
+            note={
+              hub.editions.length === 1
+                ? 'One edition on record'
+                : `${hub.editions.length} editions on record`
+            }
+            wide={wide}
+            topRule={false}
+          >
+            {hub.editions.length === 0 ? (
+              // Not an error: a watched event that has not fired yet has nothing
+              // to archive, and saying so beats an empty panel that reads as
+              // broken.
+              <Text style={s.empty}>
+                Nothing archived yet. An edition is frozen the first time this event is detected as
+                live.
+              </Text>
+            ) : (
               <EditionList
                 editions={hub.editions}
                 accent={accent}
@@ -172,101 +218,33 @@ export function EventHub({
                 wide={wide}
                 onEditionPress={onEditionPress}
               />
-            </>
-          )}
+            )}
+          </Section>
         </View>
       </View>
-    </View>
+    </>
   );
 }
 
 /**
- * Every edition as a column, height by readership multiple.
- *
- * The list below this states eight numbers; a reader has to hold all eight in
- * their head to learn the one thing the archive actually knows — that 2024 was
- * D23's loudest year by a factor of two, and that 2018 barely registered. A
- * chart states it in one look, and this is a chart's exact job: same measure,
- * many periods.
- *
- * It does not REPLACE the list — the list carries the recaps, the faces and the
- * dates, which no bar can. This is the summary that lets someone choose a year
- * before reading eight of them, and that is MORE useful on a phone, where the
- * alternative is scrolling eight full-height rows to find the loud one. It was
- * gated to desktop for no reason other than that being where it was built.
- */
-export function EditionChart({
-  editions,
-  accent,
-  bestSpike,
-  width,
-  onEditionPress,
-}: {
-  editions: Hub['editions'];
-  accent: string;
-  bestSpike?: number | null;
-  /** Available width, so the labels can thin out rather than collide. */
-  width?: number;
-  onEditionPress: (editionSlug: string) => void;
-}) {
-  // Oldest to newest: a timeline reads left to right, where the list reads
-  // newest first. Reversing here rather than sorting the source keeps the list
-  // and the chart from disagreeing about anything but direction.
-  const cols = [...editions].reverse();
-  const top = bestSpike ?? Math.max(...cols.map((e) => e.spikeRatio ?? 0), 1);
-  // How much room each column actually gets. Eleven editions across a 354pt
-  // phone is 23pt a column — a four-digit year does not fit, and two labels
-  // certainly do not. Below the thresholds the chart sheds the multiple first
-  // and then the century, rather than overlapping or truncating.
-  const cell = width ? (width - 10 * (cols.length - 1)) / cols.length : 999;
-  const showValue = cell >= 34;
-  const shortYear = cell < 30;
-
-  return (
-    <View style={s.chart}>
-      {cols.map((e) => {
-        // Square-rooted. D23's range is 7x to 146x, and drawn linearly every
-        // year except the loudest collapses to a sliver — the chart would say
-        // "2024 happened and nothing else did", which is not what the numbers
-        // mean. A 6% floor keeps a quiet year visible as a mark.
-        const share = e.spikeRatio && top ? Math.max(0.06, Math.sqrt(e.spikeRatio / top)) : 0.06;
-        return (
-          <Pressable
-            key={e.editionSlug}
-            style={s.chartCol}
-            onPress={() => onEditionPress(e.editionSlug)}
-            accessibilityRole="button"
-            accessibilityLabel={`${e.editionSlug}, ${e.spikeRatio ?? 0}× readership`}
-          >
-            {showValue && (
-              <Text style={s.chartValue}>
-                {e.spikeRatio ? `${Math.round(e.spikeRatio)}×` : '—'}
-              </Text>
-            )}
-            <View style={s.chartTrack}>
-              <View
-                style={[
-                  s.chartBar,
-                  { height: `${Math.round(share * 100)}%`, backgroundColor: accent },
-                ]}
-              />
-            </View>
-            <Text style={s.chartYear}>
-              {shortYear ? `’${e.editionSlug.slice(2, 4)}` : e.editionSlug.slice(0, 4)}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-/**
- * The list of editions on record.
+ * Every edition on record, as a timeline.
  *
  * Exported because it appears in two places and must not be written twice: on the
  * hub (where it is the page) and beneath the LIVE dossier (where it is the way
  * back to previous years). Duplicating it is how the two would drift.
+ *
+ * It was a list of rows under a bar chart, and between them they drew the same
+ * quantity three times — a bar in the chart, a bar under the row, and the
+ * multiple written out in the meta line — while the thing a reader actually
+ * wants from an archive, WHICH YEAR SHOULD I OPEN, was never stated. The chart
+ * is gone and the arrangement now says what it is: a history, walked down a
+ * spine, with the year as the anchor rather than a 23pt label sharing a line
+ * with a date range.
+ *
+ * The spine is not decoration. Eight sibling rows in a stack read as search
+ * results, where a marker on a line running through all of them reads as time
+ * passing — which is exactly the claim the archive makes, and the reason the
+ * years are worth putting next to each other at all.
  */
 export function EditionList({
   editions,
@@ -277,22 +255,35 @@ export function EditionList({
 }: {
   editions: Hub['editions'];
   accent: string;
-  /** The event's loudest edition, for drawing each row in proportion. */
+  /** The event's loudest edition. Marks one entry, rather than scaling all of
+   *  them against a measure the page no longer prints. */
   bestSpike?: number | null;
-  /** Desktop measure. Moves the faces from the top line to the row's own
-   *  centre — see the layout note below. */
+  /** Desktop gives the year its own column beside the spine. A phone has no
+   *  room for one, so the year leads the entry instead. */
   wide?: boolean;
   onEditionPress: (editionSlug: string) => void;
 }) {
   return (
-    <View style={s.list}>
-      {editions.map((e) => {
-        // Drawn in proportion to this event's own loudest year, so the reader
-        // can see which editions mattered without reading two decimals off
-        // eight near-identical lines. Floored at 6% so a quiet year is still a
-        // mark rather than nothing.
-        const share =
-          bestSpike && e.spikeRatio ? Math.max(0.06, Math.min(1, e.spikeRatio / bestSpike)) : 0;
+    <View style={s.timeline}>
+      {editions.map((e, i) => {
+        // The one year worth naming. A ranking phrase on every row is not a
+        // ranking; on exactly one it is.
+        const biggest = !!bestSpike && e.spikeRatio === bestSpike;
+        const first = i === 0;
+        const last = i === editions.length - 1;
+        const year = e.editionSlug.slice(0, 4);
+
+        // The YEAR, not the slug. An edition_slug carries a month when a year
+        // holds two shows ('2020-01', '2020-07'), which the URL needs and a
+        // reader does not: set as a display figure it reads as a hyphenated
+        // number rather than a year. The window beside it tells the two apart,
+        // and it does that better.
+        const yearText = (
+          <Text style={[s.year, wide ? s.yearWide : null, biggest ? { color: accent } : null]}>
+            {year}
+          </Text>
+        );
+
         const faces = e.faces.length > 0 && (
           <View style={s.faces}>
             {e.faces.map((f) => (
@@ -300,91 +291,86 @@ export function EditionList({
                 key={f.heroId}
                 uri={f.portraitUrl}
                 avatar={f.avatar}
-                size={34}
+                size={wide ? 38 : 34}
                 name={f.name}
               />
             ))}
           </View>
         );
 
-        // The text block, which is the row. Written once and placed in two
-        // arrangements rather than twice — see the note on `faces` below.
-        const body = (
-          <View style={s.rowBody}>
-            <View style={s.rowMain}>
-              {/* The YEAR, not the slug. An edition_slug carries a month when a
-                  year holds two shows ('2020-01', '2020-07'), which the URL
-                  needs and a reader does not: set in Flame at 23 it reads as a
-                  hyphenated number rather than a year. The window beside it is
-                  what tells the two apart, and it does that better. */}
-              <Text style={[s.year, { color: accent }]}>{e.editionSlug.slice(0, 4)}</Text>
-              <Text style={s.rowWindow} numberOfLines={1}>
-                {formatWindow(e.liveFrom, e.liveTo) ?? '—'}
-              </Text>
-            </View>
-
-            {/* The one line on this row that is not a measurement, and the only
-                one that answers what the year was. It leads the metadata rather
-                than following it: "Elden Ring won Game of the Year" is why a
-                reader opens 2022, and "96.64× readership" is the evidence. */}
-            {!!e.recap && (
-              <Text style={s.rowRecap} numberOfLines={2}>
-                {e.recap}
-              </Text>
-            )}
-
-            <Text style={s.rowMeta}>
-              {[
-                e.spikeRatio !== null && e.spikeRatio > 1 ? `${e.spikeRatio}× readership` : null,
-                e.announcements > 0
-                  ? `${e.announcements} announcement${e.announcements === 1 ? '' : 's'}`
-                  : null,
-                e.movers > 0 ? `${e.movers} moved` : null,
-              ]
-                .filter(Boolean)
-                .join('  ·  ')}
-            </Text>
-          </View>
-        );
-
         return (
           <Pressable
             key={e.editionSlug}
-            style={s.row}
+            style={s.entry}
             onPress={() => onEditionPress(e.editionSlug)}
             accessibilityRole="button"
-            accessibilityLabel={`${e.headline} ${e.editionSlug}`}
+            accessibilityLabel={`${e.headline} ${year}${biggest ? ', the biggest year on record' : ''}`}
           >
-            {/* The faces say what the year was about, and this is the hub's only
-                route into a character page.
+            {/* Desktop: the year hangs in its own column, right-aligned against
+                the spine, so eight of them make a readable column of dates down
+                the page rather than eight sentences that happen to start with a
+                number. */}
+            {wide && <View style={s.yearCol}>{yearText}</View>}
 
-                WHERE they sit depends on the measure, because the same
-                arrangement fails at both ends. Pinned to the top line they read
-                as belonging to the year — right on a phone, where the row is
-                barely wider than the text. At 900+ that same pin strands them
-                a quarter of the page away from the sentence they illustrate,
-                with nothing in between. On desktop they are centred against the
-                whole row instead, so they relate to the block rather than to
-                the first line of it. */}
-            {wide ? (
-              <View style={s.rowWide}>
-                {body}
-                {faces}
-              </View>
-            ) : (
-              <>
-                <View style={s.rowTop}>
-                  {body}
-                  {faces}
-                </View>
-              </>
-            )}
+            {/* The spine. Two segments and a marker rather than one absolutely
+                positioned line, so the first entry has nothing above its dot and
+                the last has nothing below it — a line that overshoots either end
+                reads as a timeline that lost its data. */}
+            <View style={s.spineCol}>
+              {!first && <View style={s.spineUp} />}
+              <View
+                style={[s.dot, biggest ? { backgroundColor: accent, borderColor: accent } : null]}
+              />
+              {!last && <View style={s.spineDown} />}
+            </View>
 
-            {share > 0 && (
-              <View style={s.barTrack}>
-                <View style={[s.barFill, { width: `${share * 100}%`, backgroundColor: accent }]} />
+            <View style={s.entryBody}>
+              <View style={s.entryHead}>
+                {!wide && yearText}
+                <Text style={s.entryWindow} numberOfLines={1}>
+                  {formatWindow(e.liveFrom, e.liveTo) ?? '—'}
+                </Text>
+                {/* A phone puts the faces on the head line, where they belong to
+                    the year. At 900+ that same pin strands them a quarter of the
+                    page from the sentence they illustrate, so they move to the
+                    right of the body instead. */}
+                {!wide && <View style={s.headFaces}>{faces}</View>}
               </View>
-            )}
+
+              {/* The only line here that is not metadata, and the only one that
+                  answers what the year WAS. "Marvel showed Fantastic Four" is
+                  why a reader opens 2024. */}
+              {!!e.recap && (
+                <Text style={s.recap} numberOfLines={wide ? 2 : 3}>
+                  {e.recap}
+                </Text>
+              )}
+
+              {/* What HAPPENED, not what the instrument read. This line used to
+                  open "146.03× readership", which is three problems in two
+                  words: nobody outside this codebase knows what readership is a
+                  multiple OF, the same × glyph meant a different quantity in
+                  three other places on the page, and two decimals on an
+                  attention proxy is a precision the number does not have — it
+                  made a rough signal look like a laboratory result. */}
+              <Text style={s.meta}>
+                {[
+                  biggest && e.spikeRatio !== null && e.spikeRatio > 1
+                    ? 'Biggest year on record'
+                    : null,
+                  e.announcements > 0
+                    ? `${e.announcements} announcement${e.announcements === 1 ? '' : 's'}`
+                    : null,
+                  e.movers > 0
+                    ? `${e.movers} character${e.movers === 1 ? '' : 's'} broke out`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join('  ·  ')}
+              </Text>
+            </View>
+
+            {wide && faces}
           </Pressable>
         );
       })}
@@ -458,89 +444,49 @@ const s = StyleSheet.create({
 
   seam: { height: 1, backgroundColor: SEAM_COLOR },
 
-  paper: { backgroundColor: SURFACE.paper, paddingTop: 30, paddingBottom: 48 },
-  sectionTitle: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 23,
-    lineHeight: 30,
-    color: COLORS.deepNavy,
-  },
-  sectionNote: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    lineHeight: 18,
-    color: PAPER_TEXT.muted,
-    marginTop: 4,
-  },
+  // Section owns the masthead's own bottom margin, so the band's floor is the
+  // only padding left to set here.
+  paper: { backgroundColor: SURFACE.paper, paddingTop: 34, paddingBottom: 20 },
   empty: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14.5,
     lineHeight: 20,
     color: PAPER_TEXT.muted,
-    marginTop: 18,
     maxWidth: 460,
   },
 
-  list: { marginTop: 20, gap: 2 },
-  row: { paddingVertical: 14, borderTopWidth: 1, borderTopColor: 'rgba(11,24,32,0.10)', gap: 4 },
-  rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  // Overlapped, like a credits strip — three separate circles read as three
-  // things, an overlapped set reads as "the cast of that year".
-  // Spaced, not overlapped: flat avatar cut-outs with no edge merge into one
-  // blob when they overlap, so the credits-strip look is off the table here.
-  // flexShrink 0 keeps the set intact when the date beside it is long.
-  faces: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
-  barTrack: {
-    height: 3,
+  // ── the archive, as a timeline ──
+  timeline: { marginTop: 8 },
+  // `alignItems: stretch` (the default) is load-bearing: it is what gives the
+  // spine column a definite height, which is what lets its lower segment flex to
+  // fill the entry.
+  entry: { flexDirection: 'row', paddingVertical: 18 },
+  // Right-aligned against the spine, so eight years make one readable column of
+  // dates down the page instead of eight sentences that start with a number.
+  yearCol: { width: 104, alignItems: 'flex-end', paddingRight: 20 },
+  year: { fontFamily: 'Flame-Regular', fontSize: 30, lineHeight: 37, color: PAPER_TEXT.muted },
+  // Flame's ink spans ~119% of its em box, so a display figure needs 1.22x or
+  // its descenders clip wherever a clamp is in play.
+  yearWide: { fontSize: 38, lineHeight: 47, color: COLORS.deepNavy },
+
+  spineCol: { width: 9, alignItems: 'center' },
+  // 15pt: half of the narrow year's line box, so the marker lands on the middle
+  // of the first line rather than at the top of the entry's padding.
+  spineUp: { width: 1, height: 15, backgroundColor: 'rgba(11,24,32,0.16)' },
+  spineDown: { flex: 1, width: 1, backgroundColor: 'rgba(11,24,32,0.16)', marginTop: 0 },
+  dot: {
+    width: 9,
+    height: 9,
     borderRadius: 999,
-    backgroundColor: 'rgba(11,24,32,0.07)',
-    marginTop: 10,
-    overflow: 'hidden',
-  },
-  barFill: { height: 3, borderRadius: 999, opacity: 0.75 },
-
-  // The text block. flex:1/minWidth:0 lets it give way to the faces instead of
-  // pushing them out of the row — which is what sliced the third face off at the
-  // screen edge on a phone.
-  // ── the archive chart ──
-  chart: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 10,
-    height: 156,
-    marginTop: 20,
-    marginBottom: 30,
-  },
-  chartCol: { flex: 1, alignItems: 'center', gap: 6, height: '100%', minWidth: 0 },
-  chartValue: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 0.4,
-    color: PAPER_TEXT.muted,
-  },
-  // The track is what gives every column the same floor and ceiling, so the
-  // bars are comparable rather than merely adjacent.
-  chartTrack: { flex: 1, width: '100%', justifyContent: 'flex-end' },
-  chartBar: { width: '100%', borderRadius: 4, opacity: 0.82 },
-  chartYear: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 1,
-    color: PAPER_TEXT.muted,
+    borderWidth: 1,
+    borderColor: 'rgba(11,24,32,0.28)',
+    backgroundColor: SURFACE.paper,
   },
 
-  rowBody: { flex: 1, minWidth: 0, gap: 4 },
-  // Desktop: the faces sit against the centre of the whole row rather than
-  // against its first line.
-  rowWide: { flexDirection: 'row', alignItems: 'center', gap: 20 },
-  rowMain: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  year: { fontFamily: 'Flame-Regular', fontSize: 23, lineHeight: 30 },
-  rowWindow: {
+  entryBody: { flex: 1, minWidth: 0, gap: 4, paddingLeft: 20 },
+  entryHead: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
+  headFaces: { marginLeft: 'auto' },
+  entryWindow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
     lineHeight: 16,
@@ -551,18 +497,28 @@ const s = StyleSheet.create({
   // FlameSans and full-strength ink: this is editorial prose, and the numbers
   // under it are the apparatus. Clamped, so it needs 1.22x — but FlameSans, not
   // Flame, so 19/14.5 is comfortably clear of it.
-  rowRecap: {
+  recap: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14.5,
     lineHeight: 19,
     color: COLORS.deepNavy,
     marginTop: 2,
-    maxWidth: 520,
+    maxWidth: 560,
   },
-  rowMeta: {
+  meta: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     lineHeight: 17,
     color: PAPER_TEXT.muted,
+  },
+  // Spaced, not overlapped: flat avatar cut-outs with no edge merge into one
+  // blob when they overlap, so the credits-strip look is off the table here.
+  // flexShrink 0 keeps the set intact when the date beside it is long.
+  faces: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
+    paddingLeft: 20,
   },
 });

@@ -13,11 +13,13 @@
 //
 // Boldness is spent in one place: the detection curve, drawn full-bleed as the
 // masthead's texture. Everything under the seam stays quiet so it keeps that job.
+import { useMemo, useState } from 'react';
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { HeroFace } from './HeroFace';
 import { CountUp } from './CountUp';
+import { Section } from './EventSection';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
@@ -157,6 +159,112 @@ function TrailerCast({
         ),
       )}
       {more > 0 && <Text style={[s.castMore, onInk ? s.castMoreInk : null]}>{`+${more}`}</Text>}
+    </View>
+  );
+}
+
+/**
+ * The matchup the event just set up, offered as a matchup.
+ *
+ * The job has always been the same and is worth stating: this section is the
+ * only place on an event page that hands the reader something to DO. Everything
+ * else is read — a curve, a poster wall, a leaderboard — and then the page ends.
+ * The Arena is a product Mythique already has, and a studio that just named five
+ * characters in one breath has, for free, set up the argument about which of
+ * them wins.
+ *
+ * As shipped it did that badly, in three ways:
+ *
+ *  - It took `revealed[0]` and `revealed[1]`, which is whatever order the RPC
+ *    returned. "Storm vs Jean Grey" was not a pick, and it read like one that
+ *    had been made carelessly. It now ranks by fame and offers the biggest pair
+ *    first, with the rest one tap away — a reader who wants Cyclops vs Rogue can
+ *    have it instead of being told what the matchup is.
+ *  - It was a text pill. The Arena is a face-against-face product, and the pill
+ *    was announcing it in words directly beneath five faces it declined to use.
+ *  - It was 300pt of button alone in ~1,800pt of ink. On desktop it now sits
+ *    beside the cast rather than under it, which is what the empty half of that
+ *    row was for.
+ */
+function ArenaInvite({
+  cast,
+  accent,
+  wide,
+  onArenaPress,
+}: {
+  cast: {
+    heroId: string;
+    name: string;
+    portraitUrl: string | null;
+    avatar: boolean;
+    fameScore: number | null;
+  }[];
+  accent: string;
+  wide: boolean;
+  onArenaPress: (a: string, b: string) => void;
+}) {
+  // Every pairing, best first. Capped at the six best-known faces: past that the
+  // tail is pairs of characters nobody came to argue about, and 12 names would
+  // make 66 of them.
+  const pairs = useMemo(() => {
+    const fame = (h: { fameScore: number | null }) => h.fameScore ?? 0;
+    const pool = [...cast].sort((a, b) => fame(b) - fame(a)).slice(0, 6);
+    const out: (typeof pool)[] = [];
+    for (let i = 0; i < pool.length; i++)
+      for (let j = i + 1; j < pool.length; j++) out.push([pool[i], pool[j]]);
+    return out.sort((p, q) => fame(q[0]) + fame(q[1]) - (fame(p[0]) + fame(p[1])));
+  }, [cast]);
+
+  const [index, setIndex] = useState(0);
+  if (pairs.length === 0) return null;
+  const [a, b] = pairs[index % pairs.length];
+
+  return (
+    <View style={[s.arenaCol, wide ? s.arenaColWide : null]}>
+      <Pressable
+        style={[s.arenaCard, { borderColor: `${accent}55` }]}
+        onPress={() => onArenaPress(a.heroId, b.heroId)}
+        accessibilityRole="button"
+        accessibilityLabel={`Put ${a.name} against ${b.name} in the Arena`}
+      >
+        <Text style={[s.arenaEyebrow, { color: accent }]}>Settle it in the Arena</Text>
+        <View style={s.arenaFaces}>
+          {/* The faces are the point. A name is a label on a face here, not a
+              substitute for one — which is what the pill was. */}
+          <View style={s.arenaSide}>
+            {!!a.portraitUrl && (
+              <HeroFace uri={a.portraitUrl} avatar={a.avatar} size={62} name={a.name} />
+            )}
+            <Text style={s.arenaName} numberOfLines={2}>
+              {a.name}
+            </Text>
+          </View>
+          <Text style={[s.arenaVs, { color: accent }]}>vs</Text>
+          <View style={s.arenaSide}>
+            {!!b.portraitUrl && (
+              <HeroFace uri={b.portraitUrl} avatar={b.avatar} size={62} name={b.name} />
+            )}
+            <Text style={s.arenaName} numberOfLines={2}>
+              {b.name}
+            </Text>
+          </View>
+        </View>
+      </Pressable>
+
+      {/* A sibling, never a child: react-native-web renders Pressable as
+          <button>, and a button inside a button is invalid HTML — the browser
+          reparents it and the card's own click target breaks. */}
+      {pairs.length > 1 && (
+        <Pressable
+          style={s.arenaSwap}
+          onPress={() => setIndex((i) => i + 1)}
+          accessibilityRole="button"
+          accessibilityLabel="Show a different matchup"
+        >
+          <Ionicons name="shuffle" size={13} color={INK_TEXT.faint} />
+          <Text style={s.arenaSwapText}>Another matchup</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -402,16 +510,26 @@ export function EventDossier({
                     },
               ]}
             >
+              {/* The page's headline claim, and the one place the multiple is
+                  worth stating as a number — this band exists to show how the
+                  event was detected, so the instrument's own reading is the
+                  subject rather than jargon leaking into a record.
+                  Rounded: 146.03 implies a precision a Wikipedia pageview ratio
+                  does not have, and a hundredth of a multiple has never changed
+                  anyone's mind about anything. Below 10 keeps one decimal,
+                  where the difference between 3.1 and 3 is most of the claim. */}
               {event.spikeRatio !== null && (
                 <Stat
-                  value={`${event.spikeRatio}×`}
-                  label="usual readership"
+                  value={`${event.spikeRatio >= 10 ? Math.round(event.spikeRatio) : event.spikeRatio.toFixed(1)}×`}
+                  label="more looked up than usual"
                   accent={accent}
                   big
                   wide={wide}
                 />
               )}
-              {!!event.peak && <Stat value={event.peak.toLocaleString()} label="peak day" />}
+              {!!event.peak && (
+                <Stat value={event.peak.toLocaleString()} label="reads on the peak day" />
+              )}
               {!!event.editsRecent && (
                 <Stat value={String(event.editsRecent)} label="article edits" />
               )}
@@ -628,73 +746,87 @@ export function EventDossier({
           On ink, at 120pt, it is the beat between what was SAID and what it
           DID — and the Arena button under it is the only thing on the page that
           hands the reader something to do with what they just read. */}
-      {revealed.length > 0 && (
+      {/* ONE ink region, not two bands.
+          "Who they named" and "Who it moved" each used to open with their own
+          seam, which put two orange hairlines back to back on identical ink —
+          the seam is the ink/paper boundary and there is no boundary there. It
+          read as a stray rule, and it cut a pair that belongs together: what the
+          rights holder SAID, then what the readership DID about it. That order
+          is the argument, so they stay stacked; they just stop pretending to be
+          separate grounds. Inside the band the section rules already draw the
+          only edge either one needs. */}
+      {(revealed.length > 0 || surges.length > 0) && (
         <>
           <View style={s.seam} />
-          <View style={s.castBand}>
-            <View style={[inner, { paddingHorizontal: pad }]}>
-              <Section
-                title="Who they named"
-                note="Characters called out in what was announced"
-                onInk
-                wide={wide}
-              >
-                {/* A rail on a phone, a wrapped row on desktop. A horizontal
-                      scroller is a touch affordance — on a pointer device it hides
-                      half its contents behind a gesture nobody makes, and here it
-                      was also being clipped mid-face at the reading measure's edge.
-                      Wide has the room to just show them all. */}
-                <RailOrWrap wide={wide} pad={pad} railStyle={s.castRail} wrapStyle={s.castWrap}>
-                  {revealed.map((r) => (
-                    <Pressable
-                      key={r.heroId}
-                      style={[s.castCell, wide ? s.castCellWide : null]}
-                      onPress={() => onHeroPress(r.heroId)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${r.name}${r.titleName ? `, named in ${r.titleName}` : ''}`}
-                    >
-                      {!!r.portraitUrl && (
-                        <HeroFace
-                          uri={r.portraitUrl}
-                          avatar={r.avatar}
-                          size={wide ? 104 : 66}
-                          name={r.name}
-                        />
-                      )}
-                      <Text style={s.castName} numberOfLines={2}>
-                        {r.name}
-                      </Text>
-                      <Text style={s.castTitle} numberOfLines={1}>
-                        {r.titleName ?? r.publisher ?? ''}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </RailOrWrap>
+          <View style={s.whoBand}>
+            {revealed.length > 0 && (
+              <View style={[inner, { paddingHorizontal: pad }]}>
+                <Section
+                  title="Who they named"
+                  note="Characters called out in what was announced"
+                  onInk
+                  wide={wide}
+                >
+                  {/* Faces left, the matchup right — on desktop. Five 104pt faces
+                      use about 700 of the measure's 1,100 points, and the invite
+                      used to sit UNDER them, which left the row's right third
+                      empty and the invite alone in it. Side by side, the section
+                      reads as one statement: here is who they named, and here are
+                      two of them you can argue about. */}
+                  <View style={wide ? s.castLayoutWide : undefined}>
+                    {/* A rail on a phone, a wrapped row on desktop. A horizontal
+                        scroller is a touch affordance — on a pointer device it hides
+                        half its contents behind a gesture nobody makes, and here it
+                        was also being clipped mid-face at the reading measure's edge.
+                        Wide has the room to just show them all. */}
+                    <View style={wide ? s.castFlex : undefined}>
+                      <RailOrWrap
+                        wide={wide}
+                        pad={pad}
+                        railStyle={s.castRail}
+                        wrapStyle={s.castWrap}
+                      >
+                        {revealed.map((r) => (
+                          <Pressable
+                            key={r.heroId}
+                            style={[s.castCell, wide ? s.castCellWide : null]}
+                            onPress={() => onHeroPress(r.heroId)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${r.name}${r.titleName ? `, named in ${r.titleName}` : ''}`}
+                          >
+                            {!!r.portraitUrl && (
+                              <HeroFace
+                                uri={r.portraitUrl}
+                                avatar={r.avatar}
+                                size={wide ? 104 : 66}
+                                name={r.name}
+                              />
+                            )}
+                            <Text style={s.castName} numberOfLines={2}>
+                              {r.name}
+                            </Text>
+                            <Text style={s.castTitle} numberOfLines={1}>
+                              {r.titleName ?? r.publisher ?? ''}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </RailOrWrap>
+                    </View>
 
-                {/* Two named characters is a matchup the app can already run, and
-                      this is the only place on an event page that hands the reader
-                      something to DO with what they just read. */}
-                {!!onArenaPress && revealed.length >= 2 && (
-                  <Pressable
-                    style={[s.arenaCta, { borderColor: `${accent}66` }]}
-                    onPress={() => onArenaPress(revealed[0].heroId, revealed[1].heroId)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Put ${revealed[0].name} against ${revealed[1].name} in the Arena`}
-                  >
-                    <Text style={s.arenaCtaText}>
-                      {revealed[0].name} vs {revealed[1].name}
-                    </Text>
-                    <Text style={s.arenaCtaHint}>Settle it in the Arena</Text>
-                  </Pressable>
-                )}
-              </Section>
-            </View>
-          </View>
-          <View style={s.seam} />
-        </>
-      )}
+                    {!!onArenaPress && revealed.length >= 2 && (
+                      <ArenaInvite
+                        cast={revealed}
+                        accent={accent}
+                        wide={wide}
+                        onArenaPress={onArenaPress}
+                      />
+                    )}
+                  </View>
+                </Section>
+              </View>
+            )}
 
-      {/* ── ink again: what it did to the catalogue ───────────────────────
+            {/* ── the same ink, second half: what it did to the catalogue ───
           The page's grammar is ink = measurement, paper = record, and this
           section is measurement — readership that broke out, in multiples of a
           character's own median. It sat on paper anyway, which cost it twice:
@@ -706,18 +838,20 @@ export function EventDossier({
           lets the multiples be set in the accent at display size, which is what
           they deserve. 146x is the most striking fact Mythique can state about
           a convention and it was 23pt grey. */}
-      {surges.length > 0 && (
-        <>
-          <View style={s.seam} />
-          <View style={s.moverBand}>
-            <View style={[inner, { paddingHorizontal: pad }]}>
-              <Section
-                title="Who it moved"
-                note="Readership that broke out during the window"
-                onInk
-                wide={wide}
-              >
-                {/* A ranking, drawn as one.
+            {surges.length > 0 && (
+              <View style={[inner, { paddingHorizontal: pad }]}>
+                {/* The note carries the unit, because the number cannot.
+                    "3.1×" beside a face is the third distinct quantity this
+                    page writes with an × — the event's own article, the year's
+                    peak in the archive, and now one character against their own
+                    normal week. Only the caption can say which, so it does. */}
+                <Section
+                  title="Who it moved"
+                  note="Times more than these characters are usually read"
+                  onInk
+                  wide={wide}
+                >
+                  {/* A ranking, drawn as one.
                       It used to be a gallery of 132pt faces with the multiple
                       tucked into a pip badge in the corner — which inverted the
                       section: the spike IS the claim, and it was set smaller than
@@ -727,54 +861,55 @@ export function EventDossier({
                       As rows, the figure leads, one entry is a normal-looking
                       thing, and the same component reads on a phone (one column)
                       and a desktop (two). */}
-                <View style={[s.moverGrid, wide ? s.moverGridWide : null]}>
-                  {rankedSurges.map((sg, i) => (
-                    <Pressable
-                      key={sg.heroId}
-                      style={[s.moverRow, wide ? s.moverRowWide : null]}
-                      onPress={() => onHeroPress(sg.heroId)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${sg.name}, ${sg.spike}× reads`}
-                    >
-                      {/* HeroFace picks the shape from the KIND of picture the
+                  <View style={[s.moverGrid, wide ? s.moverGridWide : null]}>
+                    {rankedSurges.map((sg, i) => (
+                      <Pressable
+                        key={sg.heroId}
+                        style={[s.moverRow, wide ? s.moverRowWide : null]}
+                        onPress={() => onHeroPress(sg.heroId)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${sg.name}, ${sg.spike}× reads`}
+                      >
+                        {/* HeroFace picks the shape from the KIND of picture the
                             RPC found: an avatar is a flat mark and is drawn flat, a
                             fallback portrait is a rectangular illustration and keeps
                             the circle it has always had. */}
-                      {!!sg.portraitUrl && (
-                        <HeroFace
-                          uri={sg.portraitUrl}
-                          avatar={sg.avatar}
-                          size={54}
-                          name={sg.name}
-                        />
-                      )}
-                      <View style={s.moverText}>
-                        <Text style={s.moverName} numberOfLines={1}>
-                          {sg.name}
-                        </Text>
-                        {/* Temporal, never causal — the join proves sequence, not cause. */}
-                        <Text style={s.moverCause} numberOfLines={1}>
-                          {sg.causeLabel ? `after ${sg.causeLabel}` : (sg.publisher ?? '')}
-                        </Text>
-                      </View>
-                      {sg.spike !== null && (
-                        // Counts up the first time the band is scrolled into
-                        // view, staggered down the list so it reads as a board
-                        // filling in rather than twelve numbers twitching at
-                        // once. Capped at eight steps — past that the last rows
-                        // are still counting long after the eye has arrived.
-                        <CountUp
-                          value={sg.spike}
-                          suffix="×"
-                          delay={Math.min(i, 8) * 70}
-                          style={[s.moverSpike, { color: accent }]}
-                        />
-                      )}
-                    </Pressable>
-                  ))}
-                </View>
-              </Section>
-            </View>
+                        {!!sg.portraitUrl && (
+                          <HeroFace
+                            uri={sg.portraitUrl}
+                            avatar={sg.avatar}
+                            size={54}
+                            name={sg.name}
+                          />
+                        )}
+                        <View style={s.moverText}>
+                          <Text style={s.moverName} numberOfLines={1}>
+                            {sg.name}
+                          </Text>
+                          {/* Temporal, never causal — the join proves sequence, not cause. */}
+                          <Text style={s.moverCause} numberOfLines={1}>
+                            {sg.causeLabel ? `after ${sg.causeLabel}` : (sg.publisher ?? '')}
+                          </Text>
+                        </View>
+                        {sg.spike !== null && (
+                          // Counts up the first time the band is scrolled into
+                          // view, staggered down the list so it reads as a board
+                          // filling in rather than twelve numbers twitching at
+                          // once. Capped at eight steps — past that the last rows
+                          // are still counting long after the eye has arrived.
+                          <CountUp
+                            value={sg.spike}
+                            suffix="×"
+                            delay={Math.min(i, 8) * 70}
+                            style={[s.moverSpike, { color: accent }]}
+                          />
+                        )}
+                      </Pressable>
+                    ))}
+                  </View>
+                </Section>
+              </View>
+            )}
           </View>
         </>
       )}
@@ -899,68 +1034,6 @@ function sourceLine(a: AnnouncementGroup): string {
   return a.clips > 1 ? `${who}  ·  ${a.clips} clips` : who;
 }
 
-/** A heading plus the one line that says what the list is made of. Not
- *  decoration: each list has a different rule behind it and the reader has no
- *  other way to know that. */
-/**
- * A section's masthead.
- *
- * It used to be a 26pt title with a 13pt note stacked under it and nothing else
- * — no rule, no top edge, about 200 of the measure's 1,100 points used, and the
- * identical treatment on all seven sections. Stacked down a page that reads as a
- * CMS template rather than a designed thing: no boundary says where one section
- * ends and the next begins except the size of the gap, and nothing says which
- * of them matters.
- *
- * The device here is the one EventIndexList already uses for its quarters —
- * label, hairline, note — so the two event pages finally share one grammar
- * instead of two. The rule does the work: it draws a hard top edge across the
- * full measure, and it carries the note out to the right margin where it reads
- * as a caption on the section rather than as a second heading under the first.
- *
- * A phone has no room for three things on a line, so the rule goes above and the
- * note below — same edge, stacked.
- */
-function Section({
-  title,
-  note,
-  onInk = false,
-  wide = false,
-  children,
-}: {
-  title: string;
-  note: string;
-  /** Sections sit on paper by default. The measurement band is ink, and the
-   *  heading has to invert with it or it disappears into the ground. */
-  onInk?: boolean;
-  wide?: boolean;
-  children: React.ReactNode;
-}) {
-  const rule = <View style={[s.sectionRule, onInk ? s.sectionRuleInk : null]} />;
-  return (
-    <View style={s.section}>
-      {wide ? (
-        <View style={s.sectionHead}>
-          <Text style={[s.sectionTitle, onInk ? s.sectionTitleInk : null]}>{title}</Text>
-          {rule}
-          <Text style={[s.sectionNote, onInk ? s.sectionNoteInk : null]} numberOfLines={1}>
-            {note}
-          </Text>
-        </View>
-      ) : (
-        <>
-          {rule}
-          <Text style={[s.sectionTitle, onInk ? s.sectionTitleInk : null, s.sectionTitleStacked]}>
-            {title}
-          </Text>
-          <Text style={[s.sectionNote, onInk ? s.sectionNoteInk : null]}>{note}</Text>
-        </>
-      )}
-      <View style={s.sectionBody}>{children}</View>
-    </View>
-  );
-}
-
 const s = StyleSheet.create({
   // ── ink ──
   // `justifyContent: flex-end` so the extra height a hero gains opens up ABOVE
@@ -1067,8 +1140,12 @@ const s = StyleSheet.create({
   seam: { height: 1, backgroundColor: SEAM_COLOR },
 
   // ── the two ink bands under the record ──
-  castBand: { backgroundColor: SURFACE.ink, paddingTop: 44, paddingBottom: 48 },
-  moverBand: { backgroundColor: SURFACE.ink, paddingTop: 40, paddingBottom: 52 },
+  // One band for both "who" sections. As two it carried two sets of padding
+  // either side of a boundary that was not there — 48 + 42 + 40 = 130pt of empty
+  // ink between the Arena button and the next rule. The gap between them is now
+  // just the section's own bottom margin, the same one every other pair of
+  // sections on this page uses.
+  whoBand: { backgroundColor: SURFACE.ink, paddingTop: 44, paddingBottom: 52 },
 
   // ── paper ──
   paper: {
@@ -1076,30 +1153,6 @@ const s = StyleSheet.create({
     paddingTop: EVENT_PAPER.paddingTop,
     paddingBottom: EVENT_PAPER.paddingBottom,
   },
-  section: { marginBottom: EVENT_PAPER.sectionMarginBottom },
-  // Baseline-aligned with the rule and the note beside it.
-  sectionHead: { flexDirection: 'row', alignItems: 'baseline', gap: 14 },
-  sectionRule: { flex: 1, height: 1, backgroundColor: 'rgba(11,24,32,0.16)' },
-  sectionRuleInk: { backgroundColor: 'rgba(245,235,220,0.20)' },
-  sectionTitle: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 30,
-    lineHeight: EVENT_PAPER.sectionTitleLine,
-    color: COLORS.deepNavy,
-  },
-  sectionTitleStacked: { marginTop: 14 },
-  sectionNote: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    lineHeight: EVENT_PAPER.sectionNoteLine,
-    color: PAPER_TEXT.muted,
-    marginTop: EVENT_PAPER.sectionNoteGap,
-    flexShrink: 0,
-  },
-  sectionTitleInk: { color: 'rgba(245,235,220,0.96)' },
-  sectionNoteInk: { color: INK_TEXT.faint },
-  sectionBody: { marginTop: EVENT_PAPER.sectionBodyGap, gap: 20 },
-
   lead: {
     width: '100%',
     aspectRatio: EVENT_PAPER.leadAspect,
@@ -1235,29 +1288,58 @@ const s = StyleSheet.create({
     textAlign: 'center',
   },
 
-  arenaCta: {
-    marginTop: 18,
-    alignSelf: 'flex-start',
-    paddingVertical: 11,
-    paddingHorizontal: 16,
-    borderRadius: 999,
+  // ── the arena invite ──
+  // `alignItems: flex-start` so the faces keep their own height instead of the
+  // card stretching to the full height of a two-row cast wrap beside it.
+  castLayoutWide: { flexDirection: 'row', alignItems: 'flex-start', gap: 36 },
+  // minWidth 0 or a flex child refuses to shrink below its content and the card
+  // gets pushed past the measure's right edge.
+  castFlex: { flex: 1, minWidth: 0 },
+  arenaCol: { marginTop: 20, gap: 10, alignItems: 'flex-start' },
+  arenaColWide: { width: 300, marginTop: 22 },
+  arenaCard: {
+    width: '100%',
+    maxWidth: 340,
     borderWidth: 1,
-    gap: 2,
+    borderRadius: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    gap: 14,
+    // A wash rather than a fill: the card has to read as a surface on ink
+    // without becoming a second, lighter ground competing with the paper below.
+    backgroundColor: 'rgba(245,235,220,0.04)',
   },
-  arenaCtaText: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 18,
-    lineHeight: 23,
-    // On ink now, with the rest of the cast band.
-    color: 'rgba(245,235,220,0.96)',
+  arenaEyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    textAlign: 'center',
   },
-  arenaCtaHint: {
+  arenaFaces: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  arenaSide: { flex: 1, alignItems: 'center', gap: 8 },
+  arenaVs: { fontFamily: 'Flame-Regular', fontSize: 23, lineHeight: 30 },
+  arenaName: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    lineHeight: 17,
+    color: 'rgba(245,235,220,0.94)',
+    textAlign: 'center',
+  },
+  arenaSwap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  arenaSwapText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    // Stated rather than inherited: the band moved to ink, and an unset colour
-    // here fell back to the paper default and vanished into the ground.
+    // Stated rather than inherited: the band is ink, and an unset colour here
+    // falls back to the paper default and vanishes into the ground.
     color: INK_TEXT.faint,
   },
 

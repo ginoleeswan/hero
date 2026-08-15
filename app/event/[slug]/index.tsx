@@ -11,12 +11,11 @@
 // rejected because it puts a menu between the rail and the thing the rail is
 // advertising, on the one day of the year anybody is looking.
 import { View, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
-import { Text } from '../../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SURFACE, PAPER_TEXT } from '../../../src/constants/colors';
+import { COLORS } from '../../../src/constants/colors';
 import { EventDossier } from '../../../src/components/event/EventDossier';
-import { EventHub, EditionList } from '../../../src/components/event/EventHub';
+import { EventHub, EditionsArchive } from '../../../src/components/event/EventHub';
 import { useEventDossier } from '../../../src/hooks/useEventDossier';
 import { useEventHub } from '../../../src/hooks/useEventEditions';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
@@ -53,7 +52,6 @@ export default function EventPage() {
   const phase = useSkeletonTransition(loading || hubLoading);
 
   const live = !!hub?.isLive && !!dossier;
-  const accent = hub?.accent ?? dossier?.event.accent ?? COLORS.goldAccent;
   const headline = hub?.headline ?? dossier?.event.headline;
   const goEdition = (edition: string) =>
     router.push(`/event/${encodeURIComponent(slug)}/${encodeURIComponent(edition)}`);
@@ -120,18 +118,11 @@ export default function EventPage() {
             />
             {/* Past years, under the live page. The current edition is being
                 frozen every 30 minutes as this runs, so it appears here too — it
-                is the archive catching up in real time, not a duplicate. */}
+                is the archive catching up in real time, not a duplicate.
+                One band, shared with the hub: built by hand here it had no
+                chart and no seam under the ink above it. */}
             {!!hub && hub.editions.length > 0 && (
-              <View style={s.editionsBlock}>
-                <Text style={s.editionsTitle}>Editions</Text>
-                <Text style={s.editionsNote}>Every year of this event on record.</Text>
-                <EditionList
-                  editions={hub.editions}
-                  accent={accent}
-                  bestSpike={hub.bestSpike}
-                  onEditionPress={goEdition}
-                />
-              </View>
+              <EditionsArchive hub={hub} contentWidth={width} onEditionPress={goEdition} />
             )}
           </View>
         ) : hub ? (
@@ -157,23 +148,4 @@ export default function EventPage() {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.deepNavy },
-  editionsBlock: {
-    backgroundColor: SURFACE.paper,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 40,
-  },
-  editionsTitle: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 23,
-    lineHeight: 30,
-    color: COLORS.deepNavy,
-  },
-  editionsNote: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    lineHeight: 18,
-    color: PAPER_TEXT.muted,
-    marginTop: 4,
-  },
 });
