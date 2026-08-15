@@ -312,24 +312,22 @@ export function EventDossier({
   const inner = { width: '100%' as const, maxWidth: measure, alignSelf: 'center' as const };
   const curveH = wide ? EVENT_STAGE.curveHWide : EVENT_STAGE.curveH;
 
-  // The venue, but only when it is worth a graphic — this edition's city against
-  // where the event usually runs. Every field has to be present: a map with one
-  // end missing is a map that cannot draw the thing it exists to draw.
+  // Where the event USUALLY runs, and only when that is somewhere else. The map
+  // draws every edition; this is the extra it draws when the venue moved — a
+  // hollow ring on the usual hall and a line to this one. Null for the eighteen
+  // events that have not moved in a decade, which is most of them, and for a
+  // broadcast, which happened nowhere. Every field has to be present: a line with
+  // one end missing is not a line.
   const movedVenue =
     event.venueCity &&
     event.venueUsualCity &&
     event.venueCity !== event.venueUsualCity &&
-    event.venueLat !== null &&
-    event.venueLon !== null &&
     event.venueUsualLat !== null &&
     event.venueUsualLon !== null
       ? {
-          city: event.venueCity,
-          lat: event.venueLat,
-          lon: event.venueLon,
-          fromCity: event.venueUsualCity,
-          fromLat: event.venueUsualLat,
-          fromLon: event.venueUsualLon,
+          city: event.venueUsualCity,
+          lat: event.venueUsualLat,
+          lon: event.venueUsualLon,
         }
       : null;
 
@@ -505,18 +503,10 @@ export function EventDossier({
                 <Text style={[s.title, { color: accent }]}>{event.headline}</Text>
               )}
 
-              {/* Dates, length, and WHERE — one line, because they are one
-                  fact about the same occasion. The venue was the obvious thing
-                  missing from this masthead: every edition page could tell you
-                  when a convention ran and how loud it got, and none of them
-                  could tell you what city to picture. It costs no new furniture
-                  here; absent for a broadcast, which is honest rather than
-                  incomplete — a Nintendo Direct happened nowhere. */}
               {!!windowLabel && (
                 <Text style={s.window}>
                   {windowLabel}
                   {windowDays ? ` · ${windowDays} day${windowDays === 1 ? '' : 's'}` : ''}
-                  {event.venueCity ? ` · ${event.venueCity}` : ''}
                 </Text>
               )}
 
@@ -537,30 +527,6 @@ export function EventDossier({
                 >
                   {event.recap}
                 </Text>
-              )}
-
-              {/* The map, and ONLY when the venue moved.
-                  A pin on every edition would be furniture: eighteen of the
-                  twenty-one watched events have sat in the same hall for a
-                  decade, and drawing the world to say "San Diego" about San
-                  Diego Comic-Con tells a reader nothing the event's own name
-                  did not. When it HAS moved the location is the story — D23
-                  2018 is a different continent from D23 2017 — so the graphic
-                  appears exactly where there is something to point at, and
-                  shows the jump rather than the destination. */}
-              {movedVenue && (
-                <View style={s.venueBlock}>
-                  <VenueMap
-                    city={movedVenue.city}
-                    lat={movedVenue.lat}
-                    lon={movedVenue.lon}
-                    fromCity={movedVenue.fromCity}
-                    fromLat={movedVenue.fromLat}
-                    fromLon={movedVenue.fromLon}
-                    accent={accent}
-                    width={wide ? 228 : 190}
-                  />
-                </View>
               )}
             </View>
 
@@ -601,11 +567,31 @@ export function EventDossier({
                   wide={wide}
                 />
               )}
-              {!!event.peak && (
-                <Stat value={event.peak.toLocaleString()} label="reads on the peak day" />
-              )}
-              {!!event.editsRecent && (
-                <Stat value={String(event.editsRecent)} label="article edits" />
+              {/* Where it happened, as the rail's second and last fact.
+                  Two stats used to sit here and neither was worth a reader's
+                  attention: "1,315 reads on the peak day" is a raw pageview
+                  count that means nothing outside this codebase and actively
+                  UNDERSELLS the event — 1,315 sounds tiny for something Disney
+                  ran — and "3 article edits" is instrument trivia. Both were the
+                  lab notebook published as if it were the finding, which is the
+                  same thing "146.03× readership" was doing in the archive rows
+                  before it was cut.
+
+                  What survives is the one figure that IS the page's claim, and a
+                  place a reader could have stood. The rail reads as how big it
+                  was and where it was, which is a masthead; three instrument
+                  readings and a curve is a dashboard. It is also how the map
+                  arrives without the header getting busier — it does not join
+                  the stage, it replaces two things already on it. */}
+              {!!event.venueCity && event.venueLat !== null && event.venueLon !== null && (
+                <VenueMap
+                  city={event.venueCity}
+                  lat={event.venueLat}
+                  lon={event.venueLon}
+                  from={movedVenue}
+                  accent={accent}
+                  width={wide ? 190 : 168}
+                />
               )}
             </View>
           </View>
@@ -1198,7 +1184,6 @@ const s = StyleSheet.create({
   // figures 17pt above the 40pt one and set their labels on a different line
   // from its — three stats, three baselines, no rail.
   stats: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: 34 },
-  venueBlock: { marginTop: 22 },
   stat: { gap: EVENT_STAGE.statInnerGap },
   statBig: { fontFamily: 'Flame-Regular', fontSize: 40, lineHeight: EVENT_STAGE.statBigLine },
   // Flame needs lineHeight >= 1.22x fontSize; 64 -> 78.

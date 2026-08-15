@@ -22,6 +22,11 @@ import { SURFACE } from '../../constants/colors';
 import { PAPER_SHEET_SURFACE } from '../ui/PaperSheet';
 import { EVENT_STAGE, EVENT_PAPER, EVENT_INDEX, EVENT_INK } from '../../constants/eventGeometry';
 
+/** VenueMap's height at the dossier stage's 190pt width — the projection's box is
+ *  166° of latitude over 360° of longitude, and the skeleton has to reserve the
+ *  same or the stage resettles when the real map arrives. */
+const EVENT_MAP_H = Math.round((190 * 166) / 360);
+
 const PAD = EVENT_STAGE.pad;
 
 /**
@@ -350,15 +355,16 @@ export function EventDossierSkeleton() {
               valueWidth={92}
               radius={6}
             />
-            {[74, 74].map((w, i) => (
-              <StatSkeleton
-                key={i}
-                valueBox={EVENT_STAGE.statValueLine}
-                valueInk={EVENT_INK.statValue}
-                valueWidth={w}
-                radius={5}
-              />
-            ))}
+            {/* One block, not two figures. The rail lost "reads on the peak
+                day" and "article edits" — both instrument readings a reader has
+                no use for — and gained the venue map, which is a wide graphic
+                over a caption rather than a figure over a label. A skeleton that
+                still promised two small stats would settle into something a
+                different shape. */}
+            <View style={styles.statMap}>
+              <Skeleton height={EVENT_MAP_H} borderRadius={6} color={INK_TINT} />
+              <TextLine box={16} ink={11} width={112} tint={INK_TINT} />
+            </View>
           </View>
         </Band>
         <Band tone={styles.paper}>
@@ -401,6 +407,8 @@ const styles = StyleSheet.create({
     marginBottom: EVENT_STAGE.curveH * EVENT_STAGE.curveClearance,
   },
   stat: { gap: EVENT_STAGE.statInnerGap },
+  // Matches VenueMap: 190 wide at the dossier's stage, 166/360 of that tall.
+  statMap: { width: 190, gap: 10 },
   paper: {
     ...PAPER_SHEET_SURFACE,
     paddingTop: EVENT_PAPER.paddingTop,

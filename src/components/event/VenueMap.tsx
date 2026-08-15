@@ -1,31 +1,37 @@
 // src/components/event/VenueMap.tsx
-// The year this event was somewhere else, drawn as the move.
+// Where an edition happened, drawn as part of the masthead rather than dropped
+// on top of it.
 //
-// The first version of this put a pin on every edition page, and that was the
-// wrong idea done competently. A venue is only NEWS when it moved: eighteen of
-// the twenty-one watched events have sat in the same hall for a decade, and a
-// map that draws the world to say "San Diego" about San Diego Comic-Con is
-// furniture. The three that move are the whole point — D23 has been to Anaheim,
-// Urayasu and Bay Lake; Star Wars Celebration changes country by design; PAX is
-// two shows wearing one name.
+// UNFRAMED, and that is the whole trick. A map in a box is a widget: a bordered
+// rectangle sitting on a header that already carries an eyebrow, a wordmark, a
+// date line, a recap sentence, two figures and a full-bleed detection curve. The
+// same coastlines with no frame, no sea fill and no container read as TEXTURE —
+// the same register the curve is already in — so the stage gains a fact without
+// gaining an object. It is the difference between putting something on the
+// header and putting something in it.
 //
-// So this renders only when an edition's city differs from where its event
-// usually runs, and when it does it shows BOTH places and the jump between them.
-// One pin answers "where"; two pins and a line answer "and that is unusual",
-// which is the only reason the graphic is on the page at all. The archive was
-// already saying it in prose — D23 2018's recap is literally "held at the Tokyo
-// Disney Resort rather than Anaheim" — and this is that sentence as a picture.
+// It also does not arrive as a ninth element. It takes the stat rail's third
+// slot, where "article edits" used to be: a Wikipedia edit count is instrument
+// trivia, and a place a reader could have stood is worth more than it. The rail
+// now reads as a number, a number, and a place.
 //
-// Why a drawn map rather than a tile service: tiles need the network, would not
-// survive the crawler surface's CSP, and arrive in somebody else's palette — a
-// grey-and-blue rectangle in a page that is otherwise ink, paper and one accent.
+// When the venue MOVED — three of the twenty-one watched events do, and D23 has
+// been to Anaheim, Urayasu and Bay Lake — a hollow ring marks where the event
+// usually runs and a dashed line joins the two. That is the one case where the
+// graphic has something to argue rather than merely something to show, and the
+// archive was already saying it in prose: D23 2018's recap is literally "held at
+// the Tokyo Disney Resort rather than Anaheim".
+//
+// Why drawn rather than tiled: tiles need the network, would not survive the
+// crawler surface's CSP, and arrive in somebody else's palette — a grey-and-blue
+// rectangle in a page that is otherwise ink, paper and one accent.
 //
 // Equirectangular, deliberately. Its projection is a single linear map from
 // (lon, lat) to (x, y), so a pin cannot drift from its coastline at any box
 // size, and at this scale the distortion everyone objects to in Mercator is
 // invisible anyway.
 import { View, StyleSheet } from 'react-native';
-import Svg, { Path, Circle, Rect, G, Line } from 'react-native-svg';
+import Svg, { Path, Circle, G, Line } from 'react-native-svg';
 import { Text } from '../ui/Text';
 import { INK_TEXT } from '../../constants/colors';
 
@@ -248,69 +254,62 @@ export function VenueMap({
   city,
   lat,
   lon,
-  fromCity,
-  fromLat,
-  fromLon,
+  from,
   accent,
-  width = 208,
+  width = 190,
 }: {
-  /** Where this edition actually was. */
+  /** Where this edition was. */
   city: string;
   lat: number;
   lon: number;
-  /** Where the event usually runs. */
-  fromCity: string;
-  fromLat: number;
-  fromLon: number;
+  /** Where the event USUALLY runs, when that is somewhere else. Null for the
+   *  eighteen watched events that have not moved in a decade — then the map is
+   *  simply a pin, which is all there is to say. */
+  from: { city: string; lat: number; lon: number } | null;
   accent: string;
   width?: number;
 }) {
   const w = width;
   const h = Math.round((w * 166) / 360);
   const to = project(lon, lat, w, h);
-  const from = project(fromLon, fromLat, w, h);
+  const origin = from ? project(from.lon, from.lat, w, h) : null;
 
   // The short way round, which for Anaheim → Urayasu is across the Pacific, not
   // back across five continents. When the shorter path crosses the antimeridian
   // the line is drawn as two segments — leaving one edge and re-entering at the
   // other — which is also exactly what crossing the Pacific looks like on a flat
   // map, so the honest maths and the legible picture are the same picture.
-  const dLon = lon - fromLon;
-  const wraps = Math.abs(dLon) > 180;
-  const legs: { x1: number; y1: number; x2: number; y2: number }[] = wraps
-    ? (() => {
-        // Fraction of the journey completed at the edge, so the two segments meet
-        // the frame at the same latitude they would have crossed it at.
-        const east = dLon < 0; // travelling east off the right-hand edge
-        const span = 360 - Math.abs(dLon);
-        const toEdge = east ? 180 - fromLon : fromLon + 180;
-        const t = Math.abs(toEdge) / span;
-        const yEdge = from.y + (to.y - from.y) * t;
-        return east
-          ? [
-              { x1: from.x, y1: from.y, x2: w, y2: yEdge },
-              { x1: 0, y1: yEdge, x2: to.x, y2: to.y },
-            ]
-          : [
-              { x1: from.x, y1: from.y, x2: 0, y2: yEdge },
-              { x1: w, y1: yEdge, x2: to.x, y2: to.y },
-            ];
-      })()
-    : [{ x1: from.x, y1: from.y, x2: to.x, y2: to.y }];
+  const legs: { x1: number; y1: number; x2: number; y2: number }[] = [];
+  if (from && origin) {
+    const dLon = lon - from.lon;
+    if (Math.abs(dLon) > 180) {
+      // Fraction of the journey completed at the edge, so the two segments meet
+      // the frame at the latitude they would have crossed it at.
+      const east = dLon < 0;
+      const span = 360 - Math.abs(dLon);
+      const toEdge = east ? 180 - from.lon : from.lon + 180;
+      const yEdge = origin.y + (to.y - origin.y) * (Math.abs(toEdge) / span);
+      legs.push(
+        east
+          ? { x1: origin.x, y1: origin.y, x2: w, y2: yEdge }
+          : { x1: origin.x, y1: origin.y, x2: 0, y2: yEdge },
+        east ? { x1: 0, y1: yEdge, x2: to.x, y2: to.y } : { x1: w, y1: yEdge, x2: to.x, y2: to.y },
+      );
+    } else {
+      legs.push({ x1: origin.x, y1: origin.y, x2: to.x, y2: to.y });
+    }
+  }
 
   return (
     <View style={s.wrap}>
       <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-        {/* The sea. A wash rather than a colour: this sits on ink, and a blue
-            ocean would be the one thing on the page outside the palette. */}
-        <Rect x={0} y={0} width={w} height={h} rx={4} fill="rgba(245,235,220,0.05)" />
         <G>
           {LAND.map((ring, i) => (
             <Path
               key={i}
               d={ringToPath(ring, w, h)}
-              fill="rgba(245,235,220,0.17)"
-              stroke="rgba(245,235,220,0.26)"
+              fill="rgba(245,235,220,0.10)"
+              stroke="rgba(245,235,220,0.20)"
               strokeWidth={0.6}
             />
           ))}
@@ -329,15 +328,17 @@ export function VenueMap({
           />
         ))}
         {/* Where it usually is: a hollow ring, so it reads as the place being
-            departed from rather than as a second event. */}
-        <Circle
-          cx={from.x}
-          cy={from.y}
-          r={2.6}
-          fill="none"
-          stroke="rgba(245,235,220,0.55)"
-          strokeWidth={1.2}
-        />
+            departed from rather than as a second event. Absent unless it moved. */}
+        {!!origin && (
+          <Circle
+            cx={origin.x}
+            cy={origin.y}
+            r={2.6}
+            fill="none"
+            stroke="rgba(245,235,220,0.55)"
+            strokeWidth={1.2}
+          />
+        )}
         {/* Where it was. Two rings and a dot rather than a teardrop marker: the
             teardrop is a UI convention borrowed from somebody else's product,
             and it does not read at 4pt where a target does. */}
@@ -347,7 +348,7 @@ export function VenueMap({
       </Svg>
       <Text style={s.note}>
         <Text style={[s.noteStrong, { color: accent }]}>{city}</Text>
-        {` — usually ${fromCity}`}
+        {from ? ` — usually ${from.city}` : ''}
       </Text>
     </View>
   );
