@@ -47,6 +47,7 @@ import { Toast, useToast } from '../../src/components/ui/Toast';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import Svg, { Path } from 'react-native-svg';
 import { PageEndCap } from '../../src/components/web/PageEndCap';
+import { PageColumn } from '../../src/components/ui/PageColumn';
 
 const SIDEBAR_BREAKPOINT = 640;
 
@@ -576,305 +577,316 @@ export default function WebProfileScreen() {
             </View>
           </Pressable>
 
-          {/* ── Avatar overlap ── */}
-          <View style={mob.avatarZone}>
-            <Pressable
-              onPress={pickAndUploadAvatar}
-              // @ts-expect-error onContextMenu is a web-only DOM event
-              onContextMenu={handleAvatarRightClick}
-            >
-              {profile?.avatar_url ? (
-                <View style={mob.avatar}>
-                  <Image
-                    source={{ uri: profile.avatar_url }}
-                    style={StyleSheet.absoluteFill}
-                    contentFit="cover"
-                  />
-                  {avatarUploading && (
-                    <View style={mob.avatarOverlay}>
-                      <ActivityIndicator color="white" />
-                    </View>
-                  )}
-                </View>
-              ) : (
-                <LinearGradient colors={[COLORS.orange, '#c04a10']} style={mob.avatar}>
-                  {avatarUploading ? (
-                    <ActivityIndicator color="white" />
-                  ) : (
-                    <Text style={mob.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
-                  )}
-                </LinearGradient>
-              )}
-              <View style={mob.cameraBadge}>
-                <Ionicons name="camera" size={13} color="white" />
-              </View>
-            </Pressable>
-          </View>
-
-          {/* Upload error */}
-          {uploadError && (
-            <View style={mob.uploadErrorBox}>
-              <Ionicons name="alert-circle-outline" size={14} color={COLORS.red} />
-              <Text style={mob.uploadErrorText}>{uploadError}</Text>
-            </View>
-          )}
-
-          {/* ── Identity ── */}
-          <View style={mob.identityBlock}>
-            <Pressable onPress={() => setShowEditName(true)} style={mob.nameRow}>
-              <Text style={mob.username}>{name}</Text>
-              <Ionicons
-                name="pencil-outline"
-                size={14}
-                color={COLORS.grey}
-                style={mob.pencilIcon}
-              />
-            </Pressable>
-            <View style={mob.tierPill}>
-              <Ionicons name={tier.icon} size={12} color={COLORS.orange} />
-              <Text style={mob.tierText}>{tier.name}</Text>
-            </View>
-            <Text style={mob.email}>{email}</Text>
-            {joinedDate && <Text style={mob.memberSince}>Member since {joinedDate}</Text>}
-
-            <StatStrip stats={profileStats} onPressStat={handleStatPress} />
-
-            {tierProg.next && (
-              <View style={mob.tierProg}>
-                <View style={mob.tierProgTrack}>
-                  <View
-                    style={[mob.tierProgFill, { width: `${Math.round(tierProg.pct * 100)}%` }]}
-                  />
-                </View>
-                <Text style={mob.tierProgText}>
-                  {tierProg.remaining} to {tierProg.next}
-                </Text>
-              </View>
-            )}
-
-            <Pressable
-              onPress={handleShareUniverse}
-              disabled={sharingUniverse}
-              style={mob.shareUniverseBtn as object}
-            >
-              {sharingUniverse ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="share-outline" size={15} color="#fff" />
-                  <Text style={mob.shareUniverseText}>Share my universe</Text>
-                </>
-              )}
-            </Pressable>
-          </View>
-
-          <View style={mob.hairline} />
-
-          {gettingStartedReady && <GettingStartedCard steps={gettingStartedSteps} />}
-
-          {/* ── Your Universe ── */}
-          {showTaste && (
-            <SectionShell title="Your Universe" style={mob.shellGutter}>
-              <View style={mob.tasteReadout}>
-                {!!tasteAlignment && (
-                  <View style={mob.tasteFacet}>
-                    <Text style={mob.tasteFacetLabel}>Leans</Text>
-                    <Text style={mob.tasteFacetValue}>{tasteAlignment}</Text>
-                  </View>
-                )}
-                {!!tasteTopUniverse && (
-                  <View style={mob.tasteFacet}>
-                    <Text style={mob.tasteFacetLabel}>Top universe</Text>
-                    <Text style={mob.tasteFacetValue}>{tasteTopUniverse}</Text>
-                  </View>
-                )}
-              </View>
-              {!!taste && <TasteMixBar facets={taste.publishers} />}
-              {tasteChips.length > 0 && (
-                <>
-                  <Text style={mob.tasteEyebrow}>Favourite franchises</Text>
-                  <View style={mob.tasteChipRow}>
-                    {tasteChips.map((c) => (
-                      <View key={c} style={mob.tasteChip}>
-                        <Text style={mob.tasteChipText}>{c}</Text>
+          {/* Everything below the cover is a settings-shaped column — cap and
+              centre it so it doesn't stretch edge to edge on a landscape iPad
+              in narrow (mobile-web) layout. The cover itself stays outside,
+              full-bleed. In practice this branch only renders below the
+              SIDEBAR_BREAKPOINT (640), narrower than PageColumn's cap, so it
+              is a no-op today — kept for parity with the native screen and as
+              a guard if that breakpoint ever changes. */}
+          <PageColumn>
+            {/* ── Avatar overlap ── */}
+            <View style={mob.avatarZone}>
+              <Pressable
+                onPress={pickAndUploadAvatar}
+                // @ts-expect-error onContextMenu is a web-only DOM event
+                onContextMenu={handleAvatarRightClick}
+              >
+                {profile?.avatar_url ? (
+                  <View style={mob.avatar}>
+                    <Image
+                      source={{ uri: profile.avatar_url }}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                    />
+                    {avatarUploading && (
+                      <View style={mob.avatarOverlay}>
+                        <ActivityIndicator color="white" />
                       </View>
-                    ))}
+                    )}
                   </View>
-                </>
-              )}
-              <Text style={mob.tasteFootnote}>{tasteFootnote}</Text>
-            </SectionShell>
-          )}
-
-          {/* ── Collection (anchor) ── */}
-          <SectionShell
-            title="Collection"
-            count={!loading && favourites.length > 0 ? String(favourites.length) : undefined}
-            style={mob.shellGutter}
-          >
-            {loading ? (
-              <MobileFavSkeleton thumbSize={thumbSize} />
-            ) : favourites.length === 0 ? (
-              <View style={mob.emptyState}>
-                <View style={mob.emptyIconWrap}>
-                  <Ionicons name="heart-outline" size={32} color={COLORS.orange} />
+                ) : (
+                  <LinearGradient colors={[COLORS.orange, '#c04a10']} style={mob.avatar}>
+                    {avatarUploading ? (
+                      <ActivityIndicator color="white" />
+                    ) : (
+                      <Text style={mob.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
+                    )}
+                  </LinearGradient>
+                )}
+                <View style={mob.cameraBadge}>
+                  <Ionicons name="camera" size={13} color="white" />
                 </View>
-                <Text style={mob.emptyTitle}>Nothing saved yet</Text>
-                <Text style={mob.emptyBody}>
-                  Open any hero and tap the heart to build your collection
-                </Text>
-                <Pressable
-                  onPress={() => router.push('/explore')}
-                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                    [mob.browseBtn, hovered && (mob.browseBtnHover as object)] as object
-                  }
-                >
-                  <Text style={mob.browseBtnText}>Browse characters</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View style={mob.grid}>
-                {favourites.map((hero) => (
-                  <Pressable
-                    key={hero.id}
-                    onPress={() => router.push(`/character/${hero.id}`)}
-                    onLongPress={() => handleUnfavourite(hero)}
-                    style={[mob.thumb, { width: thumbSize, height: thumbSize * 1.25 }]}
-                  >
-                    <WebHeroCard
-                      id={hero.id}
-                      name={hero.name}
-                      imageUrl={hero.image_url}
-                      portraitUrl={hero.portrait_url}
-                      onPress={() => router.push(`/character/${hero.id}`)}
-                    />
-                  </Pressable>
-                ))}
-                <Pressable
-                  onPress={() => router.push('/explore')}
-                  style={[mob.ghostTile, { width: thumbSize, height: thumbSize * 1.25 }]}
-                >
-                  <Ionicons name="add" size={24} color={COLORS.orange} />
-                  <Text style={mob.ghostText}>Add</Text>
-                </Pressable>
+              </Pressable>
+            </View>
+
+            {/* Upload error */}
+            {uploadError && (
+              <View style={mob.uploadErrorBox}>
+                <Ionicons name="alert-circle-outline" size={14} color={COLORS.red} />
+                <Text style={mob.uploadErrorText}>{uploadError}</Text>
               </View>
             )}
-          </SectionShell>
 
-          {/* ── Badges ── */}
-          <SectionShell
-            title="Badges"
-            count={`${badgesEarned}/${badges.length}`}
-            style={mob.shellGutter}
-          >
-            <View style={mob.badgeWall}>
-              {badges.map((b) => (
-                <Pressable
-                  key={b.id}
-                  onPress={() => setSelectedBadge(b)}
-                  style={
-                    [mob.badgeTile, mob.badgeTileBtn, !b.earned && mob.badgeTileLocked] as object
-                  }
-                >
-                  <View
-                    style={[
-                      mob.badgeIcon,
-                      b.earned ? (mob.badgeIconEarned as object) : (mob.badgeIconLocked as object),
-                    ]}
-                  >
-                    <Ionicons
-                      name={b.icon as keyof typeof Ionicons.glyphMap}
-                      size={22}
-                      color={b.earned ? '#fff' : COLORS.grey}
+            {/* ── Identity ── */}
+            <View style={mob.identityBlock}>
+              <Pressable onPress={() => setShowEditName(true)} style={mob.nameRow}>
+                <Text style={mob.username}>{name}</Text>
+                <Ionicons
+                  name="pencil-outline"
+                  size={14}
+                  color={COLORS.grey}
+                  style={mob.pencilIcon}
+                />
+              </Pressable>
+              <View style={mob.tierPill}>
+                <Ionicons name={tier.icon} size={12} color={COLORS.orange} />
+                <Text style={mob.tierText}>{tier.name}</Text>
+              </View>
+              <Text style={mob.email}>{email}</Text>
+              {joinedDate && <Text style={mob.memberSince}>Member since {joinedDate}</Text>}
+
+              <StatStrip stats={profileStats} onPressStat={handleStatPress} />
+
+              {tierProg.next && (
+                <View style={mob.tierProg}>
+                  <View style={mob.tierProgTrack}>
+                    <View
+                      style={[mob.tierProgFill, { width: `${Math.round(tierProg.pct * 100)}%` }]}
                     />
                   </View>
-                  <Text
-                    style={[mob.badgeLabel, !b.earned && (mob.badgeLabelLocked as object)]}
-                    numberOfLines={1}
-                  >
-                    {b.label}
+                  <Text style={mob.tierProgText}>
+                    {tierProg.remaining} to {tierProg.next}
                   </Text>
-                  <Text style={mob.badgeSub} numberOfLines={1}>
-                    {!b.earned && b.progress
-                      ? `${Math.min(b.progress.current, b.progress.target)}/${b.progress.target}`
-                      : b.earned
-                        ? 'Earned'
-                        : ''}
-                  </Text>
-                  {!b.earned && b.progress && (
-                    <View style={mob.badgeBarTrack}>
-                      <View
-                        style={[
-                          mob.badgeBarFill,
-                          {
-                            width: `${Math.round(
-                              (Math.min(b.progress.current, b.progress.target) /
-                                b.progress.target) *
-                                100,
-                            )}%`,
-                          },
-                        ]}
-                      />
+                </View>
+              )}
+
+              <Pressable
+                onPress={handleShareUniverse}
+                disabled={sharingUniverse}
+                style={mob.shareUniverseBtn as object}
+              >
+                {sharingUniverse ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="share-outline" size={15} color="#fff" />
+                    <Text style={mob.shareUniverseText}>Share my universe</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+
+            <View style={mob.hairline} />
+
+            {gettingStartedReady && <GettingStartedCard steps={gettingStartedSteps} />}
+
+            {/* ── Your Universe ── */}
+            {showTaste && (
+              <SectionShell title="Your Universe" style={mob.shellGutter}>
+                <View style={mob.tasteReadout}>
+                  {!!tasteAlignment && (
+                    <View style={mob.tasteFacet}>
+                      <Text style={mob.tasteFacetLabel}>Leans</Text>
+                      <Text style={mob.tasteFacetValue}>{tasteAlignment}</Text>
                     </View>
                   )}
-                </Pressable>
-              ))}
-            </View>
-          </SectionShell>
+                  {!!tasteTopUniverse && (
+                    <View style={mob.tasteFacet}>
+                      <Text style={mob.tasteFacetLabel}>Top universe</Text>
+                      <Text style={mob.tasteFacetValue}>{tasteTopUniverse}</Text>
+                    </View>
+                  )}
+                </View>
+                {!!taste && <TasteMixBar facets={taste.publishers} />}
+                {tasteChips.length > 0 && (
+                  <>
+                    <Text style={mob.tasteEyebrow}>Favourite franchises</Text>
+                    <View style={mob.tasteChipRow}>
+                      {tasteChips.map((c) => (
+                        <View key={c} style={mob.tasteChip}>
+                          <Text style={mob.tasteChipText}>{c}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                )}
+                <Text style={mob.tasteFootnote}>{tasteFootnote}</Text>
+              </SectionShell>
+            )}
 
-          {/* ── Contributions ── */}
-          {contributions.length > 0 && (
+            {/* ── Collection (anchor) ── */}
             <SectionShell
-              title="Contributions"
-              count={String(contributions.length)}
+              title="Collection"
+              count={!loading && favourites.length > 0 ? String(favourites.length) : undefined}
               style={mob.shellGutter}
             >
-              <ContributionsList contributions={contributions} />
+              {loading ? (
+                <MobileFavSkeleton thumbSize={thumbSize} />
+              ) : favourites.length === 0 ? (
+                <View style={mob.emptyState}>
+                  <View style={mob.emptyIconWrap}>
+                    <Ionicons name="heart-outline" size={32} color={COLORS.orange} />
+                  </View>
+                  <Text style={mob.emptyTitle}>Nothing saved yet</Text>
+                  <Text style={mob.emptyBody}>
+                    Open any hero and tap the heart to build your collection
+                  </Text>
+                  <Pressable
+                    onPress={() => router.push('/explore')}
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                      [mob.browseBtn, hovered && (mob.browseBtnHover as object)] as object
+                    }
+                  >
+                    <Text style={mob.browseBtnText}>Browse characters</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={mob.grid}>
+                  {favourites.map((hero) => (
+                    <Pressable
+                      key={hero.id}
+                      onPress={() => router.push(`/character/${hero.id}`)}
+                      onLongPress={() => handleUnfavourite(hero)}
+                      style={[mob.thumb, { width: thumbSize, height: thumbSize * 1.25 }]}
+                    >
+                      <WebHeroCard
+                        id={hero.id}
+                        name={hero.name}
+                        imageUrl={hero.image_url}
+                        portraitUrl={hero.portrait_url}
+                        onPress={() => router.push(`/character/${hero.id}`)}
+                      />
+                    </Pressable>
+                  ))}
+                  <Pressable
+                    onPress={() => router.push('/explore')}
+                    style={[mob.ghostTile, { width: thumbSize, height: thumbSize * 1.25 }]}
+                  >
+                    <Ionicons name="add" size={24} color={COLORS.orange} />
+                    <Text style={mob.ghostText}>Add</Text>
+                  </Pressable>
+                </View>
+              )}
             </SectionShell>
-          )}
 
-          {/* ── My takes + debate record ── */}
-          {(takes.length > 0 || (battle?.total ?? 0) > 0) && (
-            <SectionShell title="My takes" style={mob.shellGutter}>
-              <MyTakes battle={battle} takes={takes} onDelete={handleDeleteTake} />
+            {/* ── Badges ── */}
+            <SectionShell
+              title="Badges"
+              count={`${badgesEarned}/${badges.length}`}
+              style={mob.shellGutter}
+            >
+              <View style={mob.badgeWall}>
+                {badges.map((b) => (
+                  <Pressable
+                    key={b.id}
+                    onPress={() => setSelectedBadge(b)}
+                    style={
+                      [mob.badgeTile, mob.badgeTileBtn, !b.earned && mob.badgeTileLocked] as object
+                    }
+                  >
+                    <View
+                      style={[
+                        mob.badgeIcon,
+                        b.earned
+                          ? (mob.badgeIconEarned as object)
+                          : (mob.badgeIconLocked as object),
+                      ]}
+                    >
+                      <Ionicons
+                        name={b.icon as keyof typeof Ionicons.glyphMap}
+                        size={22}
+                        color={b.earned ? '#fff' : COLORS.grey}
+                      />
+                    </View>
+                    <Text
+                      style={[mob.badgeLabel, !b.earned && (mob.badgeLabelLocked as object)]}
+                      numberOfLines={1}
+                    >
+                      {b.label}
+                    </Text>
+                    <Text style={mob.badgeSub} numberOfLines={1}>
+                      {!b.earned && b.progress
+                        ? `${Math.min(b.progress.current, b.progress.target)}/${b.progress.target}`
+                        : b.earned
+                          ? 'Earned'
+                          : ''}
+                    </Text>
+                    {!b.earned && b.progress && (
+                      <View style={mob.badgeBarTrack}>
+                        <View
+                          style={[
+                            mob.badgeBarFill,
+                            {
+                              width: `${Math.round(
+                                (Math.min(b.progress.current, b.progress.target) /
+                                  b.progress.target) *
+                                  100,
+                              )}%`,
+                            },
+                          ]}
+                        />
+                      </View>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
             </SectionShell>
-          )}
 
-          <View style={mob.kofiCard}>
-            <Pressable
-              onPress={() => router.push('/settings')}
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
-              }
-            >
-              <View style={[mob.accountIconBadge, mob.accountIconBadgeOrange]}>
-                <Ionicons name="settings-outline" size={16} color={COLORS.navy} />
-              </View>
-              <Text style={mob.accountLabel}>Settings</Text>
-              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-            </Pressable>
-          </View>
+            {/* ── Contributions ── */}
+            {contributions.length > 0 && (
+              <SectionShell
+                title="Contributions"
+                count={String(contributions.length)}
+                style={mob.shellGutter}
+              >
+                <ContributionsList contributions={contributions} />
+              </SectionShell>
+            )}
 
-          <View style={mob.kofiCard}>
-            <Pressable
-              onPress={openKofi}
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
-              }
-            >
-              <View style={[mob.accountIconBadge, mob.accountIconBadgeOrange]}>
-                <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
-              </View>
-              <Text style={mob.accountLabel}>Support this project</Text>
-              <Text style={mob.accountValue}>Ko-fi</Text>
-              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-            </Pressable>
-          </View>
+            {/* ── My takes + debate record ── */}
+            {(takes.length > 0 || (battle?.total ?? 0) > 0) && (
+              <SectionShell title="My takes" style={mob.shellGutter}>
+                <MyTakes battle={battle} takes={takes} onDelete={handleDeleteTake} />
+              </SectionShell>
+            )}
 
-          <Text style={mob.disclaimer}>
-            Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics,
-            or any other publisher.
-          </Text>
+            <View style={mob.kofiCard}>
+              <Pressable
+                onPress={() => router.push('/settings')}
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
+                }
+              >
+                <View style={[mob.accountIconBadge, mob.accountIconBadgeOrange]}>
+                  <Ionicons name="settings-outline" size={16} color={COLORS.navy} />
+                </View>
+                <Text style={mob.accountLabel}>Settings</Text>
+                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+              </Pressable>
+            </View>
+
+            <View style={mob.kofiCard}>
+              <Pressable
+                onPress={openKofi}
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
+                }
+              >
+                <View style={[mob.accountIconBadge, mob.accountIconBadgeOrange]}>
+                  <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
+                </View>
+                <Text style={mob.accountLabel}>Support this project</Text>
+                <Text style={mob.accountValue}>Ko-fi</Text>
+                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+              </Pressable>
+            </View>
+
+            <Text style={mob.disclaimer}>
+              Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC
+              Comics, or any other publisher.
+            </Text>
+          </PageColumn>
         </View>
 
         {/* Close the paper sheet onto the ink floor (constant-ink chrome). */}

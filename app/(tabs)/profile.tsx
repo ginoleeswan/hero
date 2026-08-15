@@ -56,6 +56,7 @@ import { ContributionsList } from '../../src/components/profile/ContributionsLis
 import { MyTakes } from '../../src/components/profile/MyTakes';
 import { TasteMixBar } from '../../src/components/profile/TasteMixBar';
 import { HeroImage } from '../../src/components/HeroImage';
+import { PageColumn } from '../../src/components/ui/PageColumn';
 import { COLORS, PAPER_TEXT, ORANGE_INK } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
 import * as Haptics from 'expo-haptics';
@@ -204,97 +205,102 @@ function GuestProfileScreen() {
           </LinearGradient>
         </View>
 
-        {/* Emblem overlapping the cover */}
-        <View style={styles.avatarZone}>
-          <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.avatar}>
-            <Ionicons name="person" size={38} color="white" />
-          </LinearGradient>
-        </View>
+        {/* Everything below the cover is a settings-shaped column — cap and
+            centre it so it doesn't stretch edge to edge on a landscape iPad.
+            The cover itself stays outside, full-bleed. */}
+        <PageColumn>
+          {/* Emblem overlapping the cover */}
+          <View style={styles.avatarZone}>
+            <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.avatar}>
+              <Ionicons name="person" size={38} color="white" />
+            </LinearGradient>
+          </View>
 
-        {/* Pitch */}
-        <View style={styles.guestHeader}>
-          <Text style={styles.guestTitle}>Join the Mythique community</Text>
-          <Text style={styles.guestBody}>
-            Create a free account to save heroes and make the app your own.
-          </Text>
-        </View>
+          {/* Pitch */}
+          <View style={styles.guestHeader}>
+            <Text style={styles.guestTitle}>Join the Mythique community</Text>
+            <Text style={styles.guestBody}>
+              Create a free account to save heroes and make the app your own.
+            </Text>
+          </View>
 
-        {/* Benefits */}
-        <View style={styles.guestSection}>
-          <View style={styles.accountCard}>
-            {GUEST_BENEFITS.map((b, i) => (
-              <View key={b.title}>
-                {i > 0 && <View style={styles.divider} />}
-                <View style={styles.benefitRow}>
-                  <View style={[styles.accountIconBadge, styles[b.badge]]}>
-                    <Ionicons name={b.icon} size={16} color={b.tint} />
-                  </View>
-                  <View style={styles.benefitText}>
-                    <Text style={styles.benefitTitle}>{b.title}</Text>
-                    <Text style={styles.benefitSub}>{b.sub}</Text>
+          {/* Benefits */}
+          <View style={styles.guestSection}>
+            <View style={styles.accountCard}>
+              {GUEST_BENEFITS.map((b, i) => (
+                <View key={b.title}>
+                  {i > 0 && <View style={styles.divider} />}
+                  <View style={styles.benefitRow}>
+                    <View style={[styles.accountIconBadge, styles[b.badge]]}>
+                      <Ionicons name={b.icon} size={16} color={b.tint} />
+                    </View>
+                    <View style={styles.benefitText}>
+                      <Text style={styles.benefitTitle}>{b.title}</Text>
+                      <Text style={styles.benefitSub}>{b.sub}</Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
-        </View>
 
-        {/* Call to action */}
-        <View style={styles.guestActions}>
-          <TouchableOpacity
-            onPress={() => router.push('/(auth)/signup')}
-            style={styles.guestSignInBtn}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.guestSignInText}>Create Account</Text>
-          </TouchableOpacity>
+          {/* Call to action */}
+          <View style={styles.guestActions}>
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/signup')}
+              style={styles.guestSignInBtn}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.guestSignInText}>Create Account</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => router.push(loginHref(pathname))}
-            style={styles.guestSignUpBtn}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.guestSignUpText}>I already have an account</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              onPress={() => router.push(loginHref(pathname))}
+              style={styles.guestSignUpBtn}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.guestSignUpText}>I already have an account</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Support + settings.
-            The settings row is not a convenience. It was the ONLY route to the
-            privacy policy and terms for a signed-out reader, and there wasn't
-            one: /settings is linked from the signed-in profile alone and used
-            to redirect a signed-out visitor to Explore. The app is browsable
-            without an account by design, so App Review could arrive, never sign
-            up, and find no policy anywhere — the 5.1.1 rejection the Legal
-            section was added to prevent. */}
-        <View style={styles.guestSection}>
-          <TouchableOpacity style={styles.supportRow} onPress={openKofi} activeOpacity={0.7}>
-            <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
-              <Ionicons name="cafe-outline" size={16} color={COLORS.orange} />
-            </View>
-            <Text style={styles.accountLabel}>Support this project</Text>
-            <Text style={styles.accountValue}>Ko-fi</Text>
-            <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-          </TouchableOpacity>
-          <View style={styles.divider} />
-          <TouchableOpacity
-            style={styles.supportRow}
-            onPress={() => router.push('/settings')}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Settings, privacy policy and terms"
-          >
-            <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-              <Ionicons name="settings-outline" size={16} color={COLORS.navy} />
-            </View>
-            <Text style={styles.accountLabel}>Settings &amp; legal</Text>
-            <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-          </TouchableOpacity>
-        </View>
+          {/* Support + settings.
+              The settings row is not a convenience. It was the ONLY route to the
+              privacy policy and terms for a signed-out reader, and there wasn't
+              one: /settings is linked from the signed-in profile alone and used
+              to redirect a signed-out visitor to Explore. The app is browsable
+              without an account by design, so App Review could arrive, never sign
+              up, and find no policy anywhere — the 5.1.1 rejection the Legal
+              section was added to prevent. */}
+          <View style={styles.guestSection}>
+            <TouchableOpacity style={styles.supportRow} onPress={openKofi} activeOpacity={0.7}>
+              <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
+                <Ionicons name="cafe-outline" size={16} color={COLORS.orange} />
+              </View>
+              <Text style={styles.accountLabel}>Support this project</Text>
+              <Text style={styles.accountValue}>Ko-fi</Text>
+              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity
+              style={styles.supportRow}
+              onPress={() => router.push('/settings')}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Settings, privacy policy and terms"
+            >
+              <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
+                <Ionicons name="settings-outline" size={16} color={COLORS.navy} />
+              </View>
+              <Text style={styles.accountLabel}>Settings &amp; legal</Text>
+              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+            </TouchableOpacity>
+          </View>
 
-        <Text style={styles.disclaimer}>
-          Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or
-          any other publisher.
-        </Text>
+          <Text style={styles.disclaimer}>
+            Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics,
+            or any other publisher.
+          </Text>
+        </PageColumn>
       </ScrollView>
     </Animated.View>
   );
@@ -663,327 +669,332 @@ export default function ProfileScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Avatar overlap */}
-        <View style={styles.avatarZone}>
-          <TouchableOpacity
-            onPress={pickAndUploadAvatar}
-            onLongPress={handleAvatarLongPress}
-            disabled={avatarUploading}
-            activeOpacity={0.85}
-          >
-            {profile?.avatar_url ? (
-              <View style={styles.avatar}>
-                <Image
-                  source={{ uri: profile.avatar_url }}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="cover"
-                />
-                {avatarUploading && (
-                  <View style={styles.avatarUploadOverlay}>
+        {/* Everything below the cover is a settings-shaped column — cap and
+            centre it so it doesn't stretch edge to edge on a landscape iPad.
+            The cover itself stays outside, full-bleed. */}
+        <PageColumn>
+          {/* Avatar overlap */}
+          <View style={styles.avatarZone}>
+            <TouchableOpacity
+              onPress={pickAndUploadAvatar}
+              onLongPress={handleAvatarLongPress}
+              disabled={avatarUploading}
+              activeOpacity={0.85}
+            >
+              {profile?.avatar_url ? (
+                <View style={styles.avatar}>
+                  <Image
+                    source={{ uri: profile.avatar_url }}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                  />
+                  {avatarUploading && (
+                    <View style={styles.avatarUploadOverlay}>
+                      <ActivityIndicator color="white" />
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.avatar}>
+                  {avatarUploading ? (
                     <ActivityIndicator color="white" />
-                  </View>
-                )}
+                  ) : (
+                    <Text style={styles.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
+                  )}
+                </LinearGradient>
+              )}
+              <View style={styles.cameraBadge}>
+                <Ionicons name="camera" size={13} color="white" />
               </View>
-            ) : (
-              <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.avatar}>
-                {avatarUploading ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text style={styles.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
-                )}
-              </LinearGradient>
-            )}
-            <View style={styles.cameraBadge}>
-              <Ionicons name="camera" size={13} color="white" />
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {uploadError && (
-          <View style={styles.uploadErrorBox}>
-            <Ionicons name="alert-circle-outline" size={14} color={COLORS.red} />
-            <Text style={styles.uploadErrorText}>{uploadError}</Text>
-          </View>
-        )}
-
-        {/* Fan ID — identity, stat block, tier */}
-        <View style={styles.identityBlock}>
-          <TouchableOpacity
-            onPress={() => setShowEditName(true)}
-            activeOpacity={0.7}
-            style={styles.nameRow}
-          >
-            <Text style={styles.username}>{name}</Text>
-            <Ionicons
-              name="pencil-outline"
-              size={14}
-              color={COLORS.grey}
-              style={styles.pencilIcon}
-            />
-          </TouchableOpacity>
-          <View style={styles.tierPill}>
-            <Ionicons name={tier.icon} size={12} color={COLORS.orange} />
-            <Text style={styles.tierText}>{tier.name}</Text>
-          </View>
-          <Text style={styles.email}>{email}</Text>
-          {joinedDate && <Text style={styles.memberSince}>Member since {joinedDate}</Text>}
-
-          <View style={styles.statStripWrap}>
-            <StatStrip stats={profileStats} onPressStat={handleStatPress} />
+            </TouchableOpacity>
           </View>
 
-          {tierProg.next && (
-            <View style={styles.tierProg}>
-              <View style={styles.tierProgTrack}>
-                <View
-                  style={[styles.tierProgFill, { width: `${Math.round(tierProg.pct * 100)}%` }]}
-                />
-              </View>
-              <Text style={styles.tierProgText}>
-                {tierProg.remaining} to {tierProg.next}
-              </Text>
+          {uploadError && (
+            <View style={styles.uploadErrorBox}>
+              <Ionicons name="alert-circle-outline" size={14} color={COLORS.red} />
+              <Text style={styles.uploadErrorText}>{uploadError}</Text>
             </View>
           )}
 
-          <TouchableOpacity
-            onPress={handleShareUniverse}
-            disabled={sharingUniverse}
-            style={styles.shareUniverseBtn}
-            activeOpacity={0.85}
-          >
-            {sharingUniverse ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="share-outline" size={15} color="#fff" />
-                <Text style={styles.shareUniverseText}>Share my universe</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Settings + Support */}
-        <View style={styles.actionCards}>
-          <TouchableOpacity
-            style={styles.accountCard}
-            onPress={() => router.push('/notifications')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.accountRow}>
-              <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                <Ionicons name="notifications-outline" size={16} color={COLORS.navy} />
-              </View>
-              <Text style={styles.accountLabel}>Activity</Text>
-              {inboxUnread > 0 ? (
-                <View style={styles.unreadPill}>
-                  <Text style={styles.unreadText}>{inboxUnread}</Text>
-                </View>
-              ) : null}
-              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+          {/* Fan ID — identity, stat block, tier */}
+          <View style={styles.identityBlock}>
+            <TouchableOpacity
+              onPress={() => setShowEditName(true)}
+              activeOpacity={0.7}
+              style={styles.nameRow}
+            >
+              <Text style={styles.username}>{name}</Text>
+              <Ionicons
+                name="pencil-outline"
+                size={14}
+                color={COLORS.grey}
+                style={styles.pencilIcon}
+              />
+            </TouchableOpacity>
+            <View style={styles.tierPill}>
+              <Ionicons name={tier.icon} size={12} color={COLORS.orange} />
+              <Text style={styles.tierText}>{tier.name}</Text>
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/settings')} activeOpacity={0.7}>
-            <View style={styles.accountRow}>
-              <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                <Ionicons name="settings-outline" size={16} color={COLORS.navy} />
-              </View>
-              <Text style={styles.accountLabel}>Settings</Text>
-              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.accountCard} onPress={openKofi} activeOpacity={0.7}>
-            <View style={styles.accountRow}>
-              <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
-                <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
-              </View>
-              <Text style={styles.accountLabel}>Support this project</Text>
-              <Text style={styles.accountValue}>Ko-fi</Text>
-              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-            </View>
-          </TouchableOpacity>
-        </View>
+            <Text style={styles.email}>{email}</Text>
+            {joinedDate && <Text style={styles.memberSince}>Member since {joinedDate}</Text>}
 
-        {gettingStartedReady && <GettingStartedCard steps={gettingStartedSteps} />}
-
-        {/* Your Universe */}
-        {showTaste && (
-          <SectionShell title="Your Universe" style={styles.shellGutter}>
-            <View style={styles.tasteReadout}>
-              {!!tasteAlignment && (
-                <View style={styles.tasteFacet}>
-                  <Text style={styles.tasteFacetLabel}>Leans</Text>
-                  <Text style={styles.tasteFacetValue}>{tasteAlignment}</Text>
-                </View>
-              )}
-              {!!tasteTopUniverse && (
-                <View style={styles.tasteFacet}>
-                  <Text style={styles.tasteFacetLabel}>Top universe</Text>
-                  <Text style={styles.tasteFacetValue}>{tasteTopUniverse}</Text>
-                </View>
-              )}
+            <View style={styles.statStripWrap}>
+              <StatStrip stats={profileStats} onPressStat={handleStatPress} />
             </View>
-            {!!taste && <TasteMixBar facets={taste.publishers} />}
-            {tasteChips.length > 0 && (
-              <>
-                <Text style={styles.tasteEyebrow}>Favourite franchises</Text>
-                <View style={styles.tasteChipRow}>
-                  {tasteChips.map((c) => (
-                    <View key={c} style={styles.tasteChip}>
-                      <Text style={styles.tasteChipText}>{c}</Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            )}
-            <Text style={styles.tasteFootnote}>{tasteFootnote}</Text>
-          </SectionShell>
-        )}
 
-        {/* Collection */}
-        <SectionShell
-          title="Collection"
-          count={!loading && favourites.length > 0 ? String(favourites.length) : undefined}
-          style={styles.shellGutter}
-        >
-          {/* Wrapper so the dissolving skeleton overlays the thumbs only, not
-              the section's title row. */}
-          <View>
-            {loading ? (
-              favouritesPhase === 'skeleton' ? (
-                <FavouritesSkeleton />
-              ) : null
-            ) : favourites.length === 0 ? (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyIconWrap}>
-                  <Ionicons name="heart-outline" size={32} color={COLORS.orange} />
-                </View>
-                <Text style={styles.emptyTitle}>Nothing saved yet</Text>
-                <Text style={styles.emptyBody}>
-                  Open any hero and tap the heart to build your collection
-                </Text>
-                <TouchableOpacity
-                  onPress={() => router.push('/explore')}
-                  style={styles.browseBtn}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.browseBtnText}>Browse characters</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.grid}>
-                {favourites.map((hero) => (
-                  <FavouriteThumb
-                    key={hero.id}
-                    hero={hero}
-                    onPress={() => router.push(`/character/${hero.id}`)}
-                    onLongPress={() => handleUnfavourite(hero)}
+            {tierProg.next && (
+              <View style={styles.tierProg}>
+                <View style={styles.tierProgTrack}>
+                  <View
+                    style={[styles.tierProgFill, { width: `${Math.round(tierProg.pct * 100)}%` }]}
                   />
-                ))}
-                <TouchableOpacity
-                  style={styles.ghostTile}
-                  onPress={() => router.push('/explore')}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="add" size={24} color={COLORS.orange} />
-                  <Text style={styles.ghostText}>Add</Text>
-                </TouchableOpacity>
+                </View>
+                <Text style={styles.tierProgText}>
+                  {tierProg.remaining} to {tierProg.next}
+                </Text>
               </View>
             )}
-            {favouritesPhase === 'crossfade' ? (
-              <FadeOutSkeleton>
-                <FavouritesSkeleton />
-              </FadeOutSkeleton>
-            ) : null}
-          </View>
-        </SectionShell>
 
-        {/* Badges */}
-        <SectionShell
-          title="Badges"
-          count={`${badgesEarned}/${badges.length}`}
-          style={styles.shellGutter}
-        >
-          <View style={styles.badgeWall}>
-            {badges.map((b) => {
-              const pct = b.progress
-                ? Math.round(
-                    (Math.min(b.progress.current, b.progress.target) / b.progress.target) * 100,
-                  )
-                : 0;
-              return (
-                <PressScale
-                  key={b.id}
-                  onPress={() => setSelectedBadge(b)}
-                  scale={0.92}
-                  style={[styles.badgeTile, badgeTile, !b.earned && styles.badgeTileLocked]}
-                >
-                  {b.earned ? (
-                    <LinearGradient
-                      colors={['#f2924d', '#d9591f']}
-                      style={[styles.badgeIcon, styles.badgeIconEarned]}
-                    >
-                      <Ionicons
-                        name={b.icon as keyof typeof Ionicons.glyphMap}
-                        size={22}
-                        color="#fff"
-                      />
-                    </LinearGradient>
-                  ) : (
-                    <View style={[styles.badgeIcon, styles.badgeIconLocked]}>
-                      <Ionicons
-                        name={b.icon as keyof typeof Ionicons.glyphMap}
-                        size={22}
-                        color={COLORS.grey}
-                      />
-                    </View>
-                  )}
-                  <Text
-                    style={[styles.badgeLabel, !b.earned && styles.badgeLabelLocked]}
-                    numberOfLines={1}
-                  >
-                    {b.label}
-                  </Text>
-                  <Text style={styles.badgeSub} numberOfLines={1}>
-                    {!b.earned && b.progress
-                      ? `${Math.min(b.progress.current, b.progress.target)}/${b.progress.target}`
-                      : b.earned
-                        ? 'Earned'
-                        : ''}
-                  </Text>
-                  {!b.earned && b.progress && (
-                    <View style={styles.badgeBarTrack}>
-                      <View style={[styles.badgeBarFill, { width: `${pct}%` }]} />
-                    </View>
-                  )}
-                </PressScale>
-              );
-            })}
+            <TouchableOpacity
+              onPress={handleShareUniverse}
+              disabled={sharingUniverse}
+              style={styles.shareUniverseBtn}
+              activeOpacity={0.85}
+            >
+              {sharingUniverse ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="share-outline" size={15} color="#fff" />
+                  <Text style={styles.shareUniverseText}>Share my universe</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
-        </SectionShell>
 
-        {/* Contributions */}
-        {contributions.length > 0 && (
+          {/* Settings + Support */}
+          <View style={styles.actionCards}>
+            <TouchableOpacity
+              style={styles.accountCard}
+              onPress={() => router.push('/notifications')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.accountRow}>
+                <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
+                  <Ionicons name="notifications-outline" size={16} color={COLORS.navy} />
+                </View>
+                <Text style={styles.accountLabel}>Activity</Text>
+                {inboxUnread > 0 ? (
+                  <View style={styles.unreadPill}>
+                    <Text style={styles.unreadText}>{inboxUnread}</Text>
+                  </View>
+                ) : null}
+                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/settings')} activeOpacity={0.7}>
+              <View style={styles.accountRow}>
+                <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
+                  <Ionicons name="settings-outline" size={16} color={COLORS.navy} />
+                </View>
+                <Text style={styles.accountLabel}>Settings</Text>
+                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.accountCard} onPress={openKofi} activeOpacity={0.7}>
+              <View style={styles.accountRow}>
+                <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
+                  <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
+                </View>
+                <Text style={styles.accountLabel}>Support this project</Text>
+                <Text style={styles.accountValue}>Ko-fi</Text>
+                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {gettingStartedReady && <GettingStartedCard steps={gettingStartedSteps} />}
+
+          {/* Your Universe */}
+          {showTaste && (
+            <SectionShell title="Your Universe" style={styles.shellGutter}>
+              <View style={styles.tasteReadout}>
+                {!!tasteAlignment && (
+                  <View style={styles.tasteFacet}>
+                    <Text style={styles.tasteFacetLabel}>Leans</Text>
+                    <Text style={styles.tasteFacetValue}>{tasteAlignment}</Text>
+                  </View>
+                )}
+                {!!tasteTopUniverse && (
+                  <View style={styles.tasteFacet}>
+                    <Text style={styles.tasteFacetLabel}>Top universe</Text>
+                    <Text style={styles.tasteFacetValue}>{tasteTopUniverse}</Text>
+                  </View>
+                )}
+              </View>
+              {!!taste && <TasteMixBar facets={taste.publishers} />}
+              {tasteChips.length > 0 && (
+                <>
+                  <Text style={styles.tasteEyebrow}>Favourite franchises</Text>
+                  <View style={styles.tasteChipRow}>
+                    {tasteChips.map((c) => (
+                      <View key={c} style={styles.tasteChip}>
+                        <Text style={styles.tasteChipText}>{c}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              )}
+              <Text style={styles.tasteFootnote}>{tasteFootnote}</Text>
+            </SectionShell>
+          )}
+
+          {/* Collection */}
           <SectionShell
-            title="Contributions"
-            count={String(contributions.length)}
+            title="Collection"
+            count={!loading && favourites.length > 0 ? String(favourites.length) : undefined}
             style={styles.shellGutter}
           >
-            <ContributionsList contributions={contributions} />
+            {/* Wrapper so the dissolving skeleton overlays the thumbs only, not
+              the section's title row. */}
+            <View>
+              {loading ? (
+                favouritesPhase === 'skeleton' ? (
+                  <FavouritesSkeleton />
+                ) : null
+              ) : favourites.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <View style={styles.emptyIconWrap}>
+                    <Ionicons name="heart-outline" size={32} color={COLORS.orange} />
+                  </View>
+                  <Text style={styles.emptyTitle}>Nothing saved yet</Text>
+                  <Text style={styles.emptyBody}>
+                    Open any hero and tap the heart to build your collection
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => router.push('/explore')}
+                    style={styles.browseBtn}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.browseBtnText}>Browse characters</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.grid}>
+                  {favourites.map((hero) => (
+                    <FavouriteThumb
+                      key={hero.id}
+                      hero={hero}
+                      onPress={() => router.push(`/character/${hero.id}`)}
+                      onLongPress={() => handleUnfavourite(hero)}
+                    />
+                  ))}
+                  <TouchableOpacity
+                    style={styles.ghostTile}
+                    onPress={() => router.push('/explore')}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="add" size={24} color={COLORS.orange} />
+                    <Text style={styles.ghostText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {favouritesPhase === 'crossfade' ? (
+                <FadeOutSkeleton>
+                  <FavouritesSkeleton />
+                </FadeOutSkeleton>
+              ) : null}
+            </View>
           </SectionShell>
-        )}
 
-        {/* My takes + debate record */}
-        {(takes.length > 0 || (battle?.total ?? 0) > 0) && (
-          <SectionShell title="My takes" style={styles.shellGutter}>
-            <MyTakes battle={battle} takes={takes} onDelete={handleDeleteTake} />
+          {/* Badges */}
+          <SectionShell
+            title="Badges"
+            count={`${badgesEarned}/${badges.length}`}
+            style={styles.shellGutter}
+          >
+            <View style={styles.badgeWall}>
+              {badges.map((b) => {
+                const pct = b.progress
+                  ? Math.round(
+                      (Math.min(b.progress.current, b.progress.target) / b.progress.target) * 100,
+                    )
+                  : 0;
+                return (
+                  <PressScale
+                    key={b.id}
+                    onPress={() => setSelectedBadge(b)}
+                    scale={0.92}
+                    style={[styles.badgeTile, badgeTile, !b.earned && styles.badgeTileLocked]}
+                  >
+                    {b.earned ? (
+                      <LinearGradient
+                        colors={['#f2924d', '#d9591f']}
+                        style={[styles.badgeIcon, styles.badgeIconEarned]}
+                      >
+                        <Ionicons
+                          name={b.icon as keyof typeof Ionicons.glyphMap}
+                          size={22}
+                          color="#fff"
+                        />
+                      </LinearGradient>
+                    ) : (
+                      <View style={[styles.badgeIcon, styles.badgeIconLocked]}>
+                        <Ionicons
+                          name={b.icon as keyof typeof Ionicons.glyphMap}
+                          size={22}
+                          color={COLORS.grey}
+                        />
+                      </View>
+                    )}
+                    <Text
+                      style={[styles.badgeLabel, !b.earned && styles.badgeLabelLocked]}
+                      numberOfLines={1}
+                    >
+                      {b.label}
+                    </Text>
+                    <Text style={styles.badgeSub} numberOfLines={1}>
+                      {!b.earned && b.progress
+                        ? `${Math.min(b.progress.current, b.progress.target)}/${b.progress.target}`
+                        : b.earned
+                          ? 'Earned'
+                          : ''}
+                    </Text>
+                    {!b.earned && b.progress && (
+                      <View style={styles.badgeBarTrack}>
+                        <View style={[styles.badgeBarFill, { width: `${pct}%` }]} />
+                      </View>
+                    )}
+                  </PressScale>
+                );
+              })}
+            </View>
           </SectionShell>
-        )}
 
-        {/* Disclaimer */}
-        <Text style={styles.disclaimer}>
-          Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or
-          any other publisher.
-        </Text>
+          {/* Contributions */}
+          {contributions.length > 0 && (
+            <SectionShell
+              title="Contributions"
+              count={String(contributions.length)}
+              style={styles.shellGutter}
+            >
+              <ContributionsList contributions={contributions} />
+            </SectionShell>
+          )}
+
+          {/* My takes + debate record */}
+          {(takes.length > 0 || (battle?.total ?? 0) > 0) && (
+            <SectionShell title="My takes" style={styles.shellGutter}>
+              <MyTakes battle={battle} takes={takes} onDelete={handleDeleteTake} />
+            </SectionShell>
+          )}
+
+          {/* Disclaimer */}
+          <Text style={styles.disclaimer}>
+            Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics,
+            or any other publisher.
+          </Text>
+        </PageColumn>
       </ScrollView>
 
       <EditDisplayNameModal
