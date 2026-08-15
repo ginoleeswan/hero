@@ -2794,6 +2794,7 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_events_health: { Args: never; Returns: Json }
       admin_list_watched_events: {
         Args: never
         Returns: {

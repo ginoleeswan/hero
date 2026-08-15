@@ -21,6 +21,7 @@ import { PipelineFunnel } from './PipelineFunnel';
 import { NeedsYou } from './NeedsYou';
 import { RecentlyBuilt } from './RecentlyBuilt';
 import { CronList } from './CronList';
+import { SignalsPanel } from './SignalsPanel';
 import { SpendDomain } from './SpendDomain';
 import { type Stage } from './pipelineHelpers';
 import { getPendingBuildIds } from '../../../../lib/db/build';
@@ -39,7 +40,7 @@ import { RecentlyAddedPanel } from './RecentlyAddedPanel';
 
 const BATCH_OPTIONS = [10, 25, 50];
 
-export type BuildSub = 'add' | 'enrich' | 'generate' | 'activity' | 'runs' | 'spend';
+export type BuildSub = 'add' | 'enrich' | 'generate' | 'signals' | 'activity' | 'runs' | 'spend';
 
 export function PipelinesDomain({
   data,
@@ -91,6 +92,7 @@ export function PipelinesDomain({
     'add',
     'enrich',
     'generate',
+    'signals',
     'activity',
     'runs',
     'spend',
@@ -267,6 +269,7 @@ export function PipelinesDomain({
             icon: 'sparkles-outline',
             badge: statsPending + portraitsPending,
           },
+          { key: 'signals', label: 'Signals', icon: 'radio-outline' },
           { key: 'activity', label: 'Activity', icon: 'pulse-outline' },
           { key: 'runs', label: 'Runs', icon: 'time-outline' },
           { key: 'spend', label: 'Spend', icon: 'cash-outline' },
@@ -481,6 +484,29 @@ export function PipelinesDomain({
       ) : null}
 
       {/* Spend — Gemini/GCP billing panel (moved from its own standalone tab). */}
+      {/* Signals — the events pipeline. A read first and a control second: the
+          control it offers is a veto, and a veto nobody can see is not one. */}
+      {sub === 'signals' ? (
+        fill ? (
+          <ScrollView
+            style={styles.subFill}
+            contentContainerStyle={styles.subStack}
+            nestedScrollEnabled
+          >
+            <Panel
+              title="Signals"
+              hint="Detected events, channel feeds, and what has been archived"
+            >
+              <SignalsPanel />
+            </Panel>
+          </ScrollView>
+        ) : (
+          <Panel title="Signals" hint="Detected events, channel feeds, and what has been archived">
+            <SignalsPanel />
+          </Panel>
+        )
+      ) : null}
+
       {sub === 'spend' ? (
         fill ? (
           <ScrollView style={styles.subFill} nestedScrollEnabled>
