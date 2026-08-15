@@ -409,7 +409,22 @@ for (const file of files) {
 const RADIUS_SCALE = new Set([4, 8, 12, 16, 20, 24, 999]);
 const FONT_SCALE = new Set([10, 11, 12, 13, 13.5, 14.5, 15, 18, 23, 30, 38, 46]);
 
-const offScale = { radius: [], font: [] };
+// The third ratchet: hand-rolled card surfaces.
+//
+// Sixty places define a paper card by hand and no two agree — measured on
+// 2026-08-15, EIGHT different alphas on the same ink border (0.06 … 0.22) and
+// eight different radii, three of which are off the radius scale and so are
+// already being counted twice. `PaperCard` is the one that is written down, and
+// this counts the ones that are not, so they drain as people pass through.
+//
+// Matches the ink hairline specifically — `borderColor` on the navy ink at any
+// alpha. Dividers use the same colour as a `backgroundColor` and are correctly
+// not caught; a card without that border is not the pattern this is draining.
+const INK_BORDER = /\bborderColor:\s*'rgba\(\s*41,\s*60,\s*67\s*,[^']*'/g;
+// The canonical definition is not a violation of itself.
+const CARD_EXEMPT = new Set(['src/components/ui/PaperCard.tsx']);
+
+const offScale = { radius: [], font: [], card: [] };
 for (const file of files) {
   const src = readFileSync(join(ROOT, file), 'utf8');
   for (const m of src.matchAll(/\bborderRadius:\s*([0-9.]+)/g)) {
@@ -418,7 +433,14 @@ for (const file of files) {
   for (const m of src.matchAll(/\bfontSize:\s*([0-9.]+)/g)) {
     if (!FONT_SCALE.has(+m[1])) offScale.font.push(`${file}:${lineOf(src, m.index)} ${m[1]}`);
   }
+  if (CARD_EXEMPT.has(file)) continue;
+  for (const m of src.matchAll(INK_BORDER)) {
+    offScale.card.push(`${file}:${lineOf(src, m.index)}`);
+  }
 }
+
+// Every ratchet in this file, so adding one is a single edit rather than four.
+const RATCHETS = ['radius', 'font', 'card'];
 
 const BASELINE_PATH = 'scripts/ui/design-baseline.json';
 let baseline = null;
@@ -428,7 +450,7 @@ try {
   // No baseline yet — the writer below prints one to adopt.
 }
 
-const counts = { radius: offScale.radius.length, font: offScale.font.length };
+const counts = Object.fromEntries(RATCHETS.map((k) => [k, offScale[k].length]));
 
 if (!baseline) {
   console.error(
@@ -438,18 +460,20 @@ if (!baseline) {
   process.exit(1);
 }
 
-for (const kind of ['radius', 'font']) {
-  if (counts[kind] > baseline[kind]) {
+for (const kind of RATCHETS) {
+  if (counts[kind] > (baseline[kind] ?? Infinity)) {
     const added = counts[kind] - baseline[kind];
     console.error(
       `Design scale ratchet: ${added} new off-scale ${kind} value(s) ` +
         `(${baseline[kind]} → ${counts[kind]}).\n\n` +
-        `  Pick a step from src/design — ${
-          kind === 'radius' ? 'RADIUS' : 'DISPLAY / BODY / LABEL'
+        `  ${
+          kind === 'card'
+            ? 'Use <PaperCard> (src/components/ui/PaperCard.tsx), or PAPER_CARD_SURFACE where a component will not fit'
+            : `Pick a step from src/design — ${kind === 'radius' ? 'RADIUS' : 'DISPLAY / BODY / LABEL'}`
         }.\n` +
         `  If the value is genuinely deliberate, raise the baseline in ${BASELINE_PATH}\n` +
         `  in the same commit, so the exception is reviewed rather than absorbed.\n\n` +
-        `  Off-scale ${kind} values now present:\n` +
+        `  ${kind === 'card' ? 'Hand-rolled card surfaces' : `Off-scale ${kind} values`} now present:\n` +
         offScale[kind]
           .slice(0, 40)
           .map((s) => `    ${s}`)
@@ -466,8 +490,7 @@ for (const kind of ['radius', 'font']) {
 // tripping anything. Reporting the fall is what turns a cleanup into a
 // permanently narrower budget — and it is a message, not a failure, because
 // nobody should have their unrelated PR blocked for improving a number.
-const slack = ['radius', 'font']
-  .filter((kind) => counts[kind] < baseline[kind])
+const slack = RATCHETS.filter((kind) => counts[kind] < (baseline[kind] ?? -Infinity))
   .map((kind) => `${kind} ${baseline[kind]} → ${counts[kind]}`);
 if (slack.length) {
   console.log(
@@ -477,7 +500,7 @@ if (slack.length) {
   );
 }
 
-const tightened = ['radius', 'font'].filter((k) => counts[k] < baseline[k]);
+const tightened = RATCHETS.filter((k) => counts[k] < (baseline[k] ?? Infinity));
 if (tightened.length) {
   console.log(
     `Design scale ratchet TIGHTENED — update ${BASELINE_PATH}:\n` +

@@ -12,6 +12,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useMatchupVote } from '../../hooks/useMatchupVote';
 import { useMatchupTakes } from '../../hooks/useMatchupTakes';
 import { ReportSheet } from '../report/ReportSheet';
+import { PaperCard } from '../ui/PaperCard';
 import { loginHref } from '../../lib/loginRedirect';
 import type { Take } from '../../lib/db/takes';
 
@@ -89,7 +90,7 @@ function TakeCard({
   const tint = side === 'a' ? COLORS.orange : side === 'b' ? COLORS.blue : COLORS.grey;
 
   return (
-    <View style={s.card}>
+    <PaperCard style={s.card}>
       <View style={s.cardTop}>
         {sideName ? (
           <View style={[s.sideBadge, { backgroundColor: tint + '1a', borderColor: tint + '55' }]}>
@@ -169,7 +170,7 @@ function TakeCard({
           )}
         </View>
       )}
-    </View>
+    </PaperCard>
   );
 }
 
@@ -361,14 +362,10 @@ const s = StyleSheet.create({
     color: PAPER_TEXT.faint,
   },
   cards: { gap: 10 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.1)',
-    padding: 14,
-    gap: 8,
-  },
+  // Surface, border and radius come from PaperCard; this is only what is
+  // specific to a take. The 14pt radius it used to carry was off the scale, so
+  // adopting the primitive drained a radius count as well as a card count.
+  card: { gap: 8 },
   cardTop: {
     flexDirection: 'row',
     alignItems: 'center',

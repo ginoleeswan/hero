@@ -204,13 +204,10 @@ them to fire, and lowering the floor for them would buy noise, not events. The
 honest fix, if these matter, is a different signal for small events, not a looser
 threshold on this one.
 
-**Not built yet: the hub and edition routes.** `get_event_hub` and
-`get_event_edition` are live and verified, but `/event/[slug]` is still the live
-dossier and there is no `/event/[slug]/[edition]`. Standing that up means
-restructuring `app/event/[slug].tsx` into `app/event/[slug]/index.tsx` (with its
-`.web` twin — expo-router throws if only one of a pair exists) and adding the
-edition pair beside it. It was left undone deliberately rather than half-done:
-a partial route pair breaks resolution for the whole app.
+**The hub and edition routes are built** (`f3a87dc6`). `get_event_hub` and
+`get_event_edition` back `app/event/[slug]/index.tsx` and
+`app/event/[slug]/[edition].tsx`, each with its `.web` twin — expo-router throws
+if only one of a pair exists, so a route pair is added whole or not at all.
 
 Worth knowing before building it: **`/event` has no inbound links anywhere.**
 Nothing in `app/` or `src/` routes to it, so the index is reachable only by

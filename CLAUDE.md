@@ -164,7 +164,7 @@ Tests live in `__tests__/` mirroring the source tree. Run with `yarn test:ci`.
 
 ## Ratchets
 
-Two counts in this repo may fall and may not rise. Both exist because the
+Three counts in this repo may fall and may not rise. They exist because the
 alternative — a rule strict enough to fail on every existing violation — is a
 rule someone turns off, which is how the last three token files ended up
 decorative.
@@ -180,17 +180,30 @@ decorative.
 
   Two mechanical traps, both of which cost real time here:
   `eslint-disable-next-line` applies to the **next line**, so a multi-line
-  reason above it disables a comment and the count goes *up*; and an effect with
+  reason above it disables a comment and the count goes _up_; and an effect with
   several `setState` calls reports each one, so it needs a
   `/* eslint-disable */ … /* eslint-enable */` block rather than a line
   directive.
+
 - **Off-scale design values.** `yarn check:ui` counts radius and font literals
   that are not on the scale, against `scripts/ui/design-baseline.json`. It fails
-  when the count rises and *tells you* when it has slack, so a cleanup can be
+  when the count rises and _tells you_ when it has slack, so a cleanup can be
   banked rather than quietly absorbed.
+- **Hand-rolled card surfaces.** The same check counts `borderColor` on the navy
+  ink — the paper-card hairline — anywhere but `src/components/ui/PaperCard.tsx`.
+  Sixty sites had defined that card by hand with **eight** different border
+  alphas and eight different radii, three of the radii off-scale and so already
+  being counted twice. Use `<PaperCard>`, or `PAPER_CARD_SURFACE` where a
+  component will not fit (a `contentContainerStyle`, an `Animated.View`).
 
-The point of both is that an exception has to be an explicit, reviewed act
-rather than one more entry in a number nobody reads.
+All three work the same way, and adding a fourth is one edit: append it to
+`RATCHETS` in `scripts/ui/check-ui-invariants.mjs`.
+
+The point of all of them is that an exception has to be an explicit, reviewed
+act rather than one more entry in a number nobody reads. They are also how
+cleanup actually happens here: one `TakesSection` adoption drained a card count
+_and_ a radius count in the same edit, which a sweeping refactor nobody
+schedules never would.
 
 ## Code style
 
