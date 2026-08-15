@@ -137,7 +137,10 @@ function TrailerCast({
             onPress={() => onHeroPress(c.heroId)}
             accessibilityRole="button"
             accessibilityLabel={c.name}
-            hitSlop={4}
+            // A 26pt face is a 26pt target. hitSlop is what carries it to the
+            // 44pt minimum — (44-26)/2 = 9 — and it costs nothing visually
+            // because the strip's own gap is only 3.
+            hitSlop={9}
           >
             {/* The mapper drops faces without art, so the ?? '' is narrowing for
                 the type checker rather than a real branch. */}
@@ -221,11 +224,19 @@ export function EventDossier({
   // "What dropped" into 1,400pt, roughly a third of the page, for the section
   // that is the least specific to this event. One row is a shelf; two is a
   // warehouse.
-  // Two rows on a phone, one on a desktop — whole rows either way, and never a
-  // wall. Uncapped, a phone drew nine posters in a two-column grid: five rows,
-  // about a thousand points of scrolling for the section least specific to this
-  // event.
-  const rest = allRest.slice(0, posterGrid.cols * (wide ? 1 : 2));
+  // Whole rows, always.
+  //
+  // On desktop the lead spans two columns, so the row is completed by
+  // `cols - 2` posters and the section closes at exactly one row — about 455pt
+  // against the 1,150 it occupied as a full-width banner over a four-poster row
+  // with a ragged second row under it. Three titles rather than five is a real
+  // cost on an archive page, and it is the right trade: this is the one section
+  // whose content every competitor also has, the full slate is a click away on
+  // each title, and the space it was taking belonged to the sections that are
+  // actually Mythique's.
+  //
+  // A phone has two columns and a full-width lead, so it gets two clean rows.
+  const rest = allRest.slice(0, wide ? posterGrid.cols - 2 : posterGrid.cols * 2);
   // One entry per thing announced, not per clip. See groupAnnouncements.
   const [leadNews, ...allRestNews] = groupAnnouncements(announcements);
   // Trimmed to whole rows on desktop: a grid whose final row holds two of four
@@ -392,7 +403,13 @@ export function EventDossier({
               ]}
             >
               {event.spikeRatio !== null && (
-                <Stat value={`${event.spikeRatio}×`} label="usual readership" accent={accent} big />
+                <Stat
+                  value={`${event.spikeRatio}×`}
+                  label="usual readership"
+                  accent={accent}
+                  big
+                  wide={wide}
+                />
               )}
               {!!event.peak && <Stat value={event.peak.toLocaleString()} label="peak day" />}
               {!!event.editsRecent && (
@@ -521,64 +538,80 @@ export function EventDossier({
 
           {trailers.length > 0 && (
             <Section title="What dropped" note="Trailers published inside the window">
-              {/* The lead gets its backdrop at size — these are the best images
-                  on the page and a 52px thumbnail wasted them. */}
-              <LeadTrailer
-                trailer={lead}
-                onPress={onTitlePress}
-                onHeroPress={onHeroPress}
-                accent={accent}
-                wide={wide}
-              />
-              {rest.length > 0 && (
-                <View style={[s.posterRow, { gap: posterGrid.gap }]}>
-                  {rest.map((t) => (
-                    // A plain View, with the poster+title as ONE button and the
-                    // face strip as its SIBLING. The card used to be a single
-                    // Pressable wrapping everything, which put the faces' own
-                    // buttons inside it — invalid HTML on web, and the browser's
-                    // reparenting broke the card's click target.
-                    <View key={t.titleId} style={[s.posterCell, { width: posterGrid.cell }]}>
-                      <Pressable
-                        onPress={() => onTitlePress(t.titleId)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${t.title}, ${t.videoType ?? 'trailer'}`}
-                        style={s.posterMain}
-                      >
-                        {!!(t.posterUrl ?? t.backdropUrl) && (
-                          <Image
-                            source={{ uri: (t.posterUrl ?? t.backdropUrl) as string }}
-                            style={[
-                              s.poster,
-                              { width: posterGrid.cell, height: posterGrid.cell * 1.5 },
-                            ]}
-                            contentFit="cover"
-                            transition={160}
-                          />
-                        )}
-                        <Text style={s.posterTitle} numberOfLines={2}>
-                          {t.title}
-                        </Text>
-                      </Pressable>
-                      {/* The faces replace the word "Trailer", which said
+              {/* One grid, not a banner over a grid.
+                  Measured at 1512: the lead was 1100x380 = 418,000 square
+                  points against 415,540 for the entire four-poster row beneath
+                  it. One trailer occupying as much of the page as all the
+                  others put together is not a ranking, it is a billboard — and
+                  it is spent on the least Mythique-specific content here, since
+                  the artwork is the studio's and every competitor has it too.
+
+                  On desktop the lead becomes a cell spanning TWO columns at the
+                  poster row's own height, so it is still plainly the lead (twice
+                  the area of its neighbours) while the section reads as a single
+                  composed grid. A phone keeps the full-width hero: there is only
+                  one column there, so spanning two is meaningless and the
+                  backdrop is the only thing giving that section a focal point. */}
+              <View style={[s.posterRow, { gap: posterGrid.gap }]}>
+                <LeadTrailer
+                  trailer={lead}
+                  onPress={onTitlePress}
+                  onHeroPress={onHeroPress}
+                  accent={accent}
+                  wide={wide}
+                  width={wide ? posterGrid.cell * 2 + posterGrid.gap : undefined}
+                  height={wide ? Math.round(posterGrid.cell * 1.5) : undefined}
+                />
+                {rest.length > 0 && (
+                  <>
+                    {rest.map((t) => (
+                      // A plain View, with the poster+title as ONE button and the
+                      // face strip as its SIBLING. The card used to be a single
+                      // Pressable wrapping everything, which put the faces' own
+                      // buttons inside it — invalid HTML on web, and the browser's
+                      // reparenting broke the card's click target.
+                      <View key={t.titleId} style={[s.posterCell, { width: posterGrid.cell }]}>
+                        <Pressable
+                          onPress={() => onTitlePress(t.titleId)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${t.title}, ${t.videoType ?? 'trailer'}`}
+                          style={s.posterMain}
+                        >
+                          {!!(t.posterUrl ?? t.backdropUrl) && (
+                            <Image
+                              source={{ uri: (t.posterUrl ?? t.backdropUrl) as string }}
+                              style={[
+                                s.poster,
+                                { width: posterGrid.cell, height: posterGrid.cell * 1.5 },
+                              ]}
+                              contentFit="cover"
+                              transition={160}
+                            />
+                          )}
+                          <Text style={s.posterTitle} numberOfLines={2}>
+                            {t.title}
+                          </Text>
+                        </Pressable>
+                        {/* The faces replace the word "Trailer", which said
                           nothing a reader could not see. "Buzz Lightyear,
                           Woody, Jessie, Rex, +4" is specific, is ours, and is
                           four more ways into the app than a poster. The kind
                           survives only where there is no cast to show. */}
-                      {t.cast.length > 0 ? (
-                        <TrailerCast
-                          cast={t.cast}
-                          total={t.castCount}
-                          size={26}
-                          onHeroPress={onHeroPress}
-                        />
-                      ) : (
-                        <Text style={s.posterMeta}>{t.videoType ?? 'Trailer'}</Text>
-                      )}
-                    </View>
-                  ))}
-                </View>
-              )}
+                        {t.cast.length > 0 ? (
+                          <TrailerCast
+                            cast={t.cast}
+                            total={t.castCount}
+                            size={30}
+                            onHeroPress={onHeroPress}
+                          />
+                        ) : (
+                          <Text style={s.posterMeta}>{t.videoType ?? 'Trailer'}</Text>
+                        )}
+                      </View>
+                    ))}
+                  </>
+                )}
+              </View>
             </Section>
           )}
         </View>
@@ -773,15 +806,14 @@ function Stat({
       >
         {value}
       </Text>
-      <Text style={[s.statLabel, big && wide ? s.statLabelHero : null]}>{label}</Text>
+      {/* One size for all three labels. Scaling the hero's label with its figure
+          put an 11pt/2.0 label beside two 10pt/1.6 ones in the same rail, which
+          reads as a mistake rather than as hierarchy — the hierarchy is already
+          carried by 64 against 26 on the values. Measured, not eyeballed. */}
+      <Text style={s.statLabel}>{label}</Text>
     </View>
   );
 }
-
-/** The lead trailer's height, capped. At the full 1,100pt measure a 16:8 lead is
- *  550pt tall — half a laptop viewport for one image, before the row of posters
- *  under it. The cap keeps the shape and stops it dominating. */
-const LEAD_MAX_H = 380;
 
 function LeadTrailer({
   trailer,
@@ -789,17 +821,24 @@ function LeadTrailer({
   onHeroPress,
   accent,
   wide,
+  width,
+  height,
 }: {
   trailer: EventTrailer;
   onPress: (id: string) => void;
   onHeroPress: (heroId: string) => void;
   accent: string;
   wide?: boolean;
+  /** Set on desktop, where the lead is a two-column cell in the poster grid and
+   *  must match its neighbours' height exactly. Unset on a phone, where it is a
+   *  full-width hero and keeps its own aspect ratio. */
+  width?: number;
+  height?: number;
 }) {
   const art = trailer.backdropUrl ?? trailer.posterUrl;
   return (
     <Pressable
-      style={[s.lead, wide ? { aspectRatio: undefined, height: LEAD_MAX_H } : null]}
+      style={[s.lead, width && height ? { aspectRatio: undefined, width, height } : null]}
       onPress={() => onPress(trailer.titleId)}
       accessibilityRole="button"
       accessibilityLabel={`${trailer.title}, ${trailer.videoType ?? 'trailer'}`}
@@ -971,7 +1010,6 @@ const s = StyleSheet.create({
   statBig: { fontFamily: 'Flame-Regular', fontSize: 40, lineHeight: EVENT_STAGE.statBigLine },
   // Flame needs lineHeight >= 1.22x fontSize; 64 -> 78.
   statHero: { fontSize: 64, lineHeight: 78 },
-  statLabelHero: { fontSize: 11, letterSpacing: 2 },
   statValue: {
     fontFamily: 'Flame-Regular',
     fontSize: 26,
@@ -1114,7 +1152,12 @@ const s = StyleSheet.create({
   },
 
   // The face strip on a trailer card.
-  castStrip: { flexDirection: 'row', alignItems: 'center', gap: 3, flexWrap: 'wrap' },
+  //
+  // 5 rather than 3. hitSlop is honoured on native and is a no-op in
+  // react-native-web, so on a touch browser the target really is the face — 30
+  // square, which clears WCAG 2.5.8's 24 comfortably but sits close enough to
+  // its neighbour that the gap has to do the rest of the work.
+  castStrip: { flexDirection: 'row', alignItems: 'center', gap: 5, flexWrap: 'wrap' },
   castMore: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
