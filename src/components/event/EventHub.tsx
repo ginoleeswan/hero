@@ -156,11 +156,12 @@ export function EventHub({
             </Text>
           ) : (
             <>
-              {wide && hub.editions.length > 2 && (
+              {hub.editions.length > 2 && (
                 <EditionChart
                   editions={hub.editions}
                   accent={accent}
                   bestSpike={hub.bestSpike}
+                  width={Math.max(0, measure - pad * 2)}
                   onEditionPress={onEditionPress}
                 />
               )}
@@ -188,19 +189,24 @@ export function EventHub({
  * chart states it in one look, and this is a chart's exact job: same measure,
  * many periods.
  *
- * Desktop only, and it does not REPLACE the list — the list carries the recaps,
- * the faces and the dates, which no bar can. This is the summary that lets
- * someone choose a year before reading eight of them.
+ * It does not REPLACE the list — the list carries the recaps, the faces and the
+ * dates, which no bar can. This is the summary that lets someone choose a year
+ * before reading eight of them, and that is MORE useful on a phone, where the
+ * alternative is scrolling eight full-height rows to find the loud one. It was
+ * gated to desktop for no reason other than that being where it was built.
  */
 export function EditionChart({
   editions,
   accent,
   bestSpike,
+  width,
   onEditionPress,
 }: {
   editions: Hub['editions'];
   accent: string;
   bestSpike?: number | null;
+  /** Available width, so the labels can thin out rather than collide. */
+  width?: number;
   onEditionPress: (editionSlug: string) => void;
 }) {
   // Oldest to newest: a timeline reads left to right, where the list reads
@@ -208,6 +214,13 @@ export function EditionChart({
   // and the chart from disagreeing about anything but direction.
   const cols = [...editions].reverse();
   const top = bestSpike ?? Math.max(...cols.map((e) => e.spikeRatio ?? 0), 1);
+  // How much room each column actually gets. Eleven editions across a 354pt
+  // phone is 23pt a column — a four-digit year does not fit, and two labels
+  // certainly do not. Below the thresholds the chart sheds the multiple first
+  // and then the century, rather than overlapping or truncating.
+  const cell = width ? (width - 10 * (cols.length - 1)) / cols.length : 999;
+  const showValue = cell >= 34;
+  const shortYear = cell < 30;
 
   return (
     <View style={s.chart}>
@@ -225,7 +238,11 @@ export function EditionChart({
             accessibilityRole="button"
             accessibilityLabel={`${e.editionSlug}, ${e.spikeRatio ?? 0}× readership`}
           >
-            <Text style={s.chartValue}>{e.spikeRatio ? `${Math.round(e.spikeRatio)}×` : '—'}</Text>
+            {showValue && (
+              <Text style={s.chartValue}>
+                {e.spikeRatio ? `${Math.round(e.spikeRatio)}×` : '—'}
+              </Text>
+            )}
             <View style={s.chartTrack}>
               <View
                 style={[
@@ -234,7 +251,9 @@ export function EditionChart({
                 ]}
               />
             </View>
-            <Text style={s.chartYear}>{e.editionSlug.slice(0, 4)}</Text>
+            <Text style={s.chartYear}>
+              {shortYear ? `’${e.editionSlug.slice(2, 4)}` : e.editionSlug.slice(0, 4)}
+            </Text>
           </Pressable>
         );
       })}
@@ -488,11 +507,11 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 10,
-    height: 190,
-    marginTop: 22,
-    marginBottom: 34,
+    height: 156,
+    marginTop: 20,
+    marginBottom: 30,
   },
-  chartCol: { flex: 1, alignItems: 'center', gap: 7, height: '100%' },
+  chartCol: { flex: 1, alignItems: 'center', gap: 6, height: '100%', minWidth: 0 },
   chartValue: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,

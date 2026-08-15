@@ -75,11 +75,12 @@ export default function EventPageWeb() {
                       archive by hand and had drifted from EventHub: no chart,
                       and no `wide`, so on a desktop the live page's rows used
                       the phone layout while the hub's used the desktop one. */}
-                  {wide && hub.editions.length > 2 && (
+                  {hub.editions.length > 2 && (
                     <EditionChart
                       editions={hub.editions}
                       accent={accent}
                       bestSpike={hub.bestSpike}
+                      width={Math.max(0, Math.min(width, 1180) - (wide ? 40 : 18) * 2)}
                       onEditionPress={goEdition}
                     />
                   )}
