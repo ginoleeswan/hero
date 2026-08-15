@@ -55,7 +55,7 @@ import {
   type EditableFieldDef,
 } from '../../src/lib/db/contributions';
 import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS, ACCENT_INK, ORANGE_INK, PAPER_TEXT } from '../../src/constants/colors';
+import { COLORS, ORANGE_INK, PAPER_TEXT } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { isPresentableFact } from '../../src/lib/characterFacts';
 import { ALIGNMENT_LABELS, ORIGIN_LABELS } from '../../src/lib/characterTaxonomy';
@@ -283,31 +283,56 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
   );
 }
 
-// Chip text uses ACCENT_INK, not the fill hue: the wash sits at 12-18% over
-// beige, so the label is effectively text on paper and the fill colours fail
-// there (green 2.45:1, blue 2.65:1, gold 3.08:1). The `bg` washes stay as-is.
-// Wording comes from src/lib/characterTaxonomy.ts so it can't drift from web
-// again; only the washes are local, because they resolve against this surface.
+// These chips are text on INK, not text on paper — and the ramps they were
+// reaching for say so in their own docstrings. ACCENT_INK's comment names these
+// exact chips and measures every ratio "against beige"; PAPER_TEXT's ratios are
+// beige too. But `identityNode` renders over a scrim on the character's own
+// ARTWORK (phone, tablet portrait) or on the dark band (tablet landscape). Not
+// beige, anywhere. Measured on an iPad on 2026-08-15, that put the HERO chip at
+// **2.28:1** and the HUMAN chip at **1.29:1** — the second is not low-contrast,
+// it is invisible, and `human` is the commonest origin in the catalogue.
+//
+// So the wash is composited over deepNavy and kept OPAQUE. Over artwork a
+// translucent chip has no knowable ground, so no ratio can honestly be promised
+// for it; an opaque one has exactly one ground, and the numbers below are
+// measured against it. Text is the FILL hue — the same call the web page
+// already makes on its own dark band (`alignmentColor`, `[id].web.tsx`) —
+// lifted toward white for the four hues too dark to clear 4.5:1 on their own
+// ground. Wording still comes from src/lib/characterTaxonomy.ts so it cannot
+// drift from web again.
+//
+// `bg` is the hue at 16% over COLORS.deepNavy, flattened to an opaque hex.
 const ALIGNMENT_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  good: { label: ALIGNMENT_LABELS.good, bg: 'rgba(39,174,96,0.15)', color: ACCENT_INK.green },
-  bad: { label: ALIGNMENT_LABELS.bad, bg: 'rgba(231,76,60,0.15)', color: ACCENT_INK.red },
-  neutral: {
-    label: ALIGNMENT_LABELS.neutral,
-    bg: 'rgba(100,100,100,0.12)',
-    color: PAPER_TEXT.faint,
-  },
+  /** 4.93:1 */
+  good: { label: ALIGNMENT_LABELS.good, bg: '#192F24', color: COLORS.green },
+  /** 4.53:1 — COLORS.red lifted; the fill hue is 2.69:1 on its own ground. */
+  bad: { label: ALIGNMENT_LABELS.bad, bg: '#261C22', color: '#CA6A66' },
+  /** 5.36:1 */
+  neutral: { label: ALIGNMENT_LABELS.neutral, bg: '#232E34', color: COLORS.grey },
 };
 
 const ORIGIN_WASH: Record<string, { bg: string; color: string }> = {
-  mutant: { bg: 'rgba(139,92,246,0.15)', color: ACCENT_INK.purple },
-  alien: { bg: 'rgba(21,161,171,0.15)', color: ACCENT_INK.blue },
-  human: { bg: 'rgba(162,161,155,0.15)', color: PAPER_TEXT.faint },
-  'god/eternal': { bg: 'rgba(249,178,34,0.18)', color: ACCENT_INK.gold },
-  radiation: { bg: 'rgba(231,115,51,0.15)', color: ACCENT_INK.orange },
-  cyborg: { bg: 'rgba(45,45,45,0.12)', color: ACCENT_INK.black },
-  robot: { bg: 'rgba(45,45,45,0.12)', color: ACCENT_INK.black },
-  training: { bg: 'rgba(80,35,20,0.12)', color: ACCENT_INK.brown },
-  inhuman: { bg: 'rgba(21,161,171,0.15)', color: ACCENT_INK.blue },
+  /** 4.54:1 — COLORS.purple lifted; the fill hue is 2.83:1 on its own ground. */
+  mutant: { bg: '#1D1D41', color: '#9E6DF2' },
+  /** 4.60:1 */
+  alien: { bg: '#0D2E36', color: COLORS.blue },
+  /** 5.36:1 */
+  human: { bg: '#232E34', color: COLORS.grey },
+  /** 7.18:1 */
+  'god/eternal': { bg: '#313120', color: COLORS.yellow },
+  /** 4.82:1 */
+  radiation: { bg: '#2E2723', color: COLORS.orange },
+  // COLORS.black is 1.27:1 on its own ground — a near-black chip label on a
+  // near-black chip. Lifted to a steel grey, which is what "cyborg/robot" wants
+  // to look like anyway.
+  /** 4.73:1 */
+  cyborg: { bg: '#101B22', color: '#858585' },
+  /** 4.73:1 */
+  robot: { bg: '#101B22', color: '#858585' },
+  /** 4.73:1 — COLORS.brown lifted to a warm taupe; the fill hue is 1.33:1. */
+  training: { bg: '#161A1E', color: '#9A7F77' },
+  /** 4.60:1 */
+  inhuman: { bg: '#0D2E36', color: COLORS.blue },
 };
 
 const ORIGIN_CONFIG: Record<string, { label: string; bg: string; color: string }> =

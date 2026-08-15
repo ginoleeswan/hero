@@ -195,10 +195,17 @@ export const GOLD_INK = COLORS.goldAccent;
 /**
  * The semantic accents as *text on paper* — ORANGE_INK generalised. Every
  * COLORS accent is tuned as a fill, and most of them are unreadable as ink:
- * green 2.45:1, blue 2.65:1, gold 3.08:1, goldAccent 2.13:1 against beige. The
- * tinted taxonomy chips (alignment/origin on the character page) paint accent
- * text over a 12-18% wash of the same hue, which lands barely off beige — so
- * the chip label was inheriting the fill colour's failing ratio.
+ * green 2.45:1, blue 2.65:1, gold 3.08:1, goldAccent 2.13:1 against beige.
+ *
+ * PAPER ONLY. Every ratio below is measured against COLORS.beige and none of
+ * them survive a dark ground. This map used to cite the character page's
+ * taxonomy chips as its motivating case, and that was simply wrong about where
+ * those chips live: they render on a scrim over the character's ARTWORK, where
+ * a paper ink is not merely weak but inverted — measured on device, the HERO
+ * chip was 2.28:1 and HUMAN was 1.29:1. They now carry their own opaque ink
+ * grounds and fill-hue labels (`app/character/[id].tsx`). Reach for this map
+ * when the surface underneath is beige or white, and for the fill hues (or
+ * INK_TEXT / GOLD_INK) when it is ink.
  *
  * Each entry is the fill hue darkened until it clears the floor, so it still
  * reads as the same colour. `red`, `purple`, `black` and `brown` already pass

@@ -274,6 +274,25 @@ the iOS Safari toolbar zone) and correctly renders nothing on native.
 The drop cap is absolutely positioned with the lead paragraph padded around it:
 RN has no `float`, so the indent is paid by the whole paragraph.
 
+**The taxonomy chips are text on ink, and were coloured for paper.** The
+alignment/origin chips in `identityNode` (`ALIGNMENT_CONFIG` / `ORIGIN_WASH` in
+`app/character/[id].tsx`) took their labels from `ACCENT_INK` and
+`PAPER_TEXT.faint` — two ramps whose docstrings measure every ratio against
+`COLORS.beige`. The chips never touch beige: they sit on a scrim over the
+character's own artwork, or on the dark band in landscape. Measured on an iPad
+on 2026-08-15 that put **HERO at 2.28:1 and HUMAN at 1.29:1** — the second is
+invisible rather than merely weak, and `human` is the commonest origin in the
+catalogue.
+
+The fix is two-part, and the first half is what makes the second half honest:
+the wash is composited over `deepNavy` and kept **opaque**, because a
+translucent chip over arbitrary artwork has no knowable ground and so no ratio
+can be promised for it. The label is then the **fill** hue — the same call
+`[id].web.tsx` already makes on its own dark band — lifted toward white for the
+four hues (red, purple, black, brown) too dark to clear 4.5:1 against their own
+ground. Measured after: HERO 4.93:1, HUMAN 5.36:1, matching the per-entry
+ratios in the source.
+
 ### The contents pill
 
 Desktop keeps its sticky numbered sidebar. Mobile — both platforms — gets
