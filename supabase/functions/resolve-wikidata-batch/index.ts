@@ -282,7 +282,16 @@ async function runResolve(
       .from('heroes')
       .select('id, name, aliases, publisher, first_appearance, creators, comicvine_id')
       .in('wikidata_status', statuses)
-      .order('issue_count', { ascending: false, nullsFirst: false })
+      // fame_score, not issue_count. Popularity in this repo has meant fame
+      // since the score existed (see CLAUDE.md), and issue_count is precisely
+      // the wrong proxy for THIS queue: the famous characters still missing a
+      // QID are overwhelmingly not comic characters. Harry Potter, Gollum,
+      // Solid Snake, Katniss Everdeen and Rey have fame 80+ and few or no
+      // issues, so an issue-ordered queue sorts them behind tens of thousands
+      // of obscure comic rows and never reaches them. A QID is the first link
+      // in the chain that ends in the surge lane — no QID, no enwiki_title, no
+      // pageview curve, and a character that can never be seen to move.
+      .order('fame_score', { ascending: false, nullsFirst: false })
       .limit(limit);
     heroes = data as HeroRow[] | null;
   }

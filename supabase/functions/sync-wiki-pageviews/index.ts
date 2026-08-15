@@ -51,6 +51,7 @@ serve(async (req: Request) => {
   const rows = (data ?? []) as Array<{ id: string; enwiki_title: string }>;
 
   let processed = 0;
+  let failed = 0;
   for (const r of rows) {
     let week = 0;
     let prev = 0;
@@ -59,10 +60,14 @@ serve(async (req: Request) => {
     // lets a spike become a timestamped Pulse event rather than an undated one.
     // Same data, same request — it was being parsed and dropped.
     let daily: Array<{ date: string; views: number }> = [];
+    // Did we actually hear back? Distinct from "heard back, no views" — see the
+    // write below, where the difference decides whether we touch the row at all.
+    let ok = false;
     try {
       const article = encodeURIComponent(r.enwiki_title.replace(/ /g, '_'));
       const url = `${WM}/${article}/daily/${ymd(start)}/${ymd(end)}`;
       const res = await fetch(url, { headers: UA });
+      ok = res.ok;
       if (res.ok) {
         const body = await res.json();
         for (const it of (body.items ?? []) as Array<{ timestamp: string; views: number }>) {
@@ -76,10 +81,37 @@ serve(async (req: Request) => {
         }
         daily.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
       }
-      // 404 / no data → leave week=prev=0 (stored, so it's marked done for the cycle).
+      // A real 404 counts as heard-back: the article does not exist, and zero is
+      // the honest answer for it.
+      if (res.status === 404) ok = true;
     } catch (_e) {
-      /* transient; store zeros, retried next cycle */
+      /* network failure — `ok` stays false, handled at the write */
       daily = [];
+    }
+
+    // A FAILED fetch must not overwrite a curve we already have.
+    //
+    // This destroyed data. The write below is unconditional, so a rate-limited
+    // or timed-out request stored pageviews_week = 0 and views_daily = null over
+    // a perfectly good series: on 2026-08-15 it blanked Scarecrow (fame 76) and
+    // Jiminy Cricket (72), both of which the Wikimedia API answers for happily
+    // when asked again. Raising the batch size makes that more likely, not less,
+    // because the failures are transient and load-related.
+    //
+    // views_daily is the input to the entire surge lane and cannot be
+    // reconstructed — the API only serves a rolling window, so a series blanked
+    // today loses whatever fell out of that window. Advance `pageviews_at` so the
+    // rotation moves on and this row is not retried forever, and leave every
+    // measurement exactly as it was.
+    if (!ok) {
+      await sb
+        .from('heroes')
+        .update({ pageviews_at: new Date().toISOString() })
+        .eq('id', r.id);
+      processed++;
+      failed++;
+      await sleep(120);
+      continue;
     }
     const spike = (week + 1) / (prev + 1);
     await sb
@@ -99,5 +131,7 @@ serve(async (req: Request) => {
   }
 
   if (processed > 0) await sb.from('api_usage').insert({ api: 'wikimedia', endpoint: 'pageviews', units: processed });
-  return json({ processed, triggeredBy });
+  // `failed` surfaced deliberately: a run that quietly skips half the batch
+  // looks identical to a healthy one from the outside.
+  return json({ processed, failed, triggeredBy });
 });
