@@ -220,6 +220,26 @@ export function scoreCandidate(c: PulseCandidate, now: number): number {
  */
 const WINDOW_LAG_GRACE_DAYS = 1;
 
+/**
+ * The same tolerance for an event the detector still believes is RUNNING.
+ *
+ * `sustained` means the elevated run reaches the newest day of pageview data we
+ * have — the detector's own statement that this hasn't ended yet. Pair that with
+ * the documented 1-2 day Wikimedia lag and one day of grace is too few: D23 2026
+ * ran Aug 14-16, and on the 15th the freshest data was the 13th, so the inferred
+ * window closed two days before the event did. At one day of grace the card read
+ * "Just wrapped" in the middle of the thing — the same falsehood the constant
+ * above exists to prevent, pointed the other way.
+ *
+ * Two days is the lag, no more. A `decaying`/`easing`/`flat` shape means the run
+ * has already turned over, so it keeps the tighter grace and wraps on schedule.
+ */
+const ONGOING_LAG_GRACE_DAYS = 2;
+
+/** The shape the detector assigned; `sustained` is the one that means "still
+ *  going". Typed loosely because it arrives as free text on the candidate. */
+const isSustained = (shape: string | null | undefined): boolean => shape === 'sustained';
+
 export type EventPhase = 'live' | 'wrapped';
 
 /** Whether the event is still running, given the inferred window. Unknown or
@@ -228,13 +248,15 @@ export function eventPhase(
   windowFrom: string | null | undefined,
   windowTo: string | null | undefined,
   now: number,
+  shape?: string | null,
 ): EventPhase {
   if (!windowTo) return 'live';
   const end = Date.parse(`${windowTo}T00:00:00Z`);
   if (Number.isNaN(end)) return 'live';
   const today = Math.floor(now / 86_400_000);
   const endDay = Math.floor(end / 86_400_000);
-  return today > endDay + WINDOW_LAG_GRACE_DAYS ? 'wrapped' : 'live';
+  const grace = isSustained(shape) ? ONGOING_LAG_GRACE_DAYS : WINDOW_LAG_GRACE_DAYS;
+  return today > endDay + grace ? 'wrapped' : 'live';
 }
 
 /** The card's status word. "Live" only while it actually is. */
@@ -242,8 +264,9 @@ export function eventStatusLabel(
   windowFrom: string | null | undefined,
   windowTo: string | null | undefined,
   now: number,
+  shape?: string | null,
 ): string {
-  return eventPhase(windowFrom, windowTo, now) === 'wrapped' ? 'Just wrapped' : 'Live';
+  return eventPhase(windowFrom, windowTo, now, shape) === 'wrapped' ? 'Just wrapped' : 'Live';
 }
 
 /**
@@ -261,9 +284,10 @@ export function eventDayLabel(
   windowFrom: string | null | undefined,
   windowTo: string | null | undefined,
   now: number,
+  shape?: string | null,
 ): string | null {
   if (!windowFrom) return null;
-  if (eventPhase(windowFrom, windowTo, now) === 'wrapped') return null;
+  if (eventPhase(windowFrom, windowTo, now, shape) === 'wrapped') return null;
   const start = Date.parse(`${windowFrom}T00:00:00Z`);
   if (Number.isNaN(start)) return null;
   const today = Math.floor(now / 86_400_000);
@@ -397,8 +421,17 @@ export function rankPulse(
           : relativeAgeLabel(ageHours),
       badge: badgeFor(c),
       subtitle: subtitleFor(c, now),
-      dayLabel: c.kind === 'live_event' ? eventDayLabel(c.windowFrom, c.windowTo, now) : null,
-      statusLabel: c.kind === 'live_event' ? eventStatusLabel(c.windowFrom, c.windowTo, now) : null,
+      // `subtype` carries the detector's shape on a live_event (get_pulse_candidates
+      // maps `le.shape as subtype`) — it's what tells the copy whether the run is
+      // still going, so the lag grace can be honest in both directions.
+      dayLabel:
+        c.kind === 'live_event'
+          ? eventDayLabel(c.windowFrom, c.windowTo, now, c.subtype)
+          : null,
+      statusLabel:
+        c.kind === 'live_event'
+          ? eventStatusLabel(c.windowFrom, c.windowTo, now, c.subtype)
+          : null,
     });
   }
 

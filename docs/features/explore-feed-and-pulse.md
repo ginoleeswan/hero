@@ -116,11 +116,29 @@ rationale lives in `docs/superpowers/specs/2026-07-26-pulse-tuning-guide.md`.
 
 Real-world events (SDCC, a Direct) are _detected_ from Wikipedia attention, not
 read from a calendar: the `sync-watched-events` edge function writes detector
-state into `watched_events`, and `get_live_events` only ever returns rows an
-**admin approved** — nothing re-skins Explore off a threshold alone
+state into `watched_events`, and `get_live_events` returns anything the detector
+calls `live` **unless it was explicitly rejected**
 (`20260726150000_watched_events.sql`, `src/lib/db/events.ts`). Each event gets
 a dossier page at `/event/[slug]` (`useEventDossier` → `get_event_dossier`) and
 an index at `/event` (`get_event_index`), both platform-paired.
+
+**Approval is a veto, not a prerequisite** — inverted by
+`20260815080000_live_events_publish_by_default.sql`, whose header carries the
+full argument. Short version: the opt-in gate was built to protect a takeover
+skin that was never implemented, there is no admin surface or notification for
+it, so `pending` meant "no" forever — D23 2026 was detected `live` at 3.37× and
+sat unpublished through the event. Control belongs on the **policy** (the
+curated 20-row watch list and the `detect.ts` thresholds), not on each firing.
+`admin_set_watched_event_approval` still sets `rejected` as a kill switch. A
+human gate is still right for anything irreversible: **push must keep its own.**
+
+Copy has to stay honest in _both_ directions. Pageviews lag reality by 1–2 days,
+so a running event's inferred window can close before the event does; a
+`sustained` shape (the detector's "this run reaches my newest day") therefore
+gets `ONGOING_LAG_GRACE_DAYS` = 2 in `eventPhase`, where every other shape keeps
+a single day. Wider than that and the card claims "DAY 5" of a three-day
+convention; narrower and it says "Just wrapped" mid-event — which is exactly how
+D23 would have read.
 
 ## Covers, campaigns, personalised rows
 

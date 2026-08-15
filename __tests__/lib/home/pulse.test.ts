@@ -468,6 +468,30 @@ describe('eventDayLabel — the live card counts days', () => {
     expect(eventPhase('2026-07-23', null, twoDaysAfter)).toBe('live');
   });
 
+  it('gives a still-running event a second day of grace, and only that one', () => {
+    // D23 2026 ran Aug 14-16. On the 15th the freshest pageview data was the
+    // 13th, so the inferred window was 08-11 → 08-13 — closed two days before
+    // the event was. At one day of grace the card read "Just wrapped" in the
+    // middle of the thing, which is the same lie as "DAY 5", pointed the other
+    // way. `sustained` is the detector saying the run reaches its newest day.
+    const aug15 = Date.parse('2026-08-15T12:00:00Z');
+    expect(eventPhase('2026-08-11', '2026-08-13', aug15, 'sustained')).toBe('live');
+    expect(eventStatusLabel('2026-08-11', '2026-08-13', aug15, 'sustained')).toBe('Live');
+    // Still capped at the real lag: a third day past the window is wrapped
+    // whatever the shape says.
+    const aug16 = Date.parse('2026-08-16T12:00:00Z');
+    expect(eventPhase('2026-08-11', '2026-08-13', aug16, 'sustained')).toBe('wrapped');
+    // A run that has already turned over keeps the tighter grace.
+    expect(eventPhase('2026-08-11', '2026-08-13', aug15, 'decaying')).toBe('wrapped');
+    expect(eventPhase('2026-08-11', '2026-08-13', aug15)).toBe('wrapped');
+  });
+
+  it('counts the extra grace day as FINAL DAY, never a day past the total', () => {
+    // Day 5 of a 3-day window is arithmetic, not a fact about the world.
+    const aug15 = Date.parse('2026-08-15T12:00:00Z');
+    expect(eventDayLabel('2026-08-11', '2026-08-13', aug15, 'sustained')).toBe('FINAL DAY');
+  });
+
   it('returns null before the window opens, or when it cannot be parsed', () => {
     expect(eventDayLabel('2026-08-01', '2026-08-04', NOW)).toBeNull();
     expect(eventDayLabel(null, '2026-07-26', NOW)).toBeNull();
