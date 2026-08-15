@@ -312,6 +312,27 @@ export function EventDossier({
   const inner = { width: '100%' as const, maxWidth: measure, alignSelf: 'center' as const };
   const curveH = wide ? EVENT_STAGE.curveHWide : EVENT_STAGE.curveH;
 
+  // The venue, but only when it is worth a graphic — this edition's city against
+  // where the event usually runs. Every field has to be present: a map with one
+  // end missing is a map that cannot draw the thing it exists to draw.
+  const movedVenue =
+    event.venueCity &&
+    event.venueUsualCity &&
+    event.venueCity !== event.venueUsualCity &&
+    event.venueLat !== null &&
+    event.venueLon !== null &&
+    event.venueUsualLat !== null &&
+    event.venueUsualLon !== null
+      ? {
+          city: event.venueCity,
+          lat: event.venueLat,
+          lon: event.venueLon,
+          fromCity: event.venueUsualCity,
+          fromLat: event.venueUsualLat,
+          fromLon: event.venueUsualLon,
+        }
+      : null;
+
   // Fluid grids. Fixed-width cells left a ragged gutter — at 390 the faces
   // filled 284 of 354px and the row stopped dead two-thirds across. Columns are
   // derived from the space actually available, then the cells divide it exactly,
@@ -484,10 +505,18 @@ export function EventDossier({
                 <Text style={[s.title, { color: accent }]}>{event.headline}</Text>
               )}
 
+              {/* Dates, length, and WHERE — one line, because they are one
+                  fact about the same occasion. The venue was the obvious thing
+                  missing from this masthead: every edition page could tell you
+                  when a convention ran and how loud it got, and none of them
+                  could tell you what city to picture. It costs no new furniture
+                  here; absent for a broadcast, which is honest rather than
+                  incomplete — a Nintendo Direct happened nowhere. */}
               {!!windowLabel && (
                 <Text style={s.window}>
                   {windowLabel}
                   {windowDays ? ` · ${windowDays} day${windowDays === 1 ? '' : 's'}` : ''}
+                  {event.venueCity ? ` · ${event.venueCity}` : ''}
                 </Text>
               )}
 
@@ -508,6 +537,30 @@ export function EventDossier({
                 >
                   {event.recap}
                 </Text>
+              )}
+
+              {/* The map, and ONLY when the venue moved.
+                  A pin on every edition would be furniture: eighteen of the
+                  twenty-one watched events have sat in the same hall for a
+                  decade, and drawing the world to say "San Diego" about San
+                  Diego Comic-Con tells a reader nothing the event's own name
+                  did not. When it HAS moved the location is the story — D23
+                  2018 is a different continent from D23 2017 — so the graphic
+                  appears exactly where there is something to point at, and
+                  shows the jump rather than the destination. */}
+              {movedVenue && (
+                <View style={s.venueBlock}>
+                  <VenueMap
+                    city={movedVenue.city}
+                    lat={movedVenue.lat}
+                    lon={movedVenue.lon}
+                    fromCity={movedVenue.fromCity}
+                    fromLat={movedVenue.fromLat}
+                    fromLon={movedVenue.fromLon}
+                    accent={accent}
+                    width={wide ? 228 : 190}
+                  />
+                </View>
               )}
             </View>
 
@@ -553,27 +606,6 @@ export function EventDossier({
               )}
               {!!event.editsRecent && (
                 <Stat value={String(event.editsRecent)} label="article edits" />
-              )}
-
-              {/* Where it happened, as the rail's last fact and the only human
-                  one in it. The other two are readings off an instrument; this
-                  is a place a reader could have stood.
-
-                  It earns the space because for three of the watched events the
-                  venue MOVES, and the archive was carrying that in prose — D23
-                  2018's recap is literally "held at the Tokyo Disney Resort
-                  rather than Anaheim", which is a sentence doing a picture's
-                  job. Absent for a broadcast, which is honest rather than
-                  missing: a Nintendo Direct happened nowhere. */}
-              {!!event.venue && event.venueLat !== null && event.venueLon !== null && (
-                <VenueMap
-                  venue={event.venue}
-                  city={event.venueCity}
-                  lat={event.venueLat}
-                  lon={event.venueLon}
-                  accent={accent}
-                  width={wide ? 208 : 168}
-                />
               )}
             </View>
           </View>
@@ -1166,6 +1198,7 @@ const s = StyleSheet.create({
   // figures 17pt above the 40pt one and set their labels on a different line
   // from its — three stats, three baselines, no rail.
   stats: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: 34 },
+  venueBlock: { marginTop: 22 },
   stat: { gap: EVENT_STAGE.statInnerGap },
   statBig: { fontFamily: 'Flame-Regular', fontSize: 40, lineHeight: EVENT_STAGE.statBigLine },
   // Flame needs lineHeight >= 1.22x fontSize; 64 -> 78.

@@ -1,25 +1,31 @@
 // src/components/event/VenueMap.tsx
-// Where an edition was held, as a pin on a stylised world.
+// The year this event was somewhere else, drawn as the move.
 //
-// The archive already carried this in prose — "D23 Expo Japan, held at the Tokyo
-// Disney Resort rather than Anaheim" — which is a sentence doing a picture's job.
-// Three of the watched events genuinely move (D23, Star Wars Celebration, PAX)
-// and for those the location IS news; for the rest, "the same hall for a decade"
-// is worth knowing too.
+// The first version of this put a pin on every edition page, and that was the
+// wrong idea done competently. A venue is only NEWS when it moved: eighteen of
+// the twenty-one watched events have sat in the same hall for a decade, and a
+// map that draws the world to say "San Diego" about San Diego Comic-Con is
+// furniture. The three that move are the whole point — D23 has been to Anaheim,
+// Urayasu and Bay Lake; Star Wars Celebration changes country by design; PAX is
+// two shows wearing one name.
+//
+// So this renders only when an edition's city differs from where its event
+// usually runs, and when it does it shows BOTH places and the jump between them.
+// One pin answers "where"; two pins and a line answer "and that is unusual",
+// which is the only reason the graphic is on the page at all. The archive was
+// already saying it in prose — D23 2018's recap is literally "held at the Tokyo
+// Disney Resort rather than Anaheim" — and this is that sentence as a picture.
 //
 // Why a drawn map rather than a tile service: tiles need the network, would not
-// survive the crawler surface's CSP, and arrive in somebody else's palette —
-// a grey-and-blue rectangle dropped into a page that is otherwise ink, paper and
-// one accent. This is ~40 polygons of coastline at roughly 5° resolution, which
-// is all the fidelity a 200pt-wide graphic can show, and it is drawn in the
-// page's own colours.
+// survive the crawler surface's CSP, and arrive in somebody else's palette — a
+// grey-and-blue rectangle in a page that is otherwise ink, paper and one accent.
 //
-// Equirectangular, deliberately. It is the projection whose maths is a single
-// linear map from (lon, lat) to (x, y), which means a pin cannot drift from its
-// coastline no matter how the box is sized — and at this scale the distortion
-// everyone objects to in Mercator is invisible anyway.
+// Equirectangular, deliberately. Its projection is a single linear map from
+// (lon, lat) to (x, y), so a pin cannot drift from its coastline at any box
+// size, and at this scale the distortion everyone objects to in Mercator is
+// invisible anyway.
 import { View, StyleSheet } from 'react-native';
-import Svg, { Path, Circle, Rect, G } from 'react-native-svg';
+import Svg, { Path, Circle, Rect, G, Line } from 'react-native-svg';
 import { Text } from '../ui/Text';
 import { INK_TEXT } from '../../constants/colors';
 
@@ -27,9 +33,8 @@ import { INK_TEXT } from '../../constants/colors';
  * Coastlines as [lon, lat] rings, coarse on purpose.
  *
  * Hand-authored rather than imported: a real topology file is hundreds of
- * kilobytes for a graphic that is 200pt wide, and this ships as part of the
- * bundle either way. Accuracy is at the level of "that is clearly Japan, and it
- * is clearly not California", which is the entire question being asked.
+ * kilobytes for a graphic 200pt wide. Accuracy is at the level of "that is
+ * clearly Japan, and it is clearly not California", which is the whole question.
  */
 const LAND: [number, number][][] = [
   // North America
@@ -150,16 +155,6 @@ const LAND: [number, number][][] = [
     [3, 43],
     [-9, 43],
   ],
-  // Scandinavia's Baltic bite, so northern Europe is not a solid block
-  [
-    [10, 55],
-    [14, 55],
-    [20, 60],
-    [24, 66],
-    [16, 68],
-    [10, 63],
-    [10, 55],
-  ],
   // Great Britain
   [
     [-5, 50],
@@ -233,12 +228,11 @@ const LAND: [number, number][][] = [
   ],
 ];
 
-/** Equirectangular. lon −180..180 → 0..w, lat 90..−90 → 0..h. */
+/** Equirectangular. Vertical range is clipped to ±83°: Antarctica is not drawn
+ *  and the poles hold no conventions, which buys ~8% more scale on the part of
+ *  the world anything happens in. */
 const project = (lon: number, lat: number, w: number, h: number) => ({
   x: ((lon + 180) / 360) * w,
-  // Antarctica is not drawn and the poles carry no venues, so the vertical range
-  // is clipped to ±83°. It buys about 8% more scale on the part of the world
-  // anything actually happens in.
   y: ((83 - lat) / 166) * h,
 });
 
@@ -251,30 +245,64 @@ const ringToPath = (ring: [number, number][], w: number, h: number) =>
     .join('') + 'Z';
 
 export function VenueMap({
-  venue,
   city,
   lat,
   lon,
+  fromCity,
+  fromLat,
+  fromLon,
   accent,
-  width = 200,
+  width = 208,
 }: {
-  venue: string;
-  city: string | null;
+  /** Where this edition actually was. */
+  city: string;
   lat: number;
   lon: number;
+  /** Where the event usually runs. */
+  fromCity: string;
+  fromLat: number;
+  fromLon: number;
   accent: string;
-  /** The graphic's width. Height follows from the projection's 166°×360° box. */
   width?: number;
 }) {
   const w = width;
   const h = Math.round((w * 166) / 360);
-  const pin = project(lon, lat, w, h);
+  const to = project(lon, lat, w, h);
+  const from = project(fromLon, fromLat, w, h);
+
+  // The short way round, which for Anaheim → Urayasu is across the Pacific, not
+  // back across five continents. When the shorter path crosses the antimeridian
+  // the line is drawn as two segments — leaving one edge and re-entering at the
+  // other — which is also exactly what crossing the Pacific looks like on a flat
+  // map, so the honest maths and the legible picture are the same picture.
+  const dLon = lon - fromLon;
+  const wraps = Math.abs(dLon) > 180;
+  const legs: { x1: number; y1: number; x2: number; y2: number }[] = wraps
+    ? (() => {
+        // Fraction of the journey completed at the edge, so the two segments meet
+        // the frame at the same latitude they would have crossed it at.
+        const east = dLon < 0; // travelling east off the right-hand edge
+        const span = 360 - Math.abs(dLon);
+        const toEdge = east ? 180 - fromLon : fromLon + 180;
+        const t = Math.abs(toEdge) / span;
+        const yEdge = from.y + (to.y - from.y) * t;
+        return east
+          ? [
+              { x1: from.x, y1: from.y, x2: w, y2: yEdge },
+              { x1: 0, y1: yEdge, x2: to.x, y2: to.y },
+            ]
+          : [
+              { x1: from.x, y1: from.y, x2: 0, y2: yEdge },
+              { x1: w, y1: yEdge, x2: to.x, y2: to.y },
+            ];
+      })()
+    : [{ x1: from.x, y1: from.y, x2: to.x, y2: to.y }];
 
   return (
     <View style={s.wrap}>
       <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-        {/* The sea. A flat wash rather than a colour: this sits on ink, and a
-            blue ocean would be the one thing on the page not in the palette. */}
+        {/* The sea. A wash rather than a colour: this sits on ink, and a blue
+            ocean would be the one thing on the page outside the palette. */}
         <Rect x={0} y={0} width={w} height={h} rx={4} fill="rgba(245,235,220,0.05)" />
         <G>
           {LAND.map((ring, i) => (
@@ -287,39 +315,52 @@ export function VenueMap({
             />
           ))}
         </G>
-        {/* The pin, drawn as a target rather than a teardrop marker. A map pin is
-            a UI convention borrowed from somebody else's product; two rings and a
-            dot is the same information in this page's own language, and it reads
-            at 4pt where a teardrop does not. */}
-        <Circle cx={pin.x} cy={pin.y} r={7} fill={accent} opacity={0.18} />
-        <Circle cx={pin.x} cy={pin.y} r={3.6} fill={accent} opacity={0.42} />
-        <Circle cx={pin.x} cy={pin.y} r={1.9} fill={accent} />
+        {legs.map((l, i) => (
+          <Line
+            key={i}
+            x1={l.x1}
+            y1={l.y1}
+            x2={l.x2}
+            y2={l.y2}
+            stroke={accent}
+            strokeWidth={1}
+            strokeDasharray="2 2.5"
+            opacity={0.5}
+          />
+        ))}
+        {/* Where it usually is: a hollow ring, so it reads as the place being
+            departed from rather than as a second event. */}
+        <Circle
+          cx={from.x}
+          cy={from.y}
+          r={2.6}
+          fill="none"
+          stroke="rgba(245,235,220,0.55)"
+          strokeWidth={1.2}
+        />
+        {/* Where it was. Two rings and a dot rather than a teardrop marker: the
+            teardrop is a UI convention borrowed from somebody else's product,
+            and it does not read at 4pt where a target does. */}
+        <Circle cx={to.x} cy={to.y} r={7} fill={accent} opacity={0.18} />
+        <Circle cx={to.x} cy={to.y} r={3.6} fill={accent} opacity={0.42} />
+        <Circle cx={to.x} cy={to.y} r={1.9} fill={accent} />
       </Svg>
-      <Text style={s.venue} numberOfLines={2}>
-        {venue}
+      <Text style={s.note}>
+        <Text style={[s.noteStrong, { color: accent }]}>{city}</Text>
+        {` — usually ${fromCity}`}
       </Text>
-      {!!city && (
-        <Text style={s.city} numberOfLines={1}>
-          {city}
-        </Text>
-      )}
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  wrap: { gap: 8 },
-  venue: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    lineHeight: 17,
-    color: 'rgba(245,235,220,0.9)',
-  },
-  city: {
+  wrap: { gap: 10, alignItems: 'flex-start' },
+  note: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 11,
-    lineHeight: 15,
-    letterSpacing: 0.4,
+    fontSize: 12,
+    lineHeight: 16,
     color: INK_TEXT.faint,
+    maxWidth: 260,
   },
+  noteStrong: { fontFamily: 'Nunito_700Bold' },
 });

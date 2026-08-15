@@ -37,6 +37,12 @@ export interface EventDossierEvent {
   venueCity: string | null;
   venueLat: number | null;
   venueLon: number | null;
+  /** Where this event USUALLY runs, so the page can tell whether its own venue
+   *  is worth remarking on. Modal across the event's unsuppressed editions —
+   *  "last time" would have called D23 2024's Anaheim the anomaly. */
+  venueUsualCity: string | null;
+  venueUsualLat: number | null;
+  venueUsualLon: number | null;
 }
 
 /**
@@ -178,6 +184,10 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
       venueCity: typeof e.venue_city === 'string' && e.venue_city ? e.venue_city : null,
       venueLat: num(e.venue_lat),
       venueLon: num(e.venue_lon),
+      venueUsualCity:
+        typeof e.venue_usual_city === 'string' && e.venue_usual_city ? e.venue_usual_city : null,
+      venueUsualLat: num(e.venue_usual_lat),
+      venueUsualLon: num(e.venue_usual_lon),
     },
     // Defensive against an unapplied migration: an older RPC has no
     // `announcements` key at all, and the section must then render nothing
