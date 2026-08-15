@@ -207,15 +207,16 @@ export function EditionList({
               </View>
               {/* The faces say what the year was about. Eight lines of
                   multiples do not, and this is the hub's only route into a
-                  character page. */}
+                  character page. `contain`, not `cover`: an avatar is a whole
+                  mark and cropping it to a square box clips the silhouette. */}
               {e.faces.length > 0 && (
                 <View style={s.faces}>
-                  {e.faces.map((f, i) => (
+                  {e.faces.map((f) => (
                     <Image
                       key={f.heroId}
                       source={{ uri: f.portraitUrl }}
-                      style={[s.face, i > 0 && s.faceOverlap]}
-                      contentFit="cover"
+                      style={s.face}
+                      contentFit="contain"
                       transition={160}
                       accessibilityLabel={f.name}
                     />
@@ -342,22 +343,16 @@ const s = StyleSheet.create({
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   // Overlapped, like a credits strip — three separate circles read as three
   // things, an overlapped set reads as "the cast of that year".
-  faces: { flexDirection: 'row', alignItems: 'center' },
-  // The RPC now serves heroes.avatar_url first — a flat head-icon on a
-  // transparent ground, which is what survives being 30pt wide. Two consequences
-  // for the style: the disc behind it is now visible art rather than a loading
-  // grey (so it is warmed to the paper), and overlapping cut-outs with no edge
-  // merge into one blob, so each face carries a paper-coloured ring to cut
-  // itself out of the one behind.
-  face: {
-    width: 30,
-    height: 30,
-    borderRadius: 999,
-    backgroundColor: 'rgba(11,24,32,0.06)',
-    borderWidth: 2,
-    borderColor: SURFACE.paper,
-  },
-  faceOverlap: { marginLeft: -10 },
+  // The RPC serves heroes.avatar_url first — a flat head-icon on a transparent
+  // ground, which is what survives being 30pt wide. Avatars are drawn to sit
+  // FLAT on the page: no disc, no ring, no tint behind them. A circular crop
+  // would cut the silhouette they were designed to keep, and a fill behind a
+  // transparent PNG turns a mark into a sticker.
+  //
+  // That rules out the overlapped credits strip — flat cut-outs with no edge
+  // merge into one blob — so the faces are spaced instead.
+  faces: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  face: { width: 34, height: 34 },
   barTrack: {
     height: 3,
     borderRadius: 999,

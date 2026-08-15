@@ -311,6 +311,68 @@ export function EventDossier({
             </Section>
           )}
 
+          {/* The one section that is neither attention data nor a marketing
+              string: the rights holder naming characters, matched against the
+              catalogue. "Storm, Jean Grey, Cyclops, Emma Frost, Rogue" is what
+              a reader means by "what happened at D23", and no measurement can
+              produce it. Sits directly under the announcements because it is
+              read out of them.
+
+              Placed before the trailers and the readership on purpose — a
+              studio SAYING a name outranks a curve that moved afterwards. */}
+          {revealed.length > 0 && (
+            <Section title="Who they named" note="Characters called out in what was announced">
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginHorizontal: -pad }}
+                contentContainerStyle={[s.castRail, { paddingHorizontal: pad }]}
+              >
+                {revealed.map((r) => (
+                  <Pressable
+                    key={r.heroId}
+                    style={s.castCell}
+                    onPress={() => onHeroPress(r.heroId)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${r.name}${r.titleName ? `, named in ${r.titleName}` : ''}`}
+                  >
+                    {!!r.portraitUrl && (
+                      <Image
+                        source={{ uri: r.portraitUrl }}
+                        style={s.castFace}
+                        contentFit="contain"
+                        transition={160}
+                      />
+                    )}
+                    <Text style={s.castName} numberOfLines={2}>
+                      {r.name}
+                    </Text>
+                    <Text style={s.castTitle} numberOfLines={1}>
+                      {r.titleName ?? r.publisher ?? ''}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+
+              {/* Two named characters is a matchup the app can already run, and
+                  this is the only place on an event page that hands the reader
+                  something to DO with what they just read. */}
+              {!!onArenaPress && revealed.length >= 2 && (
+                <Pressable
+                  style={[s.arenaCta, { borderColor: `${accent}66` }]}
+                  onPress={() => onArenaPress(revealed[0].heroId, revealed[1].heroId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Put ${revealed[0].name} against ${revealed[1].name} in the Arena`}
+                >
+                  <Text style={s.arenaCtaText}>
+                    {revealed[0].name} vs {revealed[1].name}
+                  </Text>
+                  <Text style={s.arenaCtaHint}>Settle it in the Arena</Text>
+                </Pressable>
+              )}
+            </Section>
+          )}
+
           {trailers.length > 0 && (
             <Section title="What dropped" note="Trailers published inside the window">
               {/* The lead gets its backdrop at size — these are the best images
@@ -360,18 +422,14 @@ export function EventDossier({
                     accessibilityLabel={`${sg.name}, ${sg.spike}× reads`}
                   >
                     <View style={[s.faceWrap, { width: faceGrid.cell, height: faceGrid.cell }]}>
+                      {/* Flat and uncropped: no circular mask, no fill. The
+                          avatar is already a finished mark and a round crop
+                          shears the silhouette it was drawn to keep. */}
                       {!!sg.portraitUrl && (
                         <Image
                           source={{ uri: sg.portraitUrl }}
-                          style={[
-                            s.face,
-                            {
-                              width: faceGrid.cell,
-                              height: faceGrid.cell,
-                              borderRadius: faceGrid.cell / 2,
-                            },
-                          ]}
-                          contentFit="cover"
+                          style={[s.face, { width: faceGrid.cell, height: faceGrid.cell }]}
+                          contentFit="contain"
                           transition={160}
                         />
                       )}
@@ -688,6 +746,25 @@ const s = StyleSheet.create({
     color: PAPER_TEXT.muted,
   },
 
+  castRail: { gap: 14, paddingTop: 20 },
+  castCell: { width: 78, gap: 4, alignItems: 'center' },
+  // Flat, uncropped, no fill — see `face`.
+  castFace: { width: 66, height: 66 },
+  castName: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    lineHeight: 16,
+    color: COLORS.deepNavy,
+    textAlign: 'center',
+  },
+  castTitle: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    lineHeight: 15,
+    color: PAPER_TEXT.muted,
+    textAlign: 'center',
+  },
+
   arenaCta: {
     marginTop: 18,
     alignSelf: 'flex-start',
@@ -713,7 +790,11 @@ const s = StyleSheet.create({
   faceGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   faceCell: { gap: 7 },
   faceWrap: {},
-  face: { backgroundColor: 'rgba(11,24,32,0.08)' },
+  // No fill. These are heroes.avatar_url — flat head-icons on a transparent
+  // ground, and they are meant to sit directly on the page. A tint behind one
+  // turns the mark into a sticker, and the loading grey it used to carry was
+  // visible through every transparent pixel of the art.
+  face: {},
   spikePip: {
     position: 'absolute',
     right: -2,
