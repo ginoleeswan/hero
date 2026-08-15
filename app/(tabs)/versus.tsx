@@ -37,7 +37,7 @@ import { MakeAFight } from '../../src/components/versus/MakeAFight';
 import { VersusSkeleton } from '../../src/components/skeletons/VersusSkeleton';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
-import { READING_MAX_WIDTH } from '../../src/components/ui/PageColumn';
+import { PageColumn, READING_MAX_WIDTH } from '../../src/components/ui/PageColumn';
 
 export default function VersusScreen() {
   const router = useRouter();
@@ -124,54 +124,62 @@ export default function VersusScreen() {
           locations={[0, 0.5, 1]}
           style={[styles.stage, { paddingTop: topInset + 24 }]}
         >
-          <Text style={styles.eyebrow}>{"Today's Debate"}</Text>
-          {matchup ? (
-            <Text style={[styles.title, hookText && styles.titleWithHook]} numberOfLines={1}>
-              {matchup.heroA.name} vs {matchup.heroB.name}
-            </Text>
-          ) : (
-            <Text style={styles.title}>The Arena</Text>
-          )}
-          {matchup && hookText ? <Text style={styles.hook}>{hookText}</Text> : null}
+          {/* One column for the stage's content — the gradient behind it stays
+              full-bleed (it's the room), but the title, showdown and ledger
+              now share a single centred measure instead of each capping
+              itself. No-op on a phone: the cap is wider than the window. */}
+          <PageColumn maxWidth={READING_MAX_WIDTH} style={styles.stageColumn}>
+            <Text style={styles.eyebrow}>{"Today's Debate"}</Text>
+            {matchup ? (
+              <Text style={[styles.title, hookText && styles.titleWithHook]} numberOfLines={1}>
+                {matchup.heroA.name} vs {matchup.heroB.name}
+              </Text>
+            ) : (
+              <Text style={styles.title}>The Arena</Text>
+            )}
+            {matchup && hookText ? <Text style={styles.hook}>{hookText}</Text> : null}
 
-          {/* Wrapper so the dissolving skeleton overlays the showdown block only. */}
-          <View style={styles.showdown}>
-            {showdownLoading ? (
-              showdownPhase === 'skeleton' ? (
-                <VersusSkeleton />
-              ) : null
-            ) : matchup ? (
-              <>
-                <ShowdownCards
-                  matchup={matchup}
-                  takesCount={takesCount}
-                  onOpenArena={() => openArena(matchup.heroA, matchup.heroB)}
-                />
-              </>
-            ) : null}
-            {showdownPhase === 'crossfade' ? (
-              <FadeOutSkeleton>
-                <VersusSkeleton />
-              </FadeOutSkeleton>
-            ) : null}
-          </View>
+            {/* Wrapper so the dissolving skeleton overlays the showdown block only. */}
+            <View style={styles.showdown}>
+              {showdownLoading ? (
+                showdownPhase === 'skeleton' ? (
+                  <VersusSkeleton />
+                ) : null
+              ) : matchup ? (
+                <>
+                  <ShowdownCards
+                    matchup={matchup}
+                    takesCount={takesCount}
+                    onOpenArena={() => openArena(matchup.heroA, matchup.heroB)}
+                  />
+                </>
+              ) : null}
+              {showdownPhase === 'crossfade' ? (
+                <FadeOutSkeleton>
+                  <VersusSkeleton />
+                </FadeOutSkeleton>
+              ) : null}
+            </View>
 
-          {yesterday ? <YesterdayStrip yesterday={yesterday} /> : null}
+            {yesterday ? <YesterdayStrip yesterday={yesterday} /> : null}
 
-          {/* ── What's left today — state, not a third way to reach the same
-                 three screens. The debate line records what YOU did; repeating
-                 the pairing already shown above it would be an echo. ── */}
-          <View style={styles.ledgerWrap}>
-            <TodaysLedger
-              onPuzzle={() => router.push('/play')}
-              onDebate={() => (matchup ? openArena(matchup.heroA, matchup.heroB) : undefined)}
-              onTeamBattle={teamBattle ? openTeamBattle : undefined}
-              debateNote={matchup ? 'Tap a card above to call it' : 'Loading'}
-              teamNote={
-                teamBattle ? `${teamBattle.teamA.name} vs ${teamBattle.teamB.name}` : 'Eight a side'
-              }
-            />
-          </View>
+            {/* ── What's left today — state, not a third way to reach the same
+                   three screens. The debate line records what YOU did; repeating
+                   the pairing already shown above it would be an echo. ── */}
+            <View style={styles.ledgerWrap}>
+              <TodaysLedger
+                onPuzzle={() => router.push('/play')}
+                onDebate={() => (matchup ? openArena(matchup.heroA, matchup.heroB) : undefined)}
+                onTeamBattle={teamBattle ? openTeamBattle : undefined}
+                debateNote={matchup ? 'Tap a card above to call it' : 'Loading'}
+                teamNote={
+                  teamBattle
+                    ? `${teamBattle.teamA.name} vs ${teamBattle.teamB.name}`
+                    : 'Eight a side'
+                }
+              />
+            </View>
+          </PageColumn>
         </LinearGradient>
 
         {/* ── Act 2 — everything that starts a fight, in one place ── */}
@@ -215,6 +223,9 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.deepNavy },
 
   stage: { paddingHorizontal: 16, paddingBottom: 18, alignItems: 'center' },
+  // The stage's single column — see the PageColumn note above it. Centres its
+  // children the way the stage used to centre each of them individually.
+  stageColumn: { alignItems: 'center' },
   // Gold, because it names the live thing; the type is the shared SUBHEAD.
   eyebrow: { ...SUBHEAD, color: COLORS.goldAccent, marginBottom: 6 },
   title: {
@@ -226,10 +237,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   titleWithHook: { marginBottom: 8 },
-  // Centred and capped rather than stretched: the navy stage still bleeds to
-  // the edges (it is the room), but the cards inside it stop being pulled a
-  // metre apart on a landscape iPad. No-op on a phone.
-  showdown: { width: '100%', maxWidth: READING_MAX_WIDTH, alignItems: 'center' },
+  // Width/cap now come from the shared PageColumn above; this just keeps the
+  // showdown cards centred within it.
+  showdown: { width: '100%', alignItems: 'center' },
   hook: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13.5,
@@ -239,5 +249,5 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     maxWidth: 320,
   },
-  ledgerWrap: { width: '100%', maxWidth: READING_MAX_WIDTH, marginTop: 6 },
+  ledgerWrap: { width: '100%', marginTop: 6 },
 });

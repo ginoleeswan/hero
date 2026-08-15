@@ -103,6 +103,15 @@ describe('railCardWidth', () => {
     expect(railCardWidth(IPAD_LANDSCAPE)).toBeLessThan(IPAD_LANDSCAPE * 0.6);
     expect(railCardWidth(IPAD_LANDSCAPE)).toBeGreaterThan(phoneCard);
   });
+
+  // The Arena's battle-builder cards regression: measured at ~840pt on an
+  // iPad Pro 13" landscape (1376pt) before this was fixed. 390 is already
+  // covered by IPHONE above; these two pin the fixed tablet value at the
+  // iPad Pro 11" (1032) and 13" (1376) landscape widths specifically.
+  it('is a fixed size at iPad Pro landscape widths, not a bigger proportion', () => {
+    expect(railCardWidth(1032)).toBe(260);
+    expect(railCardWidth(1376)).toBe(260);
+  });
 });
 
 describe('spotlightHeightFor', () => {

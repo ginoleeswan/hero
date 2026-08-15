@@ -22,7 +22,13 @@
 // meant to offer. The toggle swaps the pair for two squads, saying without a
 // word that one-v-one and team battle are siblings: the same act at scale.
 import { useState } from 'react';
-import { View, Pressable, StyleSheet, type LayoutChangeEvent } from 'react-native';
+import {
+  View,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  type LayoutChangeEvent,
+} from 'react-native';
 import { Text } from '../ui/Text';
 import Animated, {
   useSharedValue,
@@ -37,7 +43,9 @@ import * as Haptics from 'expo-haptics';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { SECTION, SUBHEAD } from '../../constants/arenaType';
 import { RADIUS } from '../../design';
+import { railCardWidth } from '../../constants/layout';
 import { HeroImage } from '../HeroImage';
+import { PageColumn, READING_MAX_WIDTH } from '../ui/PageColumn';
 import { RivalriesRail } from './RivalriesRail';
 import type { FighterArt } from '../../lib/compareHandoff';
 import type { Rivalry } from '../../lib/db/heroes';
@@ -79,6 +87,15 @@ export function MakeAFight({
 }) {
   const [team, setTeam] = useState(false);
 
+  // The dealt-clash slot was `width: '42%'` of this row's content box (its
+  // width minus the row's own H_PAD*2 inset) — a proportion of the window,
+  // which is why it read as a broken hand of oversized cards on an iPad. Below
+  // the tablet threshold `railCardWidth` returns that exact same product, so a
+  // phone sees the identical pixel value; above it, a fixed card instead of a
+  // bigger one.
+  const { width } = useWindowDimensions();
+  const cardW = railCardWidth(width - H_PAD * 2, 0.42);
+
   // ── the sliding thumb ────────────────────────────────────────────────────
   // Two separately-backgrounded pills cannot slide: the highlight simply
   // disappears from one segment and appears on the other, which is a state
@@ -110,98 +127,117 @@ export function MakeAFight({
 
   return (
     <View style={styles.wrap}>
-      <View style={[styles.inset, styles.head]}>
-        <Text style={styles.title}>Make a fight</Text>
-        <View style={styles.rule} />
-      </View>
-
-      {/* The track is a CHILD of the inset, never merged with it. As
-          `[styles.inset, styles.modes]` the two padding rules collided: the
-          longhand `paddingHorizontal: 16` beat the shorthand `padding: 3` on
-          the horizontal axis, so the control had 16pt of INTERNAL padding
-          left/right against 3pt top/bottom — and, because that inset was being
-          spent inside the track, no outer margin at all, leaving it flush to
-          the screen edge while the title and the fighter cards aligned at 16.
-          Both halves of "not optically balanced" came from this one line. */}
-      <View style={styles.inset}>
-        <View style={styles.modes} accessibilityRole="tablist" onLayout={onTrackLayout}>
-          {thumbW > 0 ? (
-            <Animated.View style={[styles.thumb, { width: thumbW }, thumbStyle]} />
-          ) : null}
-          {[
-            { on: !team, label: 'One v one', icon: 'person' as const, press: () => swap(false) },
-            { on: team, label: 'Team battle', icon: 'people' as const, press: () => swap(true) },
-          ].map((m) => (
-            <Pressable
-              key={m.label}
-              onPress={m.press}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: m.on }}
-              style={styles.mode}
-            >
-              <Ionicons name={m.icon} size={14} color={m.on ? COLORS.deepNavy : INK_TEXT.muted} />
-              <Text style={[styles.modeText, m.on && styles.modeTextOn]}>{m.label}</Text>
-            </Pressable>
-          ))}
+      {/* One column for the whole act, so the title, the track and the two
+          dealt cards share a left edge with the stage above them instead of
+          each picking its own (see the rail note below for what stays out of
+          it). No-op on a phone — the cap is wider than the window. */}
+      <PageColumn maxWidth={READING_MAX_WIDTH}>
+        <View style={[styles.inset, styles.head]}>
+          <Text style={styles.title}>Make a fight</Text>
+          <View style={styles.rule} />
         </View>
-      </View>
 
-      {/* Keyed so the swap is a real mount, which is what lets the new mode fade
-          up rather than replacing the old one between frames. The thumb is
-          already travelling; the content should arrive with it, not before it. */}
-      {team ? (
-        <Animated.View key="team" entering={reduced ? undefined : FadeIn.duration(200)}>
-          <View style={[styles.inset, styles.slots]}>
-            <Squad label="Your side" onPress={onDraft} />
-            <View style={styles.medallion}>
-              <Text style={styles.medallionText}>VS</Text>
+        {/* The track is a CHILD of the inset, never merged with it. As
+            `[styles.inset, styles.modes]` the two padding rules collided: the
+            longhand `paddingHorizontal: 16` beat the shorthand `padding: 3` on
+            the horizontal axis, so the control had 16pt of INTERNAL padding
+            left/right against 3pt top/bottom — and, because that inset was
+            being spent inside the track, no outer margin at all, leaving it
+            flush to the screen edge while the title and the fighter cards
+            aligned at 16. Both halves of "not optically balanced" came from
+            this one line. */}
+        <View style={styles.inset}>
+          <View style={styles.modes} accessibilityRole="tablist" onLayout={onTrackLayout}>
+            {thumbW > 0 ? (
+              <Animated.View style={[styles.thumb, { width: thumbW }, thumbStyle]} />
+            ) : null}
+            {[
+              { on: !team, label: 'One v one', icon: 'person' as const, press: () => swap(false) },
+              { on: team, label: 'Team battle', icon: 'people' as const, press: () => swap(true) },
+            ].map((m) => (
+              <Pressable
+                key={m.label}
+                onPress={m.press}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: m.on }}
+                style={styles.mode}
+              >
+                <Ionicons name={m.icon} size={14} color={m.on ? COLORS.deepNavy : INK_TEXT.muted} />
+                <Text style={[styles.modeText, m.on && styles.modeTextOn]}>{m.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* Keyed so the swap is a real mount, which is what lets the new mode
+            fade up rather than replacing the old one between frames. The
+            thumb is already travelling; the content should arrive with it,
+            not before it. */}
+        {team ? (
+          <Animated.View key="team" entering={reduced ? undefined : FadeIn.duration(200)}>
+            <View style={[styles.inset, styles.slots]}>
+              <Squad label="Your side" width={cardW} onPress={onDraft} />
+              <View style={styles.medallion}>
+                <Text style={styles.medallionText}>VS</Text>
+              </View>
+              <Squad label="Their side" width={cardW} onPress={onDraft} />
             </View>
-            <Squad label="Their side" onPress={onDraft} />
-          </View>
-          <View style={[styles.inset, styles.teamCta]}>
-            <Primary label="Draft the squads" icon="people" onPress={onDraft} />
-          </View>
-        </Animated.View>
-      ) : (
-        <Animated.View key="solo" entering={reduced ? undefined : FadeIn.duration(200)}>
-          <View style={[styles.inset, styles.slots]}>
-            <Fighter fighter={pair?.[0]} cant={-3.2} onPress={() => onChoose('a')} />
-            <View style={styles.medallion}>
-              <Text style={styles.medallionText}>VS</Text>
+            <View style={[styles.inset, styles.teamCta]}>
+              <Primary label="Draft the squads" icon="people" onPress={onDraft} />
             </View>
-            <Fighter fighter={pair?.[1]} cant={3.2} onPress={() => onChoose('b')} />
-          </View>
+          </Animated.View>
+        ) : (
+          <Animated.View key="solo" entering={reduced ? undefined : FadeIn.duration(200)}>
+            <View style={[styles.inset, styles.slots]}>
+              <Fighter
+                fighter={pair?.[0]}
+                cant={-3.2}
+                width={cardW}
+                onPress={() => onChoose('a')}
+              />
+              <View style={styles.medallion}>
+                <Text style={styles.medallionText}>VS</Text>
+              </View>
+              <Fighter fighter={pair?.[1]} cant={3.2} width={cardW} onPress={() => onChoose('b')} />
+            </View>
 
-          <View style={[styles.inset, styles.actions]}>
-            <Primary label="Fight" icon="flash" onPress={onFight} disabled={!pair} flex />
-            <Pressable
-              onPress={onShuffle}
-              disabled={!pair}
-              accessibilityRole="button"
-              accessibilityLabel="Deal a different clash"
-              style={({ pressed }) => [styles.shuffle, pressed && styles.dim, !pair && styles.off]}
-            >
-              <Ionicons name="shuffle" size={19} color={COLORS.goldAccent} />
-            </Pressable>
-          </View>
-          <Text style={[styles.inset, styles.hint]}>
-            Tap a fighter to swap that side · shuffle to deal another
-          </Text>
-        </Animated.View>
-      )}
+            <View style={[styles.inset, styles.actions]}>
+              <Primary label="Fight" icon="flash" onPress={onFight} disabled={!pair} flex />
+              <Pressable
+                onPress={onShuffle}
+                disabled={!pair}
+                accessibilityRole="button"
+                accessibilityLabel="Deal a different clash"
+                style={({ pressed }) => [
+                  styles.shuffle,
+                  pressed && styles.dim,
+                  !pair && styles.off,
+                ]}
+              >
+                <Ionicons name="shuffle" size={19} color={COLORS.goldAccent} />
+              </Pressable>
+            </View>
+            <Text style={[styles.inset, styles.hint]}>
+              Tap a fighter to swap that side · shuffle to deal another
+            </Text>
+          </Animated.View>
+        )}
 
-      {rivalries.length > 0 ? (
-        <View style={styles.ready}>
+        {rivalries.length > 0 ? (
           <View style={[styles.inset, styles.readyHead]}>
             <Text style={styles.readyLabel}>{"Or take one that's ready"}</Text>
             <Text style={styles.readyCount}>
               {rivalries.length} {rivalries.length === 1 ? 'rivalry' : 'rivalries'}
             </Text>
           </View>
-          {/* The rail escapes this padded block so cards run to the physical
-              screen edge — see the horizontal-rail rule in CLAUDE.md. */}
-          <RivalriesRail rivalries={rivalries} onOpen={onOpenRivalry} headless />
-        </View>
+        ) : null}
+      </PageColumn>
+
+      {/* The rail is the one thing left OUTSIDE the column: it brings its own
+          inset and must reach the physical screen edge, capped column or not
+          — see the horizontal-rail rule in CLAUDE.md. */}
+      {rivalries.length > 0 ? (
+        <RivalriesRail rivalries={rivalries} onOpen={onOpenRivalry} headless />
       ) : null}
     </View>
   );
@@ -212,10 +248,13 @@ export function MakeAFight({
 function Fighter({
   fighter,
   cant,
+  width,
   onPress,
 }: {
   fighter: FighterArt | undefined;
   cant: number;
+  /** From `railCardWidth` — a size, not a proportion. See MakeAFight's `cardW`. */
+  width: number;
   onPress: () => void;
 }) {
   return (
@@ -225,7 +264,7 @@ function Fighter({
       accessibilityLabel={fighter?.name ? `Swap ${fighter.name}` : 'Choose a fighter'}
       style={({ pressed }) => [
         styles.slot,
-        { transform: [{ rotate: `${cant}deg` }] },
+        { width, transform: [{ rotate: `${cant}deg` }] },
         !fighter && styles.slotEmpty,
         pressed && styles.slotPressed,
       ]}
@@ -261,13 +300,22 @@ function Fighter({
   );
 }
 
-function Squad({ label, onPress }: { label: string; onPress: () => void }) {
+function Squad({
+  label,
+  width,
+  onPress,
+}: {
+  label: string;
+  /** Matches the dealt fighter cards' width — see MakeAFight's `cardW`. */
+  width: number;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${label}, pick five`}
-      style={({ pressed }) => [styles.squad, pressed && styles.slotPressed]}
+      style={({ pressed }) => [styles.squad, { width }, pressed && styles.slotPressed]}
     >
       <View style={styles.pips}>
         {Array.from({ length: 5 }).map((_, i) => (
@@ -375,8 +423,9 @@ const styles = StyleSheet.create({
   modeTextOn: { color: COLORS.deepNavy },
 
   slots: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  // width comes from `cardW` (railCardWidth) at render time — a size, not a
+  // proportion; see the note by its computation above.
   slot: {
-    width: '42%',
     aspectRatio: SLOT_RATIO,
     borderRadius: RADIUS.xl,
     borderCurve: 'continuous',
@@ -423,7 +472,6 @@ const styles = StyleSheet.create({
     color: INK_TEXT.faint,
   },
   squad: {
-    width: '42%',
     height: SQUAD_H,
     borderRadius: RADIUS.xl,
     borderCurve: 'continuous',
@@ -499,10 +547,10 @@ const styles = StyleSheet.create({
   dim: { opacity: 0.6 },
   off: { opacity: 0.35 },
 
-  ready: { marginTop: 26 },
   readyHead: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(245,235,220,0.14)',
+    marginTop: 26,
     paddingTop: 16,
     flexDirection: 'row',
     alignItems: 'baseline',
