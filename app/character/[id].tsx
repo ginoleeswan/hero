@@ -682,9 +682,22 @@ export default function CharacterScreen() {
   const HERO_IMAGE_HEIGHT = hero.height;
   // In `wide` the art becomes a fixed left column and the sheet scrolls beside
   // it, so the identity moves out of the scroll flow and onto that column.
-  const split = hero.shape === 'wide';
+  // Web splits from 700pt and so does this: BOTH tablet shapes get the band +
+  // two-column body, not just landscape. Portrait was left on the phone's
+  // immersive layout, where the art block is `winW * heroImageAspect` — 1032 x
+  // 1135 on an iPad, so 79% of the fold is one image and nothing on the page
+  // says what the reader is looking at until they scroll. At 1032 with a 24pt
+  // gutter the split is 644 + 300, which is the division web itself runs from
+  // 700 up. The phone keeps the immersive design; `shape` is 'none' there.
+  const split = hero.shape !== 'none';
+  // Portrait's band is the same composition in a third of the width: 1032 - 24
+  // - (300 + 48) leaves the inner column 660pt, against landscape's 1004. The
+  // identity's two groups do not both fit on one row there — measured, the
+  // trait pills wrapped to three ragged rows while the meta group beside them
+  // sat under 60pt of empty band. So `tall` stacks them instead of splitting
+  // the row, which puts every trait on one line and gives the meta its own.
+  const tall = hero.shape === 'tall';
   const gutter = sectionGutter(winW, 20);
-  const SHEET_TOP = HERO_IMAGE_HEIGHT - SHEET_OVERLAP;
   const compareStripStyle = [styles.compareStrip, { paddingBottom: insets.bottom || 16 }];
   const {
     user,
@@ -821,44 +834,73 @@ export default function CharacterScreen() {
   // Clearance above a section title when jumping: native header + the nav bar.
   const NAV_CLEARANCE = HEADER_H + 52;
 
+  // The scroll offset of whatever container holds the sections — the beige
+  // sheet when stacked, the two-column body when split. This was the constant
+  // `HERO_IMAGE_HEIGHT - SHEET_OVERLAP`, which is the sheet's offset in the
+  // STACKED layout and a phantom in the split one: split renders no full-bleed
+  // art at all (the portrait is a 300pt card inside the scroll), so every
+  // quick-nav jump was landing hundreds of points past the section it named,
+  // and the nav itself only faded in after half an art block that does not
+  // exist. Measured instead, so the two layouts cannot disagree with it.
+  const [anchorBase, setAnchorBase] = useState(0);
+  const onSectionsLayout = (e: LayoutChangeEvent) => {
+    const y = Math.round(e.nativeEvent.layout.y);
+    setAnchorBase((prev) => (prev === y ? prev : y));
+  };
+  // Split's fold is the identity band, which is what `anchorBase` measures.
+  const fold = split ? anchorBase || HERO_IMAGE_HEIGHT : HERO_IMAGE_HEIGHT;
+
   const navOpacity = scrollY.interpolate({
-    inputRange: [HERO_IMAGE_HEIGHT * 0.45, HERO_IMAGE_HEIGHT * 0.62],
+    inputRange: [fold * 0.45, fold * 0.62],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
 
-  // Sections live inside the beige sheet, so their onLayout y is relative to the
-  // sheet — add the sheet's offset to get the absolute scroll position to jump to.
-  const registerAnchor = (key: string) => (e: LayoutChangeEvent) => {
-    sectionOffsets.current[key] = SHEET_TOP + e.nativeEvent.layout.y;
-  };
+  // Section `onLayout` y is relative to its container, so the base is added at
+  // read time rather than at layout time — the two arrive in either order, and
+  // baking the base in would freeze whichever value happened to be first.
+  const registerAnchor = useCallback(
+    (key: string) => (e: LayoutChangeEvent) => {
+      sectionOffsets.current[key] = e.nativeEvent.layout.y;
+    },
+    [],
+  );
 
-  const jumpTo = useCallback((key: string) => {
-    const y = sectionOffsets.current[key];
-    if (y == null) return;
-    Haptics.selectionAsync();
-    scrollRef.current?.scrollTo({ y: Math.max(0, y - NAV_CLEARANCE), animated: true });
+  const jumpTo = useCallback(
+    (key: string) => {
+      const y = sectionOffsets.current[key];
+      if (y == null) return;
+      Haptics.selectionAsync();
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, anchorBase + y - NAV_CLEARANCE),
+        animated: true,
+      });
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    [anchorBase],
+  );
 
-  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const y = e.nativeEvent.contentOffset.y;
-    setNavVisible((prev) => {
-      const next = y > HERO_IMAGE_HEIGHT * 0.5;
-      return next === prev ? prev : next;
-    });
-    const probe = y + NAV_CLEARANCE + 12;
-    let current = '';
-    for (const key of sectionOrder.current) {
-      const off = sectionOffsets.current[key];
-      if (off != null && off <= probe) current = key;
-    }
-    if (current !== activeRef.current) {
-      activeRef.current = current;
-      setActiveSection(current);
-    }
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = e.nativeEvent.contentOffset.y;
+      setNavVisible((prev) => {
+        const next = y > fold * 0.5;
+        return next === prev ? prev : next;
+      });
+      const probe = y + NAV_CLEARANCE + 12 - anchorBase;
+      let current = '';
+      for (const key of sectionOrder.current) {
+        const off = sectionOffsets.current[key];
+        if (off != null && off <= probe) current = key;
+      }
+      if (current !== activeRef.current) {
+        activeRef.current = current;
+        setActiveSection(current);
+      }
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    [anchorBase, fold],
+  );
 
   // The sections that actually render, in scroll order — drives the quick-nav
   // chips and active-section tracking. Mirrors the render conditions below.
@@ -986,7 +1028,7 @@ export default function CharacterScreen() {
   // of the hero spacer (phone, tablet portrait) and pinned to the bottom of the
   // art column (tablet landscape). One definition, so the two can never drift.
   const identityNode = displayName ? (
-    <View style={[styles.identity, split && styles.identitySplit]}>
+    <View style={[styles.identity, split && styles.identitySplit, tall && styles.identityTall]}>
       {data ? (
         (() => {
           const alignment = data.stats.biography.alignment;
@@ -1031,7 +1073,13 @@ export default function CharacterScreen() {
               {/* Vitals + credit form a left column; the chip stack sits
                     in a right column against the whole block, so its height
                     never dictates the credit's spacing. */}
-              <View style={[styles.statsRow, split && styles.statsRowSplit]}>
+              <View
+                style={[
+                  styles.statsRow,
+                  split && styles.statsRowSplit,
+                  tall && styles.statsRowTall,
+                ]}
+              >
                 <View style={[styles.statsCol, split && styles.statsColSplit]}>
                   <VitalsStrip
                     powerTotal={powerTotal}
@@ -1809,7 +1857,7 @@ export default function CharacterScreen() {
             <View style={[styles.stage, { paddingTop: insets.top + 52 }]}>
               <View style={styles.stageInner}>{identityNode}</View>
             </View>
-            <View style={styles.body}>
+            <View style={styles.body} onLayout={onSectionsLayout}>
               <View style={styles.bodyInner}>
                 <View style={styles.mainCol}>{sheetContent}</View>
                 <View style={styles.sideCol}>
@@ -1875,7 +1923,10 @@ export default function CharacterScreen() {
                 navigation transition is always cheap; the real content then
                 cross-dissolves in as it resolves (Apple TV / Disney+ pattern)
                 instead of hard-popping. */}
-            <View style={[styles.sheet, { minHeight: Math.round(winH * 0.6) }]}>
+            <View
+              style={[styles.sheet, { minHeight: Math.round(winH * 0.6) }]}
+              onLayout={onSectionsLayout}
+            >
               {/* The tablet gutter, applied once here rather than to each of the
                   eight section styles that hard-code 20. `gutter - 20` because
                   every section already pads itself by 20 — the delta lands them
@@ -2146,6 +2197,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 24,
   },
+  // Tablet PORTRAIT: the same two groups, stacked. `flex-end` on the meta row
+  // keeps it against the band's right edge, so the credit and the numbers still
+  // read as the header's secondary column rather than as a second left edge.
+  identityTall: { flexDirection: 'column', alignItems: 'stretch', gap: 18 },
+  statsRowTall: { alignSelf: 'flex-end' },
   stageTitleCol: { gap: 8, flexShrink: 1, minWidth: 0 },
   // A vertical chip stack is right on a portrait, where the column is narrow.
   // In the band there is a whole row, and stacking pushes the second chip below

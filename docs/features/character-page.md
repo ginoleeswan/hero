@@ -167,14 +167,31 @@ returns `tall` or `wide` and the page branches on that.
 **The fault it fixes, as a number.** The hero was `winW * heroImageAspect(...)`,
 and that aspect _floors at 1.1_. On a landscape iPad it therefore asked for a
 **1514pt-tall** image inside a 1032pt viewport — one and a half screens of
-portrait before a word of content. Portrait was 1135pt of 1376 (82%), which is
-more than a phone's 66% but still shows the identity and the sheet's lip, so it
-is left alone.
+portrait before a word of content.
 
-|            | phone 390x844 | iPad portrait 1032x1376 | iPad landscape 1376x1032 |
-| ---------- | ------------- | ----------------------- | ------------------------ |
-| hero block | 390 x 557     | 1032 x 1135             | **605 x 666**            |
-| structure  | stacked       | stacked                 | split                    |
+**Portrait was left stacked at first, and that was wrong.** The reasoning was
+that 1135pt of 1376 still shows the identity and the sheet's lip, so it reads
+like a large phone rather than a broken one. It does — but "not broken" is not
+the bar, and 79% of the fold spent on one image says nothing about the
+character. Web splits from **700pt**, and at 1032 the division is 660 + 300
+with a 24pt gutter, which is comfortably web's own layout. Both tablet shapes
+now take the band + two-column body; `shape` is `none` on a phone, which is
+where the immersive design belongs and stays.
+
+|            | phone 390x844 | iPad portrait 1032x1376 | iPad landscape 1376x1032  |
+| ---------- | ------------- | ----------------------- | ------------------------- |
+| hero block | 390 x 557     | portrait card 300 x 420 | portrait card 300 x 420   |
+| structure  | stacked       | **split** (660 + 300)   | split (1004 + 300)        |
+| identity   | on the scrim  | band, **stacked**       | band, two groups in a row |
+
+**The band stacks in portrait.** The stage reserves `SIDE_COL + 48` on the
+right for the portrait card, so the identity's inner column is 1004pt in
+landscape and **660pt** in portrait — and the same two groups (name/alias/
+traits, and creators/chips/vitals) have to share it. Side by side at 660 the
+trait pills wrapped into a ragged three-row block while the meta group beside
+them sat under 60pt of empty band. `identityTall` makes them a column instead:
+the traits get the full 660 (they measure ~524 on one row) and the meta row
+right-aligns on its own line. Measured after, the band grew by 8pt.
 
 **`heroBlock(width, height)` narrows the block; it never caps the height.** That
 is load-bearing, not a style choice: the Apple Zoom morph needs the rail card
@@ -208,12 +225,22 @@ caps go where they cost no alignment: `PROSE_MAX_WIDTH` on the summary, and 420
 on the Compare pill (unbounded it is a 1336pt band, and a phone's 362pt is
 already under it).
 
-**Still to do:** web's desktop body is `mainCol` beside a 300pt sticky `sideCol`
-(`app/character/[id].web.tsx`), and native has no equivalent. It shows: in
-landscape there is ~450pt of empty beige under the art column that the side
-column is exactly the right shape to fill. Web splits from `width >= 700`, and
-at 1032 with our gutter that is a 644 + 300 division — so this applies to
-**both** tablet orientations, not just landscape.
+**The scroll anchors are measured, not derived.** `registerAnchor` used to add
+the constant `HERO_IMAGE_HEIGHT - SHEET_OVERLAP` to each section's `onLayout`
+y. That is the beige sheet's offset in the STACKED layout and a phantom in the
+split one, which renders no full-bleed art at all — so every quick-nav jump
+landed hundreds of points past the section it named, and the nav itself only
+faded in after half an art block that does not exist. Both containers (the
+sheet when stacked, the body when split) now report their own offset through
+one `onSectionsLayout`, and the base is added at read time rather than baked in
+at layout time, because the two arrive in either order.
+
+**Still to do:** web's `sideCol` is `position: sticky` and native's is not, so
+once Quick Facts and Debut run out the right column is empty for the rest of
+the page — ~1200pt of it on a portrait iPad, where the main column is longest.
+RN has no sticky, so the equivalent is a clamped `translateY` on the column
+driven by the same `scrollY` the parallax already uses, bounded by
+`bodyHeight - sideColHeight`.
 
 ## Editing and reporting
 
