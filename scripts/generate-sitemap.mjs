@@ -304,7 +304,12 @@ async function main() {
     // "House Targaryen family tree" is a query people actually type, which is
     // the reason the tree got a URL of its own.
     try {
-      const rows = await fetchRows('houses', 'slug');
+      // Ordered by slug explicitly: `houses` is keyed by slug and has no `id`
+      // column, so fetchRows' default order blew up with a PostgREST 400 and the
+      // fail-soft catch swallowed it. houses.xml has simply been absent — the
+      // pages the family trees were given their own URLs to win were not in the
+      // sitemap at all, and nothing said so.
+      const rows = await fetchRows('houses', 'slug', '', 'slug');
       await writeFile(
         join(SITEMAP_DIR, 'houses.xml'),
         urlSet(

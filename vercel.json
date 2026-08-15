@@ -47,6 +47,17 @@
       "destination": "/api/share-meta?kind=house&slug=:slug"
     },
     {
+      "source": "/event/:slug/:edition",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|WhatsApp|Slackbot|Discordbot|TelegramBot|LinkedInBot|Pinterestbot|redditbot|Applebot).*"
+        }
+      ],
+      "destination": "/api/share-meta?kind=event&slug=:slug&edition=:edition"
+    },
+    {
       "source": "/event/:slug",
       "has": [
         {

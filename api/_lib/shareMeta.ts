@@ -141,9 +141,43 @@ export function houseMeta(house: HouseLite): ShareMeta {
   };
 }
 
-export type EventLite = { slug: string; headline: string; blurb: string | null; ongoing: boolean };
+export type EventLite = {
+  slug: string;
+  headline: string;
+  blurb: string | null;
+  ongoing: boolean;
+  /** Set only for a frozen edition — '2026'. Absent means the series hub. */
+  edition?: string | null;
+  /** The edition's window, for the unfurl's one line of substance. */
+  liveFrom?: string | null;
+  liveTo?: string | null;
+};
 
 export function eventMeta(event: EventLite): ShareMeta {
+  // An edition is a different page from its hub and must unfurl as one. The
+  // edition routes shipped with a share button pointing at /event/<slug>/<year>
+  // while only /event/<slug> had a share-meta rewrite, so sharing a year
+  // unfurled as the generic brand card — the share button advertised a page and
+  // the preview showed the site.
+  if (event.edition) {
+    const name = `${event.headline} ${event.edition}`;
+    const when =
+      event.liveFrom && event.liveTo && event.liveTo !== event.liveFrom
+        ? `${event.liveFrom} to ${event.liveTo}`
+        : (event.liveFrom ?? '');
+    return {
+      title: `${name} — Mythique`,
+      description:
+        `Everything announced at ${name}${when ? ` (${when})` : ''} — trailers, ` +
+        `reveals, and the characters whose readership moved while it ran.`,
+      path: `/event/${encodeURIComponent(event.slug)}/${encodeURIComponent(event.edition)}`,
+      // The OG renderer draws the readership curve from the LIVE row, which for
+      // a past edition is the wrong year's curve. Until it can take an edition,
+      // the brand card is the honest choice — a chart of the wrong data is worse
+      // than no chart.
+      image: `${SITE_URL}/og.png`,
+    };
+  }
   return {
     title: `${event.headline} — Mythique`,
     description:

@@ -121,6 +121,34 @@ async function fetchEvent(slug: string): Promise<EventLite | null> {
   }
 }
 
+/** A frozen edition. Reads the same RPC the edition page does, so the unfurl
+ *  and the page cannot disagree about which year they describe. */
+async function fetchEventEdition(slug: string, edition: string): Promise<EventLite | null> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_event_edition`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'content-type': 'application/json' },
+      body: JSON.stringify({ p_slug: slug, p_edition: edition }),
+    });
+    if (!r.ok) return null;
+    const j = (await r.json()) as { event?: Record<string, unknown> } | null;
+    const e = j?.event;
+    if (!e || typeof e.headline !== 'string') return null;
+    return {
+      slug,
+      headline: e.headline,
+      blurb: null,
+      // Frozen by definition — nothing archived is happening now.
+      ongoing: false,
+      edition,
+      liveFrom: typeof e.live_from === 'string' ? e.live_from : null,
+      liveTo: typeof e.live_to === 'string' ? e.live_to : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function fetchTitle(id: string): Promise<TitleLite | null> {
   try {
     const r = await fetch(
@@ -171,7 +199,10 @@ export default async function handler(req: Req, res: Res) {
       const house = await fetchHouse(str(req.query.slug));
       if (house) meta = houseMeta(house);
     } else if (kind === 'event') {
-      const event = await fetchEvent(str(req.query.slug));
+      const edition = str(req.query.edition);
+      const event = edition
+        ? await fetchEventEdition(str(req.query.slug), edition)
+        : await fetchEvent(str(req.query.slug));
       if (event) meta = eventMeta(event);
     } else if (kind === 'title') {
       const t = await fetchTitle(str(req.query.id));
