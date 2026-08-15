@@ -2024,16 +2024,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 24,
   },
-  mainCol: { flex: 1, minWidth: 0, gap: 16 },
+  mainCol: { flex: 1, minWidth: 0, gap: 20 },
   // No horizontal inset. `TraitBand` pads its PILLS, not its container — the
   // 20pt gutter belongs to `traitBandWrap`, which the sheet uses and the band
   // does not. Correcting for padding that is not there pushed the chip 20pt
   // left of the name above it, which is the two-left-edges fault in miniature.
   stageTraits: { marginTop: 10 },
-  // The sections pad themselves by 20; the card adds 16 of its own, so the
-  // card's is dropped and the section's kept — otherwise every card is 36pt
-  // inside and the dials lose a column.
-  mainCard: { padding: 0, paddingVertical: 6 },
+  // HORIZONTAL zero is right: the sections already pad themselves by 20, and
+  // doubling it costs the dials a column. VERTICAL zero was not — at 6pt the
+  // stats panel sat 3.5pt off its own card's bottom edge, so two separate white
+  // slabs 14pt apart read as one interrupted surface rather than two panels.
+  // A card needs to breathe more than its neighbours are apart.
+  mainCard: { padding: 0, paddingVertical: 14 },
   // Matches QuickFacts' own heading so the side column has one voice.
   sideCardTitle: {
     fontFamily: 'Nunito_700Bold',
