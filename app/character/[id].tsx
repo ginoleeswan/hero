@@ -1158,8 +1158,10 @@ export default function CharacterScreen() {
       ) : (
         <ReAnimated.View entering={FadeIn.duration(320)}>
           {/* Theme trait band — colour-coded by vocab category; sits at the
-          top of the sheet as a sibling to the identity header badges. */}
-          {narrative && narrative.tags.length > 0 ? (
+          top of the sheet as a sibling to the identity header badges.
+          In `split` it moves INTO the band, under the alias, where web's
+          `stageTraits` puts it — see the stage below. */}
+          {!split && narrative && narrative.tags.length > 0 ? (
             <View style={styles.traitBandWrap}>
               <TraitBand tags={narrative.tags} />
             </View>
@@ -1764,7 +1766,18 @@ export default function CharacterScreen() {
              scrolls that happen to sit side by side. ─────────────────────── */
           <>
             <View style={[styles.stage, { paddingTop: insets.top + 52 }]}>
-              <View style={styles.stageInner}>{identityNode}</View>
+              <View style={styles.stageInner}>
+                {identityNode}
+                {/* Web carries the narrative trait in the BAND, under the alias
+                    — its `stageTraits`. Native had it atop the main column,
+                    which reads as a property of the dossier rather than of the
+                    character. */}
+                {narrative && narrative.tags.length > 0 ? (
+                  <View style={styles.stageTraits}>
+                    <TraitBand tags={narrative.tags} />
+                  </View>
+                ) : null}
+              </View>
             </View>
             <View style={styles.body}>
               <View style={styles.bodyInner}>
@@ -2006,6 +2019,11 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   mainCol: { flex: 1, minWidth: 0, gap: 16 },
+  // No horizontal inset. `TraitBand` pads its PILLS, not its container — the
+  // 20pt gutter belongs to `traitBandWrap`, which the sheet uses and the band
+  // does not. Correcting for padding that is not there pushed the chip 20pt
+  // left of the name above it, which is the two-left-edges fault in miniature.
+  stageTraits: { marginTop: 10 },
   // The sections pad themselves by 20; the card adds 16 of its own, so the
   // card's is dropped and the section's kept — otherwise every card is 36pt
   // inside and the dials lose a column.
