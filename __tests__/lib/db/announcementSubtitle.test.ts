@@ -35,7 +35,9 @@ describe('announcementSubtitle', () => {
   it('matches a restatement in either direction', () => {
     // The segment is longer than the title...
     expect(
-      announcementSubtitle(g('Ahsoka', 'Star Wars: Ahsoka Season 2 | Anakin | Streaming January 20')),
+      announcementSubtitle(
+        g('Ahsoka', 'Star Wars: Ahsoka Season 2 | Anakin | Streaming January 20'),
+      ),
     ).toBe('Anakin · Streaming January 20');
     // ...and shorter than it.
     expect(

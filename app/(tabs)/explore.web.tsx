@@ -1695,8 +1695,8 @@ export default function WebHomeScreen() {
             onTitlePress={handleTitlePress}
             onIssuePress={handleIssuePress}
             onEventPress={(slug, edition) =>
-                  router.push(edition ? `/event/${slug}/${edition}` : `/event/${slug}`)
-                }
+              router.push(edition ? `/event/${slug}/${edition}` : `/event/${slug}`)
+            }
             onArchivePress={() => router.push('/event')}
           />
 

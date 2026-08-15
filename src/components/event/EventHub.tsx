@@ -513,7 +513,6 @@ const s = StyleSheet.create({
     color: COLORS.deepNavy,
   },
 
-
   // The shared sheet — see src/components/ui/PaperSheet.tsx. No foot: this band
   // is the last thing on the hub, and PageEndCap already closes it with its own
   // rounded beige foot. Two feet stack into a beige lip on a beige lip.
