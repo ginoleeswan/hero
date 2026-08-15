@@ -107,6 +107,12 @@ export function fitMark(
   maxWidth: number,
   maxHeight: number,
 ): { width: number; height: number } {
-  const height = Math.min(maxHeight, maxWidth / brand.aspect);
+  // Clamped at zero. Callers derive the box from a measured width, and on the
+  // first render — and under static rendering, where there is no viewport at all
+  // — that width is 0. The index's tile maths then produced a NEGATIVE cell
+  // (floor((0 - gap) / cols)), which reached an <svg> as width="-53" height="-32"
+  // and threw for every branded tile on the page. A zero-sized mark draws
+  // nothing for one frame; a negative one is an exception per logo.
+  const height = Math.max(0, Math.min(maxHeight, maxWidth / brand.aspect));
   return { width: Math.round(height * brand.aspect), height: Math.round(height) };
 }

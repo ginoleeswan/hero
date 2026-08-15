@@ -220,7 +220,12 @@ export function EditionList({
         const body = (
           <View style={s.rowBody}>
             <View style={s.rowMain}>
-              <Text style={[s.year, { color: accent }]}>{e.editionSlug}</Text>
+              {/* The YEAR, not the slug. An edition_slug carries a month when a
+                  year holds two shows ('2020-01', '2020-07'), which the URL
+                  needs and a reader does not: set in Flame at 23 it reads as a
+                  hyphenated number rather than a year. The window beside it is
+                  what tells the two apart, and it does that better. */}
+              <Text style={[s.year, { color: accent }]}>{e.editionSlug.slice(0, 4)}</Text>
               <Text style={s.rowWindow} numberOfLines={1}>
                 {formatWindow(e.liveFrom, e.liveTo) ?? '—'}
               </Text>

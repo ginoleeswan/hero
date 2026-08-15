@@ -191,6 +191,11 @@ export function EventDossier({
   return (
     <View>
       {/* ── ink: the evidence ─────────────────────────────────────────────── */}
+      {/* The stage is the page's hero. It gets there by setting its CONTENT at
+          display scale — a 560pt mark, a 64pt figure — not by reserving height.
+          A minHeight with the type pinned to the floor was tried and is exactly
+          wrong: it opened 400pt of empty black above the mark, which reads as a
+          rendering fault rather than as space. */}
       <View style={s.stage}>
         {/* Full-bleed curve as the stage's texture, pinned to the floor. */}
         <View style={[s.curveLayer, { height: curveH }]} pointerEvents="none">
@@ -259,8 +264,12 @@ export function EventDossier({
             <View style={wide ? s.stageIdentity : undefined}>
               {brand ? (
                 <View style={s.markBox}>
+                  {/* 560/170 on desktop against 300/108 before. These marks are
+                      single-path SVGs that paint in the event's own accent — the
+                      best asset the page has — and they were being drawn at
+                      roughly the size of a favicon on a 1,600pt screen. */}
                   <brand.mark
-                    {...fitMark(brand, wide ? 300 : 200, wide ? 108 : 78)}
+                    {...fitMark(brand, wide ? 560 : 200, wide ? 170 : 78)}
                     color={accent}
                     fill={accent}
                   />
@@ -532,54 +541,82 @@ export function EventDossier({
               )}
             </Section>
           )}
-
-          {surges.length > 0 && (
-            <Section title="Who it moved" note="Readership that broke out during the window">
-              {/* A ranking, drawn as one.
-                  It used to be a gallery of 132pt faces with the multiple
-                  tucked into a pip badge in the corner — which inverted the
-                  section: the spike IS the claim, and it was set smaller than
-                  everything around it. A gallery also has to be full to look
-                  right, so a window that moved one character rendered as a
-                  single cell marooned in an empty row.
-                  As rows, the figure leads, one entry is a normal-looking
-                  thing, and the same component reads on a phone (one column)
-                  and a desktop (two). */}
-              <View style={[s.moverGrid, wide ? s.moverGridWide : null]}>
-                {rankedSurges.map((sg) => (
-                  <Pressable
-                    key={sg.heroId}
-                    style={[s.moverRow, wide ? s.moverRowWide : null]}
-                    onPress={() => onHeroPress(sg.heroId)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${sg.name}, ${sg.spike}× reads`}
-                  >
-                    {/* HeroFace picks the shape from the KIND of picture the
-                        RPC found: an avatar is a flat mark and is drawn flat, a
-                        fallback portrait is a rectangular illustration and keeps
-                        the circle it has always had. */}
-                    {!!sg.portraitUrl && (
-                      <HeroFace uri={sg.portraitUrl} avatar={sg.avatar} size={54} name={sg.name} />
-                    )}
-                    <View style={s.moverText}>
-                      <Text style={s.moverName} numberOfLines={1}>
-                        {sg.name}
-                      </Text>
-                      {/* Temporal, never causal — the join proves sequence, not cause. */}
-                      <Text style={s.moverCause} numberOfLines={1}>
-                        {sg.causeLabel ? `after ${sg.causeLabel}` : (sg.publisher ?? '')}
-                      </Text>
-                    </View>
-                    {sg.spike !== null && (
-                      <Text style={[s.moverSpike, { color: accent }]}>{sg.spike}×</Text>
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-            </Section>
-          )}
         </View>
       </View>
+
+      {/* ── ink again: what it did to the catalogue ───────────────────────
+          The page's grammar is ink = measurement, paper = record, and this
+          section is measurement — readership that broke out, in multiples of a
+          character's own median. It sat on paper anyway, which cost it twice:
+          it lost the only visual cue the page has for "this is a number, not an
+          editor's choice", and it left the whole thing a single beige field
+          roughly four thousand points long.
+
+          Returning it to ink gives the page a spine — ink, paper, ink — and
+          lets the multiples be set in the accent at display size, which is what
+          they deserve. 146x is the most striking fact Mythique can state about
+          a convention and it was 23pt grey. */}
+      {surges.length > 0 && (
+        <>
+          <View style={s.seam} />
+          <View style={s.moverBand}>
+            <View style={[inner, { paddingHorizontal: pad }]}>
+              <Section
+                title="Who it moved"
+                note="Readership that broke out during the window"
+                onInk
+              >
+                {/* A ranking, drawn as one.
+                      It used to be a gallery of 132pt faces with the multiple
+                      tucked into a pip badge in the corner — which inverted the
+                      section: the spike IS the claim, and it was set smaller than
+                      everything around it. A gallery also has to be full to look
+                      right, so a window that moved one character rendered as a
+                      single cell marooned in an empty row.
+                      As rows, the figure leads, one entry is a normal-looking
+                      thing, and the same component reads on a phone (one column)
+                      and a desktop (two). */}
+                <View style={[s.moverGrid, wide ? s.moverGridWide : null]}>
+                  {rankedSurges.map((sg) => (
+                    <Pressable
+                      key={sg.heroId}
+                      style={[s.moverRow, wide ? s.moverRowWide : null]}
+                      onPress={() => onHeroPress(sg.heroId)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${sg.name}, ${sg.spike}× reads`}
+                    >
+                      {/* HeroFace picks the shape from the KIND of picture the
+                            RPC found: an avatar is a flat mark and is drawn flat, a
+                            fallback portrait is a rectangular illustration and keeps
+                            the circle it has always had. */}
+                      {!!sg.portraitUrl && (
+                        <HeroFace
+                          uri={sg.portraitUrl}
+                          avatar={sg.avatar}
+                          size={54}
+                          name={sg.name}
+                        />
+                      )}
+                      <View style={s.moverText}>
+                        <Text style={s.moverName} numberOfLines={1}>
+                          {sg.name}
+                        </Text>
+                        {/* Temporal, never causal — the join proves sequence, not cause. */}
+                        <Text style={s.moverCause} numberOfLines={1}>
+                          {sg.causeLabel ? `after ${sg.causeLabel}` : (sg.publisher ?? '')}
+                        </Text>
+                      </View>
+                      {sg.spike !== null && (
+                        <Text style={[s.moverSpike, { color: accent }]}>{sg.spike}×</Text>
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+              </Section>
+            </View>
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -589,18 +626,29 @@ function Stat({
   label,
   accent,
   big = false,
+  wide = false,
 }: {
   value: string;
   label: string;
   accent?: string;
   big?: boolean;
+  /** Desktop lets the lead figure go to display scale. It is the page's headline
+   *  claim — "this article was read 146 times its usual rate" — and at 40pt it
+   *  was the same weight as a section heading. */
+  wide?: boolean;
 }) {
   return (
     <View style={s.stat}>
-      <Text style={[big ? s.statBig : s.statValue, accent ? { color: accent } : null]}>
+      <Text
+        style={[
+          big ? s.statBig : s.statValue,
+          big && wide ? s.statHero : null,
+          accent ? { color: accent } : null,
+        ]}
+      >
         {value}
       </Text>
-      <Text style={s.statLabel}>{label}</Text>
+      <Text style={[s.statLabel, big && wide ? s.statLabelHero : null]}>{label}</Text>
     </View>
   );
 }
@@ -671,16 +719,20 @@ function sourceLine(a: AnnouncementGroup): string {
 function Section({
   title,
   note,
+  onInk = false,
   children,
 }: {
   title: string;
   note: string;
+  /** Sections sit on paper by default. The measurement band is ink, and the
+   *  heading has to invert with it or it disappears into the ground. */
+  onInk?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <View style={s.section}>
-      <Text style={s.sectionTitle}>{title}</Text>
-      <Text style={s.sectionNote}>{note}</Text>
+      <Text style={[s.sectionTitle, onInk ? s.sectionTitleInk : null]}>{title}</Text>
+      <Text style={[s.sectionNote, onInk ? s.sectionNoteInk : null]}>{note}</Text>
       <View style={s.sectionBody}>{children}</View>
     </View>
   );
@@ -688,6 +740,9 @@ function Section({
 
 const s = StyleSheet.create({
   // ── ink ──
+  // `justifyContent: flex-end` so the extra height a hero gains opens up ABOVE
+  // the type rather than below it — the curve is pinned to the floor and the
+  // masthead has to keep sitting on it.
   stage: { backgroundColor: SURFACE.ink, overflow: 'hidden' },
   curveLayer: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   curveScrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
@@ -770,6 +825,9 @@ const s = StyleSheet.create({
   stats: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: 34 },
   stat: { gap: EVENT_STAGE.statInnerGap },
   statBig: { fontFamily: 'Flame-Regular', fontSize: 40, lineHeight: EVENT_STAGE.statBigLine },
+  // Flame needs lineHeight >= 1.22x fontSize; 64 -> 78.
+  statHero: { fontSize: 64, lineHeight: 78 },
+  statLabelHero: { fontSize: 11, letterSpacing: 2 },
   statValue: {
     fontFamily: 'Flame-Regular',
     fontSize: 26,
@@ -785,6 +843,9 @@ const s = StyleSheet.create({
     color: INK_TEXT.faint,
   },
   seam: { height: 1, backgroundColor: SEAM_COLOR },
+
+  // ── the measurement band ──
+  moverBand: { backgroundColor: SURFACE.ink, paddingTop: 40, paddingBottom: 52 },
 
   // ── paper ──
   paper: {
@@ -806,6 +867,8 @@ const s = StyleSheet.create({
     color: PAPER_TEXT.muted,
     marginTop: EVENT_PAPER.sectionNoteGap,
   },
+  sectionTitleInk: { color: 'rgba(245,235,220,0.96)' },
+  sectionNoteInk: { color: INK_TEXT.faint },
   sectionBody: { marginTop: EVENT_PAPER.sectionBodyGap, gap: 20 },
 
   lead: {
@@ -828,10 +891,8 @@ const s = StyleSheet.create({
   },
 
   posterRow: { flexDirection: 'row', flexWrap: 'wrap' },
-  posterCell: { gap: 6 },
+  posterCell: { gap: 8 },
   poster: { borderRadius: 9, backgroundColor: 'rgba(11,24,32,0.08)' },
-  // Two lines' worth, always: a one-line title next to a two-line one used to
-  // push the following row out of alignment.
   // The lead announcement, at the size the news deserves.
   newsLead: { gap: 0 },
   newsLeadWide: { flexDirection: 'row', alignItems: 'center', gap: 26 },
@@ -887,11 +948,16 @@ const s = StyleSheet.create({
     color: PAPER_TEXT.muted,
   },
 
+  // No minHeight. It reserved two lines so a one-line title could not shorten
+  // its cell and knock the next row out of alignment — but the cells are in a
+  // wrapping row, not a fixed grid, so each row already aligns on its own
+  // tallest cell. All the reservation did was open an empty line between every
+  // one-line title and its "Trailer" label, which read as a broken gap under
+  // four posters in a row.
   posterTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 14.5,
     lineHeight: 19,
-    minHeight: 38,
     color: COLORS.deepNavy,
   },
   posterMeta: {
@@ -951,10 +1017,11 @@ const s = StyleSheet.create({
   moverRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
+    gap: 14,
+    paddingVertical: 13,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(11,24,32,0.10)',
+    // On ink now, so the rule is a light hairline rather than a dark one.
+    borderTopColor: 'rgba(245,235,220,0.13)',
   },
   // Two columns on desktop. 48 is the row gap doubled plus the column gap, so
   // the pair divides the measure exactly rather than leaving a ragged edge.
@@ -964,16 +1031,18 @@ const s = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     fontSize: 14.5,
     lineHeight: 19,
-    color: COLORS.deepNavy,
+    color: 'rgba(245,235,220,0.94)',
   },
   moverCause: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
     lineHeight: 16,
-    color: PAPER_TEXT.muted,
+    color: INK_TEXT.faint,
   },
-  // The claim, finally set like one.
-  moverSpike: { fontFamily: 'Flame-Regular', fontSize: 23, lineHeight: 30 },
+  // The claim, finally set like one. Flame 30 on ink: a character read 146x
+  // their own median during a convention is the single most striking thing this
+  // app can say, and it was 23pt grey on beige.
+  moverSpike: { fontFamily: 'Flame-Regular', fontSize: 30, lineHeight: 38 },
 
   covers: { flexDirection: 'row', flexWrap: 'wrap' },
   cover: { borderRadius: 7, backgroundColor: 'rgba(11,24,32,0.08)' },

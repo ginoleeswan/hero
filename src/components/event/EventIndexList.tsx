@@ -93,7 +93,10 @@ function EventTile({
       <Text style={s.tileName} numberOfLines={1}>
         {e.headline}
       </Text>
-      <Text style={s.tileMeta} numberOfLines={1}>
+      {/* Two lines. "10 editions · 2015–2025 · best 3.4×" does not fit one line
+          in a 171pt tile, and clamping it to one truncated the multiple mid-digit
+          ("best 3…") on every tile in the phone grid. */}
+      <Text style={s.tileMeta} numberOfLines={2}>
         {[span, e.bestSpike && e.bestSpike > 1 ? `best ${e.bestSpike}×` : null]
           .filter(Boolean)
           .join('  ·  ')}
@@ -121,7 +124,9 @@ export function EventIndexList({
   const avail = Math.max(0, measure - pad * 2);
   const tileGap = 12;
   const tileCols = Math.max(2, Math.floor((avail + tileGap) / (168 + tileGap)));
-  const tileCell = Math.floor((avail - tileGap * (tileCols - 1)) / tileCols);
+  // Floored at zero: with no measured width yet, (0 - gap) / cols is negative,
+  // and a negative cell propagates into every child that sizes from it.
+  const tileCell = Math.max(0, Math.floor((avail - tileGap * (tileCols - 1)) / tileCols));
   const live = events.filter((e) => e.isLive);
   const rest = events.filter((e) => !e.isLive);
   // The fan year. With 128 frozen windows the season is a derived fact, and it
