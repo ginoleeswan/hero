@@ -52,6 +52,25 @@ export function EventHub({
   const measure = Math.min(maxContentWidth ?? contentWidth, contentWidth);
   const inner = { width: '100%' as const, maxWidth: measure, alignSelf: 'center' as const };
 
+  // Size the mark's box to the mark. `markMinHeight` is a 64pt reservation sized
+  // for the tallest wordmark in the set, and a shorter one — Nintendo Direct
+  // fits to 35 — was being centred inside it, which put ~15pt of nothing above
+  // and below a logo that already had a 12pt gap on one side and 8 on the other.
+  // That stack is the "awkward gap": four small paddings that read as one big
+  // one. fitMark already returns the height, so the box can just be it.
+  const markFit = brand ? fitMark(brand, wide ? 300 : 200, wide ? 108 : 78) : null;
+
+  // The span the record covers. When the event is not live this is what the left
+  // of the eyebrow row says — without it the row is a lone right-aligned pill
+  // floating over an empty line, which is why the pill read as unmoored.
+  const years = hub.editions.map((e) => e.editionSlug).filter((y) => /^\d{4}$/.test(y));
+  const span =
+    years.length > 1
+      ? `${years[years.length - 1]}–${years[0]}`
+      : years.length === 1
+        ? years[0]
+        : null;
+
   return (
     <View>
       {/* ── ink: what this is ─────────────────────────────────────────────── */}
@@ -72,6 +91,8 @@ export function EventHub({
           <View style={s.eyebrowRow}>
             {hub.isLive ? (
               <Text style={[s.eyebrow, { color: accent }]}>Happening now</Text>
+            ) : span ? (
+              <Text style={s.eyebrowQuiet}>{`On record ${span}`}</Text>
             ) : (
               <View />
             )}
@@ -89,13 +110,9 @@ export function EventHub({
             )}
           </View>
 
-          {brand ? (
-            <View style={s.markBox}>
-              <brand.mark
-                {...fitMark(brand, wide ? 300 : 200, wide ? 108 : 78)}
-                color={accent}
-                fill={accent}
-              />
+          {brand && markFit ? (
+            <View style={[s.markBox, { height: markFit.height }]}>
+              <brand.mark {...markFit} color={accent} fill={accent} />
             </View>
           ) : (
             <Text style={[s.title, { color: accent }]}>{hub.headline}</Text>
@@ -262,11 +279,19 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: EVENT_STAGE.eyebrowGap,
   },
-  markBox: {
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    minHeight: EVENT_STAGE.markMinHeight,
+  // The non-live counterpart. Deliberately not the accent: "happening now" is
+  // the only state that has earned colour on this page.
+  eyebrowQuiet: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    lineHeight: EVENT_STAGE.eyebrowLine,
+    letterSpacing: 2.4,
+    textTransform: 'uppercase',
+    color: INK_TEXT.faint,
+    marginBottom: EVENT_STAGE.eyebrowGap,
   },
+  // No minHeight — the height is passed in from fitMark so the box is the mark.
+  markBox: { alignItems: 'flex-start', justifyContent: 'center', marginBottom: 6 },
   // Flame needs lineHeight >= 1.22x fontSize.
   title: { fontFamily: 'Flame-Regular', fontSize: 30, lineHeight: EVENT_STAGE.titleLine },
   window: {
@@ -318,8 +343,21 @@ const s = StyleSheet.create({
   // Overlapped, like a credits strip — three separate circles read as three
   // things, an overlapped set reads as "the cast of that year".
   faces: { flexDirection: 'row', alignItems: 'center' },
-  face: { width: 30, height: 30, borderRadius: 999, backgroundColor: '#00000012' },
-  faceOverlap: { marginLeft: -9 },
+  // The RPC now serves heroes.avatar_url first — a flat head-icon on a
+  // transparent ground, which is what survives being 30pt wide. Two consequences
+  // for the style: the disc behind it is now visible art rather than a loading
+  // grey (so it is warmed to the paper), and overlapping cut-outs with no edge
+  // merge into one blob, so each face carries a paper-coloured ring to cut
+  // itself out of the one behind.
+  face: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    backgroundColor: 'rgba(11,24,32,0.06)',
+    borderWidth: 2,
+    borderColor: SURFACE.paper,
+  },
+  faceOverlap: { marginLeft: -10 },
   barTrack: {
     height: 3,
     borderRadius: 999,
