@@ -917,7 +917,13 @@ const styles = StyleSheet.create({
   // via `dailyBannerGlass: { flex: 1, … }`. Without it the row stretches the
   // COLUMN and the card inside still stops short, leaving a gap under the CTA.
   // The margins go because the banner now owns the column's full height.
-  dailyPaired: { flex: 1, marginTop: 0, marginBottom: 0 },
+  // `marginHorizontal: 0` as well as the vertical zeros. The banner carries its
+  // own horizontal margin for the stacked layout, and inside a column it insets
+  // the CARD from the column by 32 each side — measured as an 80pt gutter where
+  // ENGAGE_ROW_GAP is 16, with the card 376pt wide inside a 440pt column. Web
+  // zeroes the same margin in `dailyBannerGlass`; I zeroed the vertical pair and
+  // left the horizontal one, which is the whole 64pt.
+  dailyPaired: { flex: 1, marginTop: 0, marginBottom: 0, marginHorizontal: 0 },
   // `wide` pairing of TodaysMatchup + the daily banner (see the 'engage' row
   // type above). flex:1 on each half is what makes them split the width evenly
   // minus the gap — neither card is told a width directly.
