@@ -15,8 +15,9 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { Text } from '../ui/Text';
 import { HeroFace } from './HeroFace';
 import { Section } from './EventSection';
+import { PAPER_SHEET_SURFACE } from '../ui/PaperSheet';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
+import { COLORS, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import { EVENT_STAGE } from '../../constants/eventGeometry';
 import { formatWindow } from '../../hooks/useEventDossier';
@@ -512,28 +513,14 @@ const s = StyleSheet.create({
     color: COLORS.deepNavy,
   },
 
-  seam: { height: 1, backgroundColor: SEAM_COLOR },
 
-  // The paper sheet, laid ON the ink stage — see the long note on the dossier's
-  // matching band for why the seam became a curved top edge and why the sheet
-  // overlaps the stage by exactly its radius.
-  //
-  // Rounded at the top ONLY. This band is the last thing on the hub, and
-  // PageEndCap already closes the sheet with its own rounded beige foot; two
-  // feet would stack into a beige lip on a beige lip.
+  // The shared sheet — see src/components/ui/PaperSheet.tsx. No foot: this band
+  // is the last thing on the hub, and PageEndCap already closes it with its own
+  // rounded beige foot. Two feet stack into a beige lip on a beige lip.
   //
   // Section owns the masthead's own bottom margin, so the band's floor is the
   // only padding left to set here.
-  paper: {
-    backgroundColor: SURFACE.paper,
-    paddingTop: 34,
-    paddingBottom: 20,
-    borderTopWidth: 1,
-    borderTopColor: SEAM_COLOR,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    marginTop: -24,
-  },
+  paper: { ...PAPER_SHEET_SURFACE, paddingTop: 34, paddingBottom: 20 },
   empty: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14.5,

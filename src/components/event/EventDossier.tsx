@@ -5,8 +5,9 @@
 // the web route must scroll the document (see the web-document-scroll rule) while
 // the native one uses a ScrollView.
 //
-// Built on the house seam signature — an ink stage landing on beige paper with
-// the warm hairline between (SURFACE / SEAM_COLOR). The structure carries meaning
+// Built on the house seam signature — an ink stage landing on a beige sheet with
+// the warm hairline as that sheet's top edge (see ui/PaperSheet). The structure
+// carries meaning
 // rather than decorating: ink is the EVIDENCE (how we know this happened — a
 // claim about our own instrument), paper is the RECORD (what it did to the
 // catalogue). Measurement above the seam, dossier below it.
@@ -22,10 +23,11 @@ import { CountUp } from './CountUp';
 import { Section } from './EventSection';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
+import { COLORS, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import { EVENT_STAGE, EVENT_PAPER } from '../../constants/eventGeometry';
 import { EventCurve } from './EventCurve';
+import { PAPER_SHEET_SURFACE, PAPER_SHEET_FOOT } from '../ui/PaperSheet';
 import {
   groupAnnouncements,
   type EventDossier as Dossier,
@@ -1160,7 +1162,6 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
     color: INK_TEXT.faint,
   },
-  seam: { height: 1, backgroundColor: SEAM_COLOR },
 
   // ── the two ink bands under the record ──
   // One band for both "who" sections. As two it carried two sets of padding
@@ -1171,54 +1172,15 @@ const s = StyleSheet.create({
   whoBand: { backgroundColor: SURFACE.ink, paddingTop: 44, paddingBottom: 52 },
 
   // ── paper ──
-  // A SHEET on a dark table, not a beige stripe between two navy ones.
-  //
-  // Both edges were flat, full-width colour changes: ink to beige above "What
-  // dropped", beige to ink under it. That is the harsh, boring division — two
-  // fields butted together with nothing to say which is on top of which.
-  //
-  // A wave was the other candidate and is wrong here. It is a landing-page
-  // device, it fights an editorial register, and it would have to be drawn at
-  // every one of these boundaries — novel once, tiresome by the third. The
-  // answer the app already owns is the rounded sheet close PageEndCap uses at
-  // the bottom of every detail page, and the reason it works is that it means
-  // something: paper is laid ON the ink.
-  //
-  // So the band is one whole sheet. The warm seam is no longer a separate
-  // element above it — it is this band's own top border, which curves with the
-  // corners instead of running flat across them — and the foot is a plain
-  // rounded edge with a shadow under it. Rounding only one end would have made
-  // it a sheet that arrives as a cut and leaves as paper.
+  // The shared sheet — see src/components/ui/PaperSheet.tsx for why the seam is
+  // this band's own curved top edge, why it overlaps the stage by exactly its
+  // radius, and why the foot only appears when ink follows. Both are true here:
+  // the dossier's spine is ink → paper → ink.
   paper: {
-    backgroundColor: SURFACE.paper,
+    ...PAPER_SHEET_SURFACE,
+    ...PAPER_SHEET_FOOT,
     paddingTop: EVENT_PAPER.paddingTop,
     paddingBottom: EVENT_PAPER.paddingBottom,
-    borderTopWidth: 1,
-    borderTopColor: SEAM_COLOR,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    // LAID ON the stage, not butted against it. A rounded corner shows whatever
-    // is behind it, and behind it was the route's flat page navy (11,23,31)
-    // while the band it appears to lift off ends on the curve's teal-tinted ink
-    // (14,68,76). That mismatch is the black wedge either side of the lip: the
-    // corner was cutting a hole through to a different dark. Overlapping the
-    // stage by exactly the radius puts the corners over the stage's own
-    // gradient, which is continuous, so the curve simply runs under the sheet —
-    // which is what a sheet lying on something looks like.
-    marginTop: -24,
-    // Cast onto what is below, which is the half that makes it read as LIFTED
-    // rather than merely rounded. Pure black: the ground is already near-black,
-    // and anything lighter reads as a glow. Kept tight and pushed downward —
-    // wide and soft, it bled up past the top corners and darkened the stage
-    // there, which is the other half of the same complaint. This is a
-    // millimetre of paper, not a card floating off the page.
-    shadowColor: '#000',
-    shadowOpacity: 0.38,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
   },
   lead: {
     width: '100%',

@@ -10,7 +10,8 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from '../ui/Text';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
-import { COLORS, SEAM_COLOR, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
+import { COLORS, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
+import { PAPER_SHEET_SURFACE } from '../ui/PaperSheet';
 import { EventCurve } from './EventCurve';
 import { EVENT_STAGE, EVENT_INDEX } from '../../constants/eventGeometry';
 import { formatWindow } from '../../hooks/useEventDossier';
@@ -260,8 +261,8 @@ export function EventIndexList({
         </View>
       </View>
 
-      <View style={s.seam} />
-
+      {/* No seam element — it is the sheet's own top edge now, so it curves with
+          the corners instead of running flat across a rounded thing. */}
       <View style={[s.paper, viewportHeight ? { minHeight: viewportHeight * 0.72 } : null]}>
         <View style={[inner, { paddingHorizontal: pad }]}>
           {events.length === 0 ? (
@@ -356,9 +357,10 @@ const s = StyleSheet.create({
     maxWidth: 520,
     marginTop: EVENT_INDEX.methodGap,
   },
-  seam: { height: 1, backgroundColor: SEAM_COLOR },
+  // The shared sheet — see src/components/ui/PaperSheet.tsx. No foot: this band
+  // is the last thing on the index, and PageEndCap closes it.
   paper: {
-    backgroundColor: SURFACE.paper,
+    ...PAPER_SHEET_SURFACE,
     paddingTop: EVENT_INDEX.paperPaddingTop,
     paddingBottom: EVENT_INDEX.paperPaddingBottom,
   },

@@ -1,5 +1,5 @@
 // src/components/skeletons/EventSkeleton.tsx
-// Loading placeholders for the two event routes. Both keep the seam grammar the
+// Loading placeholders for the two event routes. Both keep the sheet grammar the
 // real bodies use (EventIndexList / EventDossier): an ink masthead, the warm
 // hairline, then paper — so the page never flips tone at the handoff.
 //
@@ -18,7 +18,8 @@
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
-import { SEAM_COLOR, SURFACE } from '../../constants/colors';
+import { SURFACE } from '../../constants/colors';
+import { PAPER_SHEET_SURFACE } from '../ui/PaperSheet';
 import { EVENT_STAGE, EVENT_PAPER, EVENT_INDEX, EVENT_INK } from '../../constants/eventGeometry';
 
 const PAD = EVENT_STAGE.pad;
@@ -195,7 +196,6 @@ export function EventIndexSkeleton() {
           <Skeleton width={200} height={62} borderRadius={8} style={styles.spotMark} />
           <TextLine box={21} ink={14} width="58%" tint={INK_TINT} style={styles.spotStat} />
         </Band>
-        <View style={styles.seam} />
         {/* Two quarters of tiles. The real page groups events by the quarter
             they happen in and renders each as a mark on an accent wash, so the
             placeholder is a season heading over a two-up grid — mirroring the
@@ -272,7 +272,6 @@ export function EventHubSkeleton() {
             widths={['100%', '94%', '48%']}
           />
         </Band>
-        <View style={styles.seam} />
         <Band tone={styles.hubPaper}>
           <TextLine box={30} ink={23} width={128} radius={5} />
           <TextLine box={18} ink={13} width={186} style={styles.hubNote} />
@@ -362,7 +361,6 @@ export function EventDossierSkeleton() {
             ))}
           </View>
         </Band>
-        <View style={styles.seam} />
         <Band tone={styles.paper}>
           <TextLine
             box={EVENT_PAPER.sectionTitleLine}
@@ -385,7 +383,6 @@ export function EventDossierSkeleton() {
 
 const styles = StyleSheet.create({
   lineBox: { justifyContent: 'center' },
-  seam: { height: 1, backgroundColor: SEAM_COLOR },
 
   // ── dossier ──
   // No paddingBottom: the real stage closes on the stat rail's curve clearance.
@@ -405,7 +402,7 @@ const styles = StyleSheet.create({
   },
   stat: { gap: EVENT_STAGE.statInnerGap },
   paper: {
-    backgroundColor: SURFACE.paper,
+    ...PAPER_SHEET_SURFACE,
     paddingTop: EVENT_PAPER.paddingTop,
     paddingBottom: EVENT_PAPER.paddingBottom,
   },
@@ -420,7 +417,7 @@ const styles = StyleSheet.create({
   indexEyebrow: { marginBottom: EVENT_INDEX.eyebrowGap },
   indexMethod: { marginTop: EVENT_INDEX.methodGap },
   indexPaper: {
-    backgroundColor: SURFACE.paper,
+    ...PAPER_SHEET_SURFACE,
     paddingTop: EVENT_INDEX.paperPaddingTop,
     paddingBottom: EVENT_INDEX.paperPaddingBottom,
   },
@@ -461,7 +458,7 @@ const styles = StyleSheet.create({
   },
   hubMethod: { marginTop: EVENT_STAGE.methodGap },
   hubPaper: {
-    backgroundColor: SURFACE.paper,
+    ...PAPER_SHEET_SURFACE,
     paddingTop: 30,
     paddingBottom: 48,
   },

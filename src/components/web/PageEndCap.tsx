@@ -2,6 +2,7 @@ import { View, Pressable, StyleSheet, Platform } from 'react-native';
 import { Text } from '../ui/Text';
 import { useRouter } from 'expo-router';
 import { COLORS, INK_TEXT } from '../../constants/colors';
+import { PAPER_SHEET_RADIUS } from '../ui/PaperSheet';
 import { HeroLogo } from './HeroLogo';
 
 /**
@@ -85,8 +86,12 @@ const s = StyleSheet.create({
   sheetFoot: {
     height: 28,
     backgroundColor: COLORS.beige,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    // The same radius the sheet's own corners use. It was 28 against the
+    // sheet's 24, which is invisible in isolation and obvious on a page that
+    // shows both: the paper entered on one curve and left on a slightly
+    // different one.
+    borderBottomLeftRadius: PAPER_SHEET_RADIUS,
+    borderBottomRightRadius: PAPER_SHEET_RADIUS,
     marginBottom: 30,
   } as object,
   // Breathing room standing in for the sheet foot when the page already ends
