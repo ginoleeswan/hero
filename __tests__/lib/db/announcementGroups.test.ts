@@ -10,6 +10,8 @@ const a = (o: Partial<EventAnnouncement>): EventAnnouncement => ({
   official: true,
   titleId: 'tmdb:1',
   titleName: 'Avengers: Doomsday',
+  castCount: 0,
+  cast: [],
   posterUrl: null,
   ...o,
 });

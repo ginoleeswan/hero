@@ -52,6 +52,10 @@ export interface PulseCandidate {
   /** The event's own window — live events only. Drives the day counter. */
   windowFrom?: string | null;
   windowTo?: string | null;
+  /** Which EDITION is live — live events only, and null until the edition row
+   *  exists. The rail routes to it so a card that says "right now" lands on the
+   *  thing happening right now rather than on the series archive. */
+  editionSlug?: string | null;
   /** Why this surge started, if the app can point at something. Surges only. */
   causeKind?: CauseKind | null;
   causeLabel?: string | null;

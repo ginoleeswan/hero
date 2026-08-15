@@ -22,10 +22,11 @@ import { SURFACE } from '../../constants/colors';
 import { PAPER_SHEET_SURFACE } from '../ui/PaperSheet';
 import { EVENT_STAGE, EVENT_PAPER, EVENT_INDEX, EVENT_INK } from '../../constants/eventGeometry';
 
-/** VenueMap's height at the dossier stage's 190pt width — the projection's box is
- *  166° of latitude over 360° of longitude, and the skeleton has to reserve the
- *  same or the stage resettles when the real map arrives. */
-const EVENT_MAP_H = Math.round((190 * 166) / 360);
+/** VenueGlobe's diameter at the dossier stage's phone width, which is what this
+ *  skeleton mirrors. Square and fully rounded, because the real thing is a disc
+ *  and a placeholder that is not the same shape resettles the stage when it
+ *  arrives. */
+const EVENT_GLOBE = 84;
 
 const PAD = EVENT_STAGE.pad;
 
@@ -362,7 +363,7 @@ export function EventDossierSkeleton() {
                 still promised two small stats would settle into something a
                 different shape. */}
             <View style={styles.statMap}>
-              <Skeleton height={EVENT_MAP_H} borderRadius={6} color={INK_TINT} />
+              <Skeleton height={EVENT_GLOBE} borderRadius={999} color={INK_TINT} />
               <TextLine box={16} ink={11} width={112} tint={INK_TINT} />
             </View>
           </View>
@@ -407,8 +408,8 @@ const styles = StyleSheet.create({
     marginBottom: EVENT_STAGE.curveH * EVENT_STAGE.curveClearance,
   },
   stat: { gap: EVENT_STAGE.statInnerGap },
-  // Matches VenueMap: 190 wide at the dossier's stage, 166/360 of that tall.
-  statMap: { width: 190, gap: 10 },
+  // Matches VenueGlobe at the dossier's phone stage.
+  statMap: { width: EVENT_GLOBE, gap: 12 },
   paper: {
     ...PAPER_SHEET_SURFACE,
     paddingTop: EVENT_PAPER.paddingTop,

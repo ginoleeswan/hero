@@ -62,8 +62,9 @@ export interface RightNowBandProps {
   onHeroPress: HeroPress;
   onTitlePress: (titleId: string) => void;
   onIssuePress: (issueId: string) => void;
-  /** A live event → its permanent page at /event/[slug]. */
-  onEventPress: (slug: string) => void;
+  /** A live event → the EDITION that is live, falling back to the hub at
+   *  /event/[slug] when the edition row does not exist yet. */
+  onEventPress: (slug: string, editionSlug: string | null) => void;
   /** Forwarded to the rail's trailing card. See PulseRail — /event had no
    *  inbound link anywhere in the app before this. */
   onArchivePress?: () => void;

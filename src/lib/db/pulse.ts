@@ -22,6 +22,7 @@ interface PulseCandidateRow {
   max_fame: number | null;
   window_from?: string | null;
   window_to?: string | null;
+  edition_slug?: string | null;
   cause_kind?: string | null;
   cause_label?: string | null;
   cause_date?: string | null;
@@ -58,6 +59,9 @@ export function mapPulseRows(rows: PulseCandidateRow[]): PulseCandidate[] {
       // against the older signature until that's applied.
       windowFrom: r.window_from ?? null,
       windowTo: r.window_to ?? null,
+      // Optional at the row level for the same reason as the window columns:
+      // the reader must keep working against an RPC that predates the column.
+      editionSlug: r.edition_slug ?? null,
       // Optional at the row level: the columns land with
       // 20260727181000_pulse_candidates_with_cause.sql, and the reader keeps
       // working against the older signature until that's applied.

@@ -20,7 +20,7 @@ import { Text } from '../ui/Text';
 import { Image } from 'expo-image';
 import { HeroFace } from './HeroFace';
 import { CountUp } from './CountUp';
-import { VenueMap } from './VenueMap';
+import { VenueGlobe } from './VenueGlobe';
 import { Section } from './EventSection';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,8 +29,10 @@ import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import { EVENT_STAGE, EVENT_PAPER } from '../../constants/eventGeometry';
 import { EventCurve } from './EventCurve';
 import { PAPER_SHEET_SURFACE, PAPER_SHEET_FOOT } from '../ui/PaperSheet';
+import { PaperCard } from '../ui/PaperCard';
 import {
   groupAnnouncements,
+  announcementSubtitle,
   type EventDossier as Dossier,
   type EventTrailer,
   type TrailerCastFace,
@@ -60,6 +62,11 @@ export interface EventDossierProps {
   onArenaPress?: (heroA: string, heroB: string) => void;
   /** Back to the index. Optional so the component stays usable without it. */
   onIndexPress?: () => void;
+  /** Back to this event's own hub — the archive of every edition of it.
+   *  Optional; without it the eyebrow slot renders empty rather than falling
+   *  back to a label, because a word there that is not a link is what this
+   *  replaced. */
+  onSeriesPress?: () => void;
 }
 
 /**
@@ -303,6 +310,7 @@ export function EventDossier({
   onHeroPress,
   onArenaPress,
   onIndexPress,
+  onSeriesPress,
 }: EventDossierProps) {
   const { event, announcements, revealed, trailers, surges } = dossier;
   const accent = event.accent ?? COLORS.goldAccent;
@@ -349,12 +357,13 @@ export function EventDossier({
   // Desktop: no peek to signal, because it is a grid. Cards divide the measure
   // exactly instead, using the same helper as the posters — a fixed 232 left a
   // 136pt ragged gutter at the end of every row.
-  const newsGrid = grid(14, 250);
+  // 16, matching `newsWrap`'s gap. They were 14 and 16: the cell width was
+  // solved for a gap the layout did not use, so the fourth card missed the
+  // measure by five points and the grid silently dropped to three columns with
+  // a dead column of beige on the right.
+  const newsGrid = grid(16, 250);
   const newsCardW = wide ? newsGrid.cell : Math.min(232, Math.round(avail * 0.62));
 
-  // Never upscale a 480-wide YouTube still past roughly its native width.
-  const LEAD_ART_MAX = 560;
-  const leadArtW = Math.min(LEAD_ART_MAX, Math.round(avail * 0.52));
   // How many cards a section shows after its lead.
   //
   // Both image sections were unbounded, and D23 has 15 announcements and 10
@@ -456,9 +465,34 @@ export function EventDossier({
               different: a status word, and a bordered affordance with a chevron
               at the opposite edge, where a reader looks for a way out. */}
           <View style={s.eyebrowRow}>
-            <Text style={[s.eyebrow, { color: accent }]}>
-              {event.ongoing ? 'Happening now' : 'Detected event'}
-            </Text>
+            {/* The way back to the SERIES, which this page did not have at all.
+                Since the hub became "always the hub", /event/d23 holds the whole
+                archive — and from an edition the only exit was "All events",
+                so reaching the archive of the very event you were reading meant
+                going out to the index and back in.
+
+                It replaces the word "Detected event", which was our pipeline's
+                vocabulary sitting in the most prominent small-text slot on the
+                page. It described how we FOUND this, which is a fact about our
+                crawler; the reader wants to know what this is one of. The
+                series name is both, and it is a link.
+
+                The live status moved down to the window label, where the dates
+                it qualifies actually are. */}
+            {onSeriesPress ? (
+              <Pressable
+                onPress={onSeriesPress}
+                style={s.seriesLink}
+                accessibilityRole="link"
+                accessibilityLabel={`All ${event.headline} editions`}
+                hitSlop={8}
+              >
+                <Ionicons name="chevron-back" size={12} color={accent} />
+                <Text style={[s.eyebrow, { color: accent }]}>{event.headline}</Text>
+              </Pressable>
+            ) : (
+              <View />
+            )}
             {!!onIndexPress && (
               <Pressable
                 onPress={onIndexPress}
@@ -501,6 +535,18 @@ export function EventDossier({
                 </View>
               ) : (
                 <Text style={[s.title, { color: accent }]}>{event.headline}</Text>
+              )}
+
+              {/* Live status, now beside the dates rather than up in the
+                  eyebrow. A status is a fact about the WINDOW, and it was two
+                  hundred pixels away from the window it described. A static dot,
+                  not a pulsing one: an endless loop would need a Reduce Motion
+                  branch and a resting value to say the same word. */}
+              {event.ongoing && (
+                <View style={s.liveRow}>
+                  <View style={[s.liveDot, { backgroundColor: accent }]} />
+                  <Text style={[s.liveWord, { color: accent }]}>Happening now</Text>
+                </View>
               )}
 
               {!!windowLabel && (
@@ -584,13 +630,13 @@ export function EventDossier({
                   arrives without the header getting busier — it does not join
                   the stage, it replaces two things already on it. */}
               {!!event.venueCity && event.venueLat !== null && event.venueLon !== null && (
-                <VenueMap
+                <VenueGlobe
                   city={event.venueCity}
                   lat={event.venueLat}
                   lon={event.venueLon}
                   from={movedVenue}
                   accent={accent}
-                  width={wide ? 190 : 168}
+                  size={wide ? 96 : 84}
                 />
               )}
             </View>
@@ -635,8 +681,20 @@ export function EventDossier({
                   rather than stacked above it. Two columns is also simply the
                   better editorial shape at this width: the headline sits at the
                   top of the image instead of a screen-height below it. */}
+              {/* The lead as an OVERLAY, which is the grammar LeadTrailer already
+                  uses forty lines below — one full-bleed still, an ink scrim,
+                  and the words laid over the bottom of it.
+
+                  It was a split card: art on the left, text in a column on the
+                  right. That shape cannot work at this measure. The text is a
+                  kicker, a title, one studio sentence and a channel — four short
+                  lines that have to fill 500pt of column beside a 16:9 picture,
+                  so the card was mostly void, and PaperCard's accent crown (an
+                  absolute fill, correct on a 250pt card) stretched across the
+                  whole of that void as a pale teal panel. Two problems with one
+                  cause: a lead is a picture, not a two-column article. */}
               <Pressable
-                style={[s.newsLead, wide ? s.newsLeadWide : null]}
+                style={[s.lead, wide ? s.newsLeadWide : null]}
                 onPress={() => onTitlePress(leadNews.titleId)}
                 accessibilityRole="button"
                 accessibilityLabel={`${leadNews.titleName}, announced at this event`}
@@ -644,24 +702,42 @@ export function EventDossier({
                 {!!(leadNews.thumbnailUrl ?? leadNews.posterUrl) && (
                   <Image
                     source={{ uri: (leadNews.thumbnailUrl ?? leadNews.posterUrl) as string }}
-                    style={[
-                      s.newsLeadArt,
-                      wide
-                        ? { width: leadArtW, height: Math.round(leadArtW * 0.5625) }
-                        : { width: '100%', height: Math.round(avail * 0.5625) },
-                    ]}
+                    style={s.leadArt}
                     contentFit="cover"
                     transition={160}
                   />
                 )}
-                <View style={[s.newsLeadBody, wide ? s.newsLeadBodyWide : null]}>
-                  <Text style={s.newsLeadTitle} numberOfLines={2}>
+                <LinearGradient
+                  colors={['rgba(11,24,32,0)', 'rgba(11,24,32,0.55)', 'rgba(11,24,32,0.93)']}
+                  locations={[0, 0.5, 1]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <PlayCue accent={accent} size={56} />
+                <ClipStamp clips={leadNews.clips} onArt />
+                <View style={s.leadBody}>
+                  <Text style={[s.leadKicker, { color: accent }]}>LEAD ANNOUNCEMENT</Text>
+                  <Text style={s.leadTitle} numberOfLines={2}>
                     {leadNews.titleName}
                   </Text>
-                  <Text style={s.newsCaption} numberOfLines={wide ? 4 : 2}>
-                    {leadNews.caption}
-                  </Text>
-                  <Text style={s.newsMeta}>{sourceLine(leadNews)}</Text>
+                  {!!announcementSubtitle(leadNews) && (
+                    <Text style={s.newsLeadCaption} numberOfLines={2}>
+                      {announcementSubtitle(leadNews)}
+                    </Text>
+                  )}
+                  {leadNews.cast.length > 0 ? (
+                    <View style={s.leadCast}>
+                      <TrailerCast
+                        cast={leadNews.cast}
+                        total={leadNews.castCount}
+                        size={34}
+                        onHeroPress={onHeroPress}
+                        onInk
+                        interactive={false}
+                      />
+                    </View>
+                  ) : (
+                    <Text style={s.leadMeta}>{sourceLine(leadNews)}</Text>
+                  )}
                 </View>
               </Pressable>
 
@@ -675,31 +751,76 @@ export function EventDossier({
               {restNews.length > 0 && (
                 <RailOrWrap wide={wide} pad={pad} railStyle={s.newsRail} wrapStyle={s.newsWrap}>
                   {restNews.map((a) => (
-                    <Pressable
+                    <PaperCard
                       key={a.titleId}
+                      accent={accent}
                       style={[s.newsCard, { width: newsCardW }]}
-                      onPress={() => onTitlePress(a.titleId)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${a.titleName}, announced at this event`}
                     >
-                      {!!(a.thumbnailUrl ?? a.posterUrl) && (
-                        <Image
-                          source={{ uri: (a.thumbnailUrl ?? a.posterUrl) as string }}
-                          style={[
-                            s.newsCardArt,
-                            { width: newsCardW, height: Math.round(newsCardW * 0.5625) },
-                          ]}
-                          contentFit="cover"
-                          transition={160}
-                        />
-                      )}
-                      <Text style={s.newsCardTitle} numberOfLines={2}>
-                        {a.titleName}
-                      </Text>
-                      <Text style={s.newsMeta} numberOfLines={1}>
-                        {sourceLine(a)}
-                      </Text>
-                    </Pressable>
+                      <Pressable
+                        onPress={() => onTitlePress(a.titleId)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${a.titleName}, announced at this event`}
+                      >
+                        {!!(a.thumbnailUrl ?? a.posterUrl) && (
+                          <View>
+                            <Image
+                              source={{ uri: (a.thumbnailUrl ?? a.posterUrl) as string }}
+                              style={{
+                                width: newsCardW,
+                                height: Math.round(newsCardW * 0.5625),
+                              }}
+                              contentFit="cover"
+                              transition={160}
+                            />
+                            <PlayCue accent={accent} size={34} corner />
+                            <ClipStamp clips={a.clips} />
+                          </View>
+                        )}
+                        <View style={s.newsCardBody}>
+                          <Text style={s.newsCardTitle} numberOfLines={2}>
+                            {a.titleName}
+                          </Text>
+                          {/* The studio's own line, minus the half of it that
+                              was the headline again. See announcementSubtitle.
+                              Rendered only when something survives: a blank line
+                              of nothing is worse than no line. */}
+                          {!!announcementSubtitle(a) && (
+                            <Text style={s.newsCardCaption} numberOfLines={2}>
+                              {announcementSubtitle(a)}
+                            </Text>
+                          )}
+                          {/* The catalogue, on the card. This is the whole
+                              difference between an announcement grid that is
+                              ours and one that is every film grid on the
+                              internet: the still is the studio's, the copy is
+                              the studio's, and these faces are the only thing on
+                              the card nobody else has. They are also six routes
+                              INTO the app from a card that otherwise offered one
+                              route out of it.
+
+                              Not interactive here — react-native-web renders
+                              Pressable as <button> and this strip lives inside
+                              the card's own button, which is invalid HTML. The
+                              whole card goes to the title; TrailerCast's own
+                              note covers the same trap. */}
+                          <View style={s.newsCardFoot}>
+                            {a.cast.length > 0 ? (
+                              <TrailerCast
+                                cast={a.cast}
+                                total={a.castCount}
+                                size={26}
+                                onHeroPress={onHeroPress}
+                                interactive={false}
+                              />
+                            ) : (
+                              <Text style={s.newsMeta} numberOfLines={1}>
+                                {sourceLine(a)}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      </Pressable>
+                    </PaperCard>
                   ))}
                 </RailOrWrap>
               )}
@@ -1094,9 +1215,90 @@ function LeadTrailer({
  * page has for how big an announcement was — how many times a studio went back
  * to the same thing during its own event.
  */
+/** Who said it. The clip COUNT used to be tacked on here and is now stamped on
+ *  the artwork, where it is a fact about the thing rather than a third clause in
+ *  a grey line — and where it does the job the grey line never did, which is
+ *  telling a reader these are videos. */
 function sourceLine(a: AnnouncementGroup): string {
-  const who = a.official ? a.channel : `${a.channel} · reported`;
-  return a.clips > 1 ? `${who}  ·  ${a.clips} clips` : who;
+  return a.official ? a.channel : `${a.channel} · reported`;
+}
+
+/**
+ * The cue that says "this is footage".
+ *
+ * The section is a wall of 16:9 stills of people's faces with a title
+ * underneath, which is the exact shape of a blog index — nothing on it said
+ * these were CLIPS, so the most exciting thing an event produces was presented
+ * as a list of articles. One accent disc fixes that, and it is also the only
+ * place the event's own colour appears below the seam, which stitches the paper
+ * back to the ink band it fell out of.
+ *
+ * A triangle drawn with borders rather than an icon: Ionicons' play glyph
+ * carries its own optical padding and sits visibly left of centre inside a
+ * circle, which at 44pt is the sort of thing that reads as sloppy without a
+ * viewer being able to say why.
+ */
+function PlayCue({
+  accent,
+  size = 46,
+  corner = false,
+}: {
+  accent: string;
+  size?: number;
+  /** Pin to the bottom-left instead of centring.
+   *
+   *  Centred is right for one lead. Repeated down a grid it is thirteen
+   *  identical discs stamped over the middle of thirteen faces — the studio
+   *  chose that frame, and the cue covers the reason it chose it. In the corner
+   *  the same mark says the same thing and balances the clip stamp opposite. */
+  corner?: boolean;
+}) {
+  const b = Math.round(size * 0.2);
+  return (
+    <View style={corner ? s.cueCorner : s.cueWrap} pointerEvents="none">
+      <View
+        style={[
+          s.cue,
+          {
+            width: size,
+            height: size,
+            // A hairline RING rather than a filled puck. Thirteen solid accent
+            // discs down a page whose whole grammar is paper, ink and one
+            // colour is thirteen buttons shouting over the pictures they sit
+            // on; the ring says the same word at a fraction of the volume, and
+            // it is the same restraint the rest of the app is built on.
+            borderColor: `${accent}dd`,
+            backgroundColor: 'rgba(11,24,32,0.42)',
+          },
+        ]}
+      >
+        <View
+          style={[
+            s.cueTri,
+            {
+              borderLeftWidth: b * 1.35,
+              borderTopWidth: b,
+              borderBottomWidth: b,
+              marginLeft: Math.round(b * 0.42),
+            },
+          ]}
+        />
+      </View>
+    </View>
+  );
+}
+
+/** How many clips, stamped on the corner of the artwork.
+ *
+ *  `onArt` moves it to the TOP corner, for the lead — where the bottom of the
+ *  picture is the headline rather than picture. */
+function ClipStamp({ clips, onArt = false }: { clips: number; onArt?: boolean }) {
+  if (clips < 2) return null;
+  return (
+    <View style={[s.stamp, onArt ? s.stampTop : null]}>
+      <Text style={s.stampText}>{`${clips} clips`}</Text>
+    </View>
+  );
 }
 
 const s = StyleSheet.create({
@@ -1132,13 +1334,36 @@ const s = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.4,
   },
+  // The gap below the eyebrow lives on the LINK now, not on the text. Inside a
+  // row with a chevron, a bottom margin on the text alone shifts the text off
+  // the chevron's centre — the row's height is set by the taller child, and the
+  // margin makes the text box taller than the icon by exactly the gap.
+  seriesLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginBottom: EVENT_STAGE.eyebrowGap,
+  },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     lineHeight: EVENT_STAGE.eyebrowLine,
     letterSpacing: 2.4,
     textTransform: 'uppercase',
-    marginBottom: EVENT_STAGE.eyebrowGap,
+  },
+  liveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: EVENT_STAGE.windowGap,
+  },
+  liveDot: { width: 7, height: 7, borderRadius: 999 },
+  liveWord: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    lineHeight: EVENT_STAGE.eyebrowLine,
+    letterSpacing: 2.4,
+    textTransform: 'uppercase',
   },
   markBox: {
     alignItems: 'flex-start',
@@ -1247,13 +1472,84 @@ const s = StyleSheet.create({
   posterMain: { gap: 8 },
   poster: { borderRadius: 9, backgroundColor: 'rgba(11,24,32,0.08)' },
   // The lead announcement, at the size the news deserves.
-  newsLead: { gap: 0 },
-  newsLeadWide: { flexDirection: 'row', alignItems: 'center', gap: 26 },
-  // 16:9 — the shape YouTube returns. A square crop takes the title card out of
-  // the middle of a trailer thumbnail.
-  newsLeadArt: { borderRadius: 12, backgroundColor: '#00000010' },
-  newsLeadBody: { gap: 4, paddingTop: 10 },
-  newsLeadBodyWide: { flex: 1, minWidth: 0, paddingTop: 0 },
+  //
+  // On a PaperCard now rather than loose on the beige. The section was a naked
+  // 16:9 still with three lines of grey text beside it, which is the shape of a
+  // blog index — and this repo already owns the card grammar the rest of the app
+  // reads in. `padding: 0` because the artwork runs flush to the card's edge;
+  // PaperCard's own overflow clip is what rounds the picture's corners, so the
+  // art needs no radius of its own and cannot disagree with the card's.
+  // A cinematic BAND, not a 16:9 hero.
+  //
+  // At the section's full 1,100pt measure a 16:9 lead is 619pt tall — a whole
+  // screen spent on one still, before the reader has seen that there are twelve
+  // more announcements under it. 21:9 with a hard ceiling makes it plainly the
+  // lead without it becoming the page.
+  //
+  // The ceiling matters as much as the ratio: aspectRatio derives height from
+  // width, so on a 2,000pt window the same rule would hand back 857pt.
+  //
+  // It also crops less badly than it sounds. The source is a YouTube
+  // `hqdefault` at 480x360, so the full measure is already a 2.3x upscale; a
+  // shorter band spends fewer pixels on the blurriest image on the page.
+  newsLeadWide: { aspectRatio: 21 / 9, maxHeight: 420 },
+  newsLeadCaption: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14.5,
+    lineHeight: 20,
+    color: 'rgba(245,235,220,0.86)',
+    maxWidth: 620,
+    marginTop: 2,
+  },
+  // The play cue. Centred by an absolute fill rather than by giving the picture
+  // a flex layout — the image is sized in points by the caller and a layout on
+  // top of it would fight that.
+  cueWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cueCorner: { position: 'absolute', left: 10, bottom: 10, zIndex: 2 },
+  cue: {
+    borderRadius: 999,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  // A border triangle. Width/height stay 0 — the borders ARE the shape.
+  cueTri: {
+    width: 0,
+    height: 0,
+    borderLeftColor: COLORS.beige,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+  },
+  stamp: {
+    position: 'absolute',
+    right: 8,
+    bottom: 8,
+    zIndex: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(11,24,32,0.78)',
+  },
+  stampTop: { top: 12, right: 12, bottom: undefined },
+  stampText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    lineHeight: 14,
+    letterSpacing: 0.6,
+    color: '#f5ebdc',
+  },
   newsLeadTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 23,
@@ -1283,10 +1579,17 @@ const s = StyleSheet.create({
     maxWidth: 520,
   },
 
-  newsRail: { gap: 12, paddingTop: 20 },
-  newsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, paddingTop: 20 },
-  newsCard: { gap: 7 },
-  newsCardArt: { borderRadius: 12, backgroundColor: '#00000010' },
+  newsRail: { gap: 14, paddingTop: 22 },
+  newsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, paddingTop: 22 },
+  newsCard: { padding: 0 },
+  newsCardBody: { padding: 14, gap: 4 },
+  newsCardFoot: { marginTop: 4 },
+  newsCardCaption: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13,
+    lineHeight: 18,
+    color: PAPER_TEXT.muted,
+  },
   newsCardTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 15,

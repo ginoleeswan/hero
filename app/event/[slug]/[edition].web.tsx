@@ -60,7 +60,11 @@ export default function EventEditionPageWeb() {
             onArenaPress={(a, b) =>
               router.push(`/compare/${encodeURIComponent(a)}/${encodeURIComponent(b)}`)
             }
-            onIndexPress={() => router.push(`/event/${encodeURIComponent(slug)}`)}
+            // Two exits, and until now they were one exit wearing the other's
+            // name: the pill said "All events" and went to the SERIES hub. The
+            // breadcrumb is the series; the pill is the index it claims to be.
+            onSeriesPress={() => router.push(`/event/${encodeURIComponent(slug)}`)}
+            onIndexPress={() => router.push('/event')}
           />
         )}
       </View>

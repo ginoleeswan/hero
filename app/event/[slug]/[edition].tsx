@@ -95,12 +95,14 @@ export default function EventEditionPage() {
               viewportHeight={height}
               onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}
               onHeroPress={(id) => router.push(`/character/${encodeURIComponent(id)}`)}
-              // Back to the series, not the global index: from an edition the
-              // useful neighbours are the other years of the same event.
+              // The series and the index are now separate exits with separate
+              // labels. The useful neighbours from an edition are the other
+              // years of the same event, so that one is the breadcrumb.
               onArenaPress={(a, b) =>
                 router.push(`/compare/${encodeURIComponent(a)}/${encodeURIComponent(b)}`)
               }
-              onIndexPress={() => router.push(`/event/${encodeURIComponent(slug)}`)}
+              onSeriesPress={() => router.push(`/event/${encodeURIComponent(slug)}`)}
+              onIndexPress={() => router.push('/event')}
             />
             {phase === 'crossfade' ? (
               <FadeOutSkeleton>

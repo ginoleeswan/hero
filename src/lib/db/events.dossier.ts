@@ -70,6 +70,11 @@ export interface EventAnnouncement {
   titleId: string;
   titleName: string | null;
   posterUrl: string | null;
+  /** Everyone from the catalogue who appears in the announced title, and the
+   *  most famous few of them. The same shape the trailer cards carry — see
+   *  TrailerCastFace — because both sections render the same face strip. */
+  castCount: number;
+  cast: TrailerCastFace[];
 }
 
 /**
@@ -203,6 +208,17 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
         titleId: String(a.title_id ?? ''),
         titleName: (a.title_name as string) ?? null,
         posterUrl: (a.poster_url as string) ?? null,
+        // Absent on an RPC that predates 20260816094500; an empty strip is the
+        // right degradation, not a throw on a shared route.
+        castCount: num(a.cast_count) ?? 0,
+        cast: arr(a.cast)
+          .map((c) => ({
+            heroId: String(c.hero_id ?? ''),
+            name: String(c.name ?? ''),
+            portraitUrl: (c.portrait_url as string) ?? null,
+            avatar: c.avatar === true,
+          }))
+          .filter((c) => c.heroId && c.portraitUrl),
       }))
       .filter((a) => a.videoId && a.title && a.titleId),
     // Tolerates an older RPC with no `revealed` key — the section renders
@@ -366,6 +382,10 @@ export interface AnnouncementGroup {
   publishedAt: string | null;
   /** How many clips this event produced about the same thing. */
   clips: number;
+  /** Who the announcement is about. Carried through from the best clip — every
+   *  clip in a group shares a title, so they all carry the same cast. */
+  castCount: number;
+  cast: TrailerCastFace[];
 }
 
 /**
@@ -385,6 +405,53 @@ export interface AnnouncementGroup {
  * Best clip per group = official first, then newest. A studio's own upload
  * outranks a press re-cut of the same beat.
  */
+/**
+ * The part of a YouTube title that is NOT already the headline.
+ *
+ * `groupAnnouncements` demotes the marketing string to a caption on the theory
+ * that its length stops mattering there. It does not: on a card the caption sits
+ * directly under the catalogue's name for the same thing, and a studio's video
+ * title is a pipe-delimited stack that leads with that very name. The card read
+ *
+ *     The Mandalorian and Grogu
+ *     Star Wars: The Mandalorian and Grogu | Official Podcast | Streaming Septembe…
+ *
+ * — the headline, then the headline again, then the useful half sheared
+ * mid-word by the clamp. Thirteen cards of that is why the grid looked broken.
+ *
+ * Dropping the segments that restate the title leaves "Official Podcast ·
+ * Streaming September 2026", which is the half a reader actually wanted: what
+ * KIND of thing it was and when it lands.
+ *
+ * Captions with no pipe are left exactly as they are — those are real sentences
+ * a human wrote ("Watch the newly announced X-Men cast meet for the very first
+ * time backstage") and they are the best copy on the page.
+ */
+export function announcementSubtitle(a: AnnouncementGroup): string {
+  const parts = a.caption
+    .split('|')
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length < 2) return a.caption;
+
+  const norm = (t: string) =>
+    t
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  const title = norm(a.titleName);
+  // Either direction counts as a restatement: "Star Wars: Ahsoka Season 2"
+  // contains the title "Ahsoka", and a segment reading just "Star Wars" is
+  // contained by the title "Star Wars: Visions".
+  const kept = parts.filter((p) => {
+    const n = norm(p);
+    return !!n && !n.includes(title) && !title.includes(n);
+  });
+  // Everything was the title restated. Nothing to add, and repeating it would
+  // be the defect this function exists to remove.
+  return kept.join(' · ');
+}
+
 export function groupAnnouncements(list: readonly EventAnnouncement[]): AnnouncementGroup[] {
   const byTitle = new Map<string, EventAnnouncement[]>();
   for (const a of list) {
@@ -411,6 +478,8 @@ export function groupAnnouncements(list: readonly EventAnnouncement[]): Announce
       posterUrl: best.posterUrl,
       publishedAt: best.publishedAt,
       clips: clips.length,
+      castCount: best.castCount,
+      cast: best.cast,
     });
   }
 

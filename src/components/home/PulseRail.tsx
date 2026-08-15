@@ -50,7 +50,9 @@ export interface PulseRailProps {
   /** A comic → the issue page. */
   onIssuePress: (issueId: string) => void;
   /** A live event → its permanent page. */
-  onEventPress?: (slug: string) => void;
+  /** (series slug, live edition slug or null). The edition is what the card is
+   *  actually about; the slug alone lands on the archive. */
+  onEventPress?: (slug: string, editionSlug: string | null) => void;
   /** A surge → the character whose face fronts it. */
   onHeroPress?: (hero: { id: string; portrait_url?: string | null }) => void;
   disabled?: boolean;
@@ -101,7 +103,7 @@ export function PulseRail({
             const brand = brandForEvent(item.entityId);
             return (
               <PressScale
-                onPress={() => onEventPress?.(item.entityId)}
+                onPress={() => onEventPress?.(item.entityId, item.editionSlug ?? null)}
                 style={[live.card, { borderColor: `${accent}55` }]}
                 accessibilityRole="button"
                 accessibilityLabel={`${item.headline}, live now`}

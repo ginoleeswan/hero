@@ -15,7 +15,6 @@
 // Deliberately not interactive, and deliberately unlabelled here — the numbers
 // live in the stat row above, where they have typographic weight.
 import Svg, { Path, Rect, Line, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { COLORS } from '../../constants/colors';
 
 export interface EventCurveProps {
   series: { date: string; views: number }[];
@@ -97,19 +96,21 @@ export function EventCurve({ series, from, to, accent, width, height = 180 }: Ev
         </>
       )}
 
-      {/* The article's ordinary level, so the breakout has something to break out
-          FROM. A recessive hairline, not a labelled axis. */}
-      <Line
-        x1={0}
-        y1={y(median(views))}
-        x2={width}
-        y2={y(median(views))}
-        stroke={COLORS.beige}
-        strokeWidth={1}
-        strokeDasharray="2 5"
-        opacity={0.18}
-      />
+      {/* There was a dashed median hairline here — "the ordinary level, so the
+          breakout has something to break out from". It is gone, and it went for
+          a reason worth recording.
 
+          Its height is DATA-driven; the type's floor above it is a fixed
+          fraction of the band height. On d23/2026 those two landed 7pt apart, so
+          a full-bleed dotted rule ran just under the date line, the stat label
+          and the map caption at once — three unrelated text blocks appearing to
+          share an underline nobody drew. That clearance was luck, and the next
+          event with a different peak-to-median ratio re-rolls it.
+
+          It was also doing the job twice. The window shade already brackets the
+          days, and the curve's own flat left-hand run IS the ordinary level —
+          drawn, not annotated. A recessive dotted axis on a figure we
+          deliberately left unlabelled was an axis either way. */}
       <Path d={area} fill="url(#evc-fill)" />
       {/* 2.5 rather than 2. At 380pt tall the plot is the masthead's subject and
           a hairline reads as a scratch across it; the extra half point is what
@@ -117,11 +118,4 @@ export function EventCurve({ series, from, to, accent, width, height = 180 }: Ev
       <Path d={line} stroke={accent} strokeWidth={2.5} fill="none" />
     </Svg>
   );
-}
-
-function median(xs: number[]): number {
-  if (xs.length === 0) return 0;
-  const s = [...xs].sort((a, b) => a - b);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
