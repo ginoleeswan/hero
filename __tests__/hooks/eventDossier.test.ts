@@ -176,3 +176,29 @@ describe('mapEventIndex', () => {
     expect(i.events.map((e) => e.slug)).toEqual(['ok']);
   });
 });
+
+describe('mapEventDossier — revealed cast', () => {
+  it('maps characters a studio named, and survives an older RPC', () => {
+    // This is the only section that is neither attention data nor a marketing
+    // string — the catalogue being named by the rights holder.
+    const d = mapEventDossier({
+      event: { slug: 'd23', headline: 'D23' },
+      revealed: [
+        {
+          hero_id: 'h_storm',
+          name: 'Storm',
+          portrait_url: 'https://x/storm.png',
+          fame_score: 96,
+          title_id: 'tmdb:36657',
+          title_name: 'X-Men',
+        },
+        // No hero_id — cannot be routed to, so it is not a face.
+        { name: 'Nobody' },
+      ],
+    });
+    expect(d?.revealed).toHaveLength(1);
+    expect(d?.revealed[0]).toMatchObject({ heroId: 'h_storm', name: 'Storm', fameScore: 96 });
+    // An unapplied migration returns no `revealed` key at all.
+    expect(mapEventDossier({ event: { slug: 'd23', headline: 'D23' } })?.revealed).toEqual([]);
+  });
+});

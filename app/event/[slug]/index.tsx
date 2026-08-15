@@ -109,6 +109,9 @@ export default function EventPage() {
               onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}
               onHeroPress={(id) => router.push(`/character/${encodeURIComponent(id)}`)}
               onIssuePress={(id) => router.push(`/issue/${encodeURIComponent(id)}`)}
+              onArenaPress={(a, b) =>
+                router.push(`/compare/${encodeURIComponent(a)}/${encodeURIComponent(b)}`)
+              }
               onIndexPress={() => router.push('/event')}
             />
             {/* Past years, under the live page. The current edition is being

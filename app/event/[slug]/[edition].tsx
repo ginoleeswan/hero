@@ -98,6 +98,9 @@ export default function EventEditionPage() {
               onIssuePress={(id) => router.push(`/issue/${encodeURIComponent(id)}`)}
               // Back to the series, not the global index: from an edition the
               // useful neighbours are the other years of the same event.
+              onArenaPress={(a, b) =>
+                router.push(`/compare/${encodeURIComponent(a)}/${encodeURIComponent(b)}`)
+              }
               onIndexPress={() => router.push(`/event/${encodeURIComponent(slug)}`)}
             />
             {phase === 'crossfade' ? (

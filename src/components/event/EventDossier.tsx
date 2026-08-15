@@ -43,6 +43,9 @@ export interface EventDossierProps {
   onTitlePress: (titleId: string) => void;
   onHeroPress: (heroId: string) => void;
   onIssuePress: (issueId: string) => void;
+  /** Two revealed characters → the Arena. Optional: the section renders without
+   *  it, minus the call to action. */
+  onArenaPress?: (heroA: string, heroB: string) => void;
   /** Back to the index. Optional so the component stays usable without it. */
   onIndexPress?: () => void;
 }
@@ -58,9 +61,10 @@ export function EventDossier({
   onTitlePress,
   onHeroPress,
   onIssuePress,
+  onArenaPress,
   onIndexPress,
 }: EventDossierProps) {
-  const { event, announcements, trailers, surges, issues } = dossier;
+  const { event, announcements, revealed, trailers, surges, issues } = dossier;
   const accent = event.accent ?? COLORS.goldAccent;
   const brand = brandForEvent(event.slug);
   const pad = wide ? EVENT_STAGE.padWide : EVENT_STAGE.pad;
@@ -271,6 +275,69 @@ export function EventDossier({
                     </Pressable>
                   ))}
                 </View>
+              )}
+            </Section>
+          )}
+
+          {/* Directly under the news, because it IS the news for this app: the
+              catalogue being named by the rights holder. Everything else on the
+              page is a measurement or a marketing string. Placed above trailers
+              on purpose — a reader who has just learned six X-Men were cast
+              should meet them before a poster grid. */}
+          {revealed.length > 0 && (
+            <Section
+              title="Characters revealed"
+              note="Named in the studio's own cast list, during the window"
+            >
+              <View style={[s.faceGrid, { gap: faceGrid.gap }]}>
+                {revealed.map((r) => (
+                  <Pressable
+                    key={r.heroId}
+                    style={[s.faceCell, { width: faceGrid.cell }]}
+                    onPress={() => onHeroPress(r.heroId)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${r.name}${r.titleName ? `, revealed for ${r.titleName}` : ''}`}
+                  >
+                    {!!r.portraitUrl && (
+                      <Image
+                        source={{ uri: r.portraitUrl }}
+                        style={[
+                          s.face,
+                          {
+                            width: faceGrid.cell,
+                            height: faceGrid.cell,
+                            borderRadius: faceGrid.cell / 2,
+                          },
+                        ]}
+                        contentFit="cover"
+                        transition={160}
+                      />
+                    )}
+                    <Text style={s.faceName} numberOfLines={2}>
+                      {r.name}
+                    </Text>
+                    {!!r.titleName && (
+                      <Text style={s.faceCause} numberOfLines={1}>
+                        {r.titleName}
+                      </Text>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* The one place an event page can hand a reader straight into the
+                  app's own game. Two revealed characters is the minimum for a
+                  matchup to mean anything. */}
+              {revealed.length >= 2 && !!onArenaPress && (
+                <Pressable
+                  style={[s.arenaCta, { borderColor: `${accent}66` }]}
+                  onPress={() => onArenaPress(revealed[0].heroId, revealed[1].heroId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Put ${revealed[0].name} against ${revealed[1].name} in the Arena`}
+                >
+                  <Text style={s.arenaCtaText}>{`${revealed[0].name} vs ${revealed[1].name}`}</Text>
+                  <Text style={[s.arenaCtaHint, { color: accent }]}>Settle it in the Arena</Text>
+                </Pressable>
               )}
             </Section>
           )}
@@ -663,6 +730,28 @@ const s = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 11.5,
     color: PAPER_TEXT.muted,
+  },
+
+  arenaCta: {
+    marginTop: 18,
+    alignSelf: 'flex-start',
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    borderWidth: 1,
+    gap: 2,
+  },
+  arenaCtaText: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 18,
+    lineHeight: 23,
+    color: COLORS.deepNavy,
+  },
+  arenaCtaHint: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
 
   faceGrid: { flexDirection: 'row', flexWrap: 'wrap' },

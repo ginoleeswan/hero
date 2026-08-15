@@ -53,6 +53,26 @@ export interface EventAnnouncement {
   posterUrl: string | null;
 }
 
+/**
+ * A character a studio NAMED during the event — from a cast list in its own
+ * video description, not from readership.
+ *
+ * This is the only section on an event page that is neither attention data nor
+ * a marketing string: it is Mythique's own catalogue being named by the rights
+ * holder. D23's headline was six X-Men castings, and the page's answer to it was
+ * a single link to X-Men (2000) until this existed.
+ */
+export interface EventRevealed {
+  heroId: string;
+  name: string;
+  publisher: string | null;
+  portraitUrl: string | null;
+  fameScore: number | null;
+  /** What they were revealed FOR, when the video could be attached to a title. */
+  titleId: string | null;
+  titleName: string | null;
+}
+
 export interface EventTrailer {
   titleId: string;
   title: string;
@@ -89,6 +109,7 @@ export interface EventIssue {
 export interface EventDossier {
   event: EventDossierEvent;
   announcements: EventAnnouncement[];
+  revealed: EventRevealed[];
   trailers: EventTrailer[];
   surges: EventSurge[];
   issues: EventIssue[];
@@ -146,6 +167,19 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
         posterUrl: (a.poster_url as string) ?? null,
       }))
       .filter((a) => a.videoId && a.title && a.titleId),
+    // Tolerates an older RPC with no `revealed` key — the section renders
+    // nothing rather than throwing on a shared route.
+    revealed: arr(r.revealed)
+      .map((v) => ({
+        heroId: String(v.hero_id ?? ''),
+        name: String(v.name ?? ''),
+        publisher: (v.publisher as string) ?? null,
+        portraitUrl: (v.portrait_url as string) ?? null,
+        fameScore: num(v.fame_score),
+        titleId: (v.title_id as string) ?? null,
+        titleName: (v.title_name as string) ?? null,
+      }))
+      .filter((v) => v.heroId && v.name),
     trailers: arr(r.trailers).map((t) => ({
       titleId: String(t.title_id ?? ''),
       title: String(t.title ?? ''),

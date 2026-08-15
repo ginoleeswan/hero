@@ -60,6 +60,9 @@ export default function EventPageWeb() {
               onTitlePress={(id) => router.push(`/title/${encodeURIComponent(id)}`)}
               onHeroPress={(id) => router.push(`/character/${encodeURIComponent(id)}`)}
               onIssuePress={(id) => router.push(`/issue/${encodeURIComponent(id)}`)}
+              onArenaPress={(a, b) =>
+                router.push(`/compare/${encodeURIComponent(a)}/${encodeURIComponent(b)}`)
+              }
               onIndexPress={() => router.push('/event')}
             />
             {!!hub && hub.editions.length > 0 && (
