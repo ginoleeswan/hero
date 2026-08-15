@@ -54,7 +54,7 @@ export function EventDossier({
   onIssuePress,
   onIndexPress,
 }: EventDossierProps) {
-  const { event, trailers, surges, issues } = dossier;
+  const { event, announcements, trailers, surges, issues } = dossier;
   const accent = event.accent ?? COLORS.goldAccent;
   const brand = brandForEvent(event.slug);
   const pad = wide ? EVENT_STAGE.padWide : EVENT_STAGE.pad;
@@ -184,6 +184,48 @@ export function EventDossier({
       {/* ── paper: the record ─────────────────────────────────────────────── */}
       <View style={[s.paper, viewportHeight ? { minHeight: viewportHeight * 0.6 } : null]}>
         <View style={[inner, { paddingHorizontal: pad }]}>
+          {/* First, because it is the only section that says what was actually
+              SAID. Everything below it is derived from attention — a spike, a
+              curve, whose readership moved — which records that something
+              happened and never what it was. */}
+          {announcements.length > 0 && (
+            <Section
+              title="What was announced"
+              note="From the studios' own channels, during the window"
+            >
+              <View style={s.annList}>
+                {announcements.map((a) => (
+                  <Pressable
+                    key={a.videoId}
+                    style={s.annRow}
+                    onPress={() => onTitlePress(a.titleId)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${a.title}, from ${a.channel}`}
+                  >
+                    {!!a.thumbnailUrl && (
+                      <Image
+                        source={{ uri: a.thumbnailUrl }}
+                        style={s.annThumb}
+                        contentFit="cover"
+                        transition={160}
+                      />
+                    )}
+                    <View style={s.annBody}>
+                      <Text style={s.annTitle} numberOfLines={2}>
+                        {a.title}
+                      </Text>
+                      <Text style={s.annMeta} numberOfLines={1}>
+                        {/* The channel is the attribution and it matters: a
+                            studio announced this, a press channel reported it. */}
+                        {a.official ? a.channel : `${a.channel} · reported`}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            </Section>
+          )}
+
           {trailers.length > 0 && (
             <Section title="What dropped" note="Trailers published inside the window">
               {/* The lead gets its backdrop at size — these are the best images
@@ -489,6 +531,27 @@ const s = StyleSheet.create({
   poster: { borderRadius: 9, backgroundColor: 'rgba(11,24,32,0.08)' },
   // Two lines' worth, always: a one-line title next to a two-line one used to
   // push the following row out of alignment.
+  annList: { gap: 14 },
+  annRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  // 16:9, the shape YouTube actually returns — a square crop of a trailer
+  // thumbnail cuts the title card out of the middle of it.
+  annThumb: { width: 112, height: 63, borderRadius: 8, backgroundColor: '#00000010' },
+  annBody: { flex: 1, gap: 3 },
+  annTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 15,
+    // 1.33x — clamped Flame needs >= 1.22x or numberOfLines shears the
+    // descenders on web, where it becomes -webkit-line-clamp + overflow hidden.
+    lineHeight: 20,
+    color: COLORS.deepNavy,
+  },
+  annMeta: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11.5,
+    lineHeight: 15,
+    color: PAPER_TEXT.muted,
+  },
+
   posterTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 14.5,

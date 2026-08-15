@@ -132,6 +132,30 @@ curated 20-row watch list and the `detect.ts` thresholds), not on each firing.
 `admin_set_watched_event_approval` still sets `rejected` as a kill switch. A
 human gate is still right for anything irreversible: **push must keep its own.**
 
+### The dossier says what was announced
+
+Everything else on an event page is derived from **attention** — a spike, a
+curve, whose readership moved. That is the half nobody else publishes, and it is
+not the half a reader arrives for: someone opening a D23 page wants the X-Men
+cast reveal and the Doomsday Special Look, and Wikipedia readership can never
+supply those, because it records that something moved and never what it was.
+
+`channel_videos` closes that gap, so `get_event_dossier` now returns
+**`announcements`** (`20260815190000_dossier_announcements.sql`) — the studios'
+own uploads inside the window, official channels first. Only videos matched to a
+catalogue title are returned: the section renders each row as a link, and a list
+of bare marketing strings that link nowhere is worse than a shorter honest one.
+`mapEventDossier` tolerates a payload with no `announcements` key at all, so an
+unapplied migration renders nothing rather than throwing on a shared route.
+
+Two readers exist for the durable side — `get_event_hub(slug)` and
+`get_event_edition(slug, edition)` (`20260815180000_…`). The edition reader takes
+perishable things from the frozen snapshot and **recomputes everything durable
+from the frozen window**, so an edition page keeps improving as enrichment fills
+in rather than being permanently as bad as the catalogue was on the day. The
+routes that consume them are not built yet — see the note at the end of this
+section.
+
 ### Editions: why `/event/d23` is not "D23 2026"
 
 `watched_events` holds one row per **series** and `sync-watched-events`
@@ -166,6 +190,23 @@ The cost of not having had this: SDCC 2026 was detected at 3.35×, and by
 movers, because the July spike had rolled out of the 27-day series. Its frozen
 edition records that damage honestly rather than restoring a number from a design
 doc. D23 2026 was captured with its full 27-day curve intact.
+
+**Not built yet: the hub and edition routes.** `get_event_hub` and
+`get_event_edition` are live and verified, but `/event/[slug]` is still the live
+dossier and there is no `/event/[slug]/[edition]`. Standing that up means
+restructuring `app/event/[slug].tsx` into `app/event/[slug]/index.tsx` (with its
+`.web` twin — expo-router throws if only one of a pair exists) and adding the
+edition pair beside it. It was left undone deliberately rather than half-done:
+a partial route pair breaks resolution for the whole app.
+
+Worth knowing before building it: **`/event` has no inbound links anywhere.**
+Nothing in `app/` or `src/` routes to it, so the index is reachable only by
+typing the URL, and `scripts/generate-sitemap.mjs` has no events entry — core,
+categories, universes, houses, heroes, titles, teams, and no `/event`. Events
+also get a **share-meta** rewrite in `vercel.json` but no **bot-page** one, so
+crawlers receive the SPA shell. The archive is the precondition for that SEO work
+paying off, because a URL whose content silently becomes next year's event cannot
+hold a ranking for this year's.
 
 **Three functions read `approval` and must move together** — `get_live_events`
 (the rail), `get_event_dossier` (`/event/[slug]`) and `get_event_index`

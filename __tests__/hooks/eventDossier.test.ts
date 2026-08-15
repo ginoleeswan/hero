@@ -69,6 +69,45 @@ describe('mapEventDossier', () => {
     expect(d?.issues).toEqual([]);
   });
 
+  it('maps announcements — the only part of the page that says what was SAID', () => {
+    const d = mapEventDossier({
+      event: { slug: 'd23', headline: 'D23' },
+      announcements: [
+        {
+          video_id: 'ZRRGUkYaHp0',
+          title: 'Avengers: Doomsday | Special Look | In Theaters December 18',
+          published_at: '2026-08-15T04:06:57Z',
+          channel: 'Marvel Entertainment',
+          official: true,
+          title_id: 'tmdb:1003596',
+          title_name: 'Avengers: Doomsday',
+        },
+      ],
+    });
+    expect(d?.announcements[0]).toMatchObject({
+      videoId: 'ZRRGUkYaHp0',
+      channel: 'Marvel Entertainment',
+      official: true,
+      titleId: 'tmdb:1003596',
+    });
+  });
+
+  it('drops an announcement with nothing to link to, and survives an old RPC', () => {
+    // The section renders each row as a link to its title, so a row without a
+    // title_id is a dead card. And an unapplied migration returns a payload with
+    // no `announcements` key at all — on the app's most-shared route that has to
+    // render nothing, not throw.
+    const d = mapEventDossier({
+      event: { slug: 'd23', headline: 'D23' },
+      announcements: [
+        { video_id: 'a', title: 'Untitled sizzle', channel: 'DC', official: true },
+        { video_id: '', title: 'No id', channel: 'DC', official: true, title_id: 'tmdb:1' },
+      ],
+    });
+    expect(d?.announcements).toEqual([]);
+    expect(mapEventDossier({ event: { slug: 'd23', headline: 'D23' } })?.announcements).toEqual([]);
+  });
+
   it('keeps a surge cause so the page can say what moved someone', () => {
     const d = mapEventDossier({
       event: { slug: 'sdcc', headline: 'SDCC' },

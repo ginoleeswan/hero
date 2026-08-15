@@ -26,6 +26,33 @@ export interface EventDossierEvent {
   firstDetectedAt: string | null;
 }
 
+/**
+ * Something a studio actually said, during the window, on its own channel.
+ *
+ * The rest of this dossier is derived from ATTENTION — a spike, a curve, whose
+ * readership moved. That is the half nobody else publishes and it is not the
+ * half a reader arrives for: someone opening a D23 page wants the X-Men cast
+ * reveal and the Doomsday Special Look, and Wikipedia readership can never
+ * supply those, because it records that something moved, never what it was.
+ * `channel_videos` closes that gap.
+ */
+export interface EventAnnouncement {
+  videoId: string;
+  /** The upload's own title — marketing copy, shown as written. */
+  title: string;
+  publishedAt: string | null;
+  thumbnailUrl: string | null;
+  /** Channel name as YouTube reports it, e.g. "Marvel Entertainment". */
+  channel: string;
+  /** False for press channels: fast and useful, but not the rights holder. */
+  official: boolean;
+  /** Always present — the RPC only returns announcements it could attach to a
+   *  catalogue title, because a bare marketing string links nowhere. */
+  titleId: string;
+  titleName: string | null;
+  posterUrl: string | null;
+}
+
 export interface EventTrailer {
   titleId: string;
   title: string;
@@ -61,6 +88,7 @@ export interface EventIssue {
 
 export interface EventDossier {
   event: EventDossierEvent;
+  announcements: EventAnnouncement[];
   trailers: EventTrailer[];
   surges: EventSurge[];
   issues: EventIssue[];
@@ -102,6 +130,22 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
         .filter((d) => d.date),
       firstDetectedAt: (e.first_detected_at as string) ?? null,
     },
+    // Defensive against an unapplied migration: an older RPC has no
+    // `announcements` key at all, and the section must then render nothing
+    // rather than throw on the page's most-shared route.
+    announcements: arr(r.announcements)
+      .map((a) => ({
+        videoId: String(a.video_id ?? ''),
+        title: String(a.title ?? ''),
+        publishedAt: (a.published_at as string) ?? null,
+        thumbnailUrl: (a.thumbnail_url as string) ?? null,
+        channel: String(a.channel ?? ''),
+        official: a.official === true,
+        titleId: String(a.title_id ?? ''),
+        titleName: (a.title_name as string) ?? null,
+        posterUrl: (a.poster_url as string) ?? null,
+      }))
+      .filter((a) => a.videoId && a.title && a.titleId),
     trailers: arr(r.trailers).map((t) => ({
       titleId: String(t.title_id ?? ''),
       title: String(t.title ?? ''),

@@ -425,13 +425,9 @@ export function rankPulse(
       // maps `le.shape as subtype`) — it's what tells the copy whether the run is
       // still going, so the lag grace can be honest in both directions.
       dayLabel:
-        c.kind === 'live_event'
-          ? eventDayLabel(c.windowFrom, c.windowTo, now, c.subtype)
-          : null,
+        c.kind === 'live_event' ? eventDayLabel(c.windowFrom, c.windowTo, now, c.subtype) : null,
       statusLabel:
-        c.kind === 'live_event'
-          ? eventStatusLabel(c.windowFrom, c.windowTo, now, c.subtype)
-          : null,
+        c.kind === 'live_event' ? eventStatusLabel(c.windowFrom, c.windowTo, now, c.subtype) : null,
     });
   }
 
