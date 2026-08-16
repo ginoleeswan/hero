@@ -11,6 +11,7 @@ import { getHeroTitles } from '../db/titles';
 import { getHeroPortrayals, getHeroLinks } from '../db/people';
 import { getIssuesForHero } from '../db/comics';
 import { getHeroNarrative } from '../db/heroFacts';
+import { getHeroEventMoments } from '../db/events.heroMoments';
 import { getProfile } from '../db/profiles';
 import { queryKeys } from './keys';
 
@@ -21,6 +22,17 @@ export function useHeroFamily(id: string | undefined) {
     queryKey: id ? queryKeys.heroFamily(id) : ['heroes', 'family', 'disabled'],
     enabled: !!id,
     queryFn: () => getHeroFamily(id!),
+    staleTime: LONG,
+  });
+}
+
+/** Editions where this character was among the readership. Frozen history — it
+ *  only changes when a new event is caught — so it caches as long as the rest. */
+export function useHeroEventMoments(id: string | undefined) {
+  return useQuery({
+    queryKey: id ? queryKeys.heroEventMoments(id) : ['heroes', 'eventMoments', 'disabled'],
+    enabled: !!id,
+    queryFn: () => getHeroEventMoments(id!),
     staleTime: LONG,
   });
 }

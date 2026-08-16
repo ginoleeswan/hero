@@ -14,6 +14,7 @@ import {
   useHeroLinks,
   useHeroIssues,
   useIsAdmin,
+  useHeroEventMoments,
 } from '../lib/query/heroDetailQueries';
 import { planHeroLoad } from '../lib/query/heroLoadPlan';
 import {
@@ -75,6 +76,11 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
   const isAdmin = useIsAdmin(user?.id).data ?? false;
   const family = useHeroFamily(id).data ?? [];
   const narrative = useHeroNarrative(id).data ?? null;
+  // The watched-event editions this character was being read about during.
+  // Lives here rather than in either view so the pair cannot drift — the
+  // character screen is a native/web pair over one hook, and this is exactly
+  // the sort of block that ends up on one of them only.
+  const eventMoments = useHeroEventMoments(id).data ?? [];
   const titles = useHeroTitles(id).data ?? null;
   const portrayals = useHeroPortrayals(id).data ?? null;
   const links = useHeroLinks(id).data ?? null;
@@ -363,6 +369,7 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
     data,
     setData,
     narrative,
+    eventMoments,
     family,
     comicVineLoading,
     statsGenerating,

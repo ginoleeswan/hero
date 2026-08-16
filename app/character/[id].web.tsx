@@ -71,6 +71,7 @@ import { MovieStrip } from '../../src/components/MovieStrip';
 import { groupTitlesByMedia } from '../../src/lib/db/titles';
 import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLinksRow';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
+import { HeroEventMoments } from '../../src/components/event/HeroEventMoments';
 import { TraitBand } from '../../src/components/character/TraitBand';
 import { type PowerExplainer } from '../../src/lib/db/heroFacts';
 import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
@@ -591,6 +592,7 @@ export default function WebCharacterScreen() {
     newIssues,
     family,
     narrative,
+    eventMoments,
     titles,
     portrayals,
     links,
@@ -1591,6 +1593,26 @@ export default function WebCharacterScreen() {
                       );
                     })()
                   ) : null}
+
+                  {/* The weeks the world was reading about them. Same block as
+                    the native screen, off the same shared hook — this pair
+                    drifts, and a section that exists on one of them only is the
+                    commonest way it happens. */}
+                  {eventMoments.length > 0 && (
+                    <View style={styles.mBlock}>
+                      <Text style={styles.mSectionTitle}>Read about during</Text>
+                      <HeroEventMoments
+                        moments={eventMoments}
+                        onPress={(slug, edition) =>
+                          router.push(
+                            `/event/${encodeURIComponent(slug)}/${encodeURIComponent(edition)}` as Parameters<
+                              typeof router.push
+                            >[0],
+                          )
+                        }
+                      />
+                    </View>
+                  )}
 
                   {/* Legend — debut, trivia, portrayals on one timeline */}
                   <View nativeID="sec-legend">

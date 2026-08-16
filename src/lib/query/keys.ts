@@ -11,6 +11,10 @@ export const queryKeys = {
   featured: (slug: CategorySlug, publisher: CategoryPublisher) =>
     ['heroes', 'featured', slug, publisher] as const,
   heroDetail: (id: string) => ['heroes', 'detail', id] as const,
+  /** The watched-event editions this character was being read about during.
+   *  Under the heroes root rather than an events one: it is a fact about the
+   *  character, cached and invalidated with the rest of their page. */
+  heroEventMoments: (id: string) => ['heroes', 'eventMoments', id] as const,
   /** Long-form biography HTML — its own key so the heavy payload is fetched
    *  once, by /biography/[id], and never as part of the hero row. */
   heroBiography: (id: string) => ['heroes', 'biography', id] as const,

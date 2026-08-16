@@ -64,6 +64,7 @@ import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkele
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
+import { HeroEventMoments } from '../../src/components/event/HeroEventMoments';
 import { TraitBand } from '../../src/components/character/TraitBand';
 import { PullQuoteBio } from '../../src/components/character/PullQuoteBio';
 import {
@@ -708,6 +709,7 @@ export default function CharacterScreen() {
     data,
     setData,
     narrative,
+    eventMoments,
     family,
     comicVineLoading,
     notFound,
@@ -1345,6 +1347,25 @@ export default function CharacterScreen() {
               />
             </View>
           </PaperCard>
+
+          {/* The weeks the world was reading about them.
+              The events archive is the most expensive data in this app and it
+              lived on one surface almost nobody reaches. Pointed the other way
+              it is a sourced, dated fact about the character, and a route into
+              the archive from the page people actually open.
+
+              Correlational by design — "read 12x more than usual DURING" — for
+              the same reason the edition pages say it that way. */}
+          {eventMoments.length > 0 && (
+            <Section title="Read about during">
+              <HeroEventMoments
+                moments={eventMoments}
+                onPress={(slug, edition) =>
+                  router.push(`/event/${encodeURIComponent(slug)}/${encodeURIComponent(edition)}`)
+                }
+              />
+            </Section>
+          )}
 
           {/* Dossier — the bio infobox, collapsed by default.
           NOT in `split`: the landscape layout puts the same fields in the side

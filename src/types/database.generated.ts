@@ -611,28 +611,37 @@ export type Database = {
       }
       edition_mover_hits: {
         Row: {
+          baseline: number | null
           edition_slug: string
           found_at: string
           hero_id: string
           peak: number
+          season_ratio: number | null
           slug: string
           spike: number
+          window_pctile: number | null
         }
         Insert: {
+          baseline?: number | null
           edition_slug: string
           found_at?: string
           hero_id: string
           peak: number
+          season_ratio?: number | null
           slug: string
           spike: number
+          window_pctile?: number | null
         }
         Update: {
+          baseline?: number | null
           edition_slug?: string
           found_at?: string
           hero_id?: string
           peak?: number
+          season_ratio?: number | null
           slug?: string
           spike?: number
+          window_pctile?: number | null
         }
         Relationships: [
           {
@@ -2721,6 +2730,8 @@ export type Database = {
           accent: string | null
           approval: string
           approval_at: string | null
+          attendance: number | null
+          attendance_note: string | null
           baseline: number | null
           blurb: string | null
           channel_slugs: string[] | null
@@ -2747,6 +2758,8 @@ export type Database = {
           accent?: string | null
           approval?: string
           approval_at?: string | null
+          attendance?: number | null
+          attendance_note?: string | null
           baseline?: number | null
           blurb?: string | null
           channel_slugs?: string[] | null
@@ -2773,6 +2786,8 @@ export type Database = {
           accent?: string | null
           approval?: string
           approval_at?: string | null
+          attendance?: number | null
+          attendance_note?: string | null
           baseline?: number | null
           blurb?: string | null
           channel_slugs?: string[] | null
@@ -2876,6 +2891,8 @@ export type Database = {
           accent: string | null
           approval: string
           approval_at: string | null
+          attendance: number | null
+          attendance_note: string | null
           baseline: number | null
           blurb: string | null
           channel_slugs: string[] | null
@@ -3182,6 +3199,10 @@ export type Database = {
           publisher: string
         }[]
       }
+      get_hero_event_moments: {
+        Args: { p_hero_id: string; p_limit?: number }
+        Returns: Json
+      }
       get_hero_neighborhood: {
         Args: { p_hero_id: string; p_limit?: number }
         Returns: Json
@@ -3271,6 +3292,7 @@ export type Database = {
           cause_kind: string
           cause_label: string
           character_count: number
+          edition_slug: string
           entity_id: string
           event_id: string
           headline: string
@@ -3519,6 +3541,7 @@ export type Database = {
         Args: { p_fame: number; p_spike: number }
         Returns: number
       }
+      rebuild_backfilled_movers: { Args: never; Returns: Json }
       rebuild_hero_relationships: { Args: never; Returns: undefined }
       rebuild_teams: { Args: never; Returns: undefined }
       recompute_fame_scores: { Args: never; Returns: number }
