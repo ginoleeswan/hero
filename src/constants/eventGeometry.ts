@@ -65,7 +65,11 @@ export const EVENT_STAGE = {
 /** The paper band below the seam. */
 export const EVENT_PAPER = {
   paddingTop: 34,
-  paddingBottom: 64,
+  // 24, not 64. Every section already carries `sectionMarginBottom: 42`,
+  // including the last one, so the sheet's own padding stacked on top of it and
+  // the page ended with 106pt of empty beige under the final card — a gap big
+  // enough on a phone to read as content that failed to load.
+  paddingBottom: 24,
   sectionMarginBottom: 42,
   sectionTitleLine: line(32),
   sectionNoteGap: 2,

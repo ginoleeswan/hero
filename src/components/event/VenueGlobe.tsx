@@ -153,6 +153,7 @@ export function VenueGlobe({
   from,
   accent,
   size = 96,
+  inline = false,
 }: {
   /** Where this edition was. */
   city: string;
@@ -163,6 +164,14 @@ export function VenueGlobe({
    *  simply turned to the place, which is all there is to say. */
   from: { city: string; lat: number; lon: number } | null;
   accent: string;
+  /** Lay the caption BESIDE the globe instead of under it.
+   *
+   *  On a phone the stat rail wraps and bottom-aligns, so a stacked
+   *  globe-over-caption is the tallest thing on its line and every short stat
+   *  beside it gets pushed down to its floor — 72pt of air above a two-line
+   *  figure that needed none. Side by side the block is the globe's own height
+   *  and the row closes up. */
+  inline?: boolean;
   /** Diameter. Sized as an ORNAMENT (~96) rather than as a figure: at 232 it
    *  stopped integrating into the masthead and became a second hero, adding
    *  400pt of band to say what the caption beside it already says in words.
@@ -219,7 +228,7 @@ export function VenueGlobe({
   }, [lat, lon, from, size]);
 
   return (
-    <View style={s.wrap}>
+    <View style={inline ? s.wrapInline : s.wrap}>
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <Defs>
           {/* Lit from the upper left, very faintly. This is the difference
@@ -303,6 +312,7 @@ export function VenueGlobe({
 
 const s = StyleSheet.create({
   wrap: { gap: 12, alignItems: 'flex-start' },
+  wrapInline: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   note: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,

@@ -536,7 +536,13 @@ export function EventDossier({
                 hitSlop={8}
               >
                 <Ionicons name="chevron-back" size={12} color={accent} />
-                <Text style={[s.eyebrow, { color: accent }]}>{event.headline}</Text>
+                {/* "All editions", not the event's name. The name is the next
+                    thing on the page, set as a 46pt brand mark — printing it
+                    again 100pt above in 11pt caps is the same word twice, and
+                    on a phone the two sat close enough to read as a mistake.
+                    This also pairs properly with "All events" opposite: two
+                    exits, each labelled with where it goes. */}
+                <Text style={[s.eyebrow, { color: accent }]}>All editions</Text>
               </Pressable>
             ) : (
               <View />
@@ -615,7 +621,14 @@ export function EventDossier({
                 <Text
                   style={[
                     s.recap,
-                    wide ? null : { height: EVENT_STAGE.methodLine * EVENT_STAGE.methodLines },
+                    // minHeight, not height. A fixed box was reserving three
+                    // lines so the skeleton could mirror a knowable number, but
+                    // most mastheads write two — and the derived line always
+                    // does — so it held a permanent empty line under the
+                    // sentence. Two lines of floor keeps the settle small
+                    // without banking dead space on every page that is shorter
+                    // than the worst case.
+                    wide ? null : { minHeight: EVENT_STAGE.methodLine * 2 },
                   ]}
                   numberOfLines={wide ? undefined : EVENT_STAGE.methodLines}
                 >
@@ -646,6 +659,7 @@ export function EventDossier({
                 wide
                   ? null
                   : {
+                      ...s.statsNarrow,
                       marginTop: EVENT_STAGE.statsGap,
                       marginBottom: curveH * EVENT_STAGE.curveClearance,
                     },
@@ -715,7 +729,8 @@ export function EventDossier({
                   lon={event.venueLon}
                   from={movedVenue}
                   accent={accent}
-                  size={wide ? 96 : 84}
+                  size={wide ? 96 : 64}
+                  inline={!wide}
                 />
               )}
             </View>
@@ -1533,6 +1548,10 @@ const s = StyleSheet.create({
   // figures 17pt above the 40pt one and set their labels on a different line
   // from its — three stats, three baselines, no rail.
   stats: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: 34 },
+  // A phone wraps this rail into two or three rows, so the 34 that reads as
+  // one comfortable gutter on a desktop becomes 34pt of vertical air between
+  // every stacked stat. Tighter here, unchanged there.
+  statsNarrow: { gap: 20 },
   stat: { gap: EVENT_STAGE.statInnerGap },
   statBig: { fontFamily: 'Flame-Regular', fontSize: 40, lineHeight: EVENT_STAGE.statBigLine },
   // Flame needs lineHeight >= 1.22x fontSize; 64 -> 78.
