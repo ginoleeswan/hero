@@ -294,6 +294,11 @@ function ArenaInvite({
  * that goes stale the next time a band moves.
  */
 export function dossierEndsOnInk(dossier: Dossier): boolean {
+  // The paper band only renders when it has a record to show, so an edition
+  // with none of the three ends on ink whatever its readership section does.
+  const hasPaper =
+    dossier.announcements.length > 0 || dossier.revealed.length > 0 || dossier.trailers.length > 0;
+  if (!hasPaper) return true;
   return dossier.revealed.length > 0 || dossier.surges.length > 0;
 }
 
@@ -421,6 +426,10 @@ export function EventDossier({
   // and a column reading 527, 51.1, 33.2, 33.8, 134 does not look like a
   // deliberate ordering by something else; it looks like a sort that failed.
   const rankedSurges = [...surges].sort((a, b) => (b.spike ?? 0) - (a.spike ?? 0));
+
+  // Does the paper band have anything on it besides the explanatory note?
+  const hasPaperContent = announcements.length > 0 || revealed.length > 0 || trailers.length > 0;
+  const hasGlobe = !!event.venueCity && event.venueLat !== null && event.venueLon !== null;
 
   // The masthead's sentence. An editorial recap where one exists, and where one
   // does not, the best fact the page already holds rather than nothing.
@@ -575,21 +584,52 @@ export function EventDossier({
             }
           >
             <View style={wide ? s.stageIdentity : undefined}>
-              {brand ? (
-                <View style={s.markBox}>
-                  {/* 560/170 on desktop against 300/108 before. These marks are
+              {/* The place belongs with the NAME, not at the foot of the stat
+                  rail. It is identity — where this edition happened — and down
+                  in the rail it was a third measurement competing with two
+                  figures, while also being the tallest thing on a wrapped row
+                  and blowing a hole in it. Beside the mark it costs no height at
+                  all: the mark is already taller than the globe. */}
+              <View style={s.identityRow}>
+                <View style={s.identityMark}>
+                  {brand ? (
+                    <View style={s.markBox}>
+                      {/* 560/170 on desktop against 300/108 before. These marks are
                       single-path SVGs that paint in the event's own accent — the
                       best asset the page has — and they were being drawn at
                       roughly the size of a favicon on a 1,600pt screen. */}
-                  <brand.mark
-                    {...fitMark(brand, wide ? 560 : 200, wide ? 170 : 78)}
-                    color={accent}
-                    fill={accent}
-                  />
+                      {/* The width budget shrinks when a globe shares the row.
+                          fitMark returns an ABSOLUTE size, so `flex: 1` on the
+                          parent cannot rein it in — a wide wordmark like PAX
+                          simply overflowed and the globe was drawn on top of
+                          the X. The mark has to be told about its neighbour. */}
+                      <brand.mark
+                        {...fitMark(
+                          brand,
+                          wide ? (hasGlobe ? 430 : 560) : hasGlobe ? 138 : 200,
+                          wide ? 170 : 78,
+                        )}
+                        color={accent}
+                        fill={accent}
+                      />
+                    </View>
+                  ) : (
+                    <Text style={[s.title, { color: accent }]}>{event.headline}</Text>
+                  )}
                 </View>
-              ) : (
-                <Text style={[s.title, { color: accent }]}>{event.headline}</Text>
-              )}
+                {!!event.venueCity && event.venueLat !== null && event.venueLon !== null && (
+                  <VenueGlobe
+                    city={event.venueCity}
+                    lat={event.venueLat}
+                    lon={event.venueLon}
+                    from={movedVenue}
+                    accent={accent}
+                    size={wide ? 84 : 56}
+                    stacked
+                    captionWidth={wide ? 200 : 118}
+                  />
+                )}
+              </View>
 
               {/* Live status, now beside the dates rather than up in the
                   eyebrow. A status is a fact about the WINDOW, and it was two
@@ -722,17 +762,6 @@ export function EventDossier({
                   readings and a curve is a dashboard. It is also how the map
                   arrives without the header getting busier — it does not join
                   the stage, it replaces two things already on it. */}
-              {!!event.venueCity && event.venueLat !== null && event.venueLon !== null && (
-                <VenueGlobe
-                  city={event.venueCity}
-                  lat={event.venueLat}
-                  lon={event.venueLon}
-                  from={movedVenue}
-                  accent={accent}
-                  size={wide ? 96 : 64}
-                  inline={!wide}
-                />
-              )}
             </View>
           </View>
         </View>
@@ -742,29 +771,43 @@ export function EventDossier({
       {/* No seam element above this any more — the seam IS the sheet's top edge
           now (a warm border on the band itself), so it curves with the corners
           instead of running flat across a rounded thing. */}
-      <View style={[s.paper, viewportHeight ? { minHeight: viewportHeight * 0.6 } : null]}>
-        <View style={[inner, { paddingHorizontal: pad }]}>
-          {/* First, because it is the only section that says what was actually
+      {/* The paper band renders only when it HAS a record. A handful of
+          editions have no announcements, no trailers and no readership worth
+          showing — an old PAX West, a Nintendo Direct whose only movers were
+          filtered out by publisher affinity — and for those the band was an
+          empty beige card holding one explanatory paragraph, with the sheet's
+          own minHeight stretching it to 60% of the viewport underneath.
+
+          Two empty cards, in fact, because PageEndCap then drew its rounded
+          sheet-foot under it. The fix is not to shrink them: a band with nothing
+          in it should not exist, and the page should close on ink, which is
+          exactly what it already does for a dossier that ends on the readership
+          section. The record-only note moves up into the masthead, where it is a
+          caveat about the page rather than the page's entire content. */}
+      {hasPaperContent && (
+        <View style={[s.paper, viewportHeight ? { minHeight: viewportHeight * 0.6 } : null]}>
+          <View style={[inner, { paddingHorizontal: pad }]}>
+            {/* First, because it is the only section that says what was actually
               SAID. Everything below it is derived from attention — a spike, a
               curve, whose readership moved — which records that something
               happened and never what it was. */}
-          {recordOnly && (
-            <View style={s.recordOnly}>
-              <Text style={s.recordOnlyText}>
-                {trailers.length > 0
-                  ? 'The readership record for this edition, and what dropped inside its window. Mythique began capturing studio announcements in August 2026, so earlier years are measurement only.'
-                  : 'The readership record for this edition. Mythique began capturing studio announcements in August 2026, so earlier years are measurement only — the curve above is what was observed.'}
-              </Text>
-            </View>
-          )}
+            {recordOnly && (
+              <View style={s.recordOnly}>
+                <Text style={s.recordOnlyText}>
+                  {trailers.length > 0
+                    ? 'The readership record for this edition, and what dropped inside its window. Mythique began capturing studio announcements in August 2026, so earlier years are measurement only.'
+                    : 'The readership record for this edition. Mythique began capturing studio announcements in August 2026, so earlier years are measurement only — the curve above is what was observed.'}
+                </Text>
+              </View>
+            )}
 
-          {leadNews && (
-            <Section
-              title="What was announced"
-              note="From the studios' own channels, during the window"
-              wide={wide}
-            >
-              {/* The lead gets the room — but only as much as the picture can
+            {leadNews && (
+              <Section
+                title="What was announced"
+                note="From the studios' own channels, during the window"
+                wide={wide}
+              >
+                {/* The lead gets the room — but only as much as the picture can
                   actually fill. These are YouTube `hqdefault` stills, which are
                   480x360. A phone asks for ~354 and gets a sharp image; a
                   desktop stack asked for the full 1,100pt measure and upscaled
@@ -775,7 +818,7 @@ export function EventDossier({
                   rather than stacked above it. Two columns is also simply the
                   better editorial shape at this width: the headline sits at the
                   top of the image instead of a screen-height below it. */}
-              {/* The lead as an OVERLAY, which is the grammar LeadTrailer already
+                {/* The lead as an OVERLAY, which is the grammar LeadTrailer already
                   uses forty lines below — one full-bleed still, an ink scrim,
                   and the words laid over the bottom of it.
 
@@ -787,103 +830,103 @@ export function EventDossier({
                   absolute fill, correct on a 250pt card) stretched across the
                   whole of that void as a pale teal panel. Two problems with one
                   cause: a lead is a picture, not a two-column article. */}
-              <Pressable
-                style={[s.lead, wide ? s.newsLeadWide : null]}
-                onPress={() => onTitlePress(leadNews.titleId)}
-                accessibilityRole="button"
-                accessibilityLabel={`${leadNews.titleName}, announced at this event`}
-              >
-                {!!(leadNews.thumbnailUrl ?? leadNews.posterUrl) && (
-                  <Image
-                    source={{ uri: (leadNews.thumbnailUrl ?? leadNews.posterUrl) as string }}
-                    style={s.leadArt}
-                    contentFit="cover"
-                    transition={160}
+                <Pressable
+                  style={[s.lead, wide ? s.newsLeadWide : null]}
+                  onPress={() => onTitlePress(leadNews.titleId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${leadNews.titleName}, announced at this event`}
+                >
+                  {!!(leadNews.thumbnailUrl ?? leadNews.posterUrl) && (
+                    <Image
+                      source={{ uri: (leadNews.thumbnailUrl ?? leadNews.posterUrl) as string }}
+                      style={s.leadArt}
+                      contentFit="cover"
+                      transition={160}
+                    />
+                  )}
+                  <LinearGradient
+                    colors={['rgba(11,24,32,0)', 'rgba(11,24,32,0.55)', 'rgba(11,24,32,0.93)']}
+                    locations={[0, 0.5, 1]}
+                    style={StyleSheet.absoluteFill}
                   />
-                )}
-                <LinearGradient
-                  colors={['rgba(11,24,32,0)', 'rgba(11,24,32,0.55)', 'rgba(11,24,32,0.93)']}
-                  locations={[0, 0.5, 1]}
-                  style={StyleSheet.absoluteFill}
-                />
-                <PlayCue accent={accent} size={56} />
-                <ClipStamp clips={leadNews.clips} onArt />
-                <View style={s.leadBody}>
-                  <Text style={[s.leadKicker, { color: accent }]}>LEAD ANNOUNCEMENT</Text>
-                  <Text style={s.leadTitle} numberOfLines={2}>
-                    {leadNews.titleName}
-                  </Text>
-                  {!!announcementSubtitle(leadNews) && (
-                    <Text style={s.newsLeadCaption} numberOfLines={2}>
-                      {announcementSubtitle(leadNews)}
+                  <PlayCue accent={accent} size={56} />
+                  <ClipStamp clips={leadNews.clips} onArt />
+                  <View style={s.leadBody}>
+                    <Text style={[s.leadKicker, { color: accent }]}>LEAD ANNOUNCEMENT</Text>
+                    <Text style={s.leadTitle} numberOfLines={2}>
+                      {leadNews.titleName}
                     </Text>
-                  )}
-                  {leadNews.cast.length > 0 ? (
-                    <View style={s.leadCast}>
-                      <TrailerCast
-                        cast={leadNews.cast}
-                        total={leadNews.castCount}
-                        size={34}
-                        onHeroPress={onHeroPress}
-                        onInk
-                        interactive={false}
-                      />
-                    </View>
-                  ) : (
-                    <Text style={s.leadMeta}>{sourceLine(leadNews)}</Text>
-                  )}
-                </View>
-              </Pressable>
+                    {!!announcementSubtitle(leadNews) && (
+                      <Text style={s.newsLeadCaption} numberOfLines={2}>
+                        {announcementSubtitle(leadNews)}
+                      </Text>
+                    )}
+                    {leadNews.cast.length > 0 ? (
+                      <View style={s.leadCast}>
+                        <TrailerCast
+                          cast={leadNews.cast}
+                          total={leadNews.castCount}
+                          size={34}
+                          onHeroPress={onHeroPress}
+                          onInk
+                          interactive={false}
+                        />
+                      </View>
+                    ) : (
+                      <Text style={s.leadMeta}>{sourceLine(leadNews)}</Text>
+                    )}
+                  </View>
+                </Pressable>
 
-              {/* The rest as a rail, not a list. A stack of thumbnail rows made
+                {/* The rest as a rail, not a list. A stack of thumbnail rows made
                   thirteen announcements read as a changelog — uniform, ordered,
                   and inviting nobody to look past the third. Horizontally they
                   are cards you browse, which is what a reveal deserves and what
                   every other Mythique surface already does with a set of things.
                   Escapes the parent's gutter so cards run to the physical screen
                   edge while the first still lines up with the page inset. */}
-              {restNews.length > 0 && (
-                <RailOrWrap wide={wide} pad={pad} railStyle={s.newsRail} wrapStyle={s.newsWrap}>
-                  {restNews.map((a) => (
-                    <PaperCard
-                      key={a.titleId}
-                      accent={accent}
-                      style={[s.newsCard, { width: newsCardW }]}
-                    >
-                      <Pressable
-                        onPress={() => onTitlePress(a.titleId)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${a.titleName}, announced at this event`}
+                {restNews.length > 0 && (
+                  <RailOrWrap wide={wide} pad={pad} railStyle={s.newsRail} wrapStyle={s.newsWrap}>
+                    {restNews.map((a) => (
+                      <PaperCard
+                        key={a.titleId}
+                        accent={accent}
+                        style={[s.newsCard, { width: newsCardW }]}
                       >
-                        {!!(a.thumbnailUrl ?? a.posterUrl) && (
-                          <View>
-                            <Image
-                              source={{ uri: (a.thumbnailUrl ?? a.posterUrl) as string }}
-                              style={{
-                                width: newsCardW,
-                                height: Math.round(newsCardW * 0.5625),
-                              }}
-                              contentFit="cover"
-                              transition={160}
-                            />
-                            <PlayCue accent={accent} size={34} corner />
-                            <ClipStamp clips={a.clips} />
-                          </View>
-                        )}
-                        <View style={s.newsCardBody}>
-                          <Text style={s.newsCardTitle} numberOfLines={2}>
-                            {a.titleName}
-                          </Text>
-                          {/* The studio's own line, minus the half of it that
+                        <Pressable
+                          onPress={() => onTitlePress(a.titleId)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${a.titleName}, announced at this event`}
+                        >
+                          {!!(a.thumbnailUrl ?? a.posterUrl) && (
+                            <View>
+                              <Image
+                                source={{ uri: (a.thumbnailUrl ?? a.posterUrl) as string }}
+                                style={{
+                                  width: newsCardW,
+                                  height: Math.round(newsCardW * 0.5625),
+                                }}
+                                contentFit="cover"
+                                transition={160}
+                              />
+                              <PlayCue accent={accent} size={34} corner />
+                              <ClipStamp clips={a.clips} />
+                            </View>
+                          )}
+                          <View style={s.newsCardBody}>
+                            <Text style={s.newsCardTitle} numberOfLines={2}>
+                              {a.titleName}
+                            </Text>
+                            {/* The studio's own line, minus the half of it that
                               was the headline again. See announcementSubtitle.
                               Rendered only when something survives: a blank line
                               of nothing is worse than no line. */}
-                          {!!announcementSubtitle(a) && (
-                            <Text style={s.newsCardCaption} numberOfLines={2}>
-                              {announcementSubtitle(a)}
-                            </Text>
-                          )}
-                          {/* The catalogue, on the card. This is the whole
+                            {!!announcementSubtitle(a) && (
+                              <Text style={s.newsCardCaption} numberOfLines={2}>
+                                {announcementSubtitle(a)}
+                              </Text>
+                            )}
+                            {/* The catalogue, on the card. This is the whole
                               difference between an announcement grid that is
                               ours and one that is every film grid on the
                               internet: the still is the studio's, the copy is
@@ -897,31 +940,31 @@ export function EventDossier({
                               the card's own button, which is invalid HTML. The
                               whole card goes to the title; TrailerCast's own
                               note covers the same trap. */}
-                          <View style={s.newsCardFoot}>
-                            {a.cast.length > 0 ? (
-                              <TrailerCast
-                                cast={a.cast}
-                                total={a.castCount}
-                                size={26}
-                                onHeroPress={onHeroPress}
-                                interactive={false}
-                              />
-                            ) : (
-                              <Text style={s.newsMeta} numberOfLines={1}>
-                                {sourceLine(a)}
-                              </Text>
-                            )}
+                            <View style={s.newsCardFoot}>
+                              {a.cast.length > 0 ? (
+                                <TrailerCast
+                                  cast={a.cast}
+                                  total={a.castCount}
+                                  size={26}
+                                  onHeroPress={onHeroPress}
+                                  interactive={false}
+                                />
+                              ) : (
+                                <Text style={s.newsMeta} numberOfLines={1}>
+                                  {sourceLine(a)}
+                                </Text>
+                              )}
+                            </View>
                           </View>
-                        </View>
-                      </Pressable>
-                    </PaperCard>
-                  ))}
-                </RailOrWrap>
-              )}
-            </Section>
-          )}
+                        </Pressable>
+                      </PaperCard>
+                    ))}
+                  </RailOrWrap>
+                )}
+              </Section>
+            )}
 
-          {/* The one section that is neither attention data nor a marketing
+            {/* The one section that is neither attention data nor a marketing
               string: the rights holder naming characters, matched against the
               catalogue. "Storm, Jean Grey, Cyclops, Emma Frost, Rogue" is what
               a reader means by "what happened at D23", and no measurement can
@@ -931,7 +974,7 @@ export function EventDossier({
               Placed before the trailers and the readership on purpose — a
               studio SAYING a name outranks a curve that moved afterwards. */}
 
-          {/* Titled "What dropped", which on an event page reads as "the event
+            {/* Titled "What dropped", which on an event page reads as "the event
               dropped these". For the nine events that carry a publisher list it
               is near enough true; for the eleven that do not, the affinity
               filter is off and the section is a global trailer feed dated to the
@@ -939,13 +982,13 @@ export function EventDossier({
               presenting The Marvels, Sonic 3 and Madame Web as its own. Same
               correction as the readership section above it, for the same
               reason. */}
-          {trailers.length > 0 && (
-            <Section
-              title="What dropped that week"
-              note="Trailers published inside the window. Some came from the event; some simply shared the week."
-              wide={wide}
-            >
-              {/* One grid, not a banner over a grid.
+            {trailers.length > 0 && (
+              <Section
+                title="What dropped that week"
+                note="Trailers published inside the window. Some came from the event; some simply shared the week."
+                wide={wide}
+              >
+                {/* One grid, not a banner over a grid.
                   Measured at 1512: the lead was 1100x380 = 418,000 square
                   points against 415,540 for the entire four-poster row beneath
                   it. One trailer occupying as much of the page as all the
@@ -959,70 +1002,71 @@ export function EventDossier({
                   composed grid. A phone keeps the full-width hero: there is only
                   one column there, so spanning two is meaningless and the
                   backdrop is the only thing giving that section a focal point. */}
-              <View style={[s.posterRow, { gap: posterGrid.gap }]}>
-                <LeadTrailer
-                  trailer={lead}
-                  onPress={onTitlePress}
-                  onHeroPress={onHeroPress}
-                  accent={accent}
-                  wide={wide}
-                  width={wide ? posterGrid.cell * 2 + posterGrid.gap : undefined}
-                  height={wide ? Math.round(posterGrid.cell * 1.5) : undefined}
-                />
-                {rest.length > 0 && (
-                  <>
-                    {rest.map((t) => (
-                      // A plain View, with the poster+title as ONE button and the
-                      // face strip as its SIBLING. The card used to be a single
-                      // Pressable wrapping everything, which put the faces' own
-                      // buttons inside it — invalid HTML on web, and the browser's
-                      // reparenting broke the card's click target.
-                      <View key={t.titleId} style={[s.posterCell, { width: posterGrid.cell }]}>
-                        <Pressable
-                          onPress={() => onTitlePress(t.titleId)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`${t.title}, ${t.videoType ?? 'trailer'}`}
-                          style={s.posterMain}
-                        >
-                          {!!(t.posterUrl ?? t.backdropUrl) && (
-                            <Image
-                              source={{ uri: (t.posterUrl ?? t.backdropUrl) as string }}
-                              style={[
-                                s.poster,
-                                { width: posterGrid.cell, height: posterGrid.cell * 1.5 },
-                              ]}
-                              contentFit="cover"
-                              transition={160}
-                            />
-                          )}
-                          <Text style={s.posterTitle} numberOfLines={2}>
-                            {t.title}
-                          </Text>
-                        </Pressable>
-                        {/* The faces replace the word "Trailer", which said
+                <View style={[s.posterRow, { gap: posterGrid.gap }]}>
+                  <LeadTrailer
+                    trailer={lead}
+                    onPress={onTitlePress}
+                    onHeroPress={onHeroPress}
+                    accent={accent}
+                    wide={wide}
+                    width={wide ? posterGrid.cell * 2 + posterGrid.gap : undefined}
+                    height={wide ? Math.round(posterGrid.cell * 1.5) : undefined}
+                  />
+                  {rest.length > 0 && (
+                    <>
+                      {rest.map((t) => (
+                        // A plain View, with the poster+title as ONE button and the
+                        // face strip as its SIBLING. The card used to be a single
+                        // Pressable wrapping everything, which put the faces' own
+                        // buttons inside it — invalid HTML on web, and the browser's
+                        // reparenting broke the card's click target.
+                        <View key={t.titleId} style={[s.posterCell, { width: posterGrid.cell }]}>
+                          <Pressable
+                            onPress={() => onTitlePress(t.titleId)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${t.title}, ${t.videoType ?? 'trailer'}`}
+                            style={s.posterMain}
+                          >
+                            {!!(t.posterUrl ?? t.backdropUrl) && (
+                              <Image
+                                source={{ uri: (t.posterUrl ?? t.backdropUrl) as string }}
+                                style={[
+                                  s.poster,
+                                  { width: posterGrid.cell, height: posterGrid.cell * 1.5 },
+                                ]}
+                                contentFit="cover"
+                                transition={160}
+                              />
+                            )}
+                            <Text style={s.posterTitle} numberOfLines={2}>
+                              {t.title}
+                            </Text>
+                          </Pressable>
+                          {/* The faces replace the word "Trailer", which said
                           nothing a reader could not see. "Buzz Lightyear,
                           Woody, Jessie, Rex, +4" is specific, is ours, and is
                           four more ways into the app than a poster. The kind
                           survives only where there is no cast to show. */}
-                        {t.cast.length > 0 ? (
-                          <TrailerCast
-                            cast={t.cast}
-                            total={t.castCount}
-                            size={30}
-                            onHeroPress={onHeroPress}
-                          />
-                        ) : (
-                          <Text style={s.posterMeta}>{t.videoType ?? 'Trailer'}</Text>
-                        )}
-                      </View>
-                    ))}
-                  </>
-                )}
-              </View>
-            </Section>
-          )}
+                          {t.cast.length > 0 ? (
+                            <TrailerCast
+                              cast={t.cast}
+                              total={t.castCount}
+                              size={30}
+                              onHeroPress={onHeroPress}
+                            />
+                          ) : (
+                            <Text style={s.posterMeta}>{t.videoType ?? 'Trailer'}</Text>
+                          )}
+                        </View>
+                      ))}
+                    </>
+                  )}
+                </View>
+              </Section>
+            )}
+          </View>
         </View>
-      </View>
+      )}
 
       {/* ── ink: the catalogue, named ─────────────────────────────────────
           The page's one section that is neither attention data nor a marketing
@@ -1522,6 +1566,11 @@ const s = StyleSheet.create({
   // rail's baseline on the identity block's rather than at the top of the band.
   stageCols: { flexDirection: 'row', alignItems: 'flex-end', gap: 48 },
   stageIdentity: { flex: 1, minWidth: 0 },
+  // Name left, place right, on one line. `flex-end` so a tall brand mark and a
+  // short globe share a floor rather than the globe floating at the mark's
+  // optical centre.
+  identityRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 20 },
+  identityMark: { flex: 1, minWidth: 0 },
   // The edition's recap, which replaces the method note in the masthead. Full
   // strength rather than INK_TEXT.faint: this is the page's headline claim, not
   // a footnote about the instrument.

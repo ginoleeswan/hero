@@ -25,8 +25,8 @@ import { EVENT_STAGE, EVENT_PAPER, EVENT_INDEX, EVENT_INK } from '../../constant
 /** VenueGlobe's diameter at the dossier stage's phone width, which is what this
  *  skeleton mirrors. Square and fully rounded, because the real thing is a disc
  *  and a placeholder that is not the same shape resettles the stage when it
- *  arrives. */
-const EVENT_GLOBE = 84;
+ *  arrives. 56 since the globe became an identity-row ornament. */
+const EVENT_GLOBE = 56;
 
 const PAD = EVENT_STAGE.pad;
 
@@ -324,13 +324,23 @@ export function EventDossierSkeleton() {
             tint={INK_TINT}
             style={styles.eyebrow}
           />
-          <TextLine
-            box={EVENT_STAGE.titleLine}
-            ink={EVENT_INK.title}
-            width="70%"
-            radius={6}
-            tint={INK_TINT}
-          />
+          {/* Mark left, globe right — the masthead's identity row. The globe
+              used to sit at the foot of the stat rail; a skeleton that still
+              promised it there settles the whole page when the real one arrives
+              somewhere else. */}
+          <View style={styles.identityRow}>
+            <TextLine
+              box={EVENT_STAGE.titleLine}
+              ink={EVENT_INK.title}
+              width={138}
+              radius={6}
+              tint={INK_TINT}
+            />
+            <View style={styles.identityGlobe}>
+              <Skeleton height={EVENT_GLOBE} borderRadius={999} color={INK_TINT} />
+              <TextLine box={16} ink={11} width={92} tint={INK_TINT} />
+            </View>
+          </View>
           <TextLine
             box={EVENT_STAGE.windowLine}
             ink={EVENT_INK.window}
@@ -356,16 +366,15 @@ export function EventDossierSkeleton() {
               valueWidth={92}
               radius={6}
             />
-            {/* One block, not two figures. The rail lost "reads on the peak
-                day" and "article edits" — both instrument readings a reader has
-                no use for — and gained the venue map, which is a wide graphic
-                over a caption rather than a figure over a label. A skeleton that
-                still promised two small stats would settle into something a
-                different shape. */}
-            <View style={styles.statMap}>
-              <Skeleton height={EVENT_GLOBE} borderRadius={999} color={INK_TINT} />
-              <TextLine box={16} ink={11} width={112} tint={INK_TINT} />
-            </View>
+            {/* The attendance. Two figures again, both plain stats — the globe
+                moved up to the identity row, so the rail no longer has to
+                reserve a tall graphic among short ones. */}
+            <StatSkeleton
+              valueBox={EVENT_STAGE.statValueLine}
+              valueInk={EVENT_INK.statBig}
+              valueWidth={110}
+              radius={6}
+            />
           </View>
         </Band>
         <Band tone={styles.paper}>
@@ -408,8 +417,9 @@ const styles = StyleSheet.create({
     marginBottom: EVENT_STAGE.curveH * EVENT_STAGE.curveClearance,
   },
   stat: { gap: EVENT_STAGE.statInnerGap },
-  // Matches VenueGlobe at the dossier's phone stage.
-  statMap: { width: EVENT_GLOBE, gap: 12 },
+  // Matches the dossier's identity row: mark and globe on one line.
+  identityRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 20 },
+  identityGlobe: { width: 118, gap: 12 },
   paper: {
     ...PAPER_SHEET_SURFACE,
     paddingTop: EVENT_PAPER.paddingTop,

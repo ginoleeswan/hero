@@ -153,7 +153,8 @@ export function VenueGlobe({
   from,
   accent,
   size = 96,
-  inline = false,
+  stacked = false,
+  captionWidth,
 }: {
   /** Where this edition was. */
   city: string;
@@ -164,14 +165,13 @@ export function VenueGlobe({
    *  simply turned to the place, which is all there is to say. */
   from: { city: string; lat: number; lon: number } | null;
   accent: string;
-  /** Lay the caption BESIDE the globe instead of under it.
-   *
-   *  On a phone the stat rail wraps and bottom-aligns, so a stacked
-   *  globe-over-caption is the tallest thing on its line and every short stat
-   *  beside it gets pushed down to its floor — 72pt of air above a two-line
-   *  figure that needed none. Side by side the block is the globe's own height
-   *  and the row closes up. */
-  inline?: boolean;
+  /** Caption UNDER the globe rather than beside it. */
+  stacked?: boolean;
+  /** How wide the caption may run before it wraps. The globe sits at the end of
+   *  the identity row, so an unbounded caption — "Seattle, USA — usually
+   *  Boston, USA" is 33 characters — pushes the row past the screen edge and
+   *  squeezes the brand mark it shares the line with. */
+  captionWidth?: number;
   /** Diameter. Sized as an ORNAMENT (~96) rather than as a figure: at 232 it
    *  stopped integrating into the masthead and became a second hero, adding
    *  400pt of band to say what the caption beside it already says in words.
@@ -228,7 +228,7 @@ export function VenueGlobe({
   }, [lat, lon, from, size]);
 
   return (
-    <View style={inline ? s.wrapInline : s.wrap}>
+    <View style={[stacked ? s.wrap : s.wrapInline, { width: captionWidth }]}>
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <Defs>
           {/* Lit from the upper left, very faintly. This is the difference
@@ -318,7 +318,6 @@ const s = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     color: INK_TEXT.faint,
-    maxWidth: 260,
   },
   noteStrong: { fontFamily: 'Nunito_700Bold' },
 });
