@@ -534,15 +534,37 @@ export interface TrendingBadge {
   label: string;
 }
 
+const DAY = 86_400_000;
+
+/**
+ * The card's "why", as something with a pulse.
+ *
+ * It used to say "Coming Sep 29", which is a date — the reader has to hold
+ * today's date in their head and do the subtraction to feel anything. Inside a
+ * couple of months a countdown does that for them and the card stops being a
+ * listing. Beyond that a countdown is worse, not better: "Out in 674 days" is a
+ * number nobody can picture, so a distant title gets the month and year it
+ * deserves.
+ *
+ * `now` is injected so the boundary cases are testable rather than a thing that
+ * only misbehaves on the day it matters.
+ */
 export function trendingBadge(
   t: Pick<TrendingTitle, 'provider' | 'release_date'>,
+  now: number = Date.now(),
 ): TrendingBadge | null {
   if (t.release_date) {
-    const d = new Date(t.release_date);
-    if (!Number.isNaN(d.getTime()) && d.getTime() > Date.now()) {
+    const d = new Date(`${t.release_date}T00:00:00Z`);
+    if (!Number.isNaN(d.getTime()) && d.getTime() > now) {
+      // Whole days between two UTC midnights, so a title never reads "in 0
+      // days" for the twenty-three hours before it lands.
+      const today = Math.floor(now / DAY);
+      const days = Math.floor(d.getTime() / DAY) - today;
+      if (days <= 1) return { tone: 'coming', label: 'Out tomorrow' };
+      if (days <= 60) return { tone: 'coming', label: `Out in ${days} days` };
       return {
         tone: 'coming',
-        label: `Coming ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`,
+        label: `Out ${d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' })}`,
       };
     }
   }
@@ -551,7 +573,10 @@ export function trendingBadge(
       t.provider.length <= 16 ? t.provider : t.provider.split(' ').slice(0, 2).join(' ');
     return { tone: 'streaming', label: short };
   }
-  if (t.release_date) return { tone: 'theaters', label: 'In Theaters' };
+  // "In cinemas", not "In Theaters" — the rail this sits in is headed "In
+  // Cinemas & Streaming", and a card disagreeing with its own section header is
+  // the kind of small wrongness that makes a page feel unmaintained.
+  if (t.release_date) return { tone: 'theaters', label: 'In cinemas' };
   return null;
 }
 
