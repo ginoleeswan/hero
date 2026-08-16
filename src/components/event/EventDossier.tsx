@@ -1012,10 +1012,24 @@ export function EventDossier({
               </View>
             )}
 
-            {/* ── the same ink, second half: what it did to the catalogue ───
+            {/* ── the same ink, second half: what the audience did ─────────
+          It was titled "Who it moved", and that was a CAUSAL claim the evidence
+          cannot carry. Wikipedia readership shows correlation and never cause:
+          NYCC 2019 genuinely coincides with Joker's biggest week on record, and
+          the reason is that the film opened on the Saturday of the convention.
+          PAX and WonderCon 2019 overlap by three days, so both windows contain
+          the same Joker teaser and both would have claimed it. No threshold
+          fixes that, because the missing information is not in the series.
+
+          So the heading now says what is true every time — these are the
+          characters the audience was reading about during the window — and the
+          note says plainly that the event did not necessarily cause it. That is
+          a smaller claim and a defensible one, and it is still a thing nobody
+          else publishes.
+
           The page's grammar is ink = measurement, paper = record, and this
-          section is measurement — readership that broke out, in multiples of a
-          character's own median. It sat on paper anyway, which cost it twice:
+          section is measurement — readership, in multiples of a character's own
+          median. It sat on paper anyway, which cost it twice:
           it lost the only visual cue the page has for "this is a number, not an
           editor's choice", and it left the whole thing a single beige field
           roughly four thousand points long.
@@ -1032,8 +1046,8 @@ export function EventDossier({
                     peak in the archive, and now one character against their own
                     normal week. Only the caption can say which, so it does. */}
                 <Section
-                  title="Who it moved"
-                  note="Times more than these characters are usually read"
+                  title="Who the audience was reading about"
+                  note="During the window, against these characters' own normal week. Some of it the event caused; some of it shared the week."
                   onInk
                   wide={wide}
                 >

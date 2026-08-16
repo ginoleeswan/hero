@@ -403,8 +403,11 @@ export function EditionList({
                   e.announcements > 0
                     ? `${e.announcements} announcement${e.announcements === 1 ? '' : 's'}`
                     : null,
+                  // "broke out" said the edition CAUSED it. Readership cannot
+                  // show cause — see the note on the dossier's own section — so
+                  // the row states the reading and stops there.
                   e.movers > 0
-                    ? `${e.movers} character${e.movers === 1 ? '' : 's'} broke out`
+                    ? `${e.movers} character${e.movers === 1 ? '' : 's'} being read about`
                     : null,
                 ]
                   .filter(Boolean)
