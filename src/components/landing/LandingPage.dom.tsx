@@ -19,6 +19,12 @@ const P = (id: string) =>
 const P800 = (id: string) =>
   `https://res.cloudinary.com/dgrsb5o4p/image/upload/f_auto,q_auto,w_800/hero-portraits/${id}.jpg`;
 
+// Deck-strip thumbnails render at 32px. Asking for w_400 there means ~23 extra
+// full-size fetches racing the opening portrait on exactly the slow connections
+// the preload above exists to help; w_96 still covers a 3x display.
+const P96 = (id: string) =>
+  `https://res.cloudinary.com/dgrsb5o4p/image/upload/f_auto,q_auto,w_96,c_fill,g_north/hero-portraits/${id}.jpg`;
+
 // [id, name, weight] — higher weight = more likely to appear each load
 const HERO_POOL: [string, string, number][] = [
   ['620', 'Spider-Man', 10],
@@ -118,9 +124,20 @@ const REL_RGB: Record<Rel, string> = {
   kin: '249,178,34',
 };
 
-// The summonable roster. Bonds are real relationships from the graph,
-// hardcoded here so the landing page never blocks on the DB.
-const SUMMONS: Summon[] = [
+// The summonable roster, in two tiers. Bonds are hand-curated, NOT read from
+// hero_relationships — that graph is co-appearance-derived and ranks by the
+// *other* hero's fame, so it returns "Batman — enemy — Wonder Woman" and
+// "Spider-Man — ally — Batman" for almost everyone. Fine for a related rail,
+// unusable orbiting the hero card where a wrong relationship is unmissable.
+//
+// Every id below is verified to have a Cloudinary portrait whose public id
+// matches the hero id, because P() builds the URL from the id alone. A hero
+// whose portrait lives under a *different* id (Flash's is at 263) renders a
+// broken card here even though the character page is fine.
+
+// Always in the deck, and always the opening summon — a stranger's first
+// frame has to be a face they already know.
+const ANCHORS: Summon[] = [
   {
     id: '69',
     name: 'Batman',
@@ -130,7 +147,31 @@ const SUMMONS: Summon[] = [
       { id: '370', name: 'Joker', rel: 'enemy' },
       { id: 'cv-1691', name: 'Nightwing', rel: 'kin' },
       { id: '165', name: 'Catwoman', rel: 'ally' },
-      { id: 'cv-5368', name: 'Oracle', rel: 'ally' },
+      { id: '17', name: 'Alfred Pennyworth', rel: 'ally' },
+    ],
+  },
+  {
+    id: '620',
+    name: 'Spider-Man',
+    universe: 'Marvel',
+    accent: '#E5484D',
+    bonds: [
+      { id: '299', name: 'Green Goblin', rel: 'enemy' },
+      { id: '225', name: 'Doctor Octopus', rel: 'enemy' },
+      { id: 'cv-1480', name: 'Gwen Stacy', rel: 'ally' },
+      { id: '333', name: 'Human Torch', rel: 'ally' },
+    ],
+  },
+  {
+    id: '644',
+    name: 'Superman',
+    universe: 'DC',
+    accent: '#4FA3E3',
+    bonds: [
+      { id: '230', name: 'Doomsday', rel: 'enemy' },
+      { id: '643', name: 'Supergirl', rel: 'kin' },
+      { id: 'cv-1808', name: 'Lois Lane', rel: 'ally' },
+      { id: 'cv-4684', name: 'Brainiac', rel: 'enemy' },
     ],
   },
   {
@@ -139,10 +180,22 @@ const SUMMONS: Summon[] = [
     universe: 'Marvel',
     accent: '#FFC53D',
     bonds: [
-      { id: '423', name: 'Magneto', rel: 'enemy' },
+      { id: 'cv-4563', name: 'Sabretooth', rel: 'enemy' },
       { id: 'cv-3552', name: 'Jean Grey', rel: 'ally' },
       { id: '638', name: 'Storm', rel: 'ally' },
       { id: '196', name: 'Cyclops', rel: 'ally' },
+    ],
+  },
+  {
+    id: '720',
+    name: 'Wonder Woman',
+    universe: 'DC',
+    accent: '#D94F63',
+    bonds: [
+      { id: '172', name: 'Cheetah', rel: 'enemy' },
+      { id: '644', name: 'Superman', rel: 'ally' },
+      { id: '38', name: 'Aquaman', rel: 'ally' },
+      { id: '432', name: 'Martian Manhunter', rel: 'ally' },
     ],
   },
   {
@@ -152,19 +205,36 @@ const SUMMONS: Summon[] = [
     accent: '#7FB8FF',
     bonds: [
       { id: 'cv-4324', name: 'Loki', rel: 'kin' },
-      { id: '332', name: 'Hulk', rel: 'ally' },
-      { id: '149', name: 'Captain America', rel: 'ally' },
+      { id: 'cv-3507', name: 'Odin', rel: 'kin' },
+      { id: '321', name: 'Hela', rel: 'kin' },
+      { id: '594', name: 'Sif', rel: 'ally' },
+    ],
+  },
+];
+
+// Shuffled in behind the anchors — the reason two visits don't feel the same.
+const ROTATION: Summon[] = [
+  {
+    id: '370',
+    name: 'Joker',
+    universe: 'DC',
+    accent: '#7ED957',
+    bonds: [
+      { id: '69', name: 'Batman', rel: 'enemy' },
+      { id: '309', name: 'Harley Quinn', rel: 'ally' },
+      { id: 'cv-3718', name: 'Riddler', rel: 'ally' },
+      { id: 'cv-4885', name: 'Penguin', rel: 'ally' },
     ],
   },
   {
-    id: '620',
-    name: 'Spider-Man',
+    id: '687',
+    name: 'Venom',
     universe: 'Marvel',
-    accent: '#E5484D',
+    accent: '#9AA3AD',
     bonds: [
-      { id: '687', name: 'Venom', rel: 'enemy' },
-      { id: '201', name: 'Daredevil', rel: 'ally' },
-      { id: 'cv-3200', name: 'Black Widow', rel: 'ally' },
+      { id: '620', name: 'Spider-Man', rel: 'enemy' },
+      { id: '162', name: 'Carnage', rel: 'kin' },
+      { id: '225', name: 'Doctor Octopus', rel: 'ally' },
     ],
   },
   {
@@ -173,9 +243,10 @@ const SUMMONS: Summon[] = [
     universe: 'Marvel',
     accent: '#C266DD',
     bonds: [
+      { id: '527', name: 'Professor X', rel: 'enemy' },
       { id: '579', name: 'Scarlet Witch', rel: 'kin' },
+      { id: '536', name: 'Quicksilver', rel: 'kin' },
       { id: '717', name: 'Wolverine', rel: 'enemy' },
-      { id: '241', name: 'Emma Frost', rel: 'ally' },
     ],
   },
   {
@@ -186,10 +257,211 @@ const SUMMONS: Summon[] = [
     bonds: [
       { id: '106', name: 'Black Panther', rel: 'kin' },
       { id: 'cv-3552', name: 'Jean Grey', rel: 'ally' },
-      { id: '196', name: 'Cyclops', rel: 'ally' },
+      { id: '527', name: 'Professor X', rel: 'ally' },
+      { id: '423', name: 'Magneto', rel: 'enemy' },
+    ],
+  },
+  {
+    id: '309',
+    name: 'Harley Quinn',
+    universe: 'DC',
+    accent: '#F25CA2',
+    bonds: [
+      { id: '370', name: 'Joker', rel: 'ally' },
+      { id: '522', name: 'Poison Ivy', rel: 'ally' },
+      { id: '69', name: 'Batman', rel: 'enemy' },
+      { id: '165', name: 'Catwoman', rel: 'ally' },
+    ],
+  },
+  {
+    id: '213',
+    name: 'Deadpool',
+    universe: 'Marvel',
+    accent: '#FF6B3D',
+    bonds: [
+      { id: '717', name: 'Wolverine', rel: 'enemy' },
+      { id: 'cv-4563', name: 'Sabretooth', rel: 'enemy' },
+      { id: '274', name: 'Gambit', rel: 'ally' },
+    ],
+  },
+  {
+    id: '346',
+    name: 'Iron Man',
+    universe: 'Marvel',
+    accent: '#D64545',
+    bonds: [
+      { id: '149', name: 'Captain America', rel: 'ally' },
+      { id: '703', name: 'War Machine', rel: 'ally' },
+      { id: '680', name: 'Ultron', rel: 'enemy' },
+      { id: '655', name: 'Thanos', rel: 'enemy' },
+    ],
+  },
+  {
+    id: '332',
+    name: 'Hulk',
+    universe: 'Marvel',
+    accent: '#6BBF59',
+    bonds: [
+      { id: '659', name: 'Thor', rel: 'ally' },
+      { id: '149', name: 'Captain America', rel: 'ally' },
+      { id: '346', name: 'Iron Man', rel: 'enemy' },
+      { id: '655', name: 'Thanos', rel: 'enemy' },
+    ],
+  },
+  {
+    id: '106',
+    name: 'Black Panther',
+    universe: 'Marvel',
+    accent: '#8E6BD8',
+    bonds: [
+      { id: 'h_170c1b60-7de7-4e69-a273-ad2b4c4d2381', name: 'Shuri', rel: 'kin' },
+      { id: '638', name: 'Storm', rel: 'kin' },
+      { id: '149', name: 'Captain America', rel: 'ally' },
+      { id: '222', name: 'Doctor Doom', rel: 'enemy' },
+    ],
+  },
+  {
+    id: '165',
+    name: 'Catwoman',
+    universe: 'DC',
+    accent: '#A972D6',
+    bonds: [
+      { id: '69', name: 'Batman', rel: 'ally' },
+      { id: '522', name: 'Poison Ivy', rel: 'ally' },
+      { id: '309', name: 'Harley Quinn', rel: 'ally' },
+      { id: 'cv-4885', name: 'Penguin', rel: 'enemy' },
+    ],
+  },
+  {
+    id: 'cv-4324',
+    name: 'Loki',
+    universe: 'Marvel',
+    accent: '#4FB89A',
+    bonds: [
+      { id: '659', name: 'Thor', rel: 'kin' },
+      { id: 'cv-3507', name: 'Odin', rel: 'kin' },
+      { id: '321', name: 'Hela', rel: 'kin' },
+      { id: '594', name: 'Sif', rel: 'enemy' },
+    ],
+  },
+  {
+    id: '655',
+    name: 'Thanos',
+    universe: 'Marvel',
+    accent: '#8A6FD1',
+    bonds: [
+      { id: '346', name: 'Iron Man', rel: 'enemy' },
+      { id: '598', name: 'Silver Surfer', rel: 'enemy' },
+      { id: '273', name: 'Galactus', rel: 'enemy' },
+      { id: '332', name: 'Hulk', rel: 'enemy' },
+    ],
+  },
+  {
+    id: '222',
+    name: 'Doctor Doom',
+    universe: 'Marvel',
+    accent: '#57A05E',
+    bonds: [
+      { id: 'cv-2151', name: 'Mister Fantastic', rel: 'enemy' },
+      { id: '344', name: 'Invisible Woman', rel: 'enemy' },
+      { id: '658', name: 'Thing', rel: 'enemy' },
+      { id: '333', name: 'Human Torch', rel: 'enemy' },
+    ],
+  },
+  {
+    id: '208',
+    name: 'Darth Vader',
+    universe: 'Star Wars',
+    accent: '#CF2E2E',
+    bonds: [
+      { id: '418', name: 'Luke Skywalker', rel: 'kin' },
+      { id: 'cv-33545', name: 'Princess Leia', rel: 'kin' },
+      { id: 'cv-2206', name: 'Obi-Wan Kenobi', rel: 'enemy' },
+      { id: 'cv-16164', name: 'Emperor Palpatine', rel: 'ally' },
+    ],
+  },
+  {
+    id: '289',
+    name: 'Goku',
+    universe: 'Dragon Ball',
+    accent: '#F58A2E',
+    bonds: [
+      { id: 'cv-40722', name: 'Vegeta', rel: 'enemy' },
+      { id: 'cv-40737', name: 'Frieza', rel: 'enemy' },
+      { id: 'cv-40727', name: 'Piccolo', rel: 'ally' },
+      { id: 'cv-45683', name: 'Krillin', rel: 'ally' },
+    ],
+  },
+  {
+    id: '299',
+    name: 'Green Goblin',
+    universe: 'Marvel',
+    accent: '#8B5CF6',
+    bonds: [
+      { id: '620', name: 'Spider-Man', rel: 'enemy' },
+      { id: 'cv-1480', name: 'Gwen Stacy', rel: 'enemy' },
+      { id: '225', name: 'Doctor Octopus', rel: 'ally' },
+      { id: '687', name: 'Venom', rel: 'ally' },
     ],
   },
 ];
+
+// The scrolling name ticker. Ids verified against the same portrait rule as the
+// roster, so a click always lands on a real character page. The strip itself
+// stays aria-hidden — it is a decorative repetition of names the mosaic below
+// already lists as real links, and focusing a moving target is worse than not
+// exposing it.
+const MARQUEE_NAMES: [string, string][] = [
+  ['Spider-Man', '620'],
+  ['Batman', '69'],
+  ['Iron Man', '346'],
+  ['Wonder Woman', '720'],
+  ['Black Panther', '106'],
+  ['Thor', '659'],
+  ['Deadpool', '213'],
+  ['Wolverine', '717'],
+  ['Doctor Strange', '226'],
+  ['Hulk', '332'],
+  ['Magneto', '423'],
+  ['Joker', '370'],
+  ['Loki', 'cv-4324'],
+  ['Venom', '687'],
+  ['Storm', '638'],
+  ['Captain America', '149'],
+];
+
+// One deck per page load: a random anchor opens, and anchors recur every third
+// slot so the marquee faces never all burn off in the first minute.
+function buildDeck(): Summon[] {
+  const shuffle = <T,>(xs: T[]): T[] => {
+    const a = xs.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+  const anchors = shuffle(ANCHORS);
+  const rest = shuffle(ROTATION);
+  const deck: Summon[] = [];
+  while (anchors.length || rest.length) {
+    if (anchors.length) deck.push(anchors.shift() as Summon);
+    for (let i = 0; i < 2 && rest.length; i++) deck.push(rest.shift() as Summon);
+  }
+  return deck;
+}
+
+// Decided at import time rather than at mount, so the opening portrait's fetch
+// starts before React has rendered anything. The scene's first frames are an
+// empty starfield while that request is in flight — on mobile data that void is
+// the single most-seen moment on this page, because it is what a visitor who
+// bounces in three seconds actually looked at.
+const OPENING_DECK = buildDeck();
+if (typeof document !== 'undefined' && detect3DSupport()) {
+  const warm = new Image();
+  warm.crossOrigin = 'anonymous';
+  warm.src = P800(OPENING_DECK[0].id);
+}
 
 /* ------------------------------------------------------------------ */
 /* The Summoning — engine                                              */
@@ -367,6 +639,8 @@ interface SummonEngine {
   dispose(): void;
   setPaused(paused: boolean): void;
   summonNext(): void;
+  /** Morph straight to a specific legend — the deck strip's tap target */
+  summonTo(heroId: string): void;
 }
 
 interface EngineOpts {
@@ -374,7 +648,11 @@ interface EngineOpts {
   container: HTMLElement;
   stage: HTMLElement;
   mobile: boolean;
+  /** The shuffled deck, decided at import time so the opening is preloaded */
+  roster: Summon[];
   onSummon: (s: Summon) => void;
+  /** A card was clicked — the centre portrait, or one of its bond nodes */
+  onNavigate: (heroId: string) => void;
   onFail: () => void;
 }
 
@@ -494,7 +772,7 @@ const BOND_SLOTS: Record<number, [number, number, number][]> = {
 };
 
 function createSummoningScene(opts: EngineOpts): SummonEngine {
-  const { canvas, container, stage, mobile, onSummon, onFail } = opts;
+  const { canvas, container, stage, mobile, roster, onSummon, onNavigate, onFail } = opts;
 
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const renderer = new THREE.WebGLRenderer({
@@ -723,7 +1001,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
   interface Halo {
     group: THREE.Group;
     materials: (THREE.MeshBasicMaterial | THREE.LineBasicMaterial)[];
-    nodes: { mesh: THREE.Mesh; base: THREE.Vector3; phase: number }[];
+    nodes: { mesh: THREE.Mesh; base: THREE.Vector3; phase: number; bond: Bond }[];
     pulses: { sprite: THREE.Sprite; curve: THREE.QuadraticBezierCurve3; phase: number }[];
     dispose(): void;
   }
@@ -755,7 +1033,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       mesh.position.copy(base);
       mesh.renderOrder = 3;
       materials.push(nodeMat);
-      nodes.push({ mesh, base, phase: Math.random() * Math.PI * 2 });
+      nodes.push({ mesh, base, phase: Math.random() * Math.PI * 2, bond });
       g.add(mesh);
 
       // Curved connection from the portrait's edge to the node
@@ -816,7 +1094,8 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
   type Phase = 'waiting' | 'assemble' | 'hold' | 'morph';
   let phase: Phase = 'waiting';
   let phaseT = 0;
-  let index = Math.floor(Math.random() * SUMMONS.length);
+  // The deck arrives already shuffled and opening on an anchor, so start at top
+  let index = 0;
   let activeHalo: Halo | null = null;
   let haloAlpha = 0;
   let disposed = false;
@@ -826,9 +1105,14 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
   let canvasReady = false;
   let morphPending = false;
   let morphSwapped = false;
+  let queuedTarget: number | null = null;
   let pendingNext: { s: Summon; tex: THREE.Texture; index: number } | null = null;
 
-  const ASSEMBLE_S = 2.0;
+  // Only the very first summon assembles — every later change is a 'morph'. So
+  // this constant is purely the cost of the opening, paid by every visitor
+  // including the ones deciding whether to stay. The long flourish belongs to
+  // MORPH_S, which is only seen by someone already watching.
+  const ASSEMBLE_S = 1.2;
   const HOLD_S = 6.2;
   const MORPH_S = 2.6;
 
@@ -854,7 +1138,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       document.fonts.ready.then(() =>
         getHalo(s)
           .then((halo) => {
-            if (disposed || SUMMONS[index].id !== s.id) return;
+            if (disposed || roster[index].id !== s.id) return;
             if (activeHalo) group.remove(activeHalo.group);
             activeHalo = halo;
             haloAlpha = 0;
@@ -863,29 +1147,35 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
           .catch(() => {}),
       );
       // Warm the cache for the next legend while this one is on stage
-      preload(SUMMONS[(index + 1) % SUMMONS.length]);
+      preload(roster[(index + 1) % roster.length]);
     } catch {
       if (disposed) return;
       // Portrait failed to load — skip to the next legend; if the whole
       // roster fails (offline, CDN down), hand the hero back to the static path
       loadFailures += 1;
-      if (loadFailures >= SUMMONS.length) {
+      if (loadFailures >= roster.length) {
         onFail();
         return;
       }
-      index = (index + 1) % SUMMONS.length;
-      beginSummon(SUMMONS[index]);
+      index = (index + 1) % roster.length;
+      beginSummon(roster[index]);
     }
   };
 
   // Loads the next legend, then starts the morph. If a portrait fails,
   // walks the roster; a full sweep of failures falls back to static.
-  const startMorph = () => {
-    if (disposed || morphPending || phase !== 'hold') return;
+  const startMorph = (target?: number) => {
+    if (disposed) return;
+    if (morphPending || phase !== 'hold') {
+      // A strip tap during the 2.6s morph would otherwise vanish, which reads
+      // as a dead button. Hold it and run it the moment the scene settles.
+      if (target != null) queuedTarget = target;
+      return;
+    }
     morphPending = true;
     const tryLoad = (i: number, attempts: number) => {
-      const nextIndex = i % SUMMONS.length;
-      const s = SUMMONS[nextIndex];
+      const nextIndex = i % roster.length;
+      const s = roster[nextIndex];
       loadPortrait(s.id)
         .then((tex) => {
           if (disposed) return;
@@ -898,19 +1188,27 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
         })
         .catch(() => {
           if (disposed) return;
-          if (attempts >= SUMMONS.length) {
+          if (attempts >= roster.length) {
             onFail();
             return;
           }
           tryLoad(nextIndex + 1, attempts + 1);
         });
     };
-    tryLoad(index + 1, 1);
+    tryLoad(target ?? index + 1, 1);
   };
 
   const summonNext = () => {
     if (disposed) return;
     startMorph();
+  };
+
+  const summonTo = (heroId: string) => {
+    if (disposed) return;
+    const i = roster.findIndex((s) => s.id === heroId);
+    // Already on stage (or not in this deck) — nothing to morph to
+    if (i < 0 || i === index) return;
+    startMorph(i);
   };
 
   /* --- Layout ------------------------------------------------------ */
@@ -961,6 +1259,40 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
   };
   container.addEventListener('pointermove', onMove, { passive: true });
 
+  /* --- Hit testing --------------------------------------------------- */
+  // Every card on stage is a link to that character. The thresholds matter:
+  // below them the card is still stardust or the halo is still fading in, and
+  // a click there has to mean "next legend", not a navigation the user can't
+  // see they aimed at.
+  const raycaster = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+
+  const hitTest = (clientX: number, clientY: number): string | null => {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    // Nodes first — they overlap the card's corners and sit in front of it
+    if (activeHalo && haloAlpha > 0.35) {
+      for (const n of activeHalo.nodes) {
+        if (raycaster.intersectObject(n.mesh, false).length > 0) return n.bond.id;
+      }
+    }
+    if (reveal > 0.55 && raycaster.intersectObject(revealPlane, false).length > 0) {
+      return roster[index].id;
+    }
+    return null;
+  };
+
+  let hovering = false;
+  const applyHover = (e: PointerEvent) => {
+    if (e.pointerType !== 'mouse') return;
+    const next = hitTest(e.clientX, e.clientY) !== null;
+    if (next === hovering) return;
+    hovering = next;
+    canvas.style.cursor = next ? 'pointer' : '';
+  };
+  container.addEventListener('pointermove', applyHover, { passive: true });
+
   let downAt = 0;
   let downX = 0;
   let downY = 0;
@@ -971,7 +1303,9 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
   };
   const onUp = (e: PointerEvent) => {
     if (performance.now() - downAt < 350 && Math.hypot(e.clientX - downX, e.clientY - downY) < 12) {
-      summonNext();
+      const heroId = hitTest(e.clientX, e.clientY);
+      if (heroId) onNavigate(heroId);
+      else summonNext();
     }
   };
   canvas.addEventListener('pointerdown', onDown, { passive: true });
@@ -1027,7 +1361,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
         document.fonts.ready.then(() =>
           getHalo(pn.s)
             .then((halo) => {
-              if (disposed || SUMMONS[index].id !== pn.s.id) return;
+              if (disposed || roster[index].id !== pn.s.id) return;
               activeHalo = halo;
               group.add(halo.group);
             })
@@ -1042,7 +1376,12 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
         pendingNext = null;
         phase = 'hold';
         phaseT = 0;
-        preload(SUMMONS[(index + 1) % SUMMONS.length]);
+        preload(roster[(index + 1) % roster.length]);
+        if (queuedTarget != null) {
+          const q = queuedTarget;
+          queuedTarget = null;
+          if (q !== index) startMorph(q);
+        }
       }
     }
 
@@ -1099,7 +1438,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
     }
   };
 
-  beginSummon(SUMMONS[index]);
+  beginSummon(roster[index]);
   rafId = requestAnimationFrame(frame);
 
   return {
@@ -1109,11 +1448,13 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       if (!p) clock.getDelta(); // swallow the paused interval
     },
     summonNext,
+    summonTo,
     dispose() {
       disposed = true;
       cancelAnimationFrame(rafId);
       ro.disconnect();
       container.removeEventListener('pointermove', onMove);
+      container.removeEventListener('pointermove', applyHover);
       canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('webglcontextlost', onContextLost);
@@ -1249,25 +1590,57 @@ const CSS = `
     content:''; width:36px; height:3px; border-radius:2px; margin-bottom:4px;
     background:var(--accent,var(--yellow)); transition:background .8s ease;
   }
+  /* The canvas cards are unreachable by keyboard, so the plate name carries
+     the same navigation as a real focusable control. */
   .plate-name {
+    pointer-events:auto; display:block;
+    background:none; border:none; padding:0; cursor:pointer;
     font-family:'Righteous',sans-serif; font-size:30px; color:var(--beige);
     letter-spacing:0.5px; text-shadow:0 2px 18px rgba(11,24,32,0.9);
     animation:plateIn .6s cubic-bezier(.22,.7,.25,1) both;
+    transition:color 200ms;
   }
+  .plate-name:hover { color:var(--yellow); }
+  .plate-name:focus-visible { outline:2px solid var(--yellow); outline-offset:6px; border-radius:6px; }
   .plate-universe {
     font-size:10px; font-weight:600; letter-spacing:3px; text-transform:uppercase;
     color:var(--muted);
   }
-  .plate-summon {
-    pointer-events:auto; margin-top:10px;
-    background:rgba(20,33,48,0.7); color:var(--beige);
-    border:1px solid var(--border); border-radius:100px;
-    font-family:'Righteous',sans-serif; font-size:12px; letter-spacing:0.5px;
-    padding:8px 18px; cursor:pointer;
-    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
-    transition:border-color 200ms,transform 150ms,background 200ms;
+  /* The card is clickable but the cue was hover-only, so touch had none at all */
+  .plate-go {
+    display:inline-block; margin-left:10px; font-size:0.62em; opacity:0.5;
+    transform:translateY(-3px); transition:opacity 200ms,transform 200ms;
   }
-  .plate-summon:hover { border-color:var(--yellow); background:rgba(26,45,62,0.85); transform:translateY(-1px); }
+  .plate-name:hover .plate-go { opacity:1; transform:translate(4px,-3px); }
+  /* The deck strip. Replaces the old single "summon another" button: same row,
+     roughly the same height, but it shows the deck instead of describing it. */
+  .plate-deck {
+    pointer-events:auto; margin-top:10px;
+    display:flex; align-items:center; gap:8px;
+    /* Kept clear of the page-centred scroll hint, which sits at the plate's
+       lower-left on narrow desktop widths. The old single button was narrow
+       enough to miss it; a full-width strip is not. */
+    max-width:min(352px,68vw); overflow-x:auto; overflow-y:hidden;
+    padding:4px 2px; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+    -webkit-mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent);
+    mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent);
+  }
+  .plate-deck::-webkit-scrollbar { display:none; }
+  .deck-face {
+    flex:0 0 auto; width:32px; height:32px; padding:0; overflow:hidden;
+    border-radius:50%; border:1.5px solid transparent;
+    background:rgba(11,24,32,0.65); cursor:pointer; opacity:0.5;
+    transition:opacity 200ms,border-color 200ms,transform 200ms;
+  }
+  .deck-face img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
+  .deck-face:hover { opacity:0.95; transform:translateY(-2px); }
+  .deck-face:focus-visible { outline:2px solid var(--yellow); outline-offset:3px; opacity:1; }
+  .deck-face.on { opacity:1; border-color:var(--accent,var(--yellow)); transform:translateY(-2px); }
+  .deck-shuffle {
+    color:var(--beige); font-size:15px; line-height:1;
+    border-color:var(--border); opacity:0.7;
+  }
+  .deck-shuffle:hover { opacity:1; border-color:var(--yellow); }
   @keyframes plateIn {
     from { opacity:0; transform:translateY(10px); }
     to   { opacity:1; transform:none; }
@@ -1402,7 +1775,13 @@ const CSS = `
   .marquee-track {
     display:flex; gap:48px; animation:marquee 30s linear infinite; width:max-content;
   }
+  /* Pausing on hover is what makes the names clickable rather than a game of
+     chase; without it the target moves out from under the cursor. */
   .marquee-track:hover { animation-play-state:paused; }
+  .mq-name { cursor:pointer; transition:color 200ms, -webkit-text-stroke-color 200ms; }
+  .mq-name:hover { color:var(--yellow); }
+  .mq-name.mq-outline:hover { color:transparent; -webkit-text-stroke-color:var(--yellow); }
+  .marquee-dot { pointer-events:none; }
   .marquee-item {
     font-family:'Righteous',sans-serif; font-size:14px; letter-spacing:2px;
     text-transform:uppercase; color:rgba(255,255,255,0.85);
@@ -2056,9 +2435,10 @@ const CSS = `
   .mosaic-card.reveal.in:hover img { transform:scale(1.07); }
 
   /* Press feedback — buttons give a little under the finger */
-  .btn-primary:active, .btn-secondary:active, .nav-cta:active, .plate-summon:active, .mosaic-more:active {
+  .btn-primary:active, .btn-secondary:active, .nav-cta:active, .mosaic-more:active {
     transform:translateY(0) scale(0.97);
   }
+  .deck-face:active { transform:translateY(-2px) scale(0.92); }
 
   /* Hero load-in sequence */
   .hero-content > *, .hero-panel > * { opacity:0; }
@@ -2393,6 +2773,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<SummonEngine | null>(null);
+  const deckStripRef = useRef<HTMLDivElement>(null);
 
   const fallBack = useCallback(() => setMode('static'), []);
 
@@ -2514,7 +2895,10 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
         container,
         stage,
         mobile: window.innerWidth < 768,
+        roster: OPENING_DECK,
         onSummon: setSummoned,
+        onNavigate: (heroId) =>
+          router.push(`/character/${heroId}` as Parameters<typeof router.push>[0]),
         onFail: fallBack,
       });
     } catch {
@@ -2544,7 +2928,17 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       engine.dispose();
       engineRef.current = null;
     };
-  }, [mode, fallBack]);
+  }, [mode, fallBack, router]);
+
+  // Follow the deck as it advances on its own, so the active face never sits
+  // off-screen in the strip. `block:'nearest'` is load-bearing — without it the
+  // browser scrolls the whole page to bring the strip into view.
+  useEffect(() => {
+    const strip = deckStripRef.current;
+    if (!strip || !summoned) return;
+    const active = strip.querySelector<HTMLElement>('.deck-face.on');
+    active?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [summoned]);
 
   // Stats count up the first time the band scrolls into view
   useEffect(() => {
@@ -2792,18 +3186,51 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               <div className="summon-stage" ref={stageRef}>
                 {summoned ? (
                   <div className="summon-plate">
-                    <span className="plate-name" key={summoned.id} aria-hidden="true">
+                    <button
+                      className="plate-name"
+                      key={summoned.id}
+                      aria-label={`View ${summoned.name}`}
+                      onClick={() =>
+                        router.push(
+                          `/character/${summoned.id}` as Parameters<typeof router.push>[0],
+                        )
+                      }
+                    >
                       {summoned.name}
-                    </span>
+                      {/* The affordance rides on the target itself rather than
+                          taking its own line — the plate has no room for a
+                          fifth stacked element above the scroll hint. */}
+                      <span className="plate-go" aria-hidden="true">
+                        →
+                      </span>
+                    </button>
                     <span className="plate-universe" aria-hidden="true">
                       {summoned.universe}
                     </span>
-                    <button
-                      className="plate-summon"
-                      onClick={() => engineRef.current?.summonNext()}
-                    >
-                      Summon another legend ↻
-                    </button>
+                    {/* The deck, on screen. Without it the 22 legends only
+                        reveal themselves over three minutes of watching, and a
+                        touch visitor has nothing obvious to tap at all. */}
+                    <div className="plate-deck" ref={deckStripRef}>
+                      {OPENING_DECK.map((s) => (
+                        <button
+                          key={s.id}
+                          className={`deck-face${s.id === summoned.id ? ' on' : ''}`}
+                          title={s.name}
+                          aria-label={`Summon ${s.name}`}
+                          onClick={() => engineRef.current?.summonTo(s.id)}
+                        >
+                          <img src={P96(s.id)} alt="" loading="lazy" decoding="async" />
+                        </button>
+                      ))}
+                      <button
+                        className="deck-face deck-shuffle"
+                        aria-label="Summon another legend"
+                        title="Summon another legend"
+                        onClick={() => engineRef.current?.summonNext()}
+                      >
+                        ↻
+                      </button>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -2893,25 +3320,14 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           <div className="marquee-track">
             {[0, 1].map((i) => (
               <div key={i} className="marquee-item">
-                {[
-                  'Spider-Man',
-                  'Batman',
-                  'Iron Man',
-                  'Wonder Woman',
-                  'Black Panther',
-                  'Thor',
-                  'Deadpool',
-                  'Wolverine',
-                  'Doctor Strange',
-                  'Hulk',
-                  'Magneto',
-                  'Joker',
-                  'Loki',
-                  'Venom',
-                  'Storm',
-                  'Captain America',
-                ].map((name, j) => (
-                  <span key={j} className={j % 2 ? 'mq-outline' : undefined}>
+                {MARQUEE_NAMES.map(([name, id], j) => (
+                  <span
+                    key={j}
+                    className={`mq-name${j % 2 ? ' mq-outline' : ''}`}
+                    onClick={() =>
+                      router.push(`/character/${id}` as Parameters<typeof router.push>[0])
+                    }
+                  >
                     {name}
                     <span
                       className="marquee-dot"
