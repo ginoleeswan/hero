@@ -13,8 +13,19 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  loadEnv, makeSb, selectMatchups, resolveManual, hydrate, fonts, slugFor,
-  OUT_DIR, renderPng, COLORS, slide, STAT_KEYS,
+  loadEnv,
+  makeSb,
+  selectMatchups,
+  resolveManual,
+  hydrate,
+  fonts,
+  slugFor,
+  OUT_DIR,
+  renderPng,
+  COLORS,
+  slide,
+  STAT_KEYS,
+  postUrl,
 } from './lib.mjs';
 
 const { O, T, GOLD, CREAM, NAVY } = COLORS;
@@ -35,7 +46,8 @@ function slideCover(M, F) {
 
 function slideTape(M, F) {
   const rows = STAT_KEYS.map((k) => {
-    const av = M.stats[k], bv = M.stats2[k];
+    const av = M.stats[k],
+      bv = M.stats2[k];
     const pa = Math.round((av / (av + bv || 1)) * 100);
     const ca = bv > av ? '#64757f' : O; // strict loser goes muted; ties stay full colour
     const cb = av > bv ? '#64757f' : T;
@@ -85,36 +97,57 @@ function buildMatchup(h) {
   const stats = Object.fromEntries(STAT_KEYS.map((k) => [k, h.ka[k] ?? 0]));
   const stats2 = Object.fromEntries(STAT_KEYS.map((k) => [k, h.kb[k] ?? 0]));
   return {
-    a: { name: h.ka.name.toUpperCase(), img: h.portraitA, flip: false },
-    b: { name: h.kb.name.toUpperCase(), img: h.portraitB, flip: true },
-    winner: h.winner, verdict: h.verdict, voteA: h.voteA, voteB: h.voteB, stats, stats2,
+    a: { name: h.ka.name.toUpperCase(), img: h.portraitA, flip: false, id: h.ka.id },
+    b: { name: h.kb.name.toUpperCase(), img: h.portraitB, flip: true, id: h.kb.id },
+    winner: h.winner,
+    verdict: h.verdict,
+    voteA: h.voteA,
+    voteB: h.voteB,
+    stats,
+    stats2,
   };
 }
 
 function caption(M) {
-  const a = M.a.name, b = M.b.name, w = M[M.winner].name;
+  const a = M.a.name,
+    b = M.b.name,
+    w = M[M.winner].name;
   const lead = M.voteA >= M.voteB ? a : b;
   return [
-    `${cap1(a.toLowerCase())} vs ${cap1(b.toLowerCase())}: who would win? Swipe for the full breakdown 🥊`, ``,
+    `${cap1(a.toLowerCase())} vs ${cap1(b.toLowerCase())}: who would win? Swipe for the full breakdown 🥊`,
+    ``,
     `Our model gives it to ${cap1(w.toLowerCase())}, but the fans have ${cap1(lead.toLowerCase())} ahead ${Math.max(M.voteA, M.voteB)}/${Math.min(M.voteA, M.voteB)}.`,
-    `Who's right? Drop your pick 👇`, ``,
-    `Explore 34,000+ characters and settle any matchup on mythique.app`, ``,
+    `Who's right? Drop your pick 👇`,
+    ``,
+    `Settle it here — voting needs no account:`,
+    postUrl(`compare/${encodeURIComponent(M.a.id)}/${encodeURIComponent(M.b.id)}`, {
+      campaign: 'carousels',
+      content: `${M.a.id}-${M.b.id}`,
+    }),
+    ``,
     `#whowouldwin #${a.replace(/[^a-z0-9]/gi, '')} #${b.replace(/[^a-z0-9]/gi, '')} #superheroes #anime #marvel #dc #comics #powerscaling #mythique`,
   ].join('\n');
 }
 
 async function main() {
   const args = process.argv.slice(2);
-  const get = (f, d) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : d; };
+  const get = (f, d) => {
+    const i = args.indexOf(f);
+    return i >= 0 ? args[i + 1] : d;
+  };
   const dry = args.includes('--dry-run');
   const count = parseInt(get('--count', '6'), 10);
   const manual = get('--matchup', null);
 
   const sb = makeSb(loadEnv());
-  const selections = manual ? [await resolveManual(sb, manual)] : (console.log(`Selecting ${count} popular, close-vote matchups...`), await selectMatchups(sb, count));
+  const selections = manual
+    ? [await resolveManual(sb, manual)]
+    : (console.log(`Selecting ${count} popular, close-vote matchups...`),
+      await selectMatchups(sb, count));
 
   console.log(`\n${selections.length} matchup(s):`);
-  for (const s of selections) console.log(`  ${s.ka.name} vs ${s.kb.name}  —  ${s.pctA}/${s.pctB}  (${s.total} votes)`);
+  for (const s of selections)
+    console.log(`  ${s.ka.name} vs ${s.kb.name}  —  ${s.pctA}/${s.pctB}  (${s.total} votes)`);
   if (dry) return;
 
   const F = fonts();
@@ -134,4 +167,7 @@ async function main() {
   console.log('\nDone. Upload slides in order as an Instagram carousel.');
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

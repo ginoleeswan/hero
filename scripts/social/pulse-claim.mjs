@@ -17,8 +17,11 @@
 // pulse-post.mjs.
 import { assertNoPortrait } from './ads/safe-assert.mjs';
 import { DISCLAIMER } from './safety.mjs';
+import { postUrl } from './lib.mjs';
 
-export const ORIGIN = 'https://mythique.app';
+// Kept as an export because callers and tests import it from here; the value now
+// lives in lib.mjs alongside postUrl so the two cannot disagree about the site.
+export { ORIGIN } from './lib.mjs';
 
 /** `issue` is deliberately absent. A weekly comic shipment is a schedule, not
  *  news; posting it because nothing else happened is how an account teaches
@@ -229,16 +232,21 @@ export function causeClause(c) {
  *  not cause. Only used when there is an attribution to qualify. */
 export const TIMING_CAVEAT = 'We measure the timing, not the reason.';
 
+// These were already the only captions in the factory pointing at a real page.
+// What they lacked was attribution: `session_attribution` has recorded 1,626
+// TikTok sessions under `campaign=untitled`, so nothing could say which post
+// earned a visit. postUrl tags them without changing where they go.
 function linkFor(c) {
+  const tag = { campaign: `pulse-${c.kind}`, content: c.entity_id };
   switch (c.kind) {
     case 'surge':
-      return `${ORIGIN}/character/${encodeURIComponent(c.entity_id)}`;
+      return postUrl(`character/${encodeURIComponent(c.entity_id)}`, tag);
     case 'trailer':
-      return `${ORIGIN}/title/${encodeURIComponent(c.entity_id)}`;
+      return postUrl(`title/${encodeURIComponent(c.entity_id)}`, tag);
     case 'live_event':
-      return `${ORIGIN}/event/${encodeURIComponent(c.entity_id)}`;
+      return postUrl(`event/${encodeURIComponent(c.entity_id)}`, tag);
     default:
-      return ORIGIN;
+      return postUrl('', { campaign: 'pulse' });
   }
 }
 

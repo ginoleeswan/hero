@@ -12,7 +12,18 @@
 // (movie-poster carousel) · legend (shareable dossier card).
 import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadEnv, makeSb, fonts, renderPng, COLORS, OUT_DIR, ROOT, RIVALRIES, REAL_PERSON_FILTER } from './lib.mjs';
+import {
+  loadEnv,
+  makeSb,
+  fonts,
+  renderPng,
+  COLORS,
+  OUT_DIR,
+  ROOT,
+  RIVALRIES,
+  REAL_PERSON_FILTER,
+  postUrl,
+} from './lib.mjs';
 import { adShell } from './ads/shell.mjs';
 
 const { O, T, GOLD, CREAM } = COLORS;
@@ -460,25 +471,36 @@ async function heroFilms(sb, id) {
     .map((t) => ({ title: t.title, year: t.year, vote: t.vote_average, poster_url: t.poster_url }));
 }
 
+// Each caption ends on the page it is ABOUT.
+//
+// These all used to end "mythique.app (link in bio)", which is the shape that
+// put 2,464 of 2,466 TikTok arrivals on the homepage. The bio link is still the
+// fallback where a platform genuinely allows only one — but a caption that CAN
+// carry a URL should carry the right one.
+const cLink = (path, campaign, content) =>
+  path ? postUrl(path, { campaign, content }) : 'mythique.app (link in bio)';
+const chr = (id) => (id ? `character/${encodeURIComponent(id)}` : null);
+const vs = (a, b) => (a && b ? `compare/${encodeURIComponent(a)}/${encodeURIComponent(b)}` : null);
+
 const CAPTIONS = {
   showdown: (e) =>
-    `${e.a} vs ${e.b} — the rivalry that never dies 👊\nReal stats. Your vote settles it (link in bio).\n#${slug(e.a).replace(/-/g, '')} #${slug(e.b).replace(/-/g, '')} #whowouldwin #versus #comics #anime`,
+    `${e.a} vs ${e.b} — the rivalry that never dies 👊\nReal stats. Your vote settles it — no account needed:\n${cLink(vs(e.aId, e.bId), 'organic-showdown', `${e.aId}-${e.bId}`)}\n#${slug(e.a).replace(/-/g, '')} #${slug(e.b).replace(/-/g, '')} #whowouldwin #versus #comics #anime`,
   covers: (e) =>
-    `The many faces of ${e.a} 📚 — decades of covers, one thread.\nWhich era wins? The whole gallery lives at mythique.app (link in bio).\n#${slug(e.a).replace(/-/g, '')} #comiccovers #comics #comicart`,
+    `The many faces of ${e.a} 📚 — decades of covers, one thread.\nWhich era wins? The whole gallery:\n${cLink(chr(e.aId), 'organic-covers', e.aId)}\n#${slug(e.a).replace(/-/g, '')} #comiccovers #comics #comicart`,
   didyouknow: (e) =>
-    `Did you know this about ${e.a}? 🤯\nThe file runs deep — full lore at mythique.app (link in bio).\n#${slug(e.a).replace(/-/g, '')} #didyouknow #comics #lore`,
+    `Did you know this about ${e.a}? 🤯\nThe file runs deep:\n${cLink(chr(e.aId), 'organic-didyouknow', e.aId)}\n#${slug(e.a).replace(/-/g, '')} #didyouknow #comics #lore`,
   bloodline: (e) =>
-    `Same blood: ${e.a} & ${e.b} 🩸\nThe family tree tells the whole story — mythique.app (link in bio).\n#${slug(e.a).replace(/-/g, '')} #${slug(e.b).replace(/-/g, '')} #familytree #lore #comics`,
+    `Same blood: ${e.a} & ${e.b} 🩸\nThe family tree tells the whole story:\n${cLink(chr(e.bId), 'organic-bloodline', e.bId)}\n#${slug(e.a).replace(/-/g, '')} #${slug(e.b).replace(/-/g, '')} #familytree #lore #comics`,
   onscreen: (e) =>
-    `${e.a}, on screen 🎬 — the films that built the legend.\nEvery appearance is catalogued at mythique.app (link in bio).\n#${slug(e.a).replace(/-/g, '')} #movies #popculture`,
+    `${e.a}, on screen 🎬 — the films that built the legend.\nEvery appearance, catalogued:\n${cLink(chr(e.aId), 'organic-onscreen', e.aId)}\n#${slug(e.a).replace(/-/g, '')} #movies #popculture`,
   legend: (e) =>
-    `The file on ${e.a} 📇 — six stats, one legend.\nAgree with the ratings? Argue your case 👇\n#${slug(e.a).replace(/-/g, '')} #comics #powerlevels`,
+    `The file on ${e.a} 📇 — six stats, one legend.\nAgree with the ratings? Argue your case 👇\n${cLink(chr(e.aId), 'organic-legend', e.aId)}\n#${slug(e.a).replace(/-/g, '')} #comics #powerlevels`,
   ranking: (e) =>
     `${e.title} 🏆 — do you agree?\nWho's missing? Who's too low? Settle it below 👇\nFull ranking at mythique.app (link in bio).\n#ranking #whowouldwin #comics #anime #powerlevels`,
   thisorthat: (e) =>
-    `${e.a} or ${e.b}? 👀 ${e.question}\nComment your pick — no wrong answers (except the wrong one 😏).\nmythique.app (link in bio).\n#${slug(e.a).replace(/-/g, '')} #${slug(e.b).replace(/-/g, '')} #thisorthat #whowouldwin #comics`,
+    `${e.a} or ${e.b}? 👀 ${e.question}\nComment your pick — no wrong answers (except the wrong one 😏).\n${cLink(vs(e.aId, e.bId), 'organic-thisorthat', `${e.aId}-${e.bId}`)}\n#${slug(e.a).replace(/-/g, '')} #${slug(e.b).replace(/-/g, '')} #thisorthat #whowouldwin #comics`,
   gauntlet: (e) =>
-    `Name ONE character who beats ${e.a}. I'll wait 👀\nDrop them below 👇 — bonus points if you can back it up.\nmythique.app (link in bio).\n#${slug(e.a).replace(/-/g, '')} #whowouldwin #comics #anime #debate`,
+    `Name ONE character who beats ${e.a}. I'll wait 👀\nDrop them below 👇 — bonus points if you can back it up.\n${cLink(chr(e.aId), 'organic-gauntlet', e.aId)}\n#${slug(e.a).replace(/-/g, '')} #whowouldwin #comics #anime #debate`,
 };
 
 // ── main ──────────────────────────────────────────────────────────────────────
@@ -567,7 +589,7 @@ async function main() {
         const [a, b] = pair;
         const [aArt, bArt] = await Promise.all([art(a.portrait_url), art(b.portrait_url)]);
         slides = showdownSlides({ ...a, art: aArt }, { ...b, art: bArt });
-        meta = { a: a.name, b: b.name, title: `${a.name} vs ${b.name}` };
+        meta = { a: a.name, b: b.name, aId: a.id, bId: b.id, title: `${a.name} vs ${b.name}` };
       } else if (format === 'covers') {
         const h = pick();
         const covers = await heroCovers(sb, h.id);
@@ -578,12 +600,12 @@ async function main() {
         const withArt = [];
         for (const c of covers) withArt.push({ ...c, art: await art(c.url) });
         slides = coversSlides({ ...h, art: await art(h.portrait_url) }, withArt);
-        meta = { a: h.name, title: `Covers — ${h.name}` };
+        meta = { a: h.name, aId: h.id, title: `Covers — ${h.name}` };
       } else if (format === 'didyouknow') {
         const f = facts[cursor.didyouknow++];
         if (!f) continue;
         slides = didYouKnowSlides({ ...f.hero, art: await art(f.hero.portrait_url) }, f.fact);
-        meta = { a: f.hero.name, title: `Did you know — ${f.hero.name}` };
+        meta = { a: f.hero.name, aId: f.hero.id, title: `Did you know — ${f.hero.name}` };
       } else if (format === 'bloodline') {
         const fam = families[cursor.bloodline++];
         if (!fam) continue;
@@ -595,6 +617,8 @@ async function main() {
         meta = {
           a: fam.rel.name,
           b: fam.hero.name,
+          aId: fam.rel.id,
+          bId: fam.hero.id,
           title: `Bloodline — ${fam.rel.name} & ${fam.hero.name}`,
         };
       } else if (format === 'onscreen') {
@@ -607,7 +631,7 @@ async function main() {
         const withArt = [];
         for (const f of films) withArt.push({ ...f, art: await art(f.poster_url) });
         slides = onscreenSlides({ ...h, art: await art(h.portrait_url) }, withArt);
-        meta = { a: h.name, title: `On screen — ${h.name}` };
+        meta = { a: h.name, aId: h.id, title: `On screen — ${h.name}` };
       } else if (format === 'ranking') {
         const theme = rankThemes[cursor.ranking++ % rankThemes.length];
         const rows = await rankingRows(sb, theme);
@@ -622,7 +646,14 @@ async function main() {
         const q = TOT_QUESTIONS[(cursor.thisorthat - 1) % TOT_QUESTIONS.length];
         const [aArt, bArt] = await Promise.all([art(a.portrait_url), art(b.portrait_url)]);
         slides = thisOrThatSlides({ ...a, art: aArt }, { ...b, art: bArt }, q);
-        meta = { a: a.name, b: b.name, question: q, title: `${a.name} or ${b.name}` };
+        meta = {
+          a: a.name,
+          b: b.name,
+          aId: a.id,
+          bId: b.id,
+          question: q,
+          title: `${a.name} or ${b.name}`,
+        };
       } else if (format === 'gauntlet') {
         const h = gauntletPool[cursor.gauntlet++];
         if (!h) continue;
@@ -631,7 +662,7 @@ async function main() {
           GAUNTLET_STATS[0],
         );
         slides = gauntletSlides({ ...h, art: await art(h.portrait_url) }, statKey);
-        meta = { a: h.name, title: `Gauntlet — ${h.name}` };
+        meta = { a: h.name, aId: h.id, title: `Gauntlet — ${h.name}` };
       } else {
         const h = pick();
         slides = legendSlides({ ...h, art: await art(h.portrait_url) });

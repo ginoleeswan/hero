@@ -16,7 +16,7 @@
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { v2 as cloudinary } from 'cloudinary';
-import { loadEnv, makeSb, ROOT, OUT_DIR } from './lib.mjs';
+import { loadEnv, makeSb, ROOT, OUT_DIR, postUrl } from './lib.mjs';
 
 const dry = process.argv.includes('--dry-run');
 const origin = process.argv.find((a) => /^https?:\/\//.test(a)) ?? 'https://mythique.app';
@@ -102,10 +102,15 @@ async function main() {
   const cardPath = join(dir, 'card.png');
   writeFileSync(cardPath, buf);
 
-  const matchupUrl = `mythique.app/compare/${aId}/${bId}`;
+  // Tagged, so this post's visits are attributable. It already pointed at the
+  // right page — it just arrived as an untracked, unclickable bare string.
+  const matchupUrl = postUrl(`compare/${encodeURIComponent(aId)}/${encodeURIComponent(bId)}`, {
+    campaign: 'daily-debate',
+    content: `${aId}-${bId}`,
+  });
   const caption =
     `${hook || `${nameA} vs ${nameB} — the debate's live 🔥`}\n` +
-    `Who wins? Vote now — link in bio.\n${matchupUrl}\n` +
+    `Who wins? Vote now — no account needed:\n${matchupUrl}\n` +
     `#${slug(nameA)} #${slug(nameB)} #whowouldwin #versus #comics`;
   writeFileSync(join(dir, 'caption.txt'), caption);
   console.log(`Card saved → ${cardPath} (${(buf.length / 1024).toFixed(0)} KB)`);

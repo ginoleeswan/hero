@@ -11,23 +11,38 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  loadEnv, makeSb, selectMatchups, resolveManual, hydrate, fonts, slugFor,
-  OUT_DIR, renderVideo, COLORS, grainUri, fontFace,
+  loadEnv,
+  makeSb,
+  selectMatchups,
+  resolveManual,
+  hydrate,
+  fonts,
+  slugFor,
+  OUT_DIR,
+  renderVideo,
+  COLORS,
+  grainUri,
+  fontFace,
+  postUrl,
 } from './lib.mjs';
 
 function buildHtml(M, F) {
   const { O, T, GOLD, CREAM, NAVY } = COLORS;
   const grain = grainUri();
-  const card = (c) => `<div class="sqin ${c.dim ? 'loser' : ''}"><img class="${c.flip ? 'flip' : ''}" src="${c.img}"><div class="glare"></div></div><div class="pname" style="color:${c.col}">${c.name}</div>`;
-  const a = M.a, b = M.b;
-  const stats = M.stats.map((s, i) => {
-    const aw = s[1] >= s[2];
-    return `<div class="scene stat" id="s_stat${i}">
+  const card = (c) =>
+    `<div class="sqin ${c.dim ? 'loser' : ''}"><img class="${c.flip ? 'flip' : ''}" src="${c.img}"><div class="glare"></div></div><div class="pname" style="color:${c.col}">${c.name}</div>`;
+  const a = M.a,
+    b = M.b;
+  const stats = M.stats
+    .map((s, i) => {
+      const aw = s[1] >= s[2];
+      return `<div class="scene stat" id="s_stat${i}">
       <div class="rlabel">ROUND ${i + 1}</div><div class="statname">${s[0]}</div>
       <div class="snums"><span class="na cnt" data-to="${s[1]}">0</span><span class="vs2">vs</span><span class="nb cnt" data-to="${s[2]}">0</span></div>
       <div class="track"><div class="fa" style="width:${Math.round((s[1] / (s[1] + s[2])) * 100)}%"></div><div class="fb"></div></div>
       <div class="wlabel" style="color:${aw ? O : T}">${aw ? a.name : b.name} TAKES IT</div></div>`;
-  }).join('');
+    })
+    .join('');
   return `<!doctype html><html><head><meta charset="utf-8"><style>${fontFace(F)}
 *{margin:0;padding:0;box-sizing:border-box;}html,body{width:1080px;height:1920px;overflow:hidden;background:${NAVY};font-family:'F';}
 .root{position:relative;width:1080px;height:1920px;overflow:hidden;background:radial-gradient(60% 44% at 50% 34%, rgba(224,168,62,.12), transparent 62%), radial-gradient(120% 90% at 50% 10%, #12242f, ${NAVY} 70%);}
@@ -111,9 +126,12 @@ tl.forEach(function(t){setTimeout(function(){var el=document.getElementById(t[0]
 
 function buildMatchup(h) {
   return {
-    a: { name: h.ka.name.toUpperCase(), img: h.portraitA, flip: false },
-    b: { name: h.kb.name.toUpperCase(), img: h.portraitB, flip: true },
-    winner: h.winner, verdict: h.verdict, voteA: h.voteA, voteB: h.voteB,
+    a: { name: h.ka.name.toUpperCase(), img: h.portraitA, flip: false, id: h.ka.id },
+    b: { name: h.kb.name.toUpperCase(), img: h.portraitB, flip: true, id: h.kb.id },
+    winner: h.winner,
+    verdict: h.verdict,
+    voteA: h.voteA,
+    voteB: h.voteB,
     stats: [
       ['COMBAT', h.ka.combat ?? 0, h.kb.combat ?? 0],
       ['SPEED', h.ka.speed ?? 0, h.kb.speed ?? 0],
@@ -123,29 +141,46 @@ function buildMatchup(h) {
 }
 
 function caption(M) {
-  const a = M.a.name, b = M.b.name, w = M[M.winner].name;
+  const a = M.a.name,
+    b = M.b.name,
+    w = M[M.winner].name;
   const lead = M.voteA >= M.voteB ? a : b;
   return [
-    `${a} vs ${b}: who actually wins? 🥊`, ``,
+    `${a} vs ${b}: who actually wins? 🥊`,
+    ``,
     `Our model says ${w}. But the fans have ${lead} ahead ${Math.max(M.voteA, M.voteB)}/${Math.min(M.voteA, M.voteB)} 👀`,
-    `"${M.verdict}"`, ``,
-    `Who's your pick? Settle it on mythique.app`, ``,
+    `"${M.verdict}"`,
+    ``,
+    // The matchup's own page, where the vote is one tap and needs no account.
+    `Who's your pick? Settle it:`,
+    postUrl(`compare/${encodeURIComponent(M.a.id)}/${encodeURIComponent(M.b.id)}`, {
+      campaign: 'reels',
+      content: `${M.a.id}-${M.b.id}`,
+    }),
+    ``,
     `#whowouldwin #${a.replace(/[^a-z0-9]/gi, '')} #${b.replace(/[^a-z0-9]/gi, '')} #superheroes #anime #marvel #dc #powerscaling #mythique`,
   ].join('\n');
 }
 
 async function main() {
   const args = process.argv.slice(2);
-  const get = (f, d) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : d; };
+  const get = (f, d) => {
+    const i = args.indexOf(f);
+    return i >= 0 ? args[i + 1] : d;
+  };
   const dry = args.includes('--dry-run');
   const count = parseInt(get('--count', '6'), 10);
   const manual = get('--matchup', null);
 
   const sb = makeSb(loadEnv());
-  const selections = manual ? [await resolveManual(sb, manual)] : (console.log(`Selecting ${count} popular, close-vote matchups...`), await selectMatchups(sb, count));
+  const selections = manual
+    ? [await resolveManual(sb, manual)]
+    : (console.log(`Selecting ${count} popular, close-vote matchups...`),
+      await selectMatchups(sb, count));
 
   console.log(`\n${selections.length} matchup(s):`);
-  for (const s of selections) console.log(`  ${s.ka.name} vs ${s.kb.name}  —  ${s.pctA}/${s.pctB}  (${s.total} votes)`);
+  for (const s of selections)
+    console.log(`  ${s.ka.name} vs ${s.kb.name}  —  ${s.pctA}/${s.pctB}  (${s.total} votes)`);
   if (dry) return;
 
   const F = fonts();
@@ -163,4 +198,7 @@ async function main() {
   console.log('\nDone. Add a trending sound in-app when you upload.');
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
