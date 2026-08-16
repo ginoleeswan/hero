@@ -105,16 +105,20 @@ const SHEET_OVERLAP = 28;
  *  the blur's own soft edge outside the frame either way. */
 const STAGE_BLUR = 55;
 
-// Web's desktop measures, ported. 1180 is `stageInner`'s cap, 300 the sideCol,
-// and the portrait rides 132pt up into the band — enough that it clearly
-// overlaps rather than merely touching, and not so much that the identity has
-// to dodge it.
+// Web's desktop measures, ported. 1180 is `stageInner`'s cap and 300 the
+// sideCol; how far the portrait rides up into the band is a FORMULA rather
+// than a measure — see `portraitOverlap` in the component.
 const STAGE_MAX = 1180;
 const SIDE_COL = 300;
-const PORTRAIT_OVERLAP = 132;
 /** `bodyInner`'s padding — shared with the sticky side column's travel maths,
  *  which has to know where the body's content box starts and ends. */
 const BODY_PAD = 24;
+/** `onLayout` reports the body's y 48pt above where it actually paints — see
+ *  `portraitOverlap`, which is solved against the card's measured position. */
+const BODY_LAYOUT_DELTA = 48;
+/** Where the portrait's top should land under the nav bar. Web puts its card
+ *  32pt below a 64pt bar; native's bar bottom is `insets.top + 44`. */
+const PORTRAIT_TOP_INSET = 76;
 // Sheet's top offset within the scroll content (hero spacer height − the lip),
 // added to each section's local onLayout y so the quick-nav anchors stay correct.
 
@@ -859,6 +863,23 @@ export default function CharacterScreen() {
     setSectionsBox((prev) => (prev.y === y && prev.h === h ? prev : { y, h }));
   };
   const anchorBase = sectionsBox.y;
+  // Web's rule, ported: the portrait's TOP sits just under the header bar
+  // whatever the band's height turns out to be, capped at 300 so a very tall
+  // band cannot drag it off the top (`-Math.min(300, Math.max(0, stageHeight -
+  // (TOPBAR_HEIGHT + 8)))`, `[id].web.tsx`). Native had a flat 132, which on a
+  // portrait iPad started the card 244pt down and left the whole upper-right
+  // of the band empty.
+  //
+  // Solved from the card's untranslated position rather than from the band's
+  // height directly, because the two do not agree: measured on an iPad with
+  // the overlap forced to 0, the card's top painted at 365.5 while
+  // `onSectionsLayout` reported the body at 293.5 — a steady 48pt short, which
+  // is BODY_LAYOUT_DELTA. Deriving from `anchorBase` alone under-pulled the
+  // card by exactly that much.
+  const portraitOverlap = Math.min(
+    300,
+    Math.max(0, anchorBase + BODY_PAD + BODY_LAYOUT_DELTA - (insets.top + PORTRAIT_TOP_INSET)),
+  );
   // ── The side column travels ─────────────────────────────────────────────
   // Web's `sideCol` is `position: sticky`; RN has no sticky, so the column is
   // translated by the scroll instead and clamped to its own container. Without
@@ -1119,7 +1140,13 @@ export default function CharacterScreen() {
                   tall && styles.statsRowTall,
                 ]}
               >
-                <View style={[styles.statsCol, split && styles.statsColSplit]}>
+                <View
+                  style={[
+                    styles.statsCol,
+                    split && styles.statsColSplit,
+                    tall && styles.statsColTall,
+                  ]}
+                >
                   <VitalsStrip
                     powerTotal={powerTotal}
                     issueCount={data.details.issueCount}
@@ -1967,7 +1994,7 @@ export default function CharacterScreen() {
                       negative margin is the overlap web calls `portraitOverlap`
                       — it is what stitches the band to the body instead of
                       leaving a hard seam between two colours. */}
-                  <View style={styles.portraitCard}>
+                  <View style={[styles.portraitCard, { marginTop: -portraitOverlap }]}>
                     {/* absoluteFill on the zoom target, not just on the image.
                         The target is a plain View with no intrinsic size, so an
                         image set to 100%/100% inside it resolves against an
@@ -2246,7 +2273,6 @@ const styles = StyleSheet.create({
     // card's ratio and does not need to be — this is a framed print, not the
     // full-bleed art the morph grows out of on a phone.
     height: Math.round(SIDE_COL * 1.4),
-    marginTop: -PORTRAIT_OVERLAP,
     borderRadius: 20,
     borderCurve: 'continuous',
     overflow: 'hidden',
@@ -2309,8 +2335,25 @@ const styles = StyleSheet.create({
   // Tablet PORTRAIT: the same two groups, stacked. `flex-end` on the meta row
   // keeps it against the band's right edge, so the credit and the numbers still
   // read as the header's secondary column rather than as a second left edge.
-  identityTall: { flexDirection: 'column', alignItems: 'stretch', gap: 18 },
-  statsRowTall: { alignSelf: 'flex-end' },
+  // 14 is web's `identityRowStack` gap, not a rounded guess.
+  identityTall: { flexDirection: 'column', alignItems: 'flex-start', gap: 14 },
+  // Stacked, the meta is its own row — and web LEFT-aligns it there. Its
+  // `metaBlockStack` / `metaRowStack` pair (`[id].web.tsx`, under the
+  // `stageWide = width >= 1100` gate) flips both block and row to flex-start,
+  // with the note "the title takes the band's full width and the meta drops
+  // beneath it". This was flex-end for a while, which is the LANDSCAPE
+  // behaviour: stacked, it left a wedge of empty band under the trait pills
+  // with the credit and the numbers stranded across from nothing.
+  // `justifyContent: 'flex-end'` looks backwards and is not: `statsRowSplit`
+  // sets `row-reverse` so the alignment chip leads and the vitals follow —
+  // web's order — and under row-reverse it is flex-END that packs the group
+  // against the LEFT edge. `flex-start` (the landscape value, which this
+  // inherited) packs it right, which is why the credit and the numbers still
+  // sat across the band from the name after the block itself was left-aligned.
+  statsRowTall: { alignSelf: 'flex-start', justifyContent: 'flex-end' },
+  // …and the credit inside it left-aligns too; `statsColSplit` ends flex-end
+  // for the landscape band, where the whole group hangs off the right margin.
+  statsColTall: { alignItems: 'flex-start' },
   stageTitleCol: { gap: 8, flexShrink: 1, minWidth: 0 },
   // A vertical chip stack is right on a portrait, where the column is narrow.
   // In the band there is a whole row, and stacking pushes the second chip below
