@@ -422,6 +422,33 @@ export function EventDossier({
   // deliberate ordering by something else; it looks like a sort that failed.
   const rankedSurges = [...surges].sort((a, b) => (b.spike ?? 0) - (a.spike ?? 0));
 
+  // The masthead's sentence. An editorial recap where one exists, and where one
+  // does not, the best fact the page already holds rather than nothing.
+  //
+  // 43 of 135 editions have no recap and are never going to get an honest one:
+  // they are the routine annual conventions where the only true sentence a
+  // person could write from general knowledge is "a convention happened, as it
+  // does every year". Writing that anyway is the "text there to have something
+  // there" failure, and inventing a specific is worse.
+  //
+  // What IS true on every one of them is the readership, and the single
+  // strongest reading in the window is a better line than a curve alone. It is
+  // derived rather than stored on purpose — a generated sentence sitting in a
+  // hand-written column is a thing that goes stale silently the next time the
+  // scoring changes, and the scoring has already changed once.
+  //
+  // Phrased as a reading, never as a cause: "the most-read character of the
+  // window", not "the character the event moved". Same rule as everywhere else
+  // on this page, and the reason is the same — an event cannot be shown to have
+  // caused a spike that merely shares its week.
+  const mastheadLine = useMemo(() => {
+    if (event.recap) return event.recap;
+    const top = rankedSurges[0];
+    if (!top || top.spike === null) return null;
+    const mult = top.spike >= 10 ? `${Math.round(top.spike)}×` : `${top.spike.toFixed(1)}×`;
+    return `The most-read character of the window was ${top.name}, at ${mult} their ordinary rate.`;
+  }, [event.recap, rankedSurges]);
+
   // The busiest day and any colliding event, as one line. Built here rather
   // than in JSX because it is three optional clauses and a join, and a ternary
   // pyramid inside the masthead is how the masthead got hard to read.
@@ -584,7 +611,7 @@ export function EventDossier({
 
                   Phone widths get a fixed box and the clamp to match, so the
                   skeleton can mirror a knowable height. */}
-              {!!event.recap && (
+              {!!mastheadLine && (
                 <Text
                   style={[
                     s.recap,
@@ -592,7 +619,7 @@ export function EventDossier({
                   ]}
                   numberOfLines={wide ? undefined : EVENT_STAGE.methodLines}
                 >
-                  {event.recap}
+                  {mastheadLine}
                 </Text>
               )}
 
