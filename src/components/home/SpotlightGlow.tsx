@@ -47,31 +47,19 @@ function GlowLayer({
   return (
     <Svg width={size} height={size}>
       <Defs>
-        {/* Web's orb is a FLAT disc with `filter: blur(80px)` on it, and a
-            blurred flat disc is not a linear ramp: it holds close to full
-            value across the original disc, then falls away over the blur
-            radius. A two-stop linear ramp starts fading at the centre, which
-            is why the ported version read as a defined blob where web reads as
-            ambience. These stops trace that profile — flat core, then a
-            Gaussian-ish shoulder — over a box sized to include the falloff. */}
+        {/* Web's orb: a 320px disc under `filter: blur(80px)`. Per the Filter
+            Effects spec the parameter IS the standard deviation — sigma = 80,
+            not 40 as an earlier pass assumed. A disc of radius 160 convolved
+            with sigma 80 peaks at 1 - e^-2 = 0.86 (energy is pushed outward,
+            the core never stays full), reads ~0.44 at the original edge and
+            dies by r = 320. Half the sigma made the core 16% hotter and the
+            falloff twice as tight — which is precisely a "spotlight" where
+            web has a haze. Box = 640 (2 x 320). */}
         <RadialGradient id={gradientId} cx="50%" cy="50%" r="50%">
-          {/* The profile of web's orb, derived rather than eyeballed. Web is a
-              320px DISC of flat colour under `filter: blur(80px)`. CSS blur(r)
-              is a Gaussian with sigma = r/2, so sigma = 40px and the disc's
-              edge smears over about +/-2 sigma = +/-80px. That gives:
-
-                r 0-80    flat core, still ~full value
-                r 160     the original edge — exactly half value
-                r 240     fully faded out
-
-              So the paint box is 480 (2 x 240), and these stops trace that
-              curve. The previous two-stop linear ramp started fading at the
-              centre, which is why it read as a defined blob. */}
-          <Stop offset="0" stopColor={color} stopOpacity={1} />
-          <Stop offset="0.333" stopColor={color} stopOpacity={0.98} />
-          <Stop offset="0.5" stopColor={color} stopOpacity={0.85} />
-          <Stop offset="0.667" stopColor={color} stopOpacity={0.5} />
-          <Stop offset="0.833" stopColor={color} stopOpacity={0.15} />
+          <Stop offset="0" stopColor={color} stopOpacity={0.86} />
+          <Stop offset="0.25" stopColor={color} stopOpacity={0.78} />
+          <Stop offset="0.5" stopColor={color} stopOpacity={0.44} />
+          <Stop offset="0.75" stopColor={color} stopOpacity={0.14} />
           <Stop offset="1" stopColor={color} stopOpacity={0} />
         </RadialGradient>
       </Defs>

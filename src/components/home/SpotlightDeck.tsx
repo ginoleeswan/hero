@@ -42,9 +42,9 @@ export { TABLET_TAB_CLEARANCE };
 // lives here rather than being restated at each call site.
 export const SPOTLIGHT_DECK_BOTTOM_GAP = 24;
 
-/** Half the growth from web's 320 orb box to the 480 we paint, so the bloom's
- *  CENTRE lands where web's does instead of 80pt down and right of it. */
-const GLOW_INSET = 80;
+/** Half the growth from web's 320 orb box to the 640 we paint, so the bloom's
+ *  CENTRE lands where web's does instead of 160pt down and right of it. */
+const GLOW_INSET = 160;
 
 // Web's `pss.orbB` — a second, teal orb on the panel side — is deliberately
 // NOT ported. It is 7% alpha and exists to be sampled by the panel's
@@ -160,13 +160,11 @@ export function SpotlightDeck({
   // either, so scaling it here just pushed it off-screen on wide stages.
   const brand = brandForPublisher(hero.publisher);
   const brandGlow = glowColor(brand?.color, 0.16);
-  // Web's orb BOX is 320, but it carries `filter: blur(80px)`, which spreads
-  // the colour to a visual radius of 240 (see SpotlightGlow's stops for the
-  // arithmetic). Matching the box alone — which the comment above used to call
-  // "exactly" web — reproduced the disc and not the bloom. 480 is that visual
-  // extent; GLOW_INSET re-centres it, because growing a top/left-anchored box
-  // moves its middle.
-  const glowSize = 480;
+  // Web's orb BOX is 320 under blur(80) — sigma 80 per the spec, so the bloom
+  // reaches ~r320: box 640. See SpotlightGlow's stops for the profile.
+  // GLOW_INSET re-centres, because growing a top/left-anchored box moves its
+  // middle.
+  const glowSize = 640;
   // Matches web's `backdropSize` exactly (`app/(tabs)/explore.web.tsx`) — a
   // fraction of the viewport, clamped so it never shrinks to illegible or
   // grows past the stage on very wide screens.
