@@ -47,8 +47,31 @@ function GlowLayer({
   return (
     <Svg width={size} height={size}>
       <Defs>
+        {/* Web's orb is a FLAT disc with `filter: blur(80px)` on it, and a
+            blurred flat disc is not a linear ramp: it holds close to full
+            value across the original disc, then falls away over the blur
+            radius. A two-stop linear ramp starts fading at the centre, which
+            is why the ported version read as a defined blob where web reads as
+            ambience. These stops trace that profile — flat core, then a
+            Gaussian-ish shoulder — over a box sized to include the falloff. */}
         <RadialGradient id={gradientId} cx="50%" cy="50%" r="50%">
+          {/* The profile of web's orb, derived rather than eyeballed. Web is a
+              320px DISC of flat colour under `filter: blur(80px)`. CSS blur(r)
+              is a Gaussian with sigma = r/2, so sigma = 40px and the disc's
+              edge smears over about +/-2 sigma = +/-80px. That gives:
+
+                r 0-80    flat core, still ~full value
+                r 160     the original edge — exactly half value
+                r 240     fully faded out
+
+              So the paint box is 480 (2 x 240), and these stops trace that
+              curve. The previous two-stop linear ramp started fading at the
+              centre, which is why it read as a defined blob. */}
           <Stop offset="0" stopColor={color} stopOpacity={1} />
+          <Stop offset="0.333" stopColor={color} stopOpacity={0.98} />
+          <Stop offset="0.5" stopColor={color} stopOpacity={0.85} />
+          <Stop offset="0.667" stopColor={color} stopOpacity={0.5} />
+          <Stop offset="0.833" stopColor={color} stopOpacity={0.15} />
           <Stop offset="1" stopColor={color} stopOpacity={0} />
         </RadialGradient>
       </Defs>

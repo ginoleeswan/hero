@@ -40,6 +40,27 @@ export type Breakpoint = 'phone' | 'tablet' | 'wide';
  */
 export const BREAKPOINTS = { tablet: 700, wide: 1024 } as const;
 
+/**
+ * iPadOS floats the tab bar at the TOP of the screen, not the bottom, so a
+ * tablet screen has to pad for it the way a phone screen pads for a bottom
+ * bar. Measured on an iPad Pro 13" in both orientations: the pill (Explore /
+ * Arena / Profile / search) spans roughly 19-71pt, sitting directly on top of
+ * whatever the screen draws first. A ~24pt safe-area inset plus this clears it.
+ *
+ * Lives here rather than in SpotlightDeck, where it started, because it is not
+ * the billboard's number — it is every tablet screen's number, and the Arena
+ * proved it by shipping without it: `topInset + 24` put "Today's Debate" at
+ * 52pt, behind a pill that ends at 71.
+ */
+export const TABLET_TAB_CLEARANCE = 48;
+
+/** The top padding a tablet screen needs before it can draw anything, given
+ *  its own safe-area inset. A no-op below the tablet threshold — a phone's tab
+ *  bar is at the bottom, so there is nothing up there to clear. */
+export function tabTopClearance(width: number, insetTop: number): number {
+  return insetTop + (isTabletWidth(width) ? TABLET_TAB_CLEARANCE : 0);
+}
+
 export function breakpointFor(width: number): Breakpoint {
   if (width >= BREAKPOINTS.wide) return 'wide';
   if (width >= BREAKPOINTS.tablet) return 'tablet';

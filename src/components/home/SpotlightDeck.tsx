@@ -18,7 +18,9 @@ import { SpotlightGlow } from './SpotlightGlow';
 import { SpotlightProgress } from './SpotlightProgress';
 import { deckCards, resolveActiveIndex } from './deckSelection';
 import { spotlightLayout, summaryLineBudget } from '../../constants/spotlightLayout';
-import { COLORS, EYEBROW, INK_TEXT } from '../../constants/colors';
+import { COLORS, EYEBROW, INK_TEXT, STAGE_INK } from '../../constants/colors';
+import { TABLET_TAB_CLEARANCE } from '../../constants/layout';
+import { LinearGradient } from 'expo-linear-gradient';
 import { brandForPublisher } from '../../constants/publishers';
 import { ALIGNMENT_LABELS } from '../../lib/characterTaxonomy';
 import type { Hero } from '../../lib/db/heroes';
@@ -29,17 +31,28 @@ const CARD_GAP = 12;
 /** Past this a horizontal drag is a deck flip rather than a stray touch. */
 const SWIPE_THRESHOLD = 44;
 
-// iPadOS floats the tab bar at the TOP, not the bottom. Measured on an iPad
-// Pro 13" simulator in both orientations: the pill (Explore / Arena / Profile
-// / search) spans roughly 19–71pt, sitting directly on the deck's top card. A
-// ~24pt safe-area inset plus this clears it in both orientations.
-export const TABLET_TAB_CLEARANCE = 48;
+// Re-exported from constants/layout, where it moved once the Arena needed it
+// too. Kept as a named export here because SpotlightCarousel and the geometry
+// test both import it from this module.
+export { TABLET_TAB_CLEARANCE };
 
 // Web's spotlight wrap carries `marginBottom: 24` so the billboard doesn't sit
 // flush against the section below it. `spotlightHeight()` (SpotlightCarousel)
 // and the skeleton that mirrors it both need to agree with this number, so it
 // lives here rather than being restated at each call site.
 export const SPOTLIGHT_DECK_BOTTOM_GAP = 24;
+
+/** Half the growth from web's 320 orb box to the 480 we paint, so the bloom's
+ *  CENTRE lands where web's does instead of 80pt down and right of it. */
+const GLOW_INSET = 80;
+
+// Web's `pss.orbB` — a second, teal orb on the panel side — is deliberately
+// NOT ported. It is 7% alpha and exists to be sampled by the panel's
+// `backdrop-filter: blur(18px)`; on web you cannot see it, you only see the
+// glass pick it up. Native's panel is a BlurView at intensity 14 over a 4%
+// fill, which does not attenuate anything like as hard, so the same orb
+// rendered as a cyan cloud sitting INSIDE the panel and tinting the stat
+// pills. Matching web's markup here means missing web's result.
 
 /**
  * Brand hex → rgba at the ambient-glow alpha — the same conversion web's
@@ -147,7 +160,13 @@ export function SpotlightDeck({
   // either, so scaling it here just pushed it off-screen on wide stages.
   const brand = brandForPublisher(hero.publisher);
   const brandGlow = glowColor(brand?.color, 0.16);
-  const glowSize = 320;
+  // Web's orb BOX is 320, but it carries `filter: blur(80px)`, which spreads
+  // the colour to a visual radius of 240 (see SpotlightGlow's stops for the
+  // arithmetic). Matching the box alone — which the comment above used to call
+  // "exactly" web — reproduced the disc and not the bloom. 480 is that visual
+  // extent; GLOW_INSET re-centres it, because growing a top/left-anchored box
+  // moves its middle.
+  const glowSize = 480;
   // Matches web's `backdropSize` exactly (`app/(tabs)/explore.web.tsx`) — a
   // fraction of the viewport, clamped so it never shrinks to illegible or
   // grows past the stage on very wide screens.
@@ -172,6 +191,25 @@ export function SpotlightDeck({
         },
       ]}
     >
+      {/* The immersive stage, from the shared token rather than hand-rolled.
+          `SURFACE_GRADIENT.stageImmersive` (constants/colors.ts) is the web
+          recipe for exactly this — its docstring names Explore and Versus — and
+          `STAGE_INK` is its native counterpart, which Arena, the daily game and
+          the compare picker all already use. Native Explore's deck was the one
+          immersive screen still sitting on flat deepNavy, which is the real
+          reason the publisher orb read as a blob: on every other dark screen,
+          and on web, that bloom lands in an already-graded field.
+
+          STAGE_INK's own docstring is the argument against reaching for SVG
+          here: two screens hand-rolled their own stage gradients and drifted
+          20-25 degrees of hue away from the rest of the app, and the token
+          exists so nobody does that again. */}
+      <LinearGradient
+        colors={[...STAGE_INK]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+
       {showGhostName && (
         <View style={[StyleSheet.absoluteFill, styles.ghostWrap]} pointerEvents="none">
           <Text
@@ -199,14 +237,31 @@ export function SpotlightDeck({
             // `paddingHorizontal` and whose content starts `topClearance`
             // down — so the gutter and topClearance offsets stand in for
             // web's wrap-relative origin.
-            top: topClearance - 60,
-            left: gutter + 140,
+            top: topClearance - 60 - GLOW_INSET,
+            left: gutter + 140 - GLOW_INSET,
           },
         ]}
         pointerEvents="none"
       >
         <SpotlightGlow color={brandGlow} size={glowSize} />
       </View>
+
+      {/* The flat top cap — `SURFACE_GRADIENT.stageImmersive`'s FIRST layer,
+          the one native was missing. Its whole job on web is to keep the
+          bleed-under band (status bar + nav clearance) flat deep-ink so the
+          spotlight blooms BELOW the floating nav. Web gets it twice over: the
+          cap in the zone background, and an opaque header bar on top of that.
+          Native has neither — the tab bar here is a floating translucent pill —
+          so the publisher bloom spilled up around it, which is the halo that
+          web simply does not have. Painted AFTER the glow and BEFORE the cards,
+          and stopped at `topClearance` so it caps the band without dimming the
+          artwork that starts there. */}
+      <LinearGradient
+        colors={[COLORS.deepNavy, COLORS.deepNavy, 'rgba(11,24,32,0)']}
+        locations={[0, 0.55, 1]}
+        style={[styles.stageCap, { height: topClearance }]}
+        pointerEvents="none"
+      />
 
       <View
         style={styles.row}
@@ -285,6 +340,12 @@ export function SpotlightDeck({
               BlurView `intensity` is opaque enough to erase that; kept low so
               the panel reads the same as web's glass, not a frosted card. */}
           <View style={styles.glassPanel}>
+            {/* Measured against web on 2026-08-16, rather than argued about:
+                web's panel composites to rgb(21,33,41) (deepNavy under a 4%
+                white fill and a colourless `backdrop-filter: blur(18px)`), and
+                this renders rgb(21,32,41). One point of green apart. An
+                ultra-thin material was tried as "closer to an untinted blur"
+                and measured rgb(25,36,43) — four points too light. Leave it. */}
             <BlurView intensity={14} tint="dark" style={StyleSheet.absoluteFill} />
             <Text style={styles.eyebrow}>Featured Character</Text>
             {/* The name is the link. A "View profile" button beside a tappable
@@ -372,6 +433,7 @@ export function SpotlightDeck({
 
 const styles = StyleSheet.create({
   stage: { backgroundColor: COLORS.deepNavy, justifyContent: 'center' },
+  stageCap: { position: 'absolute', top: 0, left: 0, right: 0 },
   // `stretch` (not `center`) so the glass panel below runs the full stage
   // height, matching web's `pss.wrap` — see `glassPanel`'s `flex: 1`. The
   // strip's own cards are already given an explicit `height={stageHeight}`
@@ -439,8 +501,11 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: 'Flame-Regular',
+    // Web renders this at 34 — measured live with getComputedStyle — but 34 is
+    // not on FONT_SCALE and 38 is. Web's 34 is pre-existing off-scale debt the
+    // check:ui baseline already counts; porting it verbatim would grow the
+    // count, which the ratchet exists to prevent. Native keeps the scale.
     fontSize: 38,
-    // ~1.24× — clamped Flame clips below 1.22×.
     lineHeight: 47,
     color: COLORS.beige,
     paddingBottom: 2,
@@ -484,6 +549,7 @@ const styles = StyleSheet.create({
   },
   summary: {
     fontFamily: 'Nunito_400Regular',
+    // Web is 14; 14.5 is the FONT_SCALE step. Same call as `name` above.
     fontSize: 14.5,
     lineHeight: 22,
     color: INK_TEXT.muted,

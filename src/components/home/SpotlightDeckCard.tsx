@@ -110,8 +110,21 @@ export function SpotlightDeckCard({
     scale.value = withTiming(1, { duration: DRIFT_MS, easing: Easing.out(Easing.ease) });
   }, [animate, fade, scale]);
 
+  // Web dims sliver art TWICE: SLIVER_OPACITY on the whole button, and
+  // `imgLayer` at 0.4 on any non-active card. Native had only the first, so a
+  // sliver's art ran ~2x brighter than web's — the single most visible
+  // difference in a side-by-side. Folded into the same animated style, on the
+  // name's 250ms cross-fade so promotion brightens the way web transitions it.
+  const targetArtDim = active ? 1 : 0.4;
+  const artDim = useSharedValue(targetArtDim);
+  useEffect(() => {
+    artDim.value = reduced
+      ? targetArtDim
+      : withTiming(targetArtDim, { duration: NAME_FADE_MS, easing: Easing.out(Easing.ease) });
+  }, [targetArtDim, reduced, artDim]);
+
   const artStyle = useAnimatedStyle(() => ({
-    opacity: fade.value,
+    opacity: fade.value * artDim.value,
     transform: [{ scale: scale.value }],
   }));
 
@@ -154,8 +167,9 @@ export function SpotlightDeckCard({
             // These portraits are a profile head-and-shoulders on a flat field: the
             // face sits in the upper third and the sides are background. Anchoring
             // high keeps the head whole even in a 20pt sliver, and spends the loss
-            // on empty colour — the same reasoning as the web plate.
-            contentPosition={{ top: '8%', left: '50%' }}
+            // on empty colour. Web's deck cards pin top: 0 exactly (its PLATE
+            // uses 4% — different crop, different frame).
+            contentPosition={{ top: 0, left: '50%' }}
             style={StyleSheet.absoluteFill}
             recyclingKey={hero.id}
           />
@@ -182,7 +196,13 @@ export function SpotlightDeckCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.deepNavy,
+    // Web's `pss.card` ground exactly — the lighter teal that shows while art
+    // loads and through the dimmed slivers. deepNavy here made every sliver a
+    // darker object than its web twin before the art even arrived.
+    backgroundColor: '#2c4a56',
+    // Web's radius is 14; 16 is the nearest RADIUS_SCALE step, kept
+    // deliberately — a 2pt radius difference is invisible at 130-280pt cards,
+    // and 14 is one of the off-scale values the check:ui ratchet counts.
     borderRadius: 16,
     borderCurve: 'continuous',
   },

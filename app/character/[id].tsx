@@ -27,6 +27,7 @@ import ReAnimated, {
 import Svg, { Path, G } from 'react-native-svg';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { RadialBloom } from '../../src/components/ui/RadialBloom';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -99,6 +100,10 @@ const HEADER_TINT = COLORS.beige;
 // The identity (name + vitals) sits ON the portrait over a dark scrim; the beige
 // content sheet then rises over the hero with a rounded lip, overlapping this far.
 const SHEET_OVERLAP = 28;
+/** Web's stage backdrop is `filter: blur(55px)`. expo-image's blurRadius is in
+ *  points and lands close at this value; the 1.3x scale on the same view keeps
+ *  the blur's own soft edge outside the frame either way. */
+const STAGE_BLUR = 55;
 
 // Web's desktop measures, ported. 1180 is `stageInner`'s cap, 300 the sideCol,
 // and the portrait rides 132pt up into the band — enough that it clearly
@@ -1761,6 +1766,13 @@ export default function CharacterScreen() {
           // the glass chip iOS 26 draws around it.
           headerTintColor: HEADER_TINT,
           headerStyle: { backgroundColor: 'transparent' },
+          // `headerTransparent` does not mean "no bar" on iOS 26 — the system
+          // still draws a glass material, and left to itself it picks a LIGHT
+          // one. Over the split layout's deep-navy band that read as a beige
+          // wash across the top 90pt of the page (sampled: rgb(209,202,190)
+          // fading to navy). Both layouts put dark content under this bar, so
+          // it is told which material to use rather than left to guess.
+          headerBlurEffect: 'dark',
           headerTitleAlign: 'center',
           headerTitle: () => (
             <Animated.Text
@@ -1908,6 +1920,40 @@ export default function CharacterScreen() {
              scrolls that happen to sit side by side. ─────────────────────── */
           <>
             <View style={[styles.stage, { paddingTop: insets.top + 52 }]}>
+              {/* Web's band is four layers deep and native's was one flat navy
+                  rectangle. Ported from `[id].web.tsx`'s stage: the character's
+                  own art blurred behind everything, a scrim for legibility, and
+                  the accent blooms that let the character's colour own the band
+                  instead of every hero getting the same slab. */}
+              {heroImageUrl || heroPortraitUrl ? (
+                <HeroImage
+                  id={id ?? 'hero'}
+                  name={displayName}
+                  imageUrl={heroImageUrl}
+                  portraitUrl={heroPortraitUrl}
+                  contentFit="cover"
+                  contentPosition="top"
+                  blurRadius={STAGE_BLUR}
+                  style={[StyleSheet.absoluteFill, styles.stageBackdrop] as object}
+                  recyclingKey={id ?? 'hero'}
+                />
+              ) : null}
+              <LinearGradient
+                // Web's `stageScrim`, stop for stop.
+                colors={['rgba(11,24,32,0.55)', 'rgba(11,24,32,0.32)', 'rgba(11,24,32,0.82)']}
+                locations={[0, 0.38, 1]}
+                style={StyleSheet.absoluteFill}
+                pointerEvents="none"
+              />
+              {/* Web's name-side bloom sits at 16% across — the same side as the
+                  name, so the colour lands under the type rather than beside it. */}
+              <RadialBloom
+                color={theme.accent}
+                size={520}
+                opacity={0.34}
+                style={styles.bloomName}
+              />
+              <RadialBloom color={COLORS.orange} size={300} opacity={0.1} style={styles.bloomFar} />
               <View style={styles.stageInner}>{identityNode}</View>
             </View>
             <View style={styles.body} onLayout={onSectionsLayout}>
@@ -2127,7 +2173,14 @@ const styles = StyleSheet.create({
   // ── Landscape tablet: web's desktop composition ──────────────────────────
   // The identity BAND. Web's `stage`: deep navy, full bleed, its content capped
   // and centred at 1180 so the name does not drift to the bezel on a 13".
-  stage: { backgroundColor: COLORS.deepNavy, paddingBottom: 34 },
+  // `overflow: hidden` because the backdrop is scaled past the frame and the
+  // blooms hang off its edges — web's stage clips for the same reason.
+  stage: { backgroundColor: COLORS.deepNavy, paddingBottom: 34, overflow: 'hidden' },
+  // Web: blur(55px), scale 1.3, opacity 0.4. The scale is what keeps the blur's
+  // own soft edges outside the frame.
+  stageBackdrop: { opacity: 0.4, transform: [{ scale: 1.3 }] },
+  bloomName: { position: 'absolute', top: -140, left: '4%' },
+  bloomFar: { position: 'absolute', top: 30, right: '8%' },
   stageInner: {
     maxWidth: STAGE_MAX,
     width: '100%',

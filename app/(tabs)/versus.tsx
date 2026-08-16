@@ -16,13 +16,14 @@
 // whole sections. Shares useVersusHub with the web hub (versus.web.tsx) so the
 // data layer never drifts.
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../../src/components/ui/Text';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableTopInset } from '../../src/hooks/useStableTopInset';
+import { tabTopClearance } from '../../src/constants/layout';
 import * as Haptics from 'expo-haptics';
 import { COLORS, STAGE_INK } from '../../src/constants/colors';
 import { SUBHEAD } from '../../src/constants/arenaType';
@@ -43,6 +44,7 @@ export default function VersusScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const topInset = useStableTopInset();
+  const { width: winW } = useWindowDimensions();
   const {
     matchup,
     hookText,
@@ -122,7 +124,11 @@ export default function VersusScreen() {
         <LinearGradient
           colors={[...STAGE_INK]}
           locations={[0, 0.5, 1]}
-          style={[styles.stage, { paddingTop: topInset + 24 }]}
+          // +24 is the stage's own breathing room; `tabTopClearance` is the
+          // floating iPadOS tab pill above it, which this screen never
+          // accounted for. Measured on an iPad Pro 13": the pill ends at 71pt
+          // and "Today's Debate" was drawing at 52.
+          style={[styles.stage, { paddingTop: tabTopClearance(winW, topInset) + 24 }]}
         >
           {/* One column for the stage's content — the gradient behind it stays
               full-bleed (it's the room), but the title, showdown and ledger
