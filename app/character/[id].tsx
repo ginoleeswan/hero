@@ -1792,14 +1792,18 @@ export default function CharacterScreen() {
           // its own hard-coded COLORS.black and read as a dark smudge inside
           // the glass chip iOS 26 draws around it.
           headerTintColor: HEADER_TINT,
+          // `headerTransparent` alone does not mean "no bar" on iOS 26 — left
+          // to pick its own material the system draws a glass one regardless,
+          // and every NAMED blur effect was still LIGHT over the dark band: no
+          // effect gave rgb(209,202,190), 'dark' gave rgb(68,66,62), and
+          // 'systemUltraThinMaterialDark' gave rgb(125,123,120) — each a
+          // neutral grey with none of the band's blue, painted as a slab
+          // across the top of the identity. The fix isn't a different
+          // material, it's none at all: 'none' switches off the glass
+          // entirely, so the header is truly transparent and the band's own
+          // ink runs straight underneath it, uninterrupted.
+          headerBlurEffect: 'none',
           headerStyle: { backgroundColor: 'transparent' },
-          // `headerTransparent` does not mean "no bar" on iOS 26 — the system
-          // still draws a glass material, and left to itself it picks a LIGHT
-          // one. Over the split layout's deep-navy band that read as a beige
-          // wash across the top 90pt of the page (sampled: rgb(209,202,190)
-          // fading to navy). Both layouts put dark content under this bar, so
-          // it is told which material to use rather than left to guess.
-          headerBlurEffect: 'dark',
           headerTitleAlign: 'center',
           headerTitle: () => (
             <Animated.Text
