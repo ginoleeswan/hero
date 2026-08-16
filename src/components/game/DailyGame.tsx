@@ -201,9 +201,28 @@ export function DailyGame() {
   // Was `isWeb && width >= …`, which meant a landscape iPad — wider than most
   // laptops the desktop layout was designed for — rendered the phone column
   // with a small card marooned in 1194pt. The layout is a width question, not a
-  // platform one. Portrait iPads stay single-column: one column is right for a
-  // tall window, and the two-panel stage needs the horizontal room.
-  const isWide = width >= WIDE_BREAKPOINT;
+  // platform one.
+  //
+  // But it is not ONLY a width question, and the line above this one has
+  // claimed "portrait iPads stay single-column" since that fix landed while the
+  // code said `width >= 960` — which a portrait iPad's 1032 satisfies. So it
+  // got the two-panel stage in a 1376pt-tall window: `stylesWide.frame` is
+  // `{ height }`, so the stage stretched, the card's floor reflection grew into
+  // a second full-size card, and the clue stickers — absolutely positioned for
+  // a wide stage — landed off the card, one of them half off the left edge.
+  //
+  // The stage needs horizontal room, so it asks for horizontal room. This is
+  // the same shape-not-width test `tabletShape` makes on the character page;
+  // spelled out here rather than imported because this breakpoint is 960 (web
+  // laptops) rather than the 1024 the layout constants use.
+  const isWide = width >= WIDE_BREAKPOINT && width > height;
+  // ...and a tall tablet is not a big phone either. With `isWide` false a
+  // portrait iPad falls to the single column, which is the right STRUCTURE for
+  // a tall window and the wrong MEASURE for a 1032pt-wide one: the guess grid
+  // stretched the full width and `stage`'s flexGrow opened 640pt of empty navy
+  // between the case file and the lineup, because the stage grows and its
+  // content is packed to the top. Cap the column and centre what is in it.
+  const tallTablet = !isWide && width >= 700;
 
   const topPad = (isWeb ? WEB_NAV_CLEARANCE : insets.top) + 14;
 
@@ -470,7 +489,7 @@ export function DailyGame() {
   // beneath, line-up in a thumb-reach footer.
   const narrowBody = (
     <>
-      <View style={styles.stage}>
+      <View style={[styles.stage, tallTablet && stylesTall.stage]}>
         <View style={styles.cardWrap}>
           <View style={[styles.glow, GLOW, glowStyle]} pointerEvents="none" />
           {renderCard()}
@@ -530,8 +549,10 @@ export function DailyGame() {
             { paddingTop: topPad, paddingBottom: insets.bottom + 20 },
           ]}
         >
-          {headerRow}
-          {showError ? loadingOrError : narrowBody}
+          <View style={tallTablet ? stylesTall.column : undefined}>
+            {headerRow}
+            {showError ? loadingOrError : narrowBody}
+          </View>
         </ScrollView>
       )}
 
@@ -787,6 +808,18 @@ const styles = StyleSheet.create({
 
 // Desktop two-panel layout. Only used when isWide; the constituent pieces reuse
 // the shared `styles` above for everything that doesn't change between layouts.
+// Tablet PORTRAIT — not the desktop stage (that needs landscape) and not the
+// phone column at four times the width. Structure is the phone's; the measure
+// and the vertical distribution are not.
+const stylesTall = StyleSheet.create({
+  // ~620 keeps the guess grid's two columns at a thumb-sized width instead of
+  // stretching each button across half an iPad.
+  column: { width: '100%', maxWidth: 620, alignSelf: 'center', flexGrow: 1 },
+  // The stage grows to fill; with the content packed to `flex-start` all of
+  // that growth showed up as one hole under the case file.
+  stage: { justifyContent: 'center' },
+});
+
 const stylesWide = StyleSheet.create({
   frame: { overflow: 'hidden', paddingHorizontal: 0 },
   shell: {
