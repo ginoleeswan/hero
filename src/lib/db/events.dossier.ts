@@ -43,6 +43,30 @@ export interface EventDossierEvent {
   venueUsualCity: string | null;
   venueUsualLat: number | null;
   venueUsualLon: number | null;
+  /** Roughly how many people go, in a typical recent year. Every other figure
+   *  this page publishes is a MULTIPLE — 11x, 61x, 241x — which is the thing
+   *  nobody else has and is also completely abstract. Half a million people is
+   *  the one number here that needs no explaining. NULL for a broadcast, which
+   *  has no attendance, and for events that do not publish one. */
+  attendance: number | null;
+  /** The qualifier a reader needs — "across two days". */
+  attendanceNote: string | null;
+  /** Where this year sits among its own, by readership. A multiple with no peer
+   *  group is a number floating in space. */
+  editionRank: number | null;
+  editionTotal: number | null;
+  /** The busiest day inside the event's own days. The curve has always known
+   *  which day it was and never said so. */
+  busiestDay: string | null;
+}
+
+/** Another watched event running at the same time. Rare, and the honest reason
+ *  two pages here can show the same spike — PAX 2019 and WonderCon 2019 overlap
+ *  by three days, so one Joker teaser sits inside both windows. */
+export interface EventCollision {
+  slug: string;
+  editionSlug: string;
+  headline: string;
 }
 
 /**
@@ -141,6 +165,7 @@ export interface EventSurge {
 
 export interface EventDossier {
   event: EventDossierEvent;
+  collisions: EventCollision[];
   announcements: EventAnnouncement[];
   revealed: EventRevealed[];
   trailers: EventTrailer[];
@@ -189,6 +214,12 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
       venueCity: typeof e.venue_city === 'string' && e.venue_city ? e.venue_city : null,
       venueLat: num(e.venue_lat),
       venueLon: num(e.venue_lon),
+      attendance: num(e.attendance),
+      attendanceNote:
+        typeof e.attendance_note === 'string' && e.attendance_note ? e.attendance_note : null,
+      editionRank: num(e.edition_rank),
+      editionTotal: num(e.edition_total),
+      busiestDay: typeof e.busiest_day === 'string' && e.busiest_day ? e.busiest_day : null,
       venueUsualCity:
         typeof e.venue_usual_city === 'string' && e.venue_usual_city ? e.venue_usual_city : null,
       venueUsualLat: num(e.venue_usual_lat),
@@ -197,6 +228,14 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
     // Defensive against an unapplied migration: an older RPC has no
     // `announcements` key at all, and the section must then render nothing
     // rather than throw on the page's most-shared route.
+    // Tolerates an RPC without the key, like every other optional block here.
+    collisions: arr(r.collisions)
+      .map((c) => ({
+        slug: String(c.slug ?? ''),
+        editionSlug: String(c.edition_slug ?? ''),
+        headline: String(c.headline ?? ''),
+      }))
+      .filter((c) => c.slug && c.editionSlug),
     announcements: arr(r.announcements)
       .map((a) => ({
         videoId: String(a.video_id ?? ''),

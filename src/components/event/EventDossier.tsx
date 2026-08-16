@@ -312,7 +312,7 @@ export function EventDossier({
   onIndexPress,
   onSeriesPress,
 }: EventDossierProps) {
-  const { event, announcements, revealed, trailers, surges } = dossier;
+  const { event, announcements, revealed, trailers, surges, collisions } = dossier;
   const accent = event.accent ?? COLORS.goldAccent;
   const brand = brandForEvent(event.slug);
   const pad = wide ? EVENT_STAGE.padWide : EVENT_STAGE.pad;
@@ -421,6 +421,27 @@ export function EventDossier({
   // and a column reading 527, 51.1, 33.2, 33.8, 134 does not look like a
   // deliberate ordering by something else; it looks like a sort that failed.
   const rankedSurges = [...surges].sort((a, b) => (b.spike ?? 0) - (a.spike ?? 0));
+
+  // The busiest day and any colliding event, as one line. Built here rather
+  // than in JSX because it is three optional clauses and a join, and a ternary
+  // pyramid inside the masthead is how the masthead got hard to read.
+  const contextLine = useMemo(() => {
+    const parts: string[] = [];
+    if (event.busiestDay) {
+      const d = new Date(`${event.busiestDay}T00:00:00Z`);
+      if (!Number.isNaN(d.getTime())) {
+        parts.push(
+          `${d.toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })} was the busiest day.`,
+        );
+      }
+    }
+    if (collisions.length === 1) {
+      parts.push(`${collisions[0].headline} overlapped this window.`);
+    } else if (collisions.length > 1) {
+      parts.push(`${collisions.map((c) => c.headline).join(' and ')} overlapped this window.`);
+    }
+    return parts.join(' ');
+  }, [event.busiestDay, collisions]);
 
   return (
     <View>
@@ -574,6 +595,13 @@ export function EventDossier({
                   {event.recap}
                 </Text>
               )}
+
+              {/* One quiet line for the two things the page knew and never said.
+                  The curve has always known which day was busiest; and when two
+                  watched events overlap — PAX and WonderCon 2019 share three
+                  days — that is the honest explanation for why both pages can
+                  show the same spike, rather than something to hide. */}
+              {!!contextLine && <Text style={s.contextLine}>{contextLine}</Text>}
             </View>
 
             {/* The measurements. On desktop they become the right-hand column
@@ -607,9 +635,33 @@ export function EventDossier({
               {event.spikeRatio !== null && (
                 <Stat
                   value={`${event.spikeRatio >= 10 ? Math.round(event.spikeRatio) : event.spikeRatio.toFixed(1)}×`}
-                  label="more looked up than usual"
+                  // The multiple had no peer group, and without one it is a
+                  // number floating in space — 9.9x is meaningless until you
+                  // know the event has seven years on record and this is the
+                  // fourth of them. The rank costs four words and turns a
+                  // reading into a standing.
+                  label={
+                    event.editionRank && event.editionTotal && event.editionTotal > 1
+                      ? `more looked up than usual · ${ordinal(event.editionRank)} of ${event.editionTotal} on record`
+                      : 'more looked up than usual'
+                  }
                   accent={accent}
                   big
+                  wide={wide}
+                />
+              )}
+              {/* The one figure on this page a person can picture. Everything
+                  else here is a multiple, which is the thing nobody else
+                  publishes and is also entirely abstract — nobody has an
+                  intuition for what 61x looks like standing in a hall. Half a
+                  million people needs no explaining at all. */}
+              {event.attendance !== null && (
+                <Stat
+                  value={`~${event.attendance.toLocaleString('en-GB')}`}
+                  label={
+                    event.attendanceNote ? `people · ${event.attendanceNote}` : 'people, typically'
+                  }
+                  accent={accent}
                   wide={wide}
                 />
               )}
@@ -1245,6 +1297,15 @@ function LeadTrailer({
  *  the artwork, where it is a fact about the thing rather than a third clause in
  *  a grey line — and where it does the job the grey line never did, which is
  *  telling a reader these are videos. */
+/** 1 -> "1st". English ordinals, including the teens, which are the only part
+ *  anyone ever gets wrong. */
+function ordinal(n: number): string {
+  const rem100 = n % 100;
+  if (rem100 >= 11 && rem100 <= 13) return `${n}th`;
+  const rem10 = n % 10;
+  return `${n}${rem10 === 1 ? 'st' : rem10 === 2 ? 'nd' : rem10 === 3 ? 'rd' : 'th'}`;
+}
+
 function sourceLine(a: AnnouncementGroup): string {
   return a.official ? a.channel : `${a.channel} · reported`;
 }
@@ -1422,6 +1483,16 @@ const s = StyleSheet.create({
   // The edition's recap, which replaces the method note in the masthead. Full
   // strength rather than INK_TEXT.faint: this is the page's headline claim, not
   // a footnote about the instrument.
+  contextLine: {
+    fontFamily: 'Nunito_400Regular',
+    // 13, not 12.5. The scale has a step here and the ratchet counts anything
+    // that is not on it; 12.5 next to a 13 is a distinction nobody can see.
+    fontSize: 13,
+    lineHeight: 18,
+    color: INK_TEXT.faint,
+    maxWidth: 560,
+    marginTop: 10,
+  },
   recap: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 15,
