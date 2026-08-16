@@ -29,6 +29,8 @@ import { spotlightLayout } from '../../src/constants/spotlightLayout';
 import { type Hero } from '../../src/lib/db/heroes';
 import { loginHref } from '../../src/lib/loginRedirect';
 import { RightNowBand } from '../../src/components/web/home/RightNowBand';
+import { ArrivalLead } from '../../src/components/web/home/ArrivalLead';
+import { useArrivalSubject } from '../../src/hooks/useArrivalSubject';
 import { useExploreData } from '../../src/lib/query/exploreQueries';
 // Alignment wording is shared — five surfaces render this chip.
 import { alignmentLabel } from '../../src/lib/characterTaxonomy';
@@ -1574,6 +1576,9 @@ export default function WebHomeScreen() {
   const { recentlyViewed, favourites, forYou } = homeData;
   const homeStarted = homeData.started;
   const totalHeroCount = homeData.heroCount;
+  // The character named by the post this visitor arrived from, when there is
+  // one. See useArrivalSubject — null for direct and organic traffic.
+  const arrival = useArrivalSubject();
   const handlePress = useCallback(
     (id: string) => {
       router.push(`/character/${id}`);
@@ -1617,6 +1622,11 @@ export default function WebHomeScreen() {
           <View
             style={[styles.darkStage, isMobile && (styles.darkStageMobile as object)] as object}
           >
+            {/* Above the spotlight, because it is the one card on this page
+                chosen for THIS visitor: the character whose post brought them
+                here. Null for almost everyone, which is correct — only traffic
+                from a tagged social post names a subject. */}
+            {!!arrival && <ArrivalLead hero={arrival} onPress={handlePress} />}
             {(homeData.spotlight?.length ?? 0) > 0 && (
               <PortraitStripSpotlight
                 heroes={homeData.spotlight!.slice(
