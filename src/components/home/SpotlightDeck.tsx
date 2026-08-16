@@ -258,8 +258,14 @@ export function SpotlightDeck({
           artwork that starts there. */}
       <LinearGradient
         colors={[COLORS.deepNavy, COLORS.deepNavy, 'rgba(11,24,32,0)']}
-        locations={[0, 0.55, 1]}
-        style={[styles.stageCap, { height: topClearance }]}
+        // Web's cap exactly: solid to 44, gone at 96 — and its cards start at
+        // 74, so the glow is still ~40% veiled where it first emerges above
+        // the card tops. This used to die at topClearance sharp, which left a
+        // fully-unveiled bright band hugging the cards' crowns — the halo. The
+        // fade now runs 24pt past the clearance, INTO the card zone, the same
+        // relationship web has.
+        locations={[0, 44 / 96, 1]}
+        style={[styles.stageCap, { height: topClearance + 24 }]}
         pointerEvents="none"
       />
 
