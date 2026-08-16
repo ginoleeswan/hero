@@ -8,6 +8,8 @@ import {
   usePathname,
   useGlobalSearchParams,
   type ErrorBoundaryProps,
+  ThemeProvider,
+  DarkTheme,
 } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
@@ -188,7 +190,9 @@ function WebAuthGate({ fontsReady }: { fontsReady: boolean }) {
               ] as object
             }
           >
-            <Stack screenOptions={{ headerShown: false }} />
+            <ThemeProvider value={APP_DARK_THEME}>
+              <Stack screenOptions={{ headerShown: false }} />
+            </ThemeProvider>
           </View>
           {/* Opaque strip over the iOS status-bar inset, painted the current
               chrome colour so it fuses seamlessly with the system status bar and
@@ -199,6 +203,37 @@ function WebAuthGate({ fontsReady }: { fontsReady: boolean }) {
     </SearchProvider>
   );
 }
+
+// Mirrors APP_DARK_THEME in app/_layout.tsx, and it has to exist here
+// separately because this file is the real web root — the native layout never
+// runs on web, so a provider added only there never applies. That divergence is
+// the whole reason this bug shipped.
+//
+// React Navigation's DefaultTheme paints every screen container
+// `rgb(242,242,242)`. On a page whose own background exactly covers that
+// container you never see it, which is every page here — until iOS Safari.
+//
+// /social-web sizes itself with `height: 100dvh` (correct: the layout viewport
+// on iOS is the LARGE one, and a full-height WebGL scene against it could
+// scroll the fixed TopBar off). But `dvh` SHRINKS when Safari's toolbar
+// expands, while the navigation container stays at the layout viewport's
+// height — so the dark screen pulls up off the bottom edge and reveals a strip
+// of React Navigation's light grey underneath it. On the device it reads as
+// beige at the bottom of the page; in Chrome at the same viewport it is
+// invisible, because there is no toolbar to change dvh.
+//
+// Fixing the container's colour fixes it for every screen at once, which is the
+// right level: no page should have to defend itself against the frame it sits
+// in.
+const APP_DARK_THEME = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: COLORS.orange,
+    background: COLORS.deepNavy,
+    card: COLORS.deepNavy,
+  },
+};
 
 export default function WebRootLayout() {
   // app/+html.tsx paints the document navy at build time (output: 'static'
