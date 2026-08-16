@@ -279,29 +279,6 @@ function ArenaInvite({
   );
 }
 
-/**
- * Whether this dossier's last band is ink rather than paper.
- *
- * The page's spine is ink → paper → ink: the measurement stage, the record, and
- * then the two "who" sections back on ink. So a dossier with a cast or any
- * movers ENDS dark — and the web end-cap, which exists to close a beige sheet
- * onto the ink floor, was drawing its rounded beige foot underneath it. That is
- * the 28pt strip of paper between "Who it moved" and the footer: not a gap, a
- * lip belonging to a sheet that had already closed.
- *
- * Exported rather than inlined at the call site because the condition is a fact
- * about this component's layout, and a route asserting it by hand is a route
- * that goes stale the next time a band moves.
- */
-export function dossierEndsOnInk(dossier: Dossier): boolean {
-  // The paper band only renders when it has a record to show, so an edition
-  // with none of the three ends on ink whatever its readership section does.
-  const hasPaper =
-    dossier.announcements.length > 0 || dossier.revealed.length > 0 || dossier.trailers.length > 0;
-  if (!hasPaper) return true;
-  return dossier.revealed.length > 0 || dossier.surges.length > 0;
-}
-
 export function EventDossier({
   dossier,
   windowLabel,
@@ -410,13 +387,6 @@ export function EventDossier({
       )
     : REST_CAP;
   const restNews = allRestNews.slice(0, newsCap);
-  // A backfilled edition is the readership record and little else: announcements
-  // come from channel_videos, which only starts the day that pipeline shipped,
-  // and movers cannot be reconstructed because heroes.views_daily is a rolling
-  // window. Saying so beats a page that merely looks broken — and the curve
-  // above IS the record, which is the honest thing to point at.
-  const recordOnly = announcements.length === 0 && revealed.length === 0 && surges.length === 0;
-
   // Ordered by the multiple, descending.
   //
   // The stored order is pulse_face_weight — fame blended with spike — which was
@@ -791,15 +761,16 @@ export function EventDossier({
               SAID. Everything below it is derived from attention — a spike, a
               curve, whose readership moved — which records that something
               happened and never what it was. */}
-            {recordOnly && (
-              <View style={s.recordOnly}>
-                <Text style={s.recordOnlyText}>
-                  {trailers.length > 0
-                    ? 'The readership record for this edition, and what dropped inside its window. Mythique began capturing studio announcements in August 2026, so earlier years are measurement only.'
-                    : 'The readership record for this edition. Mythique began capturing studio announcements in August 2026, so earlier years are measurement only — the curve above is what was observed.'}
-                </Text>
-              </View>
-            )}
+            {/* A note used to sit here explaining that announcements only exist
+                from August 2026 and that earlier years are "measurement only".
+                It is gone, and it belongs with "Detected event" and the hub's
+                paragraph about how our crawler finds things: it is our data
+                collection described to a reader who never saw the absence it
+                apologises for. Nobody arriving at SDCC 2019 notices that a
+                section they have never seen is missing; the note's only effect
+                was to tell them, in the first slot of the record, that the page
+                is incomplete. A page owes its reader what it has, not a
+                changelog of what it does not. */}
 
             {leadNews && (
               <Section
@@ -1755,20 +1726,6 @@ const s = StyleSheet.create({
     fontSize: 14.5,
     lineHeight: 20,
     color: PAPER_TEXT.muted,
-  },
-
-  recordOnly: {
-    borderLeftWidth: 2,
-    borderLeftColor: 'rgba(11,24,32,0.14)',
-    paddingLeft: 14,
-    marginBottom: 26,
-  },
-  recordOnlyText: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 14.5,
-    lineHeight: 21,
-    color: PAPER_TEXT.muted,
-    maxWidth: 520,
   },
 
   newsRail: { gap: 14, paddingTop: 22 },

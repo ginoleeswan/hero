@@ -6,7 +6,7 @@ import { View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../../../src/components/ui/Text';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS, INK_TEXT } from '../../../src/constants/colors';
-import { EventDossier, dossierEndsOnInk } from '../../../src/components/event/EventDossier';
+import { EventDossier } from '../../../src/components/event/EventDossier';
 import { useEventEdition } from '../../../src/hooks/useEventEditions';
 import { EventDossierSkeleton } from '../../../src/components/skeletons/EventSkeleton';
 import { PageEndCap } from '../../../src/components/web/PageEndCap';
@@ -72,7 +72,14 @@ export default function EventEditionPageWeb() {
           rounded sheet-close would otherwise draw a 28pt strip of paper under
           "Who it moved", which reads as a rendering seam rather than as the
           page ending. */}
-      {!!dossier && <PageEndCap sheetFoot={!dossierEndsOnInk(dossier)} />}
+      {/* Never a sheet foot. The dossier's own paper band carries
+          PAPER_SHEET_FOOT — rounded bottom corners and the elevation shadow —
+          so it closes itself, and asking the cap to close it again drew a
+          SECOND rounded beige bar under the first with a strip of ink between
+          them. And when the dossier ends on ink (a readership section, or an
+          edition with no paper band at all) there is no sheet to close.
+          Either way the answer is the same, so the condition is gone. */}
+      {!!dossier && <PageEndCap sheetFoot={false} />}
     </View>
   );
 }
