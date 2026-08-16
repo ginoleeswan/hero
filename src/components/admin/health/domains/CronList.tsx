@@ -1,6 +1,13 @@
 // Scheduled-cron list for the Build domain. Each row shows status + Start/Stop
 // and an inline editor (cadence + batch size) that rebuilds the job in place via
 // admin_reschedule_cron.
+//
+// The dot used to mean "pg_cron says this job is active". For the fourteen jobs
+// that only queue an HTTP POST at an edge function that was close to
+// meaningless: the POST returns in 60ms, pg_cron records 'succeeded', and the
+// function behind it could be 500ing for a week without the dot changing
+// colour. It now means "this job ran and the thing it triggered worked", which
+// is the only version of the question worth asking.
 import { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from '../../../ui/Text';
@@ -9,6 +16,32 @@ import { InfoTip } from '../InfoTip';
 import { Button, IconButton, PillGroup, EmptyState } from '../ui';
 import { CADENCE, BATCHES, humanizeCron, cronHelp } from './pipelineHelpers';
 import type { CronJob } from '../../../../lib/db/catalogHealth';
+
+/** Milliseconds as something readable at a glance. A cron that takes a minute
+ *  and a cron that takes 60ms both matter, so the unit changes rather than the
+ *  precision: "42ms", "5.4s", "1m 38s". */
+function duration(ms: number | null): string | null {
+  if (ms == null) return null;
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}m ${s % 60}s`;
+}
+
+/** Green only when the job ran AND whatever it triggered came back clean.
+ *  A paused job is grey, not red — it is off on purpose. */
+function healthColor(c: CronJob): string {
+  if (!c.active) return COLORS.grey;
+  const failing =
+    (c.fails_24h ?? 0) > 0 ||
+    (c.http_fails_24h ?? 0) > 0 ||
+    (c.http_status != null && (c.http_status < 200 || c.http_status > 299));
+  if (failing) return COLORS.red;
+  // Scheduled, enabled, and no run on record — a job that has never fired is
+  // not healthy, but it is not broken either.
+  if (c.last_run == null) return COLORS.yellow;
+  return COLORS.green;
+}
 
 function CronRow({
   c,
@@ -35,10 +68,23 @@ function CronRow({
     setEditing(false);
   };
 
+  // Cost first, because it is what the cadence editor above is for: seeing that
+  // a job averages 24 seconds an hour is the reason to slow it down. Then the
+  // outcome, preferring the edge function's response over pg_cron's, since for
+  // a posting job pg_cron only ever saw the queue accept the request.
+  const cost = duration(c.avg_ms_7d ?? c.last_ms);
+  const outcome =
+    c.http_status != null
+      ? `HTTP ${c.http_status}`
+      : c.last_status
+        ? `last ${c.last_status}`
+        : null;
+  const failures = (c.http_fails_24h ?? 0) + (c.fails_24h ?? 0);
+
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
-        <View style={[styles.dot, { backgroundColor: c.active ? COLORS.green : COLORS.grey }]} />
+        <View style={[styles.dot, { backgroundColor: healthColor(c) }]} />
         <View style={styles.info}>
           <View style={styles.nameRow}>
             <Text style={styles.name} numberOfLines={1}>
@@ -49,8 +95,14 @@ function CronRow({
           <Text style={styles.meta} numberOfLines={1}>
             {humanizeCron(c.schedule)}
             {c.lim != null ? ` · ${c.lim}/run` : ''}
-            {c.last_status ? ` · last ${c.last_status}` : ''}
+            {cost ? ` · ${cost}` : ''}
+            {outcome ? ` · ${outcome}` : ''}
           </Text>
+          {failures > 0 ? (
+            <Text style={styles.fail} numberOfLines={1}>
+              {failures} {failures === 1 ? 'failure' : 'failures'} in the last 24h
+            </Text>
+          ) : null}
         </View>
         <IconButton
           icon="options-outline"
@@ -137,6 +189,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
     color: COLORS.grey,
+    fontVariant: ['tabular-nums'],
+  },
+  fail: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.red,
     fontVariant: ['tabular-nums'],
   },
   editor: { gap: 6, paddingBottom: 10, paddingLeft: 18 },

@@ -185,7 +185,18 @@ export interface CronJob {
   active: boolean;
   lim: number | null; // batch size parsed from the job command (null = no limit, e.g. snapshot)
   last_run: string | null;
+  /** pg_cron's own verdict. For a job that only queues an HTTP POST this is
+   *  always 'succeeded' and says nothing about the work — read http_status. */
   last_status: string | null;
+  last_ms: number | null;
+  avg_ms_7d: number | null;
+  runs_24h: number | null;
+  fails_24h: number | null;
+  /** The edge function's actual response code, or null for SQL-only jobs (which
+   *  have no HTTP call to have an outcome — absent, not missing). */
+  http_status: number | null;
+  http_at: string | null;
+  http_fails_24h: number | null;
 }
 
 export async function getCronStatus(): Promise<CronJob[]> {

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       ad_spend: {
@@ -642,6 +667,42 @@ export type Database = {
           id?: never
           puzzle_date?: string
           won?: boolean
+        }
+        Relationships: []
+      }
+      edge_invocations: {
+        Row: {
+          error_msg: string | null
+          fn: string
+          id: number
+          jobname: string
+          queued_at: string
+          request_id: number | null
+          settled_at: string | null
+          status_code: number | null
+          timed_out: boolean | null
+        }
+        Insert: {
+          error_msg?: string | null
+          fn: string
+          id?: number
+          jobname: string
+          queued_at?: string
+          request_id?: number | null
+          settled_at?: string | null
+          status_code?: number | null
+          timed_out?: boolean | null
+        }
+        Update: {
+          error_msg?: string | null
+          fn?: string
+          id?: number
+          jobname?: string
+          queued_at?: string
+          request_id?: number | null
+          settled_at?: string | null
+          status_code?: number | null
+          timed_out?: boolean | null
         }
         Relationships: []
       }
@@ -3146,6 +3207,7 @@ export type Database = {
         Returns: number
       }
       compute_get_source_coverage: { Args: never; Returns: Json }
+      debut_month_of: { Args: { p_first_issue: Json }; Returns: number }
       enrichment_progress: { Args: never; Returns: Json }
       extract_revealed_cast: { Args: { p_text: string }; Returns: string[] }
       find_duplicate_heroes: {
@@ -3552,6 +3614,15 @@ export type Database = {
         Returns: boolean
       }
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
+      invoke_edge_function: {
+        Args: {
+          p_body?: Json
+          p_fn: string
+          p_jobname?: string
+          p_timeout_ms?: number
+        }
+        Returns: number
+      }
       link_tmdb_cast: { Args: never; Returns: number }
       link_tmdb_cast_if_new_enrichment: { Args: never; Returns: Json }
       mark_hero_unresolved: { Args: { p_hero_id: string }; Returns: undefined }
@@ -3579,6 +3650,7 @@ export type Database = {
         Args: { p_a: string; p_b: string; p_body: string; p_picked: string }
         Returns: Json
       }
+      prune_operational_logs: { Args: never; Returns: Json }
       pulse_face_weight: {
         Args: { p_fame: number; p_spike: number }
         Returns: number
@@ -3591,6 +3663,7 @@ export type Database = {
         Args: { p_issue_id: string }
         Returns: number
       }
+      reconcile_edge_invocations: { Args: never; Returns: number }
       record_daily_completion: {
         Args: { p_surface: string }
         Returns: undefined
@@ -3599,7 +3672,7 @@ export type Database = {
         Args: { p_date: string; p_guesses: number; p_won: boolean }
         Returns: undefined
       }
-      refresh_admin_metrics: { Args: never; Returns: undefined }
+      refresh_admin_metrics: { Args: { p_scope?: string }; Returns: undefined }
       refresh_explore_bundle: { Args: never; Returns: undefined }
       refresh_fame: { Args: never; Returns: number }
       register_film_match: {
@@ -3830,6 +3903,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       relation_kind: [
