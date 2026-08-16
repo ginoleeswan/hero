@@ -14,6 +14,18 @@ const OVERVIEW = `"Date","Video Views","Profile Views","Likes","Comments","Share
 "26 July","58","0","2","0","0"
 `;
 
+// Current exports carry followers; older ones (above) do not.
+const OVERVIEW_WITH_FOLLOWERS = `"Date","Video Views","Profile Views","Likes","Comments","Shares","New followers"
+"16 July","31185","277","39","64","1","112"
+"19 July","80","0","3","0","0","-4"
+`;
+
+// TikTok Ads Manager, which is a different report from either Studio export.
+const ADS = `"Date","Campaign name","Cost (ZAR)","Impressions","Clicks (destination)"
+"2026-07-16","jul-promote","412.50","31185","688"
+"2026-07-18","jul-promote","587.25","35799","921"
+`;
+
 const TODAY = new Date('2026-07-28T12:00:00Z');
 
 describe('parseCsv', () => {
@@ -46,6 +58,7 @@ describe('parseTiktokCsv — overview export', () => {
     expect(parsed.rows).toHaveLength(4);
     expect(parsed.rows[1]).toEqual({
       day: '2026-07-09',
+      followerChange: null,
       views: 869,
       profileViews: 2,
       likes: 167,
@@ -146,5 +159,72 @@ describe('capKey', () => {
     expect(capKey("Who's missing? Who's too low? 👇 #fyp")).toBe('whosmissingwhostoolowfyp');
     expect(capKey(null)).toBe('');
     expect(capKey('X'.repeat(80))).toHaveLength(40);
+  });
+});
+
+describe('follower columns', () => {
+  it('reads new followers when the export has them, including a net loss', () => {
+    const p = parseTiktokCsv(OVERVIEW_WITH_FOLLOWERS, TODAY);
+    expect(p.kind).toBe('overview');
+    if (p.kind !== 'overview') return;
+    expect(p.rows[0].followerChange).toBe(112);
+    // A day that lost followers is real data, not a parse failure.
+    expect(p.rows[1].followerChange).toBe(-4);
+  });
+
+  it('reports unknown rather than zero when the column is absent', () => {
+    const p = parseTiktokCsv(OVERVIEW, TODAY);
+    expect(p.kind).toBe('overview');
+    if (p.kind !== 'overview') return;
+    // Zero would claim a day of no growth we cannot actually see.
+    expect(p.rows[0].followerChange).toBeNull();
+  });
+});
+
+describe('ads export', () => {
+  it('parses spend as cents, never a float', () => {
+    const p = parseTiktokCsv(ADS, TODAY);
+    expect(p.kind).toBe('ads');
+    if (p.kind !== 'ads') return;
+    expect(p.rows[0]).toEqual({
+      campaign: 'jul-promote',
+      day: '2026-07-16',
+      spendMinor: 41250,
+      currency: 'ZAR',
+      impressions: 31185,
+      clicks: 688,
+    });
+    expect(p.rows.reduce((t, r) => t + r.spendMinor, 0)).toBe(99975);
+  });
+
+  it('takes the currency from the cost header', () => {
+    const p = parseTiktokCsv(ADS.replace('Cost (ZAR)', 'Cost (USD)'), TODAY);
+    if (p.kind !== 'ads') throw new Error('expected ads');
+    expect(p.rows[0].currency).toBe('USD');
+  });
+
+  it('is detected before the overview branch, which also has a Date column', () => {
+    // Both files start with Date; whichever branch runs first wins, so the cost
+    // column has to be the discriminator.
+    expect(parseTiktokCsv(ADS, TODAY).kind).toBe('ads');
+  });
+
+  it('skips rows with no cost or no date rather than importing zeroes', () => {
+    const withJunk = ADS + '"","jul-promote","","",""\n"2026-07-19","jul-promote","","",""\n';
+    const p = parseTiktokCsv(withJunk, TODAY);
+    if (p.kind !== 'ads') throw new Error('expected ads');
+    expect(p.rows).toHaveLength(2);
+  });
+
+  it('throws when an ads-shaped file has no usable rows', () => {
+    const empty = '"Date","Campaign name","Cost (ZAR)"\n"","",""\n';
+    expect(() => parseTiktokCsv(empty, TODAY)).toThrow(/no dated rows/i);
+  });
+});
+
+describe('parseTiktokDay ISO support', () => {
+  it('accepts the ISO dates Ads Manager emits', () => {
+    expect(parseTiktokDay('2026-07-18', TODAY)).toBe('2026-07-18');
+    expect(parseTiktokDay('2026-07-18 00:00:00', TODAY)).toBe('2026-07-18');
   });
 });

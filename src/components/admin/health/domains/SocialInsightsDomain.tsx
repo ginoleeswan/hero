@@ -24,6 +24,7 @@ import {
   syncTiktok,
   type SocialPost,
   type SocialPostResult,
+  importAdSpend,
 } from '../../../../lib/db/socialPosts';
 import { parseTiktokCsv } from '../../../../lib/social/tiktokCsv';
 
@@ -154,6 +155,18 @@ export function SocialInsightsDomain() {
         const r = await importChannelStats('tiktok', parsed.rows);
         setSyncMsg(`Imported ${r.imported} days of TikTok channel stats`);
         qc.invalidateQueries({ queryKey: ['socialChannelStats'] });
+      } else if (parsed.kind === 'ads') {
+        // The Ads Manager export, which is a different file from the two Studio
+        // ones. Until this existed nothing in the database knew what a campaign
+        // cost, so cost-per-session had to be worked out by hand and therefore
+        // never was.
+        const r = await importAdSpend('tiktok', parsed.rows);
+        const money = (r.spendMinor / 100).toLocaleString('en-ZA', {
+          style: 'currency',
+          currency: r.currency,
+        });
+        setSyncMsg(`Imported ${r.imported} campaign-days · ${money} total spend`);
+        qc.invalidateQueries({ queryKey: ['adSpend'] });
       } else {
         const r = await importTiktokContentResults(parsed.rows);
         setSyncMsg(

@@ -1,6 +1,11 @@
 import { supabase } from '../supabase';
 import type { Tables } from '../../types/database.generated';
-import { matchByCaption, type TiktokContentRow, type TiktokOverviewRow } from '../social/tiktokCsv';
+import {
+  matchByCaption,
+  type TiktokAdRow,
+  type TiktokContentRow,
+  type TiktokOverviewRow,
+} from '../social/tiktokCsv';
 
 // Social posting queue — published from the local studio (publish-posts.mjs),
 // consumed by the command-center Social lane. Reads/updates are admin-gated RLS.
@@ -86,12 +91,49 @@ export async function importChannelStats(
       likes: r.likes,
       comments: r.comments,
       shares: r.shares,
+      // Only written when the export carried the column. A null must not
+      // overwrite a value a previous import already established.
+      ...(r.followerChange === null ? {} : { follower_change: r.followerChange }),
       imported_at: new Date().toISOString(),
     })),
     { onConflict: 'platform,day' },
   );
   if (error) throw new Error(error.message);
   return { imported: rows.length };
+}
+
+/**
+ * Advertising spend, keyed so it can be costed against real sessions.
+ *
+ * `campaign` is matched to `session_attribution.utm_campaign`, which is why the
+ * destination URLs now carry utm tags: without them every session lands in one
+ * "untitled" bucket and no cost can be attributed to a creative. That is exactly
+ * what happened in July — 1,626 of 1,896 paid sessions arrived untagged.
+ */
+export async function importAdSpend(
+  platform: string,
+  rows: TiktokAdRow[],
+): Promise<{ imported: number; spendMinor: number; currency: string }> {
+  if (rows.length === 0) return { imported: 0, spendMinor: 0, currency: 'ZAR' };
+  const { error } = await supabase.from('ad_spend').upsert(
+    rows.map((r) => ({
+      platform,
+      campaign: r.campaign,
+      day: r.day,
+      spend_minor: r.spendMinor,
+      currency: r.currency,
+      impressions: r.impressions,
+      clicks: r.clicks,
+      imported_at: new Date().toISOString(),
+    })),
+    { onConflict: 'platform,campaign,day' },
+  );
+  if (error) throw new Error(error.message);
+  return {
+    imported: rows.length,
+    spendMinor: rows.reduce((t, r) => t + r.spendMinor, 0),
+    currency: rows[0].currency,
+  };
 }
 
 /** Match the Content export's per-post rows to queue posts by caption and

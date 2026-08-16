@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_spend: {
+        Row: {
+          campaign: string
+          clicks: number | null
+          currency: string
+          day: string
+          imported_at: string
+          impressions: number | null
+          note: string | null
+          platform: string
+          spend_minor: number
+        }
+        Insert: {
+          campaign: string
+          clicks?: number | null
+          currency?: string
+          day: string
+          imported_at?: string
+          impressions?: number | null
+          note?: string | null
+          platform: string
+          spend_minor: number
+        }
+        Update: {
+          campaign?: string
+          clicks?: number | null
+          currency?: string
+          day?: string
+          imported_at?: string
+          impressions?: number | null
+          note?: string | null
+          platform?: string
+          spend_minor?: number
+        }
+        Relationships: []
+      }
       admin_metric_cache: {
         Row: {
           computed_at: string
@@ -2140,6 +2176,8 @@ export type Database = {
         Row: {
           comments: number | null
           day: string
+          follower_change: number | null
+          followers: number | null
           imported_at: string
           likes: number | null
           platform: string
@@ -2150,6 +2188,8 @@ export type Database = {
         Insert: {
           comments?: number | null
           day: string
+          follower_change?: number | null
+          followers?: number | null
           imported_at?: string
           likes?: number | null
           platform: string
@@ -2160,6 +2200,8 @@ export type Database = {
         Update: {
           comments?: number | null
           day?: string
+          follower_change?: number | null
+          followers?: number | null
           imported_at?: string
           likes?: number | null
           platform?: string

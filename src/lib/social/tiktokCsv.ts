@@ -14,6 +14,9 @@ export type TiktokOverviewRow = {
   likes: number;
   comments: number;
   shares: number;
+  /** Net new followers that day. NULL when the export omits the column — older
+   *  Overview exports do, and a zero would be a lie about a day we cannot see. */
+  followerChange: number | null;
 };
 
 export type TiktokContentRow = {
@@ -25,8 +28,23 @@ export type TiktokContentRow = {
   shares: number | null;
 };
 
+/** One campaign-day of spend, from a TikTok Ads Manager export. A different
+ *  file from the two Studio exports, hence a third shape rather than more
+ *  columns on the others. */
+export type TiktokAdRow = {
+  campaign: string;
+  day: string; // ISO yyyy-mm-dd
+  /** Cents. Money is never a float here — see ad_spend.spend_minor. */
+  spendMinor: number;
+  currency: string;
+  impressions: number | null;
+  clicks: number | null;
+};
+
 export type ParsedTiktokCsv =
-  { kind: 'overview'; rows: TiktokOverviewRow[] } | { kind: 'content'; rows: TiktokContentRow[] };
+  | { kind: 'overview'; rows: TiktokOverviewRow[] }
+  | { kind: 'content'; rows: TiktokContentRow[] }
+  | { kind: 'ads'; rows: TiktokAdRow[] };
 
 /** Same caption normalisation ig-sync / tiktok-sync use: lowercase,
  *  letters+digits only, first 40 chars — robust to emoji, punctuation,
@@ -122,6 +140,10 @@ const MONTHS: Record<string, number> = {
  *  today and spans at most a year back, so: assume the current year, and if
  *  that lands in the future, it was last year. */
 export function parseTiktokDay(raw: string, today: Date): string | null {
+  // Ads Manager dates arrive ISO ("2026-07-18", sometimes with a time), where
+  // Studio's are "18 July". Both land here so one date column handles both.
+  const iso = raw.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
   const m = raw.trim().match(/^(\d{1,2})\s+([A-Za-z]+)(?:\s+(\d{4}))?$/);
   if (!m) return null;
   const day = Number(m[1]);
@@ -184,6 +206,38 @@ export function parseTiktokCsv(text: string, today: Date = new Date()): ParsedTi
     return { kind: 'content', rows };
   }
 
+  // Ads Manager export: a cost column is the tell. Checked BEFORE the overview
+  // branch because that file also has a date column, and whichever branch runs
+  // first wins.
+  const costCol = findCol(headers, /^cost|total cost|spend|amount spent/);
+  if (costCol >= 0) {
+    const campCol = findCol(headers, /campaign name|campaign/);
+    const adDateCol = findCol(headers, /^date|day|time/);
+    const imprCol = findCol(headers, /impression/);
+    const clickCol = findCol(headers, /click/);
+    // TikTok labels the column "Cost (ZAR)" when the account has one currency.
+    const currency = (headers[costCol].match(/\(([A-Z]{3})\)/)?.[1] ?? 'ZAR').toUpperCase();
+    const rows: TiktokAdRow[] = [];
+    for (const r of body) {
+      const day = adDateCol >= 0 ? parseTiktokDay(r[adDateCol] ?? '', today) : null;
+      const cost = toNum(r[costCol]);
+      // A row without a day cannot be joined to sessions and a row without a
+      // cost is not spend; either way it is not what this import is for.
+      if (!day || cost === null) continue;
+      rows.push({
+        campaign: campCol >= 0 ? (r[campCol] ?? '').trim() || 'untitled' : 'untitled',
+        day,
+        // Cents. Rounded once, here, rather than repeatedly at every read.
+        spendMinor: Math.round(cost * 100),
+        currency,
+        impressions: imprCol >= 0 ? toNum(r[imprCol]) : null,
+        clicks: clickCol >= 0 ? toNum(r[clickCol]) : null,
+      });
+    }
+    if (rows.length === 0) throw new Error('Ads export had no dated rows with a cost');
+    return { kind: 'ads', rows };
+  }
+
   // Overview export: Date + daily account totals.
   const dateCol = findCol(headers, /^date$/);
   if (dateCol >= 0) {
@@ -192,6 +246,9 @@ export function parseTiktokCsv(text: string, today: Date = new Date()): ParsedTi
     const likesCol = findCol(headers, /like/);
     const commentsCol = findCol(headers, /comment/);
     const sharesCol = findCol(headers, /share/);
+    // "New followers" in current exports; older ones omit it entirely, and a
+    // missing column must read as unknown rather than as a day of no growth.
+    const followerCol = findCol(headers, /new followers|net followers|follower/);
     const rows: TiktokOverviewRow[] = [];
     for (const r of body) {
       const day = parseTiktokDay(r[dateCol] ?? '', today);
@@ -203,12 +260,14 @@ export function parseTiktokCsv(text: string, today: Date = new Date()): ParsedTi
         likes: toNum(r[likesCol]) ?? 0,
         comments: toNum(r[commentsCol]) ?? 0,
         shares: toNum(r[sharesCol]) ?? 0,
+        followerChange: followerCol >= 0 ? toNum(r[followerCol]) : null,
       });
     }
     return { kind: 'overview', rows };
   }
 
   throw new Error(
-    'Unrecognised CSV — expected a TikTok Studio Overview or Content export (Analytics › Download data)',
+    'Unrecognised CSV — expected a TikTok Studio Overview or Content export ' +
+      '(Analytics › Download data), or an Ads Manager report with a Cost column',
   );
 }
