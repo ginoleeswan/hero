@@ -837,8 +837,20 @@ export function EventDossier({
               Placed before the trailers and the readership on purpose — a
               studio SAYING a name outranks a curve that moved afterwards. */}
 
+          {/* Titled "What dropped", which on an event page reads as "the event
+              dropped these". For the nine events that carry a publisher list it
+              is near enough true; for the eleven that do not, the affinity
+              filter is off and the section is a global trailer feed dated to the
+              window — Angoulême 2024, a French bandes dessinées festival, was
+              presenting The Marvels, Sonic 3 and Madame Web as its own. Same
+              correction as the readership section above it, for the same
+              reason. */}
           {trailers.length > 0 && (
-            <Section title="What dropped" note="Trailers published inside the window" wide={wide}>
+            <Section
+              title="What dropped that week"
+              note="Trailers published inside the window. Some came from the event; some simply shared the week."
+              wide={wide}
+            >
               {/* One grid, not a banner over a grid.
                   Measured at 1512: the lead was 1100x380 = 418,000 square
                   points against 415,540 for the entire four-poster row beneath
