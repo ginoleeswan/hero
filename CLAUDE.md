@@ -129,9 +129,31 @@ __tests__/             Jest tests mirroring src/ structure
 
 ### Migrations
 
-- All schema changes must be a new SQL file in `supabase/migrations/` named `YYYYMMDDHHMMSS_description.sql`.
 - Apply via the Supabase MCP tool (`mcp__supabase__apply_migration`), not manually in the dashboard.
+- **Then write the local file using the version the database recorded — never a
+  timestamp you picked.** `apply_migration` assigns its own `YYYYMMDDHHMMSS`.
+  Read it back and name the file to match:
+
+  ```sql
+  select version, name from supabase_migrations.schema_migrations
+  order by version desc limit 1;
+  ```
+
+  This is one step and it is not optional. Audited 2026-08-17: **429 migrations
+  in the database, 427 files in the repo, and only 43 filenames in common** —
+  because the old convention here said "name it `YYYYMMDDHHMMSS_description.sql`"
+  while every migration was applied through MCP, which numbers them itself. Two
+  numbering schemes wrote to one database for four months. The repo can no longer
+  replay: three migrations reference `edition_mover_hits`, and nothing in the
+  repo creates it.
+
 - After applying a migration, regenerate `database.generated.ts`.
+- **Never run `supabase migration fetch`.** It rewrites tracked historical files
+  (reflowing comments, appending `;;`) and writes ~386 duplicates of migrations
+  the repo already has under different names. Recovering from it costs an hour.
+- `CREATE INDEX CONCURRENTLY` cannot run inside `apply_migration`'s transaction.
+  Build it with `execute_sql`, then record it in a migration as
+  `create index if not exists …` (a no-op on this database, correct on a rebuild).
 
 ## Environment variables
 
