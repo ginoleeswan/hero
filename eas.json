@@ -36,6 +36,9 @@
       "distribution": "store",
       "channel": "preview",
       "node": "20.19.4",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "android": {
         "image": "ubuntu-22.04-jdk-17-ndk-r25b",
         "buildType": "apk"
@@ -48,6 +51,9 @@
       "autoIncrement": true,
       "channel": "default",
       "node": "20.19.4",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "ios": {
         "resourceClass": "m-medium"
       }

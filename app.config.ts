@@ -51,6 +51,14 @@ const config: ExpoConfig = {
     bundleIdentifier: IS_DEV ? 'com.ginoswanepoel.mythique.dev' : 'com.ginoswanepoel.mythique',
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
+      // Also set by the expo-image-picker plugin below, deliberately. A
+      // plugin's Info.plist mod only materialises during prebuild, so
+      // `expo config` cannot show it and the string is unverifiable until a
+      // build has already been spent. Declared here it is checkable before
+      // pushing a build, and the value is identical either way. Keep the two
+      // in sync; the picker is a hard CRASH without it, not a warning.
+      NSPhotoLibraryUsageDescription:
+        'Mythique needs access to your photos so you can set your profile picture and cover image.',
       // The phone stays portrait: every phone layout is tuned for one column
       // and a landscape phone gains nothing but a shorter fold.
       UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
@@ -107,6 +115,26 @@ const config: ExpoConfig = {
   plugins: [
     './plugins/withAndroidIconPadding',
     'expo-sharing',
+    [
+      // NOT optional, and not merely a review requirement: iOS TERMINATES an
+      // app that opens the photo library without a purpose string. The picker
+      // is reachable from four live buttons on Profile (avatar and cover, in
+      // both the native and web trees) via useProfile's pickAndUploadAvatar /
+      // pickAndUploadCover, so shipping without this is a crash on a tap any
+      // reviewer would make.
+      //
+      // The library permission only. There is no camera path here — both call
+      // sites are launchImageLibraryAsync — so the plugin's camera and
+      // microphone strings are disabled rather than left to their defaults;
+      // asking for a permission the app never uses is its own rejection.
+      'expo-image-picker',
+      {
+        photosPermission:
+          'Mythique needs access to your photos so you can set your profile picture and cover image.',
+        cameraPermission: false,
+        microphonePermission: false,
+      },
+    ],
     [
       'expo-notifications',
       {

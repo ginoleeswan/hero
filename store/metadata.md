@@ -50,10 +50,13 @@ seasonal push or a new feature. Current:
 ```
 Side-by-side battles with real power stats, a daily debate, and a hero to
 guess every day. Browse 50,000+ characters from comics, anime, film and
-games. Free, no ads.
+games. Free to use.
 ```
 
-163 characters.
+162 characters.
+
+Note this is the field to reach for first when something changes: it is
+editable **without submitting a build**, unlike the description.
 
 ## Description — 4000 max
 
@@ -89,9 +92,10 @@ BROWSE BY WHAT YOU CARE ABOUT
 Universes and franchises, teams and affiliations, family dynasties and
 houses, or straight search across characters, teams, titles and issues.
 
-FREE AND AD-FREE
-No ads, no paywall, no account required to browse or vote. Sign in only if
-you want favourites, your own takes, or a streak that follows you.
+FREE TO USE
+Browse the whole catalogue for free. No account is required to browse or to
+vote. Sign in only if you want favourites, your own takes, or a streak that
+follows you.
 
 Mythique is an independent reference work, not affiliated with, endorsed by,
 or sponsored by any comics publisher, studio or rights holder. Character
@@ -113,6 +117,27 @@ First release.
 ```
 
 ---
+
+## Claims that have to survive a change of plan
+
+The listing says "free to use". It deliberately does **not** say "no ads",
+"ad-free" or "no paywall", and neither should any future edit.
+
+Monetisation is an open question, and those three phrases are the expensive
+kind of promise:
+
+- **The description cannot be edited without submitting a new version.**
+  Promotional text can be changed at any time, so put anything volatile there
+  instead. That asymmetry is the whole reason for this rule.
+- Users hold a listing to its word long after the business changes. "They said
+  ad-free" is a one-star review, and it is a fair one.
+
+"Free to use" stays true if ads arrive, if a premium tier arrives, or if
+neither does. Write claims that survive the roadmap.
+
+Note the in-app support pill still reads "Support Mythique — it's free &
+ad-free" (`app/(tabs)/explore.tsx`). That is accurate today and is the pitch
+for donating; if ads ship, that string goes with them.
 
 ## Trademarks
 
