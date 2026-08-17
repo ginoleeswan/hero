@@ -133,9 +133,21 @@ or scrolls to nothing.
 | Family                  | `FamilyCanvas` + `HouseLinks`                                                                                                 | `useHeroFamily` — see `docs/architecture/family-trees-and-houses.md`       |
 | Footer                  | "Contribute to this character" expanding menu                                                                                 | —                                                                          |
 
-A sticky **Compare** CTA rides the bottom of the screen (`compareStrip`,
-native) and sits contextually on the Power Profile card (web), routing to
-`/compare/[id]/pick`. Modals: `FirstIssueModal`, `ImageLightbox`.
+The **Compare** CTA routes to `/compare/[id]/pick` and takes one of two forms,
+by layout rather than by platform:
+
+- **Phone / tablet-portrait** — a sticky pill riding the bottom of the screen
+  (`compareStrip`). A thumb-reachable bottom CTA, which is what that pattern is
+  for.
+- **Split (tablet landscape) and web** — a contextual chip in the **Power
+  Stats** header, on the stats it acts on. There is no thumb to reach with on a
+  tablet, so the floating pill was only an orange island hovering over the body
+  copy at every scroll position. Native passes it as `Section`'s
+  `leadingAction`, which renders at the row's LEFT edge; because `sectionTitle`
+  is right-aligned with `flex: 1`, the title itself supplies the gap between
+  chip and label at every card width — no spacer.
+
+Modals: `FirstIssueModal`, `ImageLightbox`.
 
 ### The page's card language — there is no white card
 
@@ -376,6 +388,39 @@ No header means no header-anchored effect.
 
 Any other native screen that pairs a transparent header with a dark full-bleed
 top will hit the same thing on iOS 26+.
+
+### The split layout draws its own header
+
+The character page hits the same wall one step further on, and answers it the
+same way: **`headerShown: !split`**. On the split layout the native bar is off
+and `floatingHeader` — a plain absolutely-positioned RN `View`, sibling to the
+ScrollView — carries the back chevron, the animated title, share and
+favourite.
+
+The reason is that `headerTransparent` does not mean "no bar" on iOS 26. The
+system paints its own Liquid Glass material regardless, and **no
+`headerBlurEffect` value turns it off**:
+
+- `'none'` looks like the escape hatch but is literally react-native-screens'
+  own default enum (`RNSBlurEffectStyleNone`,
+  `RNSScreenStackHeaderConfig.mm:84`) — identical to passing nothing.
+- Every named style is a real `UIBlurEffect`, which blends luminance but
+  **discards hue**, so none of them can ever read as the band's navy. Measured
+  over the band: no effect `rgb(209,202,190)`, `'dark'` `rgb(68,66,62)`,
+  `'systemUltraThinMaterialDark'` `rgb(125,123,120)` — each a neutral grey slab
+  across the top of the identity.
+
+Over the phone layout's busy photographic art a light wash is invisible; over
+the split band's flat ink it is a hard seam. A plain `View` paints nothing
+unless told to, so the space between the chips is the band's actual gradient.
+
+Two things were also wrong underneath it, and both had to be fixed before the
+seam went away — **an absolutely-positioned child is placed against its
+parent's PADDING box, not its border box.** The stage's top clearance sat on
+`stage` itself, so the backdrop, scrim and blooms all started below it and the
+top strip was nothing but `stage`'s flat `backgroundColor`. The clearance
+belongs on `stageInner`, which wraps only the identity content that needs to
+clear the status bar — never on the layers meant to bleed under it.
 
 ### One tint for both sides of the header
 

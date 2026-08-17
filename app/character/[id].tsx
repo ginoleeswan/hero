@@ -254,15 +254,22 @@ function SectionPencil({
 function Section({
   title,
   action,
+  leadingAction,
   children,
 }: {
   title: string;
   action?: React.ReactNode;
+  /** Rendered at the row's LEFT edge, opposite the title. `sectionTitle` is
+   *  right-aligned and `sectionTitleGrow` gives it flex:1, so the title itself
+   *  supplies the gap between the two — no spacer, and it stays correct at
+   *  every card width. */
+  leadingAction?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionTitleRow}>
+        {leadingAction ?? null}
         <Text style={[styles.sectionTitle, styles.sectionTitleGrow]}>{title}</Text>
         {action ?? null}
       </View>
@@ -1226,6 +1233,30 @@ export default function CharacterScreen() {
       <View onLayout={registerAnchor('stats')}>
         <Section
           title="Power Stats"
+          /* Compare lives on the stats it acts on — web's placement, ported.
+             SPLIT only: on a phone it stays the thumb-reachable floating pill
+             at the bottom of the screen, which is what that pattern is for. On
+             a tablet there is no thumb to reach with, so the pill was just an
+             orange island hovering over the body copy at every scroll position,
+             anchored to nothing.
+
+             Left edge, opposite the right-aligned title: the action and the
+             label each own an end of the row instead of crowding one corner. */
+          leadingAction={
+            split && data ? (
+              <TouchableOpacity
+                onPress={() =>
+                  router.push(`/compare/${id}/pick?name=${encodeURIComponent(data.stats.name)}`)
+                }
+                style={styles.compareChip}
+                accessibilityRole="button"
+                accessibilityLabel={`Compare ${data.stats.name} with another character`}
+              >
+                <Ionicons name="git-compare-outline" size={14} color={ORANGE_INK} />
+                <Text style={styles.compareChipText}>Compare</Text>
+              </TouchableOpacity>
+            ) : undefined
+          }
           action={
             isAdmin ? (
               <SectionPencil
@@ -1777,10 +1808,17 @@ export default function CharacterScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Native header — transparent over image, fades to beige on scroll */}
+      {/* Native header — transparent over image, fades to beige on scroll.
+          SPLIT ONLY on phone/stacked: on iOS 26 a transparent native header
+          still gets the system's own Liquid Glass material painted over it —
+          confirmed against react-native-screens' source, not fixable from
+          here (see the custom overlay below for the full account) — and a
+          light wash reads fine over busy photographic art but is a visible
+          seam over the split band's flat navy. So `split` skips the native
+          bar entirely and draws its own, further down. */}
       <Stack.Screen
         options={{
-          headerShown: true,
+          headerShown: !split,
           headerTransparent: true,
           headerShadowVisible: false,
           // Chevron only — without this iOS labels the back button with the
@@ -1792,17 +1830,6 @@ export default function CharacterScreen() {
           // its own hard-coded COLORS.black and read as a dark smudge inside
           // the glass chip iOS 26 draws around it.
           headerTintColor: HEADER_TINT,
-          // `headerTransparent` alone does not mean "no bar" on iOS 26 — left
-          // to pick its own material the system draws a glass one regardless,
-          // and every NAMED blur effect was still LIGHT over the dark band: no
-          // effect gave rgb(209,202,190), 'dark' gave rgb(68,66,62), and
-          // 'systemUltraThinMaterialDark' gave rgb(125,123,120) — each a
-          // neutral grey with none of the band's blue, painted as a slab
-          // across the top of the identity. The fix isn't a different
-          // material, it's none at all: 'none' switches off the glass
-          // entirely, so the header is truly transparent and the band's own
-          // ink runs straight underneath it, uninterrupted.
-          headerBlurEffect: 'none',
           headerStyle: { backgroundColor: 'transparent' },
           headerTitleAlign: 'center',
           headerTitle: () => (
@@ -1950,12 +1977,23 @@ export default function CharacterScreen() {
              columns a shared origin; without it they are two unrelated
              scrolls that happen to sit side by side. ─────────────────────── */
           <>
-            <View style={[styles.stage, { paddingTop: insets.top + 52 }]}>
+            <View style={styles.stage}>
               {/* Web's band is four layers deep and native's was one flat navy
                   rectangle. Ported from `[id].web.tsx`'s stage: the character's
                   own art blurred behind everything, a scrim for legibility, and
                   the accent blooms that let the character's colour own the band
-                  instead of every hero getting the same slab. */}
+                  instead of every hero getting the same slab.
+
+                  These layers are absolutely positioned, and an absolute child
+                  is placed relative to its parent's PADDING box, not its border
+                  box — so putting the header's top clearance on `.stage` itself
+                  left a bare strip above all four of them, painted only with
+                  `.stage`'s own flat backgroundColor: exactly the "grey slab
+                  turned solid navy slab" the transparent-header fix didn't
+                  touch. The clearance belongs on `stageInner` below, which
+                  wraps only the identity content that needs pushing clear of
+                  the status bar/nav bar — not on the layers meant to bleed
+                  under it. */}
               {heroImageUrl || heroPortraitUrl ? (
                 <HeroImage
                   id={id ?? 'hero'}
@@ -1985,7 +2023,9 @@ export default function CharacterScreen() {
                 style={styles.bloomName}
               />
               <RadialBloom color={COLORS.orange} size={300} opacity={0.1} style={styles.bloomFar} />
-              <View style={styles.stageInner}>{identityNode}</View>
+              <View style={[styles.stageInner, { paddingTop: insets.top + 52 }]}>
+                {identityNode}
+              </View>
             </View>
             <View style={styles.body} onLayout={onSectionsLayout}>
               <View style={styles.bodyInner}>
@@ -2072,6 +2112,90 @@ export default function CharacterScreen() {
         )}
       </Animated.ScrollView>
 
+      {/* SPLIT's own header — pinned above the ScrollView (a sibling, not a
+          scroll child) so it stays fixed exactly like the native bar it
+          replaces. Ours instead of native's because iOS 26 cannot render a
+          truly clear native header — `headerTransparent` still gets the
+          system's own Liquid Glass material painted over it regardless of
+          `headerBlurEffect` (confirmed against react-native-screens' source:
+          `'none'` is literally its own default enum, not a real "off"), and
+          every named material blends luminance but discards hue, so none of
+          them will ever read as the band's navy — a light wash sits over the
+          band no matter what's asked for. A plain RN View has none of that:
+          it draws nothing unless we paint something, so the space between
+          these chips is genuinely, exactly the band's own gradient. The
+          back/share/favourite controls keep the same chip styling the native
+          header already used, so the swap is invisible except for the seam
+          it removes. */}
+      {split ? (
+        <View
+          style={[styles.floatingHeader, { paddingTop: insets.top + 8 }]}
+          pointerEvents="box-none"
+        >
+          <TouchableOpacity
+            onPress={() => router.back()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.headerBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="chevron-back" size={20} color={HEADER_TINT} />
+          </TouchableOpacity>
+          <Animated.Text
+            maxFontSizeMultiplier={MAX_TYPE_SCALE}
+            numberOfLines={1}
+            style={[
+              styles.headerTitle,
+              styles.floatingHeaderTitle,
+              {
+                opacity: headerNameOpacity,
+                transform: [{ scale: headerNameScale }, { translateY: headerNameY }],
+              },
+            ]}
+          >
+            {displayName}
+          </Animated.Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={handleShare}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Share character"
+            >
+              <SymbolView
+                name="square.and.arrow.up"
+                weight="bold"
+                tintColor={HEADER_TINT}
+                size={22}
+                resizeMode="scaleAspectFit"
+                style={styles.headerShareIcon}
+                fallback={<Ionicons name="share-outline" size={23} color={HEADER_TINT} />}
+              />
+            </TouchableOpacity>
+            {user ? (
+              <TouchableOpacity
+                onPress={toggleFavourite}
+                disabled={favLoading}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={styles.headerBtn}
+                accessibilityRole="button"
+                accessibilityLabel={favourited ? 'Remove from favourites' : 'Add to favourites'}
+                accessibilityState={{ selected: favourited }}
+              >
+                <Ionicons
+                  name={favourited ? 'heart' : 'heart-outline'}
+                  size={20}
+                  color={favourited ? COLORS.red : COLORS.beige}
+                />
+                {favCount > 0 ? (
+                  <Text style={styles.favCount}>{favCount > 999 ? '999+' : String(favCount)}</Text>
+                ) : null}
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+
       {/* Section quick-nav — floating jump bar that fades in once the content
           covers the hero image. pointerEvents follows visibility so the hidden
           bar never swallows taps meant for the portrait. */}
@@ -2155,8 +2279,10 @@ export default function CharacterScreen() {
       ) : null}
 
       {/* Floating Compare pill — hovers above the safe area; content scrolls
-          under it (box-none lets touches pass through the transparent margins). */}
-      {data && (
+          under it (box-none lets touches pass through the transparent margins).
+          Phone only: on the split layout Compare is a chip in the Power Stats
+          header instead, matching web — see `statsNode`. */}
+      {data && !split && (
         <View style={compareStripStyle} pointerEvents="box-none">
           <TouchableOpacity
             onPress={() =>
@@ -2309,6 +2435,28 @@ const styles = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 18,
     color: COLORS.navy,
+  },
+  // SPLIT's own header — see the render-site comment for why this exists
+  // instead of the native bar. Pinned like the native bar was, but a plain
+  // View paints nothing of its own, so the gaps between these chips are the
+  // band's actual gradient, not a system material approximating it.
+  floatingHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+  },
+  // Always over the dark band, never over beige — HEADER_TINT (not
+  // `headerTitle`'s navy, which assumes the phone header's beige backdrop).
+  floatingHeaderTitle: {
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 12,
+    color: HEADER_TINT,
   },
   scroll: { flex: 1 },
 
@@ -2894,6 +3042,28 @@ const styles = StyleSheet.create({
   },
   navChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   navChipTextActive: { color: COLORS.beige },
+
+  // Contextual Compare (split only) — web's `compareBtn`, stop for stop, but
+  // at the header's LEFT edge (`leadingAction`) rather than crowding the admin
+  // pencil on the right.
+  compareChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: COLORS.orange + '40',
+    backgroundColor: COLORS.orange + '0f',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderCurve: 'continuous',
+  },
+  compareChipText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: ORANGE_INK,
+    letterSpacing: 0.2,
+  },
 
   // Floating Compare pill — transparent container, no slab, so the beige page
   // reads to the bottom edge and the pill simply hovers over it.
