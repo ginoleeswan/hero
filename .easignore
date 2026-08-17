@@ -21,8 +21,15 @@
 
 # ── Not needed by a build (verified unreferenced by app code) ────────────────
 
-# App Store marketing output: captures + generated screenshots. 49 MB, and the
-# single biggest win. These are produced BY the app, never consumed by it.
+# App Store marketing output: captures + generated screenshots. Produced BY
+# the app, never consumed by it.
+#
+# NOTE: this rule only removes store/ from the archive if the files are also
+# untracked. Measured on the first two uploads — EAS enumerates the project
+# through git, so .easignore suppresses UNTRACKED files but does not drop
+# content that is committed. Tracked total was 96.7 MB against a 101.8 MB
+# archive; store/ was listed here and survived anyway. That is why
+# store/screenshots/ is gitignored rather than only listed here.
 store/
 
 # Documentation, including ~170 dated design specs.

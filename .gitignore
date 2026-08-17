@@ -123,3 +123,10 @@ assets/silhouettes/raw/
 # data (traffic, revenue, member counts). This repo is public: never commit
 # them. Keep snapshots in a private store. See scripts/design-audit/README.md.
 scripts/design-audit/history/
+
+# Generated App Store frames. `store/captures/` (the hand-driven simulator
+# shots) IS tracked — those are irreplaceable source. These are built FROM
+# them by `node scripts/social/store-screens.mjs` and verified reproducible:
+# regenerating gave 5 of 8 byte-identical and a max channel delta of 1/255 on
+# the rest. 25 MB of derived output does not belong in git.
+store/screenshots/
