@@ -413,7 +413,10 @@ export const slideCss = (F) => {
 export const slide = (F, inner, extra = '') =>
   `<!doctype html><html><head><meta charset="utf-8"><style>${slideCss(F)}${extra}</style></head><body><div class="page"><div class="dots"></div><div class="grain"></div>${inner}<div class="foot"><span class="wm">mythique</span><span class="at">@mythiqueapp</span></div></div></body></html>`;
 
-async function launchChrome() {
+// Exported so a caller rendering a SET can launch once and reuse the browser —
+// `renderPng` launches (and closes) one per call, which is the right shape for
+// a single slide and the wrong one for eight.
+export async function launchChrome() {
   const pw = await import('playwright-core');
   const opts = process.env.PW_CHROME
     ? { executablePath: process.env.PW_CHROME }

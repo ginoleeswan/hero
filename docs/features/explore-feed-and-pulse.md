@@ -68,6 +68,31 @@ Rows that were built for Explore and then cut in the curation pass are
 catalogued in `docs/parked-explore-modules.md` — check there before rebuilding
 an "Origins" wall or an era timeline from scratch.
 
+### The bounce colours live INSIDE the content
+
+Explore is two-tone at the rubber-band: the top over-scroll reveals the
+deep-navy root (matching the spotlight), the bottom reveals beige (matching the
+Library tail). The beige half is `bounceFill`, an apron inside
+`ListFooterComponent` hanging below the last row — **not** a sheet behind the
+list.
+
+It was a screen-level sheet, `position: absolute` over the bottom 55% of the
+**viewport**, sitting behind the transparent `FeedList`. Invisible under the
+opaque feed — except to the iOS 26 glass tab bar. When a scroll view cannot be
+paired with the bar (ours are custom FlatLists; see the
+`disableAutomaticContentInsets` note in `app/(tabs)/_layout.tsx`) the bar's
+edge effect samples the screen's **backdrop** instead of the scroll content, and
+what it found behind the dark feed was that beige sheet. The result was a beige
+gradient haze washing up over the ink behind the tab pill, at any scroll
+position, in both appearances and on every build.
+
+Two things this was *not*, both checked before the real cause was found: it is
+not appearance-driven (it survived `simctl ui … appearance dark`), and it is not
+the dev client's older `UIUserInterfaceStyle: Automatic` binary (the pinned-dark
+iPad client shows it too). Anything painted behind a transparent scroll view on
+a screen with a floating glass bar is a candidate for the same bug — keep bounce
+colours in the content, where only the bounce can reveal them.
+
 ## Freshness engines
 
 Four pipelines keep the "Right Now" band newsy; all are bundle sections, pushed

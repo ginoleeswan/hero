@@ -773,11 +773,6 @@ export default function HomeScreen() {
     // in _layout.tsx (disableTransparentOnScrollEdge + blurEffect).
     <View style={styles.root}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      {/* Two-tone bounce: the deep-navy root shows on the top rubber-band (matching
-          the spotlight), this beige fill shows on the bottom one (matching the
-          beige tail). Both sit behind the transparent FeedList; the opaque content
-          hides the seam — only the over-scroll gaps reveal them. */}
-      <View style={styles.bottomFill} pointerEvents="none" />
       {initialLoaded && (
         <FeedList
           entering={FadeIn.duration(DUR.base)}
@@ -795,12 +790,33 @@ export default function HomeScreen() {
           // the only one still on 0.
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 96 }]}
           ListFooterComponent={
-            <PaperSurface style={styles.footer}>
-              <Pressable style={styles.supportPill} onPress={() => router.push('/support' as Href)}>
-                <Ionicons name="heart" size={13} color={ORANGE_INK} />
-                <Text style={styles.supportText}>Support Mythique — it’s free &amp; ad-free</Text>
-              </Pressable>
-            </PaperSurface>
+            /* Two-tone bounce, done INSIDE the content. The top rubber-band
+               reveals the deep-navy root (matching the spotlight); the bottom
+               one reveals `bounceFill`, a beige apron hanging below the last
+               row (PaperSurface clips, so it hangs off a wrapper instead).
+
+               This used to be a screen-level beige sheet behind the transparent
+               FeedList, covering the bottom 55% of the VIEWPORT at all times —
+               invisible under the opaque feed, except to iOS 26's glass tab
+               bar. When a scroll view can't be paired with the bar (ours are
+               custom FlatLists — see (tabs)/_layout.tsx), the bar's edge
+               effect samples the screen's BACKDROP rather than the scroll
+               content, and what it found behind the dark feed was that beige
+               sheet: a beige gradient haze over the ink, on every build and in
+               both appearances. The apron keeps the bounce colour without
+               giving the glass anything beige to sample. */
+            <View style={styles.footerWrap}>
+              <View style={styles.bounceFill} pointerEvents="none" />
+              <PaperSurface style={styles.footer}>
+                <Pressable
+                  style={styles.supportPill}
+                  onPress={() => router.push('/support' as Href)}
+                >
+                  <Ionicons name="heart" size={13} color={ORANGE_INK} />
+                  <Text style={styles.supportText}>Support Mythique — it’s free &amp; ad-free</Text>
+                </Pressable>
+              </PaperSurface>
+            </View>
           }
           ref={listRef}
           scrollEventThrottle={16}
@@ -860,14 +876,17 @@ const styles = StyleSheet.create({
     borderColor: '#f0e2d0',
   },
   supportText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: ORANGE_INK },
-  // Beige behind the bottom half — revealed on the bottom over-scroll bounce so
-  // it never flashes the deep-navy root under the beige tail.
-  bottomFill: {
+  // The last row plus the beige apron below it — see ListFooterComponent.
+  footerWrap: { position: 'relative' },
+  // Hangs below the content's end: covers the container's bottom padding AND
+  // the bottom over-scroll gap, so the bounce never flashes the deep-navy root
+  // under the beige tail. 600 outruns any physically reachable rubber-band.
+  bounceFill: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0,
-    height: '55%',
+    top: '100%',
+    height: 600,
     backgroundColor: COLORS.beige,
   },
   // Chapter break ("Browse the Universe", "Beyond the Page").
