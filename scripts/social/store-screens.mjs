@@ -28,10 +28,17 @@ import { ROOT, fonts, COLORS, grainUri, renderPng } from './lib.mjs';
 const { GOLD, CREAM, NAVY } = COLORS;
 
 /** Apple's slots. The iPad capture is native; the 6.3" iPhone capture is placed
- *  inside a frame smaller than the canvas, so it downscales rather than up. */
+ *  inside a frame smaller than the canvas, so it downscales rather than up.
+ *
+ *  `bleed` is how far the device runs off the RIGHT edge, as a fraction of its
+ *  own width. It is per-device because the same fraction does not cost the same
+ *  thing: an iPad's chrome sits well inside its frame, so 6% is empty margin,
+ *  while a phone packs its controls against the bezel — 6% there sliced the
+ *  share button and the HERO / MUTANT badges in half. The phone bleeds off the
+ *  BOTTOM only (which every frame already does) and stays flush right. */
 const DEVICES = {
-  ipad13: { w: 2064, h: 2752, capture: 'ipad13', frameW: 0.78 },
-  iphone69: { w: 1320, h: 2868, capture: 'iphone63', frameW: 0.82 },
+  ipad13: { w: 2064, h: 2752, capture: 'ipad13', frameW: 0.78, bleed: 0.06 },
+  iphone69: { w: 1320, h: 2868, capture: 'iphone63', frameW: 0.82, bleed: 0 },
 };
 
 /**
@@ -82,7 +89,7 @@ html,body{width:${dev.w}px;height:${dev.h}px;overflow:hidden;background:${NAVY};
   background:linear-gradient(90deg, ${GOLD}, rgba(224,168,62,0));}
 
 /* One dominant element: the device, offset right and bleeding off the bottom. */
-.shot{position:absolute;width:${frameW}px;right:${Math.round(-frameW * 0.06)}px;
+.shot{position:absolute;width:${frameW}px;right:${Math.round(-frameW * dev.bleed)}px;
   border-radius:${Math.round(dev.w * 0.021)}px;overflow:hidden;
   border:1px solid rgba(245,235,220,.14);
   box-shadow:0 ${Math.round(dev.w * 0.03)}px ${Math.round(dev.w * 0.06)}px rgba(0,0,0,.55);}
