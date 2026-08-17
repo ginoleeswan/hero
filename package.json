@@ -17,6 +17,7 @@
     "smoke": "node scripts/smoke/e2e-smoke.mjs",
     "docs:links": "node scripts/docs/check-doc-links.mjs",
     "check:ui": "node scripts/ui/check-ui-invariants.mjs",
+    "check:store-copy": "node scripts/store/check-copy.mjs",
     "contrast:matrix": "node scripts/ui/contrast-matrix.mjs",
     "build:splash": "node scripts/brand/build-splash.mjs",
     "social": "node scripts/social/studio.mjs",
