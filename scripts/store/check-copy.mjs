@@ -60,6 +60,20 @@ if (kw && /,\s/.test(kw)) {
   bad++;
 }
 
+// No em dashes in store copy. They are a well-known tell for machine-written
+// marketing text, and this listing had six of them in its first draft. A
+// colon, a full stop or a pair of commas says the same thing without the
+// signature. (The product's own UI copy is governed separately by
+// `yarn check:ui`; this rule is about the listing.)
+for (const frag of ['Promotional text', 'Description', "What's New", 'Subtitle', 'App name']) {
+  const t = blockAfter(frag);
+  if (t && t.includes('—')) {
+    const n = (t.match(/—/g) || []).length;
+    console.error(`✗ ${frag} — contains ${n} em dash(es); rewrite with a colon or a full stop`);
+    bad++;
+  }
+}
+
 if (bad) {
   console.error(`\n${bad} problem(s) — fix store/metadata.md before pasting.`);
   process.exit(1);

@@ -50,24 +50,24 @@ seasonal push or a new feature. Current:
 ```
 Side-by-side battles with real power stats, a daily debate, and a hero to
 guess every day. Browse 50,000+ characters from comics, anime, film and
-games — free, no ads.
+games. Free, no ads.
 ```
 
-164 characters.
+163 characters.
 
 ## Description — 4000 max
 
 ```
 Mythique is an encyclopedia for the characters you argue about.
 
-Over 50,000 heroes and villains — from Marvel and DC to anime, manga, film,
-games and creator-owned comics — with powers, origins, first appearances,
+Over 50,000 heroes and villains, from Marvel and DC to anime, manga, film,
+games and creator-owned comics, with powers, origins, first appearances,
 affiliations and the relationships between them.
 
 SETTLE EVERY ARGUMENT
 Put any two characters side by side and compare their power profiles stat by
-stat: intelligence, strength, speed, durability, power and combat. No login
-needed to vote — pick a side in the daily debate and watch the split move.
+stat: intelligence, strength, speed, durability, power and combat. Voting
+needs no login. Pick a side in the daily debate and watch the split move.
 
 A DOSSIER, NOT A STUB
 The characters people actually search for get a proper page: rated power
@@ -76,9 +76,9 @@ the issue that carried it, aliases, affiliations, and a relationship graph of
 allies, enemies and family.
 
 A DAILY REASON TO COME BACK
-Guess the Hero — a new mystery character every day, with a streak to keep.
-Today's Debate — one matchup, one tap, and yesterday's result.
-Team Battle — draft a squad and see how it holds up.
+Guess the Hero: a new mystery character every day, with a streak to keep.
+Today's Debate: one matchup, one tap, and yesterday's result.
+Team Battle: draft a squad and see how it holds up.
 
 WHAT LANDS THIS WEEK
 Trailers, new issues, and what is in cinemas now, alongside the characters
@@ -93,9 +93,9 @@ FREE AND AD-FREE
 No ads, no paywall, no account required to browse or vote. Sign in only if
 you want favourites, your own takes, or a streak that follows you.
 
-Mythique is an independent reference work and is not affiliated with,
-endorsed by, or sponsored by any comics publisher, studio or rights holder.
-Character names and marks belong to their respective owners.
+Mythique is an independent reference work, not affiliated with, endorsed by,
+or sponsored by any comics publisher, studio or rights holder. Character
+names and marks belong to their respective owners.
 ```
 
 ## What's New — 4000 max (first release)
