@@ -13,34 +13,60 @@ it is pasted rather than after a rejection.
 ## App name — 30 max
 
 ```
-Mythique: Hero Encyclopedia
+Mythique: Heroes & Villains
 ```
 
-27 characters. The bare wordmark is 8 and carries no search weight; the
-qualifier is what an unbranded searcher actually types. Publisher names are
-deliberately absent — see **Trademarks**.
+27 characters.
+
+The bare wordmark is 8 and carries no search weight, so the qualifier has to
+work. "Heroes & Villains" is the only role-pair that survives the catalogue's
+actual shape: measured 2026-08-18, 24,189 rows are Marvel/DC and 22,671 are
+not — anime, games, film, horror and creator-owned. Every one of those has
+heroes and villains, so the name stays true wherever the user taps.
+
+Two earlier drafts were rejected for the same reason. "Hero Encyclopedia" spent
+12 of 30 characters on a word almost nobody types into store search.
+"Superhero Database" was worse: the most contested bracket in the store, and a
+promise the Explore tab breaks the moment someone opens Anime or Video Games.
+
+Publisher names are deliberately absent — see **Trademarks**.
 
 ## Subtitle — 30 max
 
 ```
-Comic stats, powers & battles
+Anime, comics, games & film
 ```
 
-28 characters. Names the three things the app actually does, in the order the
-screenshots present them.
+27 characters.
+
+This field carries the BREADTH, and it is the ASO workhorse. The previous
+subtitle ("Comic stats, powers & battles") narrowed to comics — so both
+indexed fields said "comic" while nearly half the catalogue is not, spending
+the two highest-weighted slots excluding half the product.
+
+Naming the four media does what the name cannot: `anime` and `games` are far
+higher-volume searches than any reference word, and they are accurate. The
+name states identity, the subtitle states scope.
 
 ## Keywords — 100 max, comma-separated, no spaces
 
 ```
-superhero,villain,comic,character,power,stat,versus,battle,anime,manga,wiki,database,trivia,fandom
+character,powerscaling,whowouldwin,versus,strongest,battle,stats,manga,superhero,wiki,fandom,trivia
 ```
 
-97 characters. No spaces after commas — Apple counts them, and they buy
-nothing. Singular forms only: Apple stems automatically, so "comic" already
-matches "comics" and the plural would waste four characters.
+99 characters.
 
-Terms already in the app name or subtitle are omitted — Apple indexes those
-fields too, and repeating a term there does not rank it twice.
+`hero` and `villain` are gone because the NAME carries them; `anime`, `comics`,
+`games` and `film` because the SUBTITLE does. Apple indexes all three fields,
+so a term repeated across them buys nothing and costs a slot.
+
+What replaced them is what this audience actually types: `powerscaling` and
+`whowouldwin` are the fandom's own words for exactly what the Arena does, and
+almost nothing in the store competes for them.
+
+No spaces after commas — Apple counts them, and they buy nothing. Singular
+forms only: Apple stems automatically, so "character" already matches
+"characters" and the plural would waste a slot.
 
 ## Promotional text — 170 max
 
