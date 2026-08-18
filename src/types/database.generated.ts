@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       ad_spend: {
@@ -3128,6 +3103,7 @@ export type Database = {
           lag_days: number
         }[]
       }
+      auth_lookup_email: { Args: { p_email: string }; Returns: Json }
       auto_tier_unrated_pool: { Args: never; Returns: number }
       browse_cover_pool: {
         Args: { p_limit: number; p_slug: string }
@@ -3903,9 +3879,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       relation_kind: [

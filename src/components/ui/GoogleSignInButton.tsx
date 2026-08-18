@@ -1,16 +1,17 @@
-import { Pressable, StyleSheet, ActivityIndicator, View } from 'react-native';
-import { Text } from './Text';
 import Svg, { Path } from 'react-native-svg';
-import { COLORS } from '../../constants/colors';
+import { SocialAuthButton } from './SocialAuthButton';
 
 interface Props {
   onPress: () => void;
   loading?: boolean;
 }
 
+/** Google's four-colour G, unaltered — their brand terms require the mark keep
+ *  its own colours. It is the one spot of foreign colour on the screen, and it
+ *  is small enough to read as a logo rather than as a second accent. */
 function GoogleLogo() {
   return (
-    <Svg width={18} height={18} viewBox="0 0 48 48">
+    <Svg width={22} height={22} viewBox="0 0 48 48">
       <Path
         fill="#EA4335"
         d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
@@ -31,56 +32,16 @@ function GoogleLogo() {
   );
 }
 
+/** "Continue with Google", in the SAME shell as the Apple button — see
+ *  SocialAuthButton for why the shell exists. Google's dark-theme button is an
+ *  approved treatment, and the app's deepNavy is the dark it uses. */
 export function GoogleSignInButton({ onPress, loading }: Props) {
   return (
-    <Pressable
-      style={({ pressed }) => [styles.button, (pressed || loading) && styles.pressed]}
-      onPress={onPress}
-      disabled={loading}
-      accessibilityRole="button"
+    <SocialAuthButton
+      logo={<GoogleLogo />}
       accessibilityLabel="Continue with Google"
-    >
-      {loading ? (
-        <ActivityIndicator color={COLORS.navy} />
-      ) : (
-        <>
-          <View style={styles.logo}>
-            <GoogleLogo />
-          </View>
-          <Text style={styles.label}>Continue with Google</Text>
-        </>
-      )}
-    </Pressable>
+      onPress={onPress}
+      loading={loading}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e0d6ca',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  logo: {
-    marginRight: 10,
-  },
-  label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 15,
-    color: COLORS.navy,
-    letterSpacing: 0.2,
-  },
-});

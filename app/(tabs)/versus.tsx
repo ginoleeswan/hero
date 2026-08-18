@@ -23,7 +23,7 @@ import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableTopInset } from '../../src/hooks/useStableTopInset';
-import { tabTopClearance } from '../../src/constants/layout';
+import { tabTopClearance, TAB_BAR_CLEARANCE } from '../../src/constants/layout';
 import * as Haptics from 'expo-haptics';
 import { COLORS, STAGE_INK } from '../../src/constants/colors';
 import { SUBHEAD } from '../../src/constants/arenaType';
@@ -117,7 +117,7 @@ export default function VersusScreen() {
         style={styles.scroll}
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustContentInsets={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
         showsVerticalScrollIndicator={false}
       >
         {/* ── Navy game-lobby stage ── */}

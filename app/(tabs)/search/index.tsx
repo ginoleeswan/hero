@@ -21,6 +21,7 @@ import {
 import { Text } from '../../../src/components/ui/Text';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_BAR_CLEARANCE } from '../../../src/constants/layout';
 import { Stack, useRouter, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -728,7 +729,7 @@ export default function SearchScreen() {
           // could scroll into. Idle keeps only what the floating field needs.
           contentContainerStyle={[
             styles.content,
-            { paddingBottom: insets.bottom + (isIdle ? 72 : 150) },
+            { paddingBottom: insets.bottom + (isIdle ? TAB_BAR_CLEARANCE : 150) },
           ]}
           columnWrapperStyle={listData.length > 0 ? styles.gridRow : undefined}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}

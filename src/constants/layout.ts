@@ -54,6 +54,22 @@ export const BREAKPOINTS = { tablet: 700, wide: 1024 } as const;
  */
 export const TABLET_TAB_CLEARANCE = 48;
 
+/**
+ * What a scrolling screen must reserve at its BOTTOM so its last row is not
+ * parked under the floating tab bar.
+ *
+ * iOS 26 floats the bar over the content rather than insetting it, so every
+ * scroll view has to pad for it itself. Four screens had four different ideas
+ * of how much: Explore reserved `insets.bottom + 96`, the Arena `+ 40`,
+ * Search `+ 72`, and Profile a flat `100` that ignored the safe-area inset
+ * altogether — so on a device with a home indicator its last card sat under
+ * the glass. The bar is ~64pt of pill plus its own margin; 96 clears it with
+ * room to read the row underneath rather than merely uncovering it.
+ *
+ * Always ADD the safe-area inset: this is the bar's height, not the device's.
+ */
+export const TAB_BAR_CLEARANCE = 96;
+
 /** The top padding a tablet screen needs before it can draw anything, given
  *  its own safe-area inset. A no-op below the tablet threshold — a phone's tab
  *  bar is at the bottom, so there is nothing up there to clear. */

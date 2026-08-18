@@ -19,6 +19,8 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Defs, Pattern, Circle, Rect, Path } from 'react-native-svg';
 import { DUR } from '../../src/lib/nativeMotion';
 import { LOGO_MASK_PATH as HERO_LOGO_PATH } from '../../src/constants/logo';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TAB_BAR_CLEARANCE } from '../../src/constants/layout';
 import { useStableTopInset } from '../../src/hooks/useStableTopInset';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -170,6 +172,7 @@ function GuestProfileScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const topInset = useStableTopInset();
+  const insets = useSafeAreaInsets();
 
   return (
     // Entrance parity with Explore — three of four tabs used to snap in
@@ -177,7 +180,10 @@ function GuestProfileScreen() {
     <Animated.View style={styles.container} entering={FadeIn.duration(DUR.base)}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: insets.bottom + TAB_BAR_CLEARANCE },
+        ]}
         automaticallyAdjustContentInsets={false}
         contentInsetAdjustmentBehavior="never"
       >
@@ -244,23 +250,20 @@ function GuestProfileScreen() {
             </View>
           </View>
 
-          {/* Call to action */}
+          {/* Call to action — ONE button. Auth is a single email-first screen
+              now (/(auth)/login routes to sign-in or account-creation from
+              what the database says about the address), so the old pair
+              ("Create Account" / "I already have an account") was asking the
+              user to answer a question the next screen answers for them. */}
           <View style={styles.guestActions}>
             <TouchableOpacity
-              onPress={() => router.push('/(auth)/signup')}
+              onPress={() => router.push(loginHref(pathname))}
               style={styles.guestSignInBtn}
               activeOpacity={0.85}
             >
-              <Text style={styles.guestSignInText}>Create Account</Text>
+              <Text style={styles.guestSignInText}>Sign in or create account</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => router.push(loginHref(pathname))}
-              style={styles.guestSignUpBtn}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.guestSignUpText}>I already have an account</Text>
-            </TouchableOpacity>
+            <Text style={styles.guestActionsHint}>Free. No card, no spam, just a streak.</Text>
           </View>
 
           {/* Support + settings.
@@ -271,7 +274,7 @@ function GuestProfileScreen() {
               without an account by design, so App Review could arrive, never sign
               up, and find no policy anywhere — the 5.1.1 rejection the Legal
               section was added to prevent. */}
-          <View style={styles.guestSection}>
+          <View style={[styles.guestSection, styles.linkStack]}>
             <TouchableOpacity style={styles.supportRow} onPress={openKofi} activeOpacity={0.7}>
               <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
                 <Ionicons name="cafe-outline" size={16} color={COLORS.orange} />
@@ -280,7 +283,6 @@ function GuestProfileScreen() {
               <Text style={styles.accountValue}>Ko-fi</Text>
               <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
             </TouchableOpacity>
-            <View style={styles.divider} />
             <TouchableOpacity
               style={styles.supportRow}
               onPress={() => router.push('/settings')}
@@ -309,6 +311,7 @@ function GuestProfileScreen() {
 export default function ProfileScreen() {
   const router = useRouter();
   const topInset = useStableTopInset();
+  const insets = useSafeAreaInsets();
   const { width: winW } = useWindowDimensions();
   const badgeTile = useBadgeTile(winW);
   const { user } = useAuth();
@@ -600,7 +603,10 @@ export default function ProfileScreen() {
     <Animated.View style={styles.container} entering={FadeIn.duration(DUR.base)}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: insets.bottom + TAB_BAR_CLEARANCE },
+        ]}
         automaticallyAdjustContentInsets={false}
         contentInsetAdjustmentBehavior="never"
         keyboardShouldPersistTaps="handled"
@@ -1020,9 +1026,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.beige,
   },
-  scroll: {
-    paddingBottom: 100,
-  },
+  // paddingBottom is applied at the call site from the safe-area inset plus
+  // TAB_BAR_CLEARANCE. It used to be a flat 100 here, which ignored the inset
+  // entirely — on any device with a home indicator the last card sat under the
+  // floating tab bar.
+  scroll: {},
   disclaimer: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 10,
@@ -1056,6 +1064,13 @@ const styles = StyleSheet.create({
   guestSection: {
     paddingHorizontal: 16,
     marginBottom: 16,
+  },
+  // Support + Settings are two separate floating cards, each with its own
+  // shadow. A hairline divider between them (what was here) is the device for
+  // rows INSIDE one card — between two cards it read as a seam holding them
+  // together, so they touched. They need air instead.
+  linkStack: {
+    gap: 10,
   },
   benefitRow: {
     flexDirection: 'row',
@@ -1102,19 +1117,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.3,
   },
-  guestSignUpBtn: {
-    backgroundColor: 'transparent',
-    borderRadius: 12,
-    borderCurve: 'continuous',
-    paddingVertical: 13,
-    alignItems: 'center',
-    width: '100%',
-  },
-  guestSignUpText: {
-    fontFamily: 'Nunito_700Bold',
-    color: COLORS.navy,
-    fontSize: 15,
-    letterSpacing: 0.2,
+  guestActionsHint: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12.5,
+    color: PAPER_TEXT.faint,
+    textAlign: 'center',
+    marginTop: 2,
   },
   supportRow: {
     flexDirection: 'row',

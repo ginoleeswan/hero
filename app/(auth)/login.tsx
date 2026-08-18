@@ -1,3 +1,30 @@
+// app/(auth)/login.tsx — THE auth screen, singular.
+//
+// Login and signup used to be two nearly identical pages, and the split forced
+// every caller to guess the user's history for them ("Create Account" vs "I
+// already have an account"). Nobody knows that better than the database, so
+// the screen asks for the EMAIL first and lets the answer route the flow:
+//
+//   email step ──→ account with a password  → password step (sign in)
+//              ──→ no account               → create step (choose a password)
+//              ──→ account, OAuth only      → "you signed up with Apple" +
+//                                             the matching button highlighted,
+//                                             because a password prompt there
+//                                             is a dead end the user cannot
+//                                             escape without support mail.
+//
+// /(auth)/signup now redirects here; the web pair keeps its own flow.
+//
+// NO SCROLLVIEW, by design. The illustration is the only flexible element, so
+// the keyboard compresses ART, never controls. A sign-in form that scrolls is a
+// sign-in form whose button can be off-screen. Everything below the art is
+// therefore kept lean enough to survive an iPhone SE with the keyboard up.
+//
+// The card reads top to bottom as: brand anchor -> WHY -> fastest path ->
+// fallback -> escape hatch. The logo lives INSIDE the card as its masthead
+// rather than floating over the artwork, where it belonged to neither the art
+// nor the form; and the headline exists because the screen used to open on a
+// bare form that never said what an account is for.
 import { useRef, useState } from 'react';
 import {
   View,
@@ -6,7 +33,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   useWindowDimensions,
 } from 'react-native';
 import { Text, TextInput } from '../../src/components/ui/Text';
@@ -24,7 +50,8 @@ import { AnimatedInput } from '../../src/components/ui/AnimatedInput';
 import { SocialDivider } from '../../src/components/ui/SocialDivider';
 import { GoogleSignInButton } from '../../src/components/ui/GoogleSignInButton';
 import { AppleSignInButton } from '../../src/components/ui/AppleSignInButton';
-import { postAuthTarget, signupHref } from '../../src/lib/loginRedirect';
+import { postAuthTarget } from '../../src/lib/loginRedirect';
+import { lookupEmail, hasPasswordProvider, oauthProviders } from '../../src/lib/db/authLookup';
 
 // Google Sign-In requires the OAuth URL scheme registered at native build time.
 // Expo Go / dev client builds don't have it — hide the button in those environments.
@@ -32,13 +59,55 @@ const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreCl
 
 const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 
-export default function LoginScreen() {
-  const { signIn, signInWithGoogle, signInWithApple } = useAuth();
+/** Which form is on screen. `sent` is signup's parked confirmation card. */
+type Step = 'email' | 'password' | 'create' | 'oauth' | 'sent';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** "apple" → "Apple" for the you-signed-up-with copy. */
+const providerLabel = (p: string) => p.charAt(0).toUpperCase() + p.slice(1);
+
+/** The one orange CTA every step ends in. A component rather than a helper
+ *  called during render: the handlers it receives close over a ref (the
+ *  password field focus), and a render-time call site is exactly what the
+ *  compiler's refs rule cannot prove safe. As a component, onPress is
+ *  plainly an event handler. */
+function PrimaryButton({
+  label,
+  onPress,
+  loading,
+}: {
+  label: string;
+  onPress: () => void;
+  loading: boolean;
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.button,
+        (pressed || loading) && styles.buttonPressed,
+        loading && styles.buttonLoading,
+      ]}
+      onPress={onPress}
+      disabled={loading}
+    >
+      {loading ? (
+        <ActivityIndicator color="white" />
+      ) : (
+        <Text style={styles.buttonText}>{label}</Text>
+      )}
+    </Pressable>
+  );
+}
+
+export default function AuthScreen() {
+  const { signIn, signUp, signInWithGoogle, signInWithApple } = useAuth();
   const router = useRouter();
   const { returnTo } = useLocalSearchParams<{ returnTo?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
 
+  const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -48,200 +117,343 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [oauthList, setOauthList] = useState<string[]>([]);
 
   const passwordRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
 
-  const illustrationH = screenHeight * 0.46;
-  // Card fills remaining space + the negative overlap so it reaches the bottom edge
-  const cardMinHeight = screenHeight - illustrationH + 40;
+  // ── Step transitions ───────────────────────────────────────────────────────
 
-  const handleLogin = async () => {
+  const handleContinue = async () => {
+    const clean = email.trim();
+    if (!EMAIL_RE.test(clean)) {
+      setError('That does not look like an email address.');
+      return;
+    }
     setLoading(true);
     setError(null);
-    const { error } = await signIn(email, password);
+    try {
+      const found = await lookupEmail(clean);
+      if (!found.exists) {
+        setStep('create');
+      } else if (hasPasswordProvider(found)) {
+        setStep('password');
+      } else {
+        // Account exists but was created with Apple/Google — no password to
+        // type. Route to the button they used instead of a prompt that can
+        // only fail.
+        setOauthList(oauthProviders(found));
+        setStep('oauth');
+      }
+      // Focus lands on the password field once it mounts.
+      setTimeout(() => passwordRef.current?.focus(), 80);
+    } catch {
+      // "Could not check" must never be misread as "no account": a flaky
+      // connection would funnel an existing user into sign-up and a baffling
+      // "already registered" error.
+      setError('Could not reach the server. Check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignIn = async () => {
+    setLoading(true);
+    setError(null);
+    const { error } = await signIn(email.trim(), password);
     if (error) {
-      setError(error.message);
+      setError(
+        /invalid login credentials/i.test(error.message)
+          ? 'Wrong password. Try again, or reset it below.'
+          : error.message,
+      );
       setLoading(false);
     } else {
-      // Return to the page the user was acting on (the AuthGate honors the same
-      // param and would otherwise win the race anyway — both compute this target).
+      // Return to the page the user was acting on (the AuthGate honors the
+      // same param and would otherwise win the race anyway).
       router.replace(postAuthTarget(returnTo));
     }
   };
 
+  const handleCreate = async () => {
+    if (password.length < 8) {
+      setError('Password needs at least 8 characters.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    const { error } = await signUp(email.trim(), password);
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      setStep('sent');
+      setLoading(false);
+    }
+  };
+
+  /** Back to the email step, clearing everything the old email implied.
+   *
+   *  The address is KEPT rather than blanked — "Change" is nearly always
+   *  reached because of a typo, and retyping a whole address to fix one
+   *  character is the wrong tax. It is focused and fully selected instead, so
+   *  typing replaces and a tap-to-place-caret still edits. (Without the
+   *  selection the field simply appended to the old value, which produced
+   *  addresses like `...@gmailbrandnew...@example.com`.) */
+  const changeEmail = () => {
+    setStep('email');
+    setPassword('');
+    setError(null);
+    setOauthList([]);
+    setTimeout(() => emailRef.current?.focus(), 80);
+  };
+
+  const social = (which: 'apple' | 'google') => async () => {
+    const setBusy = which === 'apple' ? setAppleLoading : setGoogleLoading;
+    const call = which === 'apple' ? signInWithApple : signInWithGoogle;
+    setBusy(true);
+    setError(null);
+    const { error } = await call();
+    if (error) setError(error.message);
+    setBusy(false);
+  };
+
+  // ── Pieces ─────────────────────────────────────────────────────────────────
+
+  // The chosen email, shown as a chip on every post-email step so "wait, typo"
+  // is one tap away rather than a restart.
+  const emailChip = (
+    <Pressable onPress={changeEmail} style={styles.emailChip} accessibilityRole="button">
+      <Text style={styles.emailChipText} numberOfLines={1}>
+        {email.trim()}
+      </Text>
+      <Text style={styles.emailChipEdit}>Change</Text>
+    </Pressable>
+  );
+
+  const passwordField = (isNew: boolean) => (
+    <AnimatedInput isFocused={passwordFocused}>
+      <View style={[styles.passwordWrapper, passwordFocused && styles.inputFocused]}>
+        <TextInput
+          ref={passwordRef}
+          style={styles.passwordInput}
+          placeholder={isNew ? 'Choose a password (8+ characters)' : 'Your password'}
+          placeholderTextColor={PAPER_TEXT.placeholder}
+          value={password}
+          onChangeText={setPassword}
+          onFocus={() => setPasswordFocused(true)}
+          onBlur={() => setPasswordFocused(false)}
+          secureTextEntry={!showPassword}
+          autoComplete={isNew ? 'new-password' : 'password'}
+          textContentType={isNew ? 'newPassword' : 'password'}
+          returnKeyType="go"
+          onSubmitEditing={isNew ? handleCreate : handleSignIn}
+          accessibilityLabel={isNew ? 'New password' : 'Password'}
+        />
+        <Pressable
+          onPress={() => setShowPassword((v) => !v)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={styles.eyeToggle}
+          accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+          accessibilityRole="button"
+        >
+          <Ionicons
+            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+            size={20}
+            color={PAPER_TEXT.faint}
+          />
+        </Pressable>
+      </View>
+    </AnimatedInput>
+  );
+
+  // ── Steps ──────────────────────────────────────────────────────────────────
+
+  const stepEmail = (
+    <>
+      {/* No "EMAIL" label. The placeholder reads you@example.com and the
+          keyboard is an email keyboard — a caps-lock label above it was a
+          third way of saying the same thing, and the tallest thing on the
+          screen that carried no information. */}
+      <AnimatedInput isFocused={emailFocused}>
+        <TextInput
+          ref={emailRef}
+          selectTextOnFocus
+          style={[styles.input, emailFocused && styles.inputFocused]}
+          placeholder="you@example.com"
+          placeholderTextColor={PAPER_TEXT.placeholder}
+          value={email}
+          onChangeText={setEmail}
+          onFocus={() => setEmailFocused(true)}
+          onBlur={() => setEmailFocused(false)}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          autoComplete="email"
+          textContentType="emailAddress"
+          returnKeyType="go"
+          onSubmitEditing={handleContinue}
+          accessibilityLabel="Email address"
+        />
+      </AnimatedInput>
+      <PrimaryButton label="Continue" onPress={handleContinue} loading={loading} />
+      {/* Email leads because it is the account the app itself issues; the
+          provider tiles are the shortcut, not the headline. */}
+      {!isExpoGo && (
+        <>
+          <SocialDivider label="or continue with" />
+          <View style={styles.socialRow}>
+            <AppleSignInButton onPress={social('apple')} loading={appleLoading} />
+            <GoogleSignInButton onPress={social('google')} loading={googleLoading} />
+          </View>
+        </>
+      )}
+      <Pressable onPress={() => router.replace('/explore')} style={styles.guestRow}>
+        <Text style={styles.guestText}>Browse without signing in</Text>
+      </Pressable>
+    </>
+  );
+
+  const stepPassword = (
+    <>
+      <Text style={styles.stepTitle}>Welcome back.</Text>
+      {emailChip}
+      {passwordField(false)}
+      <Pressable
+        onPress={() => router.push('/(auth)/forgot-password')}
+        style={styles.forgotWrap}
+        accessibilityRole="link"
+      >
+        <Text style={styles.forgotText}>Forgot password?</Text>
+      </Pressable>
+      <PrimaryButton label="Sign In" onPress={handleSignIn} loading={loading} />
+    </>
+  );
+
+  const stepCreate = (
+    <>
+      <Text style={styles.stepTitle}>New here. Welcome.</Text>
+      {emailChip}
+      {passwordField(true)}
+      <Text style={styles.hint}>Favourites, takes and streaks will follow this account.</Text>
+      <PrimaryButton label="Create Account" onPress={handleCreate} loading={loading} />
+    </>
+  );
+
+  const stepOauth = (
+    <>
+      <Text style={styles.stepTitle}>You’re already here.</Text>
+      {emailChip}
+      <Text style={styles.hint}>
+        This account signs in with {oauthList.map(providerLabel).join(' or ')} — no password needed.
+      </Text>
+      <View style={styles.socialRow}>
+        {!isExpoGo && oauthList.includes('apple') && (
+          <AppleSignInButton onPress={social('apple')} loading={appleLoading} />
+        )}
+        {!isExpoGo && oauthList.includes('google') && (
+          <GoogleSignInButton onPress={social('google')} loading={googleLoading} />
+        )}
+      </View>
+    </>
+  );
+
+  const stepSent = (
+    <>
+      <View style={styles.sentBadge}>
+        <Ionicons name="mail-unread-outline" size={26} color={ORANGE_INK} />
+      </View>
+      <Text style={styles.stepTitle}>Check your email.</Text>
+      <Text style={styles.hint}>
+        A confirmation link is on its way to {email.trim()}. Tap it, then come back and sign in.
+      </Text>
+      <PrimaryButton label="Back to sign in" onPress={changeEmail} loading={loading} />
+    </>
+  );
+
+  const body = {
+    email: stepEmail,
+    password: stepPassword,
+    create: stepCreate,
+    oauth: stepOauth,
+    sent: stepSent,
+  }[step];
+
   return (
     <View style={styles.root}>
-      {/* Logo — floats over illustration, pinned to safe area */}
-      <View style={[styles.logoWrap, { top: insets.top + 16 }]}>
-        <HeroLogo iconSize={36} fontSize={28} color={COLORS.beige} gap={10} />
-      </View>
-
+      {/* Back control. Drawn here rather than as a native header: the group
+          sits inside the root layout's headerless Stack, so a nested
+          Stack.Screen header never rendered. This is the same chip the
+          character page uses over its artwork, and it has the advantage of
+          being immune to iOS 26's glass wash. Hidden when there is nothing to
+          go back to — a cold deep-link into sign-in has no parent, and a
+          chevron that pops the user to a blank stack is worse than none. */}
+      {router.canGoBack() && (
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={[styles.backChip, { top: insets.top + 8 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="chevron-back" size={20} color={COLORS.beige} />
+        </Pressable>
+      )}
       <KeyboardAvoidingView
         style={styles.kav}
         // iOS only: Android's adjustResize already resizes the window, and
         // stacking "padding" on top of it double-shifts the form.
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          showsVerticalScrollIndicator={false}
-          contentInsetAdjustmentBehavior="never"
-          bounces={false}
+        {/* The ONLY flexible element. The keyboard compresses this, never the
+            form; overflow hidden crops the art instead of squashing it. */}
+        <View style={styles.illustrationWrap}>
+          <DotGrid />
+          <Image
+            source={LOGIN_HERO}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            contentPosition="top"
+          />
+          <LinearGradient
+            colors={['transparent', COLORS.navy]}
+            locations={[0.4, 1]}
+            style={styles.scrim}
+          />
+        </View>
+
+        <View
+          style={[
+            styles.card,
+            {
+              paddingBottom: Math.max(insets.bottom + 12, 20),
+              // A short phone in the email step is the tightest fit; cap the
+              // card's share so at least a sliver of stage always survives.
+              maxHeight: screenHeight * 0.78,
+            },
+          ]}
         >
-          {/* Illustration — scrolls away naturally when keyboard opens */}
-          <View style={[styles.illustrationWrap, { height: illustrationH }]}>
-            <DotGrid />
-            <Image
-              source={LOGIN_HERO}
-              style={StyleSheet.absoluteFill}
-              contentFit="contain"
-              contentPosition="top"
-            />
-            <LinearGradient
-              colors={['transparent', COLORS.navy]}
-              locations={[0.4, 1]}
-              style={styles.scrim}
-            />
+          <View style={styles.masthead}>
+            <HeroLogo iconSize={22} fontSize={18} color={COLORS.navy} gap={7} />
           </View>
 
-          {/* Card — overlaps illustration, fills remaining space */}
-          <View
-            style={[
-              styles.card,
-              {
-                minHeight: cardMinHeight,
-                paddingBottom: Math.max(insets.bottom + 12, 20),
-              },
-            ]}
-          >
-            <View style={styles.cardAccent} />
+          {step === 'email' && (
+            <>
+              <Text style={styles.headline}>Keep your streak.</Text>
+              <Text style={styles.headlineSub}>
+                Favourites, takes and a streak that follows you.
+              </Text>
+            </>
+          )}
 
-            {error && (
-              <View style={styles.errorBox}>
-                <Ionicons name="alert-circle-outline" size={15} color={COLORS.red} />
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
+          {error && (
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle-outline" size={15} color={COLORS.red} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
 
-            {!isExpoGo && (
-              <>
-                <AppleSignInButton
-                  onPress={async () => {
-                    setAppleLoading(true);
-                    setError(null);
-                    const { error } = await signInWithApple();
-                    if (error) setError(error.message);
-                    setAppleLoading(false);
-                  }}
-                  loading={appleLoading}
-                />
-                <GoogleSignInButton
-                  onPress={async () => {
-                    setGoogleLoading(true);
-                    setError(null);
-                    const { error } = await signInWithGoogle();
-                    if (error) setError(error.message);
-                    setGoogleLoading(false);
-                  }}
-                  loading={googleLoading}
-                />
-                <SocialDivider label="or continue with email" />
-              </>
-            )}
-
-            <Text style={styles.label}>Email</Text>
-            <AnimatedInput isFocused={emailFocused}>
-              <TextInput
-                style={[styles.input, emailFocused && styles.inputFocused]}
-                placeholder="you@example.com"
-                placeholderTextColor={PAPER_TEXT.placeholder}
-                value={email}
-                onChangeText={setEmail}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoComplete="email"
-                textContentType="emailAddress"
-                returnKeyType="next"
-                onSubmitEditing={() => passwordRef.current?.focus()}
-                accessibilityLabel="Email address"
-              />
-            </AnimatedInput>
-
-            <Text style={styles.label}>Password</Text>
-            <AnimatedInput isFocused={passwordFocused}>
-              <View style={[styles.passwordWrapper, passwordFocused && styles.inputFocused]}>
-                <TextInput
-                  ref={passwordRef}
-                  style={styles.passwordInput}
-                  placeholder="••••••••"
-                  placeholderTextColor={PAPER_TEXT.placeholder}
-                  value={password}
-                  onChangeText={setPassword}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
-                  secureTextEntry={!showPassword}
-                  autoComplete="password"
-                  textContentType="password"
-                  returnKeyType="go"
-                  onSubmitEditing={handleLogin}
-                  accessibilityLabel="Password"
-                />
-                <Pressable
-                  onPress={() => setShowPassword((v) => !v)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  style={styles.eyeToggle}
-                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                  accessibilityRole="button"
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    color={PAPER_TEXT.faint}
-                  />
-                </Pressable>
-              </View>
-            </AnimatedInput>
-
-            <Pressable
-              onPress={() => router.push('/(auth)/forgot-password')}
-              style={styles.forgotWrap}
-              accessibilityRole="link"
-            >
-              <Text style={styles.forgotText}>Forgot password?</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                (pressed || loading) && styles.buttonPressed,
-                loading && styles.buttonLoading,
-              ]}
-              onPress={handleLogin}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.buttonText}>Sign In</Text>
-              )}
-            </Pressable>
-
-            <Pressable onPress={() => router.push(signupHref(returnTo))} style={styles.switchRow}>
-              <Text style={styles.switchText}>Don’t have an account? </Text>
-              <Text style={styles.switchLink}>Sign up</Text>
-            </Pressable>
-
-            <Pressable onPress={() => router.replace('/explore')} style={styles.guestRow}>
-              <Text style={styles.guestText}>Browse without signing in</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
+          {body}
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -252,26 +464,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.navy,
   },
-  logoWrap: {
+  backChip: {
     position: 'absolute',
-    left: 20,
-    zIndex: 10,
+    left: 16,
+    zIndex: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(11,24,32,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
   kav: {
     flex: 1,
     // Beige bg fills the area behind the iOS keyboard's rounded top corners
     backgroundColor: COLORS.beige,
   },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
 
   // Illustration — navy background matches root so any exposed area blends in
   illustrationWrap: {
+    flex: 1,
+    minHeight: 60,
     backgroundColor: COLORS.navy,
     overflow: 'hidden',
   },
@@ -283,15 +497,36 @@ const styles = StyleSheet.create({
     height: '55%',
   },
 
-  // Card — overlaps illustration via marginTop, beige fills to bottom
-  cardAccent: {
-    width: 40,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: COLORS.orange,
+  // Card — content-sized, overlaps the stage by its own radius
+  masthead: {
     alignSelf: 'center',
-    marginBottom: 24,
-    opacity: 0.7,
+    marginBottom: 14,
+  },
+  headline: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 25,
+    lineHeight: 31,
+    color: COLORS.navy,
+    textAlign: 'center',
+  },
+  headlineSub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13.5,
+    lineHeight: 19,
+    color: PAPER_TEXT.faint,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 18,
+  },
+  // Equal-width marks. `gap` here and `flex: 1` on the buttons means the row
+  // divides itself however many providers exist — Android has no Apple button
+  // and the Google mark simply takes the full width.
+  socialRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 2,
+    marginBottom: 4,
   },
   card: {
     // Full-bleed on a phone (the cap is wider than the window), a centred panel
@@ -307,7 +542,40 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     paddingHorizontal: 28,
     paddingTop: 20,
-    marginTop: -40,
+    marginTop: -28,
+  },
+
+  stepTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 24,
+    lineHeight: 30,
+    color: COLORS.navy,
+    marginBottom: 14,
+  },
+
+  emailChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#e0d6ca',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  emailChipText: {
+    flex: 1,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.navy,
+  },
+  emailChipEdit: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: ORANGE_INK,
   },
 
   errorBox: {
@@ -371,6 +639,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
+  hint: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    lineHeight: 19,
+    color: PAPER_TEXT.faint,
+    marginBottom: 14,
+  },
   forgotWrap: {
     alignSelf: 'flex-end',
     marginBottom: 14,
@@ -385,9 +660,10 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: COLORS.orange,
     borderRadius: 12,
+    borderCurve: 'continuous',
     paddingVertical: 16,
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 6,
     shadowColor: COLORS.orange,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
@@ -406,29 +682,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.3,
   },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  switchText: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: PAPER_TEXT.faint,
-  },
-  switchLink: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.navy,
-    textDecorationLine: 'underline',
-  },
   guestRow: {
-    marginTop: 16,
+    marginTop: 12,
     alignItems: 'center',
+    paddingVertical: 4,
   },
   guestText: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     color: PAPER_TEXT.faint,
     textDecorationLine: 'underline',
+  },
+  sentBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(231,115,51,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 12,
   },
 });
