@@ -6,14 +6,29 @@
 // same week's facts still worth reading a year later. See
 // docs/superpowers/specs/2026-07-27-pulse-reach-design.md §3.
 import { supabase } from '../supabase';
+import { matchIsCredible } from '../events/announcementMatch';
+import { statedWindow } from '../events/schedule';
 
 export interface EventDossierEvent {
   slug: string;
   headline: string;
   blurb: string | null;
   accent: string | null;
+  /** Which edition this payload is — '2026'. Set on a frozen edition; null on
+   *  the live row, which is "the event, currently" and has no edition. */
+  editionSlug: string | null;
+  /** The DETECTED window: the contiguous run of elevated days on the event's own
+   *  Wikipedia article. Evidence, and drawn as such — EventCurve shades exactly
+   *  these days. It is not what the page should SAY the dates were: it lags at
+   *  both ends, and anticipation reads the same as attendance. */
   liveFrom: string | null;
   liveTo: string | null;
+  /** The dates to say: the organiser's where someone has entered them
+   *  (src/lib/events/schedule.ts), the detected ones otherwise. */
+  statedFrom: string | null;
+  statedTo: string | null;
+  /** True when the stated dates are published rather than inferred. */
+  statedPublished: boolean;
   ongoing: boolean;
   shape: string | null;
   /** The detection evidence. Publishing it is deliberate — nobody else shows how
@@ -189,14 +204,23 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
   const arr = (v: unknown): Record<string, unknown>[] =>
     Array.isArray(v) ? (v as Record<string, unknown>[]) : [];
 
+  const liveFrom = (e.live_from as string) ?? null;
+  const liveTo = (e.live_to as string) ?? null;
+  const editionSlug = typeof e.edition_slug === 'string' && e.edition_slug ? e.edition_slug : null;
+  const stated = statedWindow(e.slug, editionSlug, { from: liveFrom, to: liveTo });
+
   return {
     event: {
       slug: e.slug,
       headline: e.headline,
       blurb: (e.blurb as string) ?? null,
       accent: (e.accent as string) ?? null,
-      liveFrom: (e.live_from as string) ?? null,
-      liveTo: (e.live_to as string) ?? null,
+      editionSlug,
+      liveFrom,
+      liveTo,
+      statedFrom: stated.from,
+      statedTo: stated.to,
+      statedPublished: stated.published,
       ongoing: e.ongoing === true,
       shape: (e.shape as string) ?? null,
       spikeRatio: num(e.spike_ratio),
@@ -259,7 +283,10 @@ export function mapEventDossier(raw: unknown): EventDossier | null {
           }))
           .filter((c) => c.heroId && c.portraitUrl),
       }))
-      .filter((a) => a.videoId && a.title && a.titleId),
+      // A row that links to the wrong work is worse than a row that isn't here:
+      // it puts a strategy game under a TV series' name and hands it that
+      // series' cast. See announcementMatch.ts for the three that shipped.
+      .filter((a) => a.videoId && a.title && a.titleId && matchIsCredible(a.title, a.titleName)),
     // Tolerates an older RPC with no `revealed` key — the section renders
     // nothing rather than throwing on a shared route.
     revealed: arr(r.revealed)
@@ -327,9 +354,15 @@ export interface EventIndexEntry {
   slug: string;
   headline: string;
   accent: string | null;
-  /** The MOST RECENT edition's window — what a row describes. */
+  /** The MOST RECENT edition's DETECTED window — what a row describes, and what
+   *  its sparkline shades. */
   liveFrom: string | null;
   liveTo: string | null;
+  /** The same window as the row should SAY it — published dates where we have
+   *  them. See src/lib/events/schedule.ts. */
+  statedFrom: string | null;
+  statedTo: string | null;
+  statedPublished: boolean;
   ongoing: boolean;
   spikeRatio: number | null;
   peak: number | null;
@@ -376,6 +409,13 @@ export function mapEventIndex(raw: unknown): EventIndex {
         accent: (e.accent as string) ?? null,
         liveFrom: (e.live_from as string) ?? null,
         liveTo: (e.live_to as string) ?? null,
+        ...(() => {
+          const w = statedWindow(e.slug as string, (e.last_year as string) ?? null, {
+            from: (e.live_from as string) ?? null,
+            to: (e.live_to as string) ?? null,
+          });
+          return { statedFrom: w.from, statedTo: w.to, statedPublished: w.published };
+        })(),
         ongoing: e.ongoing === true,
         spikeRatio: num(e.spike_ratio),
         peak: num(e.peak),

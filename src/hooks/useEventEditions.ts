@@ -73,8 +73,13 @@ export function useEventEdition(
       notFound: isSuccess && !!slug && !!edition && !dossier,
       failed: isError,
       retry: () => void refetch(),
-      windowLabel: dossier ? formatWindow(dossier.event.liveFrom, dossier.event.liveTo) : null,
-      windowDays: dossier ? windowLengthDays(dossier.event.liveFrom, dossier.event.liveTo) : null,
+      // The STATED window, not the detected one: the masthead is telling a
+      // reader when the event was, and where the organiser published dates those
+      // are the dates. The curve still shades what was detected.
+      windowLabel: dossier ? formatWindow(dossier.event.statedFrom, dossier.event.statedTo) : null,
+      windowDays: dossier
+        ? windowLengthDays(dossier.event.statedFrom, dossier.event.statedTo)
+        : null,
     };
   }, [data, isLoading, isError, isSuccess, refetch, slug, edition]);
 }

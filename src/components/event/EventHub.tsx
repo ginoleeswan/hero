@@ -144,7 +144,7 @@ export function EventHub({
           {hub.isLive ? (
             <>
               <Text style={s.window}>
-                {formatWindow(hub.liveFrom, hub.liveTo) ?? 'Running now'}
+                {formatWindow(hub.statedFrom, hub.statedTo) ?? 'Running now'}
               </Text>
               {!!liveEdition && (
                 <Pressable
@@ -374,7 +374,7 @@ export function EditionList({
               <View style={s.entryHead}>
                 {!wide && yearText}
                 <Text style={[s.entryWindow, live ? { color: accent } : null]} numberOfLines={1}>
-                  {live ? 'Happening now' : (formatWindow(e.liveFrom, e.liveTo) ?? '—')}
+                  {live ? 'Happening now' : (formatWindow(e.statedFrom, e.statedTo) ?? '—')}
                 </Text>
               </View>
 
@@ -396,7 +396,7 @@ export function EditionList({
                   made a rough signal look like a laboratory result. */}
               <Text style={s.meta}>
                 {[
-                  live ? (formatWindow(e.liveFrom, e.liveTo) ?? null) : null,
+                  live ? (formatWindow(e.statedFrom, e.statedTo) ?? null) : null,
                   !live && biggest && e.spikeRatio !== null && e.spikeRatio > 1
                     ? 'Biggest year on record'
                     : null,

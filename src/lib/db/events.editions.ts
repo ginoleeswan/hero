@@ -19,6 +19,7 @@
 // because a frozen edition is by definition not running, and everything else
 // lines up field for field.
 import { supabase } from '../supabase';
+import { statedWindow } from '../events/schedule';
 import { mapEventDossier, type EventDossier } from './events.dossier';
 
 /** One edition, as listed on the hub. Enough to choose a year, no more. */
@@ -26,8 +27,13 @@ export interface EventEditionSummary {
   /** URL segment: '2026', or '2026-08' when a year holds two (Comiket). */
   editionSlug: string;
   headline: string;
+  /** The detected window — evidence, and what the row's figures are drawn from. */
   liveFrom: string | null;
   liveTo: string | null;
+  /** What the row should SAY the dates were: the organiser's where someone has
+   *  entered them (src/lib/events/schedule.ts), the detected ones otherwise. */
+  statedFrom: string | null;
+  statedTo: string | null;
   spikeRatio: number | null;
   peak: number | null;
   /** One sentence on what actually happened, where it can be stated plainly.
@@ -54,9 +60,13 @@ export interface EventHub {
   enwikiTitle: string | null;
   /** True only while the detector currently calls it live. */
   isLive: boolean;
-  /** The CURRENT window — meaningful only while live; editions carry their own. */
+  /** The CURRENT detected window — meaningful only while live; editions carry
+   *  their own. */
   liveFrom: string | null;
   liveTo: string | null;
+  /** The current window as the page should say it — published where known. */
+  statedFrom: string | null;
+  statedTo: string | null;
   shape: string | null;
   spikeRatio: number | null;
   /** The loudest edition on record, so a row can be drawn in proportion. */
@@ -86,6 +96,13 @@ export function mapEventHub(raw: unknown): EventHub | null {
     isLive: r.is_live === true,
     liveFrom: (r.live_from as string) ?? null,
     liveTo: (r.live_to as string) ?? null,
+    ...(() => {
+      const w = statedWindow(r.slug as string, null, {
+        from: (r.live_from as string) ?? null,
+        to: (r.live_to as string) ?? null,
+      });
+      return { statedFrom: w.from, statedTo: w.to };
+    })(),
     shape: (r.shape as string) ?? null,
     spikeRatio: num(r.spike_ratio),
     bestSpike: num(r.best_spike),
@@ -95,6 +112,13 @@ export function mapEventHub(raw: unknown): EventHub | null {
         headline: String(e.headline ?? r.headline),
         liveFrom: (e.live_from as string) ?? null,
         liveTo: (e.live_to as string) ?? null,
+        ...(() => {
+          const w = statedWindow(r.slug as string, String(e.edition_slug ?? ''), {
+            from: (e.live_from as string) ?? null,
+            to: (e.live_to as string) ?? null,
+          });
+          return { statedFrom: w.from, statedTo: w.to };
+        })(),
         spikeRatio: num(e.spike_ratio),
         peak: num(e.peak),
         recap: typeof e.recap === 'string' && e.recap ? e.recap : null,

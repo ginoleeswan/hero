@@ -28,6 +28,7 @@ import { COLORS, SURFACE, INK_TEXT, PAPER_TEXT } from '../../constants/colors';
 import { brandForEvent, fitMark } from '../../constants/eventBrands';
 import { EVENT_STAGE, EVENT_PAPER } from '../../constants/eventGeometry';
 import { EventCurve } from './EventCurve';
+import { eventLiveWord } from '../../lib/home/pulse';
 import { PAPER_SHEET_SURFACE, PAPER_SHEET_FOOT } from '../ui/PaperSheet';
 import { PaperCard } from '../ui/PaperCard';
 import {
@@ -296,6 +297,14 @@ export function EventDossier({
 }: EventDossierProps) {
   const { event, announcements, revealed, trailers, surges, collisions } = dossier;
   const accent = event.accent ?? COLORS.goldAccent;
+  // `ongoing` says the detector still sees the run, which is a claim about
+  // pageviews and not about a calendar: on 2026-08-25 it was true of Gamescom,
+  // whose doors opened the next morning. Where the dates are published, say what
+  // is actually true of them.
+  const liveWord = useMemo(
+    () => eventLiveWord(event.statedFrom, event.statedTo, event.shape, event.statedPublished),
+    [event.statedFrom, event.statedTo, event.shape, event.statedPublished],
+  );
   const brand = brandForEvent(event.slug);
   const pad = wide ? EVENT_STAGE.padWide : EVENT_STAGE.pad;
   const measure = Math.min(maxContentWidth ?? contentWidth, contentWidth);
@@ -609,7 +618,7 @@ export function EventDossier({
               {event.ongoing && (
                 <View style={s.liveRow}>
                   <View style={[s.liveDot, { backgroundColor: accent }]} />
-                  <Text style={[s.liveWord, { color: accent }]}>Happening now</Text>
+                  <Text style={[s.liveWord, { color: accent }]}>{liveWord}</Text>
                 </View>
               )}
 

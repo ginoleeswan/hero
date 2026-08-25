@@ -152,7 +152,7 @@ export function EventIndexList({
   const spotlight = live[0] ?? null;
   const spotAccent = spotlight?.accent ?? COLORS.goldAccent;
   const spotBrand = spotlight ? brandForEvent(spotlight.slug) : undefined;
-  const spotWindow = spotlight ? formatWindow(spotlight.liveFrom, spotlight.liveTo) : null;
+  const spotWindow = spotlight ? formatWindow(spotlight.statedFrom, spotlight.statedTo) : null;
   const totalEditions = events.reduce((n, e) => n + e.editions, 0);
   const earliestYear = events.reduce<string | null>(
     (y, e) => (e.firstYear && (!y || e.firstYear < y) ? e.firstYear : y),

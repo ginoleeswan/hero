@@ -25,6 +25,7 @@
 // indexed recency selection; everything judgemental happens here.
 
 import { relativeAgeLabel } from './freshness';
+import { statedWindow } from '../events/schedule';
 
 export type PulseKind = 'live_event' | 'trailer' | 'surge' | 'issue';
 
@@ -75,12 +76,17 @@ export interface PulseEvent extends PulseCandidate {
   badge: string;
   /** The "so what" second line. */
   subtitle: string | null;
-  /** "DAY 4 OF 4" / "FINAL DAY" / "DAY 2". Live events with a known window only,
+  /** "DAY 4 OF 4" / "FINAL DAY" / "DAY 2". Live events with a **published**
+   *  window only — see eventDayLabel for why an inferred one cannot be counted —
    *  and null once the window has closed. */
   dayLabel: string | null;
-  /** "Live" while it's running, "Just wrapped" in the detection grace tail.
-   *  Live events only. */
+  /** "Live" while it's running, "Starts tomorrow" before it opens, "Just
+   *  wrapped" in the detection grace tail. Live events only. */
   statusLabel: string | null;
+  /** Where the event is in its own run. Null for everything that isn't one.
+   *  `livePulseEvent` keys the band's "· LIVE" header off this, so a card that
+   *  says "Starts tomorrow" can't sit under a header claiming it's on now. */
+  phase: EventPhase | null;
   score: number;
 }
 
@@ -244,23 +250,70 @@ const ONGOING_LAG_GRACE_DAYS = 2;
  *  going". Typed loosely because it arrives as free text on the candidate. */
 const isSustained = (shape: string | null | undefined): boolean => shape === 'sustained';
 
-export type EventPhase = 'live' | 'wrapped';
+export type EventPhase = 'upcoming' | 'live' | 'wrapped';
 
-/** Whether the event is still running, given the inferred window. Unknown or
- *  not-yet-started windows read as `live`, matching the previous behaviour. */
+const dayOf = (ymd: string | null | undefined): number => {
+  if (!ymd) return NaN;
+  const ms = Date.parse(`${ymd}T00:00:00Z`);
+  return Number.isNaN(ms) ? NaN : Math.floor(ms / 86_400_000);
+};
+
+/**
+ * Whether the event is still running.
+ *
+ * `published` says the window came from the organiser rather than from the
+ * pageview curve (see src/lib/events/schedule.ts). It changes two things: a
+ * published window has no lag to absorb, so it wraps the day after it ends
+ * rather than one or two days later; and a published window can START in the
+ * future, which an inferred one never does — that's the `upcoming` phase, and
+ * it's what stops a card reading "Live" on the strength of pre-show buzz.
+ *
+ * Unknown or unparseable ends still read as `live`, matching the old behaviour.
+ */
 export function eventPhase(
   windowFrom: string | null | undefined,
   windowTo: string | null | undefined,
   now: number,
   shape?: string | null,
+  published = false,
 ): EventPhase {
-  if (!windowTo) return 'live';
-  const end = Date.parse(`${windowTo}T00:00:00Z`);
-  if (Number.isNaN(end)) return 'live';
   const today = Math.floor(now / 86_400_000);
-  const endDay = Math.floor(end / 86_400_000);
-  const grace = isSustained(shape) ? ONGOING_LAG_GRACE_DAYS : WINDOW_LAG_GRACE_DAYS;
+  const startDay = dayOf(windowFrom);
+  if (published && !Number.isNaN(startDay) && today < startDay) return 'upcoming';
+  const endDay = dayOf(windowTo);
+  if (Number.isNaN(endDay)) return 'live';
+  const grace = published ? 0 : isSustained(shape) ? ONGOING_LAG_GRACE_DAYS : WINDOW_LAG_GRACE_DAYS;
   return today > endDay + grace ? 'wrapped' : 'live';
+}
+
+/** How to say a start that hasn't happened yet. Days, not dates, until the date
+ *  is far enough out that a weekday stops locating it. */
+function startsLabel(startDay: number, today: number, windowFrom: string): string {
+  const away = startDay - today;
+  if (away <= 1) return 'Starts tomorrow';
+  const d = new Date(`${windowFrom}T00:00:00Z`);
+  if (away <= 6) {
+    return `Starts ${d.toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })}`;
+  }
+  return `Starts ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}`;
+}
+
+/**
+ * The status word for an event PAGE masthead, which says "Happening now" where
+ * the rail says "Live".
+ *
+ * Reads the clock itself, like `rankPulse`, so the caller can memoise it without
+ * calling an impure function during render.
+ */
+export function eventLiveWord(
+  windowFrom: string | null | undefined,
+  windowTo: string | null | undefined,
+  shape?: string | null,
+  published = false,
+  now: number = Date.now(),
+): string {
+  const label = eventStatusLabel(windowFrom, windowTo, now, shape, published);
+  return label === 'Live' ? 'Happening now' : label;
 }
 
 /** The card's status word. "Live" only while it actually is. */
@@ -269,8 +322,14 @@ export function eventStatusLabel(
   windowTo: string | null | undefined,
   now: number,
   shape?: string | null,
+  published = false,
 ): string {
-  return eventPhase(windowFrom, windowTo, now, shape) === 'wrapped' ? 'Just wrapped' : 'Live';
+  const phase = eventPhase(windowFrom, windowTo, now, shape, published);
+  if (phase === 'wrapped') return 'Just wrapped';
+  if (phase === 'upcoming') {
+    return startsLabel(dayOf(windowFrom), Math.floor(now / 86_400_000), windowFrom as string);
+  }
+  return 'Live';
 }
 
 /**
@@ -281,30 +340,55 @@ export function eventStatusLabel(
  * urgency a convention card can honestly carry. Null when the window is unknown
  * or nonsensical, so the caller shows nothing rather than "DAY NAN".
  *
- * Also null once the event has wrapped: a day number is a claim about something
- * in progress, and there's nothing honest to count once it isn't.
+ * Also null once the event has wrapped, or before it opens: a day number is a
+ * claim about something in progress, and there's nothing honest to count when
+ * it isn't.
+ *
+ * ## Why an INFERRED window gets no counter at all
+ *
+ * A detected window's end is the last day of pageview data above the threshold,
+ * and `fetchViews` stops at today-1 with Wikimedia lagging another day behind
+ * that. So `windowTo` is always in the past while an event is running, which
+ * made `day >= total` true on every day of every event: "FINAL DAY" was not a
+ * label this could produce on the last day, it was the ONLY label it could ever
+ * produce. Gamescom 2026 read "FINAL DAY" on the eve of its opening.
+ *
+ * The start is no better. D23 2026 ran Aug 14-16; on the 15th the inferred
+ * window was Aug 11-13, drawn from the week of anticipation before it. Both
+ * "DAY 5" and "FINAL DAY" were false, and there is no third number that isn't.
+ *
+ * So: count days only against a window whose end is TRUSTWORTHY — one that
+ * reaches today or beyond, which in practice means a published window from
+ * src/lib/events/schedule.ts. Otherwise say nothing and let the status word
+ * ("Live") carry the card. Silence is the only honest reading of a window that
+ * cannot see the day it is describing.
  */
 export function eventDayLabel(
   windowFrom: string | null | undefined,
   windowTo: string | null | undefined,
   now: number,
   shape?: string | null,
+  published = false,
 ): string | null {
   if (!windowFrom) return null;
-  if (eventPhase(windowFrom, windowTo, now, shape) === 'wrapped') return null;
-  const start = Date.parse(`${windowFrom}T00:00:00Z`);
-  if (Number.isNaN(start)) return null;
+  if (eventPhase(windowFrom, windowTo, now, shape, published) !== 'live') return null;
+  const startDay = dayOf(windowFrom);
+  if (Number.isNaN(startDay)) return null;
   const today = Math.floor(now / 86_400_000);
-  const startDay = Math.floor(start / 86_400_000);
   const day = today - startDay + 1;
   if (day < 1) return null;
 
-  const end = windowTo ? Date.parse(`${windowTo}T00:00:00Z`) : NaN;
-  if (Number.isNaN(end)) return `DAY ${day}`;
-  const total = Math.floor(end / 86_400_000) - startDay + 1;
+  const endDay = dayOf(windowTo);
+  // No end at all is a different thing from an end we can't trust: nothing is
+  // being claimed about the length, so the day number stands on its own.
+  if (Number.isNaN(endDay)) return `DAY ${day}`;
+  const total = endDay - startDay + 1;
   if (total < 1) return `DAY ${day}`;
-  // Inside the lag grace: the window may trail reality by a day, so don't invent
-  // a bigger total — call it the final day rather than "DAY 4 OF 3".
+  // The end has already passed, so this is the lag/grace tail. If the detector
+  // still calls the run `sustained` the event is genuinely mid-flight and its
+  // real length is unknown — see the note above. Otherwise the run has turned
+  // over and today is honestly the last of it.
+  if (today > endDay) return isSustained(shape) ? null : 'FINAL DAY';
   if (day >= total) return 'FINAL DAY';
   return `DAY ${day} OF ${total}`;
 }
@@ -395,6 +479,32 @@ export function subtitleFor(c: PulseCandidate, now: number): string | null {
   return c.provider ? `On ${c.provider}` : null;
 }
 
+/**
+ * The three live-event fields, resolved against the published calendar.
+ *
+ * The candidate carries the DETECTED window, which is the detector's own
+ * statement and stays untouched — the event page's curve shades it, and it is
+ * the evidence the whole feature rests on. What the card SAYS comes from
+ * `statedWindow`: the organiser's dates when we have them, the detected ones
+ * otherwise. The two disagree exactly when it matters (Gamescom 2026: detected
+ * Aug 23-24, published Aug 26-30) and the reader is owed the published one.
+ */
+function liveEventCopy(
+  c: PulseCandidate,
+  now: number,
+): { dayLabel: string | null; statusLabel: string | null; phase: EventPhase | null } {
+  if (c.kind !== 'live_event') return { dayLabel: null, statusLabel: null, phase: null };
+  const w = statedWindow(c.entityId, c.editionSlug, {
+    from: c.windowFrom ?? null,
+    to: c.windowTo ?? null,
+  });
+  return {
+    dayLabel: eventDayLabel(w.from, w.to, now, c.subtype, w.published),
+    statusLabel: eventStatusLabel(w.from, w.to, now, c.subtype, w.published),
+    phase: eventPhase(w.from, w.to, now, c.subtype, w.published),
+  };
+}
+
 // ── ranking ──────────────────────────────────────────────────────────────────
 
 /**
@@ -428,10 +538,7 @@ export function rankPulse(
       // `subtype` carries the detector's shape on a live_event (get_pulse_candidates
       // maps `le.shape as subtype`) — it's what tells the copy whether the run is
       // still going, so the lag grace can be honest in both directions.
-      dayLabel:
-        c.kind === 'live_event' ? eventDayLabel(c.windowFrom, c.windowTo, now, c.subtype) : null,
-      statusLabel:
-        c.kind === 'live_event' ? eventStatusLabel(c.windowFrom, c.windowTo, now, c.subtype) : null,
+      ...liveEventCopy(c, now),
     });
   }
 
@@ -481,10 +588,17 @@ export function railEvents(events: readonly PulseEvent[]): PulseEvent[] {
   return news >= MIN_NEWS_EVENTS ? withArt : [];
 }
 
-/** The live event in a ranked list, if any — what the band header's "· LIVE"
- *  label keys off. */
+/**
+ * The live event in a ranked list, if any — what the band header's "· LIVE"
+ * label keys off.
+ *
+ * Gated on the PHASE, not merely on the kind. A card can be a live event and say
+ * "Starts tomorrow" or "Just wrapped", and a header reading "· LIVE" above it
+ * contradicted the card it was heading. Pre-show buzz is enough to pin a card;
+ * it is not enough to claim the thing is on.
+ */
 export function livePulseEvent(events: readonly PulseEvent[]): PulseEvent | null {
-  return events.find((e) => e.kind === 'live_event') ?? null;
+  return events.find((e) => e.kind === 'live_event' && e.phase === 'live') ?? null;
 }
 
 /** Trailer drops in the shape the auto-hero picker wants, so the hero and the

@@ -148,6 +148,53 @@ calls `live` **unless it was explicitly rejected**
 `/event/[slug]/[edition]` (`get_event_edition`), and an index at `/event`
 (`get_event_index`) — all platform-paired.
 
+### Dates: detected, and where we know them, published
+
+The detector can only ever be approximately right about DATES, in a way no
+threshold fixes:
+
+- **It can only see the past.** `fetchViews` ends at today-1 and Wikimedia lags
+  another day, so the inferred `live_to` is always behind. That made
+  `day >= total` true on every day of every event: `eventDayLabel` could produce
+  **nothing but "FINAL DAY"**, from the first day onward. Gamescom 2026 read
+  "Live · FINAL DAY" on 2026-08-25, the evening before it opened.
+- **Anticipation looks exactly like attendance.** The same evening, the inferred
+  window was Aug 23-24 — press days and pre-show coverage — for a show that ran
+  Aug 26-30.
+
+Two changes, and neither of them is a new threshold:
+
+1. `src/lib/events/schedule.ts` holds **published windows** for the handful of
+   events where someone has read the organiser's own dates, keyed by slug and
+   edition. It is not a calendar and nothing in it is inferred — an event with no
+   entry behaves exactly as before. `statedWindow()` resolves published-else-
+   detected, and is what every piece of COPY uses: the Pulse card's status word
+   and day counter, the masthead window on `/event/[slug]/[edition]`, the hub
+   rows, the index. `EventCurve` keeps shading the **detected** window, because
+   it is a figure about detection.
+2. Where the window is only inferred, the day counter **says nothing** rather
+   than guessing (`eventDayLabel`). D23 2026 ran Aug 14-16 with an inferred
+   window of Aug 11-13: "DAY 5" and "FINAL DAY" were both false and there is no
+   third number that isn't. `eventPhase` gains `upcoming`, so a published event
+   reads "Starts tomorrow" instead of "Live", and `livePulseEvent` gates the
+   band's "· LIVE" header on the phase rather than on the kind.
+
+### An announcement must be about the title it links to
+
+`match_title_for_video` matches by substring containment, which attaches a short
+catalogue name to any longer name containing it: "Heroes of Might and Magic III
+Remake" landed on the TV series **Heroes** and rendered with Sylar and Claire
+Bennet under it, four times over, on the Gamescom 2026 page. So did *Stellar
+Blade* → **Blade**, and *Aliens: Fireteam Elite 2* → **Aliens**.
+
+The test (`src/lib/events/announcementMatch.ts`, mirrored in SQL by
+`video_title_match_is_credible`): a studio leads with the work's name and stacks
+ceremony after it, so the catalogue name must **prefix** the video's first
+segment with only ceremony ("Official Trailer", "Season 3", "PS5 Games")
+following. Colons are not segment breaks — cutting there is what let a 1986 film
+claim a 2026 game. `mapEventDossier` applies it at read time; the migration
+re-judges what is already attached and drops promotions made under the old test.
+
 **Approval is a veto, not a prerequisite** — inverted by
 `20260815080000_live_events_publish_by_default.sql`, whose header carries the
 full argument. Short version: the opt-in gate was built to protect a takeover

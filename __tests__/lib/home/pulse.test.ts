@@ -486,10 +486,75 @@ describe('eventDayLabel — the live card counts days', () => {
     expect(eventPhase('2026-08-11', '2026-08-13', aug15)).toBe('wrapped');
   });
 
-  it('counts the extra grace day as FINAL DAY, never a day past the total', () => {
-    // Day 5 of a 3-day window is arithmetic, not a fact about the world.
+  it('says NOTHING while a still-running event is past its inferred end', () => {
+    // Day 5 of a 3-day window is arithmetic, not a fact about the world — and
+    // neither is FINAL DAY, which is what this used to say. D23 2026 ran Aug
+    // 14-16; on the 15th the inferred window was Aug 11-13, drawn from the week
+    // of anticipation before it. Every number available here was false, so the
+    // card shows none and lets "Live" carry it.
     const aug15 = Date.parse('2026-08-15T12:00:00Z');
-    expect(eventDayLabel('2026-08-11', '2026-08-13', aug15, 'sustained')).toBe('FINAL DAY');
+    expect(eventDayLabel('2026-08-11', '2026-08-13', aug15, 'sustained')).toBeNull();
+    // The run having turned over is different: the event really has just ended,
+    // and today really is the last of it.
+    expect(eventDayLabel('2026-08-11', '2026-08-13', Date.parse('2026-08-14T12:00:00Z'))).toBe(
+      'FINAL DAY',
+    );
+  });
+
+  it('never says FINAL DAY on every day of an event, which is what it did', () => {
+    // The systemic bug, stated as a test. fetchViews stops at today-1 and
+    // Wikimedia lags another day, so an inferred live_to is ALWAYS in the past
+    // while the event runs: `day >= total` held on day one, day two and day
+    // three alike, and "FINAL DAY" was the only label this could ever produce.
+    // Gamescom 2026 read "Live · FINAL DAY" on 2026-08-25, the day before it
+    // opened.
+    const window = { from: '2026-08-23', to: '2026-08-24' };
+    for (const day of ['2026-08-25', '2026-08-26', '2026-08-27']) {
+      const at = Date.parse(`${day}T12:00:00Z`);
+      expect(eventDayLabel(window.from, window.to, at, 'sustained')).toBeNull();
+    }
+  });
+
+  it('counts days against a PUBLISHED window, which is the only one it can', () => {
+    // The other half of the fix: real dates make the counter true, so it comes
+    // back exactly where it is earned. Gamescom 2026 ran Aug 26-30.
+    const on = (d: string) => Date.parse(`${d}T12:00:00Z`);
+    expect(
+      eventDayLabel('2026-08-26', '2026-08-30', on('2026-08-25'), 'sustained', true),
+    ).toBeNull();
+    expect(eventDayLabel('2026-08-26', '2026-08-30', on('2026-08-26'), 'sustained', true)).toBe(
+      'DAY 1 OF 5',
+    );
+    expect(eventDayLabel('2026-08-26', '2026-08-30', on('2026-08-28'), 'sustained', true)).toBe(
+      'DAY 3 OF 5',
+    );
+    expect(eventDayLabel('2026-08-26', '2026-08-30', on('2026-08-30'), 'sustained', true)).toBe(
+      'FINAL DAY',
+    );
+    expect(
+      eventDayLabel('2026-08-26', '2026-08-30', on('2026-08-31'), 'sustained', true),
+    ).toBeNull();
+  });
+
+  it('does not claim a published event is live before it opens', () => {
+    const on = (d: string) => Date.parse(`${d}T12:00:00Z`);
+    expect(eventPhase('2026-08-26', '2026-08-30', on('2026-08-25'), 'sustained', true)).toBe(
+      'upcoming',
+    );
+    expect(eventStatusLabel('2026-08-26', '2026-08-30', on('2026-08-25'), 'sustained', true)).toBe(
+      'Starts tomorrow',
+    );
+    expect(eventStatusLabel('2026-08-26', '2026-08-30', on('2026-08-23'), 'sustained', true)).toBe(
+      'Starts Wednesday',
+    );
+    expect(eventStatusLabel('2026-08-26', '2026-08-30', on('2026-08-01'), 'sustained', true)).toBe(
+      'Starts 26 Aug',
+    );
+    // A published end has no pageview lag to absorb, so it wraps on schedule
+    // rather than two days later.
+    expect(eventPhase('2026-08-26', '2026-08-30', on('2026-08-31'), 'sustained', true)).toBe(
+      'wrapped',
+    );
   });
 
   it('returns null before the window opens, or when it cannot be parsed', () => {
@@ -510,6 +575,51 @@ describe('eventDayLabel — the live card counts days', () => {
   it('leaves the label null when the event has no window yet', () => {
     const out = rankPulse([liveEvent()], NOW);
     expect(out[0].dayLabel).toBeNull();
+  });
+
+  it('reads the published calendar for an event that has one', () => {
+    // End to end, against the payload that shipped the bug: get_pulse_candidates
+    // returned Gamescom with window 2026-08-23 -> 08-24 and shape `sustained` on
+    // 2026-08-25, and the card read "Live · FINAL DAY" the day before it opened.
+    const aug25 = Date.parse('2026-08-25T21:30:00Z');
+    const gamescom = liveEvent({
+      entityId: 'gamescom',
+      headline: 'Gamescom',
+      editionSlug: '2026',
+      subtype: 'sustained',
+      windowFrom: '2026-08-23',
+      windowTo: '2026-08-24',
+      occurredAt: '2026-08-25T21:07:04.181Z',
+    });
+    const [card] = rankPulse([gamescom], aug25);
+    expect(card.statusLabel).toBe('Starts tomorrow');
+    expect(card.dayLabel).toBeNull();
+    // ...and the band header must not claim LIVE over a card that says it isn't.
+    expect(livePulseEvent([card])).toBeNull();
+
+    const [onDayThree] = rankPulse([gamescom], Date.parse('2026-08-28T12:00:00Z'));
+    expect(onDayThree.statusLabel).toBe('Live');
+    expect(onDayThree.dayLabel).toBe('DAY 3 OF 5');
+    expect(livePulseEvent([onDayThree])?.headline).toBe('Gamescom');
+  });
+
+  it('keeps the DETECTED window on the card, since the curve draws it', () => {
+    // Only the copy resolves against the calendar. windowFrom/windowTo stay the
+    // detector's own statement — the event page shades them as evidence, and
+    // rewriting them here would make the figure disagree with itself.
+    const [card] = rankPulse(
+      [
+        liveEvent({
+          entityId: 'gamescom',
+          editionSlug: '2026',
+          windowFrom: '2026-08-23',
+          windowTo: '2026-08-24',
+        }),
+      ],
+      Date.parse('2026-08-28T12:00:00Z'),
+    );
+    expect(card.windowFrom).toBe('2026-08-23');
+    expect(card.windowTo).toBe('2026-08-24');
   });
 });
 
