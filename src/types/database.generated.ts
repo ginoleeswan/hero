@@ -3737,6 +3737,10 @@ export type Database = {
         Returns: Json
       }
       touch_last_seen: { Args: never; Returns: undefined }
+      video_title_match_is_credible: {
+        Args: { p_title: string; p_video: string }
+        Returns: boolean
+      }
     }
     Enums: {
       relation_kind:
