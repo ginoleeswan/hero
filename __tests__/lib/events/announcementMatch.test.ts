@@ -1,6 +1,7 @@
 import {
   isCeremonyTail,
   matchIsCredible,
+  studioStrippedSegment,
   workSegment,
 } from '../../../src/lib/events/announcementMatch';
 
@@ -66,6 +67,42 @@ describe('matchIsCredible — and keeps the real ones', () => {
     expect(
       matchIsCredible("Marvel Television's VisionQuest | Official Trailer", 'VisionQuest'),
     ).toBe(true);
+    expect(
+      matchIsCredible("Marvel's Wolverine - Official Game Features Trailer", 'Wolverine'),
+    ).toBe(true);
+    // Plural possessive — the studio name already ends in s.
+    expect(
+      matchIsCredible(
+        "Marvel Studios' Avengers: Doomsday | Official Trailer",
+        'Avengers: Doomsday',
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps a possessive that belongs to the work itself', () => {
+    // Stripping unconditionally cut each of these to its last word, so the
+    // title could never match its own announcement.
+    expect(matchIsCredible("No Man's Sky - Official Trailer", "No Man's Sky")).toBe(true);
+    expect(
+      matchIsCredible("Another Crab's Treasure | Launch Trailer", "Another Crab's Treasure"),
+    ).toBe(true);
+    expect(matchIsCredible("Widow's Bay - Reveal Trailer", "Widow's Bay")).toBe(true);
+    expect(matchIsCredible("Castlevania: Belmont's Curse", "Castlevania: Belmont's Curse")).toBe(
+      true,
+    );
+  });
+
+  it('does not let a possessive inside a longer name hand the video to a shorter one', () => {
+    // Each of these was a real bad match made by the unbounded stripper.
+    expect(
+      matchIsCredible("Star Wars: Smuggler's Gambit – Official Reveal Trailer", 'Gambit'),
+    ).toBe(false);
+    expect(
+      matchIsCredible("Ellis & Rory show Annie chivalry's not dead | Sterling Point", 'Not Dead'),
+    ).toBe(false);
+    expect(
+      matchIsCredible("Best of X-Men '97's Wolverine | Official Compilation", 'Wolverine'),
+    ).toBe(false);
   });
 
   it('treats a season marker as ceremony, and a bare number as part of the name', () => {
@@ -103,6 +140,21 @@ describe('the pieces', () => {
       '【ONE PIECE トレジャークルーズ】「ネフェルタリ・ビビ from ONE PIECE magazine」が登場！';
     const b = '【ONE PIECE トレジャークルーズ】「ロキ」「スコッパー・ギャバン」が登場！';
     expect(matchIsCredible(a, 'ONE PIECE')).toBe(matchIsCredible(b, 'ONE PIECE'));
+  });
+
+  it('strips only a two-word studio attribution, and never a pronoun', () => {
+    expect(studioStrippedSegment("Marvel's Wolverine - Trailer")).toBe('wolverine');
+    expect(studioStrippedSegment("Marvel Television's VisionQuest | Trailer")).toBe('visionquest');
+    expect(studioStrippedSegment("Marvel Studios' Avengers: Doomsday")).toBe('avengers doomsday');
+    // Three words in, or behind a colon: part of the name, left alone.
+    expect(studioStrippedSegment("Star Wars: Smuggler's Gambit")).toBe(
+      'star wars smuggler s gambit',
+    );
+    // "It's" is a contraction, not a studio.
+    expect(studioStrippedSegment("It's a tough decision")).toBe('it s a tough decision');
+    expect(studioStrippedSegment("Here's a recap of the biggest changes")).toBe(
+      'here s a recap of the biggest changes',
+    );
   });
 
   it('knows ceremony from more of a name', () => {

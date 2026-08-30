@@ -24,6 +24,12 @@
 // Colons are deliberately NOT segment breaks: "Aliens: Fireteam Elite 2" is one
 // work's name, and splitting there is what let "Aliens" claim it.
 //
+// A studio attribution ("Marvel's Wolverine") is tried as well as, not instead
+// of, the segment as written — because a possessive is just as often part of
+// the work's own name: "No Man's Sky", "Another Crab's Treasure", "Widow's
+// Bay". Stripping unconditionally cut those to "sky", "treasure" and "bay",
+// which can never match themselves.
+//
 // Mirrored in SQL by `video_title_match_is_credible` so the record and the
 // render agree — change both together.
 
@@ -104,19 +110,48 @@ export function isCeremonyTail(tail: string): boolean {
   return true;
 }
 
-/**
- * The part of a video title that claims to be the work's name.
- *
- * The first pipe- or dash-delimited segment, minus a possessive studio prefix
- * ("Marvel Television's VisionQuest"). Colons are left alone on purpose.
- */
-export function workSegment(videoTitle: string): string {
+/** The first pipe- or dash-delimited segment, with bracketed asides removed.
+ *  Colons are left alone on purpose. */
+function rawSegment(videoTitle: string): string {
   const firstSegment = videoTitle.split(/[|–—]|\s-\s|\s-$/)[0];
   // Bracketed asides are ceremony wherever they sit: "[In the Studio]". CJK
   // brackets count — a Bandai upload is one long 【…】「…」 stack, and treating
   // them as text made two runs of the same promo land on opposite verdicts.
-  const withoutAsides = firstSegment.replace(/[[({【「][^\])}】」]*[\])}】」]/g, ' ');
-  return normalizeMatchText(withoutAsides.replace(/^.*?['’]s\s+/, ''));
+  return firstSegment.replace(/[[({【「][^\])}】」]*[\])}】」]/g, ' ');
+}
+
+/**
+ * A studio attribution stacked in front of the work's name: "Marvel's
+ * Wolverine", "Marvel Television's VisionQuest", "Marvel Studios' Avengers".
+ *
+ * Bounded to the two leading words. The unbounded form — everything up to the
+ * first possessive anywhere in the segment — ate the work's own name instead:
+ * "Star Wars: Smuggler's Gambit" became "Gambit", a 1993 film, and "Ellis &
+ * Rory show Annie chivalry's not dead" became "Not Dead". A studio is never a
+ * pronoun, which is how "It's", "Here's" and "Who's" stay out of it.
+ */
+const STUDIO_PREFIX_RE =
+  /^(?!(?:it|he|she|they|we|you|there|that|this|here|who|what|let)['’]s\s)(?:[a-z0-9]+ )?[a-z0-9]+(?:['’]s|s['’])\s+/i;
+
+/** The part of a video title that claims to be the work's name, as written. */
+export function workSegment(videoTitle: string): string {
+  return normalizeMatchText(rawSegment(videoTitle));
+}
+
+/** The same, with a studio attribution removed. Tried alongside `workSegment`,
+ *  never instead of it — see the note at the top of the file. */
+export function studioStrippedSegment(videoTitle: string): string {
+  return normalizeMatchText(rawSegment(videoTitle).replace(STUDIO_PREFIX_RE, ''));
+}
+
+/** Does this segment lead with the name, and stack only ceremony after it? */
+function segmentNamesTitle(segment: string, name: string): boolean {
+  if (!segment) return false;
+  if (segment === name) return true;
+  // Prefix, at a word boundary — "blade" must not match inside "stellar blade",
+  // and "hero" must not match inside "heroes".
+  if (!segment.startsWith(`${name} `)) return false;
+  return isCeremonyTail(segment.slice(name.length + 1));
 }
 
 /**
@@ -130,11 +165,8 @@ export function matchIsCredible(videoTitle: string, titleName: string | null | u
   if (!titleName) return true;
   const name = normalizeMatchText(titleName);
   if (!name) return true;
-  const segment = workSegment(videoTitle);
-  if (!segment) return false;
-  if (segment === name) return true;
-  // Prefix, at a word boundary — "blade" must not match inside "stellar blade",
-  // and "hero" must not match inside "heroes".
-  if (!segment.startsWith(`${name} `)) return false;
-  return isCeremonyTail(segment.slice(name.length + 1));
+  return (
+    segmentNamesTitle(workSegment(videoTitle), name) ||
+    segmentNamesTitle(studioStrippedSegment(videoTitle), name)
+  );
 }

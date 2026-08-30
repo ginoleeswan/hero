@@ -3737,6 +3737,10 @@ export type Database = {
         Returns: Json
       }
       touch_last_seen: { Args: never; Returns: undefined }
+      video_segment_names_title: {
+        Args: { p_name: string; p_segment: string }
+        Returns: boolean
+      }
       video_title_match_is_credible: {
         Args: { p_title: string; p_video: string }
         Returns: boolean
