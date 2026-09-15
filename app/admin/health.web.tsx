@@ -360,6 +360,7 @@ export default function AdminHealthScreen() {
                 onOpenBuild={() => setDomain('pipelines')}
                 onOpenInbox={() => jumpInbox('reports')}
                 onOpenAudience={() => setDomain('audience')}
+                onOpenActivity={() => jumpTo('audience', 'activity')}
                 onSnapshot={onSnapshot}
                 snapshotting={busy === 'snapshot'}
                 inboxCount={(openReportsQ.data?.length ?? 0) + (reviewQ.data?.length ?? 0)}

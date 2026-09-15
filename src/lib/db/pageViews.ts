@@ -1,4 +1,6 @@
 import { supabase } from '../supabase';
+import type { TablesInsert } from '../../types/database.generated';
+import { getVisitorContext } from '../visitorContext';
 
 // Self-hosted page-view collection (web only). Called from Analytics.web.tsx on
 // every navigation; fire-and-forget so it never blocks or surfaces errors.
@@ -79,17 +81,25 @@ export function getReferrerHost(): string | null {
 export async function recordPageView(route: string, path: string): Promise<void> {
   if (typeof window === 'undefined') return;
   try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    await supabase.from('page_views').insert({
+    const [
+      {
+        data: { session },
+      },
+      ctx,
+    ] = await Promise.all([supabase.auth.getSession(), getVisitorContext()]);
+    // The enriched columns (browser / os / lang / timezone / viewport / coarse
+    // geo) land with migration 20260915120000. Until database.generated.ts is
+    // regenerated after it, the insert type doesn't know them — hence the cast.
+    const row = {
       route,
       path,
       user_id: session?.user?.id ?? null,
       session_id: getSessionId(),
       referrer: getReferrerHost(),
       device: getDevice(),
-    });
+      ...ctx,
+    } as TablesInsert<'page_views'>;
+    await supabase.from('page_views').insert(row);
   } catch {
     // fire-and-forget — analytics writes must never break navigation
   }

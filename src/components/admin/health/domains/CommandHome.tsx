@@ -9,13 +9,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';
 import { Bento } from '../Bento';
-import { Button, Well } from '../ui';
+import { Button, IconButton, Well } from '../ui';
 import { AttentionRow } from './overview/AttentionRow';
 import { LivePulse } from './overview/LivePulse';
 import { VitalsCluster, type Vital } from './overview/VitalsCluster';
 import { ActivityFeed } from './overview/ActivityFeed';
 import { Sparkline } from './overview/Sparkline';
-import { mergeActivityFeed } from './overview/feed';
+import { mergeActivityFeed, eventToFeedItem } from './overview/feed';
+import { useActivityHistory } from '../../../../hooks/useActivityHistory';
 import { healthColor, GEMINI_MONTHLY_BUDGET } from '../format';
 import type {
   CatalogHealth,
@@ -41,6 +42,7 @@ export function CommandHome({
   onOpenBuild,
   onOpenInbox,
   onOpenAudience,
+  onOpenActivity,
   onSnapshot,
   snapshotting,
   inboxCount,
@@ -60,6 +62,8 @@ export function CommandHome({
   onOpenBuild: () => void;
   onOpenInbox: () => void;
   onOpenAudience: () => void;
+  /** Jump to Audience › Activity — the full, filterable history. */
+  onOpenActivity: () => void;
   onSnapshot: () => void;
   snapshotting: boolean;
   inboxCount: number;
@@ -139,11 +143,14 @@ export function CommandHome({
     },
   ];
 
-  const feed = mergeActivityFeed({
-    runs,
-    live: traffic?.live,
-    community: community?.recent,
-  });
+  // The activity timeline: server-paged history (polled as the live tick) so
+  // the panel can scroll back further than the last dozen rows. Until the
+  // admin_activity_feed RPC is deployed the hook reports `unavailable` and we
+  // fall back to merging the three overview streams client-side.
+  const history = useActivityHistory({ kind: 'all', live: true });
+  const feed = history.unavailable
+    ? mergeActivityFeed({ runs, live: traffic?.live, community: community?.recent })
+    : history.items.map(eventToFeedItem);
   const series = traffic?.series ?? [];
 
   // Extracted so mobile/desktop can order them differently (see Bento.Row below).
@@ -155,8 +162,21 @@ export function CommandHome({
       style={s.flex13}
       fill={!narrow}
       scroll={false}
+      action={
+        <IconButton
+          icon="time-outline"
+          onPress={onOpenActivity}
+          accessibilityLabel="Open full activity history"
+        />
+      }
     >
-      <ActivityFeed items={feed} narrow={narrow} />
+      <ActivityFeed
+        items={feed}
+        narrow={narrow}
+        hasMore={!history.unavailable && history.hasMore}
+        loadingMore={history.loadingMore}
+        onLoadMore={history.loadMore}
+      />
     </Panel>
   );
   // Needs-you board (content-sized so its primary action is never clipped) +

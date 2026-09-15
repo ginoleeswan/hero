@@ -54,14 +54,14 @@ Six lanes, defined in `app/admin/health.web.tsx` and
 `src/components/admin/health/format.ts` (`DomainKey`). Sub-tab components live
 in `src/components/admin/health/domains/`.
 
-| Lane (`?tab`) | Sub-tabs (`?sub`) | Backing components |
-| --- | --- | --- |
-| `command` | — | `CommandHome` — vitals, live traffic/community pulse (20–30s polls), needs-you list, jump-offs |
-| `catalog` | coverage, distributions, hygiene, sources | `CatalogLane`, `SourcesDomain`, `IntegrityPanel`, `DuplicatesPanel`, `UniverseGapsPanel` |
-| `pipelines` | add, enrich, generate, activity, runs, spend | `PipelinesDomain`, `AddHeroesPanel`, `BuildBoard`, `RunHistory`, `CronList`, `SpendDomain` |
-| `inbox` | reports, review, comicvine | `InboxLane`, `ReportsDomain`, `ReviewDomain` (contribution review), `ComicvineReview` |
-| `audience` | traffic, acquisition, community, errors | `AudienceLane`, `TrafficDomain`, `AcquisitionDomain`, `CommunityDomain`, `ErrorsDomain` (the `client_errors` feed) |
-| `publish` | social, promote, insights, campaigns, debate, og | `PublishLane`, `SocialDomain`, `PromotePanel`, `SocialInsightsDomain`, `CampaignsDomain`, `DebatePickerPanel`, `OgCardsDomain` |
+| Lane (`?tab`) | Sub-tabs (`?sub`)                                           | Backing components                                                                                                                                                                                                                       |
+| ------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `command`     | —                                                           | `CommandHome` — vitals, live traffic/community pulse (20–30s polls), needs-you list, jump-offs                                                                                                                                           |
+| `catalog`     | coverage, distributions, hygiene, sources                   | `CatalogLane`, `SourcesDomain`, `IntegrityPanel`, `DuplicatesPanel`, `UniverseGapsPanel`                                                                                                                                                 |
+| `pipelines`   | add, enrich, generate, activity, runs, spend                | `PipelinesDomain`, `AddHeroesPanel`, `BuildBoard`, `RunHistory`, `CronList`, `SpendDomain`                                                                                                                                               |
+| `inbox`       | reports, review, comicvine                                  | `InboxLane`, `ReportsDomain`, `ReviewDomain` (contribution review), `ComicvineReview`                                                                                                                                                    |
+| `audience`    | traffic, visitors, activity, acquisition, community, errors | `AudienceLane`, `TrafficDomain`, `VisitorsDomain` (who/where/how/on-what + per-session drill-down), `ActivityHistoryDomain` (the full paged timeline), `AcquisitionDomain`, `CommunityDomain`, `ErrorsDomain` (the `client_errors` feed) |
+| `publish`     | social, promote, insights, campaigns, debate, og            | `PublishLane`, `SocialDomain`, `PromotePanel`, `SocialInsightsDomain`, `CampaignsDomain`, `DebatePickerPanel`, `OgCardsDomain`                                                                                                           |
 
 The old top-level tabs (Errors, Sources, Spend, OG cards, Reports…) were folded
 into these lanes by the IA consolidation — don't add a seventh lane; find the
@@ -78,7 +78,7 @@ job it belongs to.
   aggregates should join this cache, not add a live scan.
 - **Vitals ribbon.** `VitalsBar.tsx` — backlog + ETA, ComicVine API budget
   (colour-coded against the hourly cap), active run with a universal Stop that
-  halts server drains *and* the foreground `BuildBoard`, cron state, spend.
+  halts server drains _and_ the foreground `BuildBoard`, cron state, spend.
   Shown on the pipelines lane.
 - **Alerts.** `buildAlerts` (`format.ts`) derives problems (API down, failed
   rows, open reports…) into the `AlertStack`; the same alerts publish to the
@@ -87,6 +87,31 @@ job it belongs to.
 - **Activity + run logs.** `useActivityLog` and `useRunLogStream`
   (`src/components/admin/health/hooks.ts`) — local action log with flash
   toasts, plus streaming of enrichment-run rows into it.
+- **Activity history.** The overview's "Live activity" panel and Audience ›
+  Activity both read `useActivityHistory` (`src/hooks/useActivityHistory.ts`),
+  a cursor-paged `useInfiniteQuery` over the `admin_activity_feed` RPC
+  (`src/lib/db/activityFeed.ts`): page views · favourites · votes ·
+  contributions · enrichment runs in one newest-first timeline, 40 rows a page,
+  keyset on `at`. The first page polls every 20s as the live tick; "Load older
+  activity" appends in place. If the RPC isn't deployed the hook reports
+  `unavailable` and the overview falls back to `mergeActivityFeed` (the old
+  three-stream merge), so nothing breaks between deploying the app and applying
+  the migration.
+- **Audience enrichment.** `page_views` carries `country/region/city/timezone`
+  (from `/api/geo`, which echoes Vercel's `x-vercel-ip-*` headers — no IP is
+  stored), `browser/os` (parsed client-side by `parseUserAgent` in
+  `src/lib/visitorContext.ts`), `lang`, and `screen_w/h`. Geo is fetched once
+  per browser and cached for a day; a slow first answer means the first row
+  goes out without geo rather than delaying the write. Two admin RPCs read it
+  (`src/lib/db/audience.ts`): `admin_audience_breakdown(p_days)` — countries,
+  regions, cities, sources (first-touch UTM → referrer → direct), landings,
+  referrers, devices, browsers, OS, languages, timezones, viewport buckets,
+  hour-of-day and weekday — and `admin_audience_sessions(...)` — one row per
+  browser session with the ordered page trail, filterable by country / device
+  / browser / source and cursor-paged on `last_at`. In `VisitorsDomain` every
+  breakdown row is a filter: tapping "Germany" narrows the sessions list to
+  the people behind that bar. Rows recorded before the enrichment shipped show
+  as `unknown`.
 - **Loading.** Per-lane skeletons (`src/components/admin/health/skeletons/`)
   driven by `useSkeletonTransition`, so a warm cache never flashes skeleton;
   errors render `LoadFailed` (`src/components/admin/health/ui/`) with a retry.
@@ -106,6 +131,13 @@ debate. Writes go through the admin-gated `set_daily_debate` RPC via
   exist in the database (see `src/types/database.generated.ts`) but nothing in
   `src/` calls them — approval currently means SQL by hand. A Pulse/events
   panel (likely an Inbox sub-tab) is the obvious home.
+- **Migration `20260915120000_audience_enrichment_and_activity_history.sql`
+  was written but not applied through the MCP tool** (the session had no
+  Supabase auth). Apply it, rename the file to the version the database
+  records, regenerate `database.generated.ts`, and then drop the `as never`
+  casts in `activityFeed.ts` / `audience.ts` and the `TablesInsert` cast in
+  `pageViews.ts`. Until then Visitors and Activity render `LoadFailed` and the
+  overview feed uses its fallback merge.
 - **`CommunityDomain.tsx` "active visitors" is a deliberate placeholder**
   (comment at ~line 302) until page-view-based presence lands.
 - The consolidation spec's follow-up — a deep design/UX polish pass — was

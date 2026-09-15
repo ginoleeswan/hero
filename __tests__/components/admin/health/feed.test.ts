@@ -1,4 +1,7 @@
-import { mergeActivityFeed } from '../../../../src/components/admin/health/domains/overview/feed';
+import {
+  mergeActivityFeed,
+  eventToFeedItem,
+} from '../../../../src/components/admin/health/domains/overview/feed';
 import type { EnrichmentRun } from '../../../../src/lib/db/catalogHealth';
 
 const run = (over: Partial<EnrichmentRun>): EnrichmentRun =>
@@ -68,5 +71,82 @@ describe('mergeActivityFeed', () => {
       run({ id: i, created_at: `2026-07-08T10:${String(i).padStart(2, '0')}:00.000Z` }),
     );
     expect(mergeActivityFeed({ runs, limit: 5 })).toHaveLength(5);
+  });
+});
+
+describe('eventToFeedItem', () => {
+  const base = {
+    heroId: null,
+    heroName: null,
+    route: null,
+    path: null,
+    sessionId: null,
+    signedIn: null,
+    country: null,
+    city: null,
+    device: null,
+    browser: null,
+    os: null,
+    runId: null,
+    runStatus: null,
+    runDone: null,
+    text: null,
+  };
+
+  it('renders an enriched page view with a where · device · browser context line', () => {
+    const it = eventToFeedItem({
+      ...base,
+      kind: 'view',
+      at: '2026-09-15T10:00:00Z',
+      heroId: 'batman',
+      heroName: 'Batman',
+      route: '/character/[id]',
+      path: '/character/batman',
+      signedIn: true,
+      country: 'DE',
+      city: 'Berlin',
+      device: 'mobile',
+      browser: 'Safari',
+      os: 'iOS',
+    });
+    expect(it.text).toBe('Viewing Batman');
+    expect(it.meta).toBe('Berlin, Germany · mobile · Safari on iOS · signed in');
+    expect(it.heroId).toBe('batman');
+  });
+
+  it('leaves the context line off a bare (pre-enrichment) view', () => {
+    const it = eventToFeedItem({
+      ...base,
+      kind: 'view',
+      at: '2026-09-15T10:00:00Z',
+      path: '/explore',
+    });
+    expect(it.text).toBe('Visit · /explore');
+    expect(it.meta).toBeUndefined();
+  });
+
+  it('maps engagement and run kinds to the same vocabulary as the merged feed', () => {
+    expect(
+      eventToFeedItem({ ...base, kind: 'vote', at: '2026-09-15T10:00:00Z', heroName: 'Goku' }).text,
+    ).toBe('Voted Goku');
+    expect(
+      eventToFeedItem({
+        ...base,
+        kind: 'run',
+        at: '2026-09-15T10:00:00Z',
+        runId: 7,
+        runStatus: 'done',
+        runDone: 40,
+      }).text,
+    ).toBe('Run #7 finished · 40 enriched');
+    expect(
+      eventToFeedItem({
+        ...base,
+        kind: 'run',
+        at: '2026-09-15T10:00:00Z',
+        runId: 8,
+        runStatus: 'error',
+      }).text,
+    ).toBe('Run #8 errored');
   });
 });
