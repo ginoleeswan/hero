@@ -2011,33 +2011,60 @@ export type Database = {
       }
       page_views: {
         Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
           created_at: string
           device: string | null
           id: number
+          lang: string | null
+          os: string | null
           path: string
           referrer: string | null
+          region: string | null
           route: string
+          screen_h: number | null
+          screen_w: number | null
           session_id: string | null
+          timezone: string | null
           user_id: string | null
         }
         Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           device?: string | null
           id?: never
+          lang?: string | null
+          os?: string | null
           path: string
           referrer?: string | null
+          region?: string | null
           route: string
+          screen_h?: number | null
+          screen_w?: number | null
           session_id?: string | null
+          timezone?: string | null
           user_id?: string | null
         }
         Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           device?: string | null
           id?: never
+          lang?: string | null
+          os?: string | null
           path?: string
           referrer?: string | null
+          region?: string | null
           route?: string
+          screen_h?: number | null
+          screen_w?: number | null
           session_id?: string | null
+          timezone?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -2941,12 +2968,29 @@ export type Database = {
         Args: { p_reason: string; p_target: string }
         Returns: boolean
       }
+      admin_activity_feed: {
+        Args: { p_before?: string; p_kind?: string; p_limit?: number }
+        Returns: Json
+      }
       admin_add_comicvine_heroes: {
         Args: { p_heroes: Json }
         Returns: {
           comicvine_id: string
           id: string
         }[]
+      }
+      admin_audience_breakdown: { Args: { p_days?: number }; Returns: Json }
+      admin_audience_sessions: {
+        Args: {
+          p_before?: string
+          p_browser?: string
+          p_country?: string
+          p_days?: number
+          p_device?: string
+          p_limit?: number
+          p_source?: string
+        }
+        Returns: Json
       }
       admin_community_overview: { Args: never; Returns: Json }
       admin_cron_status: { Args: never; Returns: Json }
@@ -3745,6 +3789,7 @@ export type Database = {
         Args: { p_title: string; p_video: string }
         Returns: boolean
       }
+      viewer_blocks_author: { Args: { p_author: string }; Returns: boolean }
     }
     Enums: {
       relation_kind:
@@ -3777,12 +3822,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3806,11 +3851,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3831,11 +3876,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3856,11 +3901,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3873,11 +3918,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

@@ -149,12 +149,7 @@ const EMPTY_TOTALS: AudienceBreakdown['totals'] = {
 
 /** Breakdown for the last `days` calendar days; null when not admin / not deployed. */
 export async function fetchAudienceBreakdown(days = 28): Promise<AudienceBreakdown | null> {
-  // `as never`: the RPC lands with migration 20260915120000; the generated
-  // types learn it on the next regeneration. Same pattern as trending.ts.
-  const { data, error } = await supabase.rpc(
-    'admin_audience_breakdown' as never,
-    { p_days: days } as never,
-  );
+  const { data, error } = await supabase.rpc('admin_audience_breakdown', { p_days: days });
   if (error) {
     console.warn('[fetchAudienceBreakdown] error:', error.message);
     return null;
@@ -194,18 +189,15 @@ export async function fetchAudienceSessions({
   limit?: number;
   filters?: SessionFilters;
 } = {}): Promise<SessionsPage | null> {
-  const { data, error } = await supabase.rpc(
-    'admin_audience_sessions' as never,
-    {
-      p_days: days,
-      p_before: before,
-      p_limit: limit,
-      p_country: filters.country ?? null,
-      p_device: filters.device ?? null,
-      p_browser: filters.browser ?? null,
-      p_source: filters.source ?? null,
-    } as never,
-  );
+  const { data, error } = await supabase.rpc('admin_audience_sessions', {
+    p_days: days,
+    p_before: before ?? undefined,
+    p_limit: limit,
+    p_country: filters.country ?? undefined,
+    p_device: filters.device ?? undefined,
+    p_browser: filters.browser ?? undefined,
+    p_source: filters.source ?? undefined,
+  });
   if (error) {
     console.warn('[fetchAudienceSessions] error:', error.message);
     return null;

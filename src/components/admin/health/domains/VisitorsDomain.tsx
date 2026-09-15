@@ -93,12 +93,7 @@ export function VisitorsDomain({
   const data = breakdownQ.data ?? null;
   if (breakdownQ.isLoading && !data) return <TrafficSkeleton narrow={narrow} />;
   if (breakdownQ.isError || (breakdownQ.isFetched && !data)) {
-    return (
-      <LoadFailed
-        what="the audience breakdown (is migration 20260915120000 applied?)"
-        onRetry={() => void breakdownQ.refetch()}
-      />
-    );
+    return <LoadFailed what="the audience breakdown" onRetry={() => void breakdownQ.refetch()} />;
   }
   if (!data) return null;
 

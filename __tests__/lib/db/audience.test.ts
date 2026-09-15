@@ -87,12 +87,13 @@ describe('fetchAudienceSessions', () => {
     });
     expect(mockRpc).toHaveBeenCalledWith('admin_audience_sessions', {
       p_days: 28,
-      p_before: null,
+      p_before: undefined,
       p_limit: 2,
       p_country: 'DE',
       p_device: 'mobile',
-      p_browser: null,
-      p_source: null,
+      // Omitted filters go out as undefined so the RPC's parameter defaults apply.
+      p_browser: undefined,
+      p_source: undefined,
     });
     expect(page?.sessions[0].trail).toEqual([]);
     expect(page?.nextBefore).toBe('2026-09-15T09:00:00Z');

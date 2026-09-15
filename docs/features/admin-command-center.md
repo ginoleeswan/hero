@@ -111,7 +111,12 @@ job it belongs to.
   / browser / source and cursor-paged on `last_at`. In `VisitorsDomain` every
   breakdown row is a filter: tapping "Germany" narrows the sessions list to
   the people behind that bar. Rows recorded before the enrichment shipped show
-  as `unknown`.
+  as `unknown`. "Avg minutes" is per _visit_ (a 30-minute gap starts a new
+  one), not per browser id — a returning visitor's first→last view spans days.
+  Migrations: `20260915141447` (schema + RPCs), `20260915144516` (union casts
+  in the feed), `20260915144738` + `20260915144839` (per-visit minutes). The
+  first three each shipped a bug the admin-context smoke test caught; run the
+  RPC as an admin (`set_config('request.jwt.claims', …)`) after applying.
 - **Loading.** Per-lane skeletons (`src/components/admin/health/skeletons/`)
   driven by `useSkeletonTransition`, so a warm cache never flashes skeleton;
   errors render `LoadFailed` (`src/components/admin/health/ui/`) with a retry.
@@ -131,13 +136,6 @@ debate. Writes go through the admin-gated `set_daily_debate` RPC via
   exist in the database (see `src/types/database.generated.ts`) but nothing in
   `src/` calls them — approval currently means SQL by hand. A Pulse/events
   panel (likely an Inbox sub-tab) is the obvious home.
-- **Migration `20260915120000_audience_enrichment_and_activity_history.sql`
-  was written but not applied through the MCP tool** (the session had no
-  Supabase auth). Apply it, rename the file to the version the database
-  records, regenerate `database.generated.ts`, and then drop the `as never`
-  casts in `activityFeed.ts` / `audience.ts` and the `TablesInsert` cast in
-  `pageViews.ts`. Until then Visitors and Activity render `LoadFailed` and the
-  overview feed uses its fallback merge.
 - **`CommunityDomain.tsx` "active visitors" is a deliberate placeholder**
   (comment at ~line 302) until page-view-based presence lands.
 - The consolidation spec's follow-up — a deep design/UX polish pass — was

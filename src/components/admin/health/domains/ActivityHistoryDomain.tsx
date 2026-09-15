@@ -36,12 +36,7 @@ export function ActivityHistoryDomain({
     return <TrafficSkeleton narrow={narrow} />;
   }
   if (history.unavailable) {
-    return (
-      <LoadFailed
-        what="the activity history (is migration 20260915120000 applied?)"
-        onRetry={() => void history.refetch()}
-      />
-    );
+    return <LoadFailed what="the activity history" onRetry={() => void history.refetch()} />;
   }
 
   const items = history.items.map(eventToFeedItem);

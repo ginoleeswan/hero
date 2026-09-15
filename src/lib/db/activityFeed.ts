@@ -54,12 +54,11 @@ export async function fetchActivityFeed({
   limit?: number;
   kind?: ActivityFilter;
 } = {}): Promise<ActivityPage | null> {
-  // `as never`: the RPC lands with migration 20260915120000; the generated
-  // types learn it on the next regeneration. Same pattern as trending.ts.
-  const { data, error } = await supabase.rpc(
-    'admin_activity_feed' as never,
-    { p_before: before, p_limit: limit, p_kind: kind } as never,
-  );
+  const { data, error } = await supabase.rpc('admin_activity_feed', {
+    p_before: before ?? undefined,
+    p_limit: limit,
+    p_kind: kind,
+  });
   if (error) {
     console.warn('[fetchActivityFeed] error:', error.message);
     return null;
