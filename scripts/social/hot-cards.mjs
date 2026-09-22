@@ -7,7 +7,7 @@
 //   node scripts/social/hot-cards.mjs --set sep23 [--out hot-sep23]
 //
 // Reads portraits over the public key like organic-pack does.
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnv, makeSb, ROOT, OUT_DIR, COLORS, fonts, renderPng } from './lib.mjs';
 import { adShell } from './ads/shell.mjs';
