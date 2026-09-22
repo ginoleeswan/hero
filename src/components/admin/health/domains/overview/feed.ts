@@ -122,7 +122,8 @@ export function eventToFeedItem(e: ActivityEvent): FeedItem {
         icon: 'eye-outline',
         tint: COLORS.blue,
         text: e.heroName ? `Viewing ${e.heroName}` : `Visit · ${e.path ?? e.route ?? '/'}`,
-        meta: [meta || null, e.signedIn ? 'signed in' : null].filter(Boolean).join(' · ') || undefined,
+        meta:
+          [meta || null, e.signedIn ? 'signed in' : null].filter(Boolean).join(' · ') || undefined,
         heroId: e.heroId,
       };
     }
