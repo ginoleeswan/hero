@@ -27,8 +27,18 @@ const STAT_KEYS = Object.keys(STATC);
 const W = 1080;
 const H = 1350;
 const TALL_H = 1920;
-const TALL_OFFSET = 140;
-const TALL_CSS = `.foot{bottom:490px}.foot .seal{height:30px}.foot .wm{font-size:35px}.foot .at{font-size:24px}.foot .disc{font-size:19px}.pop{-webkit-text-stroke:8px #0b1820}`;
+// Where the 4:5 card sits on the 9:16 canvas, measured from phone screenshots
+// of scheduled posts (2026-09-23). TikTok scales the 1080x1920 file to screen
+// width, top-aligned, so on a 19.5:9 iPhone its status bar + search bar/tabs
+// cover y < ~290, the like/comment rail covers x > ~950 from y ~1080 down, and
+// the caption block starts at y ~1720. The card is scaled to 0.85 and centred in
+// the window between those, footer included, so nothing (faces either) sits
+// under TikTok's chrome and there is no dead band above the caption.
+const TALL_S = 0.85;
+const TALL_L = Math.round((W - W * TALL_S) / 2);
+const TALL_T = 420;
+const TALL_BOX = `position:absolute;left:${TALL_L}px;top:${TALL_T}px;width:${W}px;height:${H}px;transform:scale(${TALL_S});transform-origin:0 0;`;
+const TALL_CSS = `.foot{${TALL_BOX}bottom:auto;right:auto;justify-content:flex-end;padding-bottom:43px;box-sizing:border-box;}.foot .seal{height:30px}.foot .wm{font-size:35px}.foot .at{font-size:24px}.foot .disc{font-size:19px}.pop{-webkit-text-stroke:8px #0b1820}`;
 const plateUri = (k) =>
   `data:image/png;base64,${readFileSync(join(ROOT, `scripts/social/plates/${k}.png`)).toString('base64')}`;
 
@@ -215,15 +225,12 @@ async function main() {
     mkdirSync(dir, { recursive: true });
     const html = adShell(F, { w: W, h: H }, c.inner, '', { plate: plateUri(c.plate) });
     await renderPng(html, join(dir, 'slide-1.png'), W, H);
-    // TikTok is full-screen 9:16. Same composition, dropped TALL_OFFSET down a
-    // 1080x1920 canvas, with the footer lifted into the safe zone and sized as
-    // on the 4:5 card (the shell scales type from the canvas height). Safe
-    // zones match render-reel.mjs: no text in the top 210px (status bar, tabs)
-    // or bottom 470px (caption, username, nav), nor under the right-hand rail.
+    // TikTok is full-screen 9:16: the same composition and footer, scaled and
+    // placed inside the window TikTok's overlays leave clear (see TALL_S).
     const tall = adShell(
       F,
       { w: W, h: TALL_H },
-      `<div style="position:absolute;left:0;top:${TALL_OFFSET}px;width:${W}px;height:${H}px">${c.inner}</div>`,
+      `<div style="${TALL_BOX}">${c.inner}</div>`,
       TALL_CSS,
       { plate: plateUri(c.plate) },
     );
