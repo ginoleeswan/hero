@@ -50,7 +50,7 @@ async function art(url) {
 }
 async function hero(sb, name) {
   const rows = await sb.rest(
-    `heroes?select=id,name,publisher,portrait_url,fame_score,${STAT_KEYS.join(',')}&name=eq.${encodeURIComponent(name)}&portrait_url=not.is.null&order=fame_score.desc.nullslast&limit=1`,
+    `heroes?select=id,name,publisher,portrait_url,fame_score,issue_count,${STAT_KEYS.join(',')}&name=eq.${encodeURIComponent(name)}&portrait_url=not.is.null&order=fame_score.desc.nullslast&limit=1`,
   );
   if (!rows[0]) throw new Error(`no portrait row for ${name}`);
   const r = rows[0];
@@ -206,6 +206,14 @@ const SETS = {
       { dir: '06-mon-apocalypse', plate: 'throne', inner: hookSlide(apoc, 'FIVE THOUSAND YEARS UNDEFEATED*', 'Four stats at 100.<br>Still loses to the X-Men.', '*Excluding every X-Men comic since 1986.') },
       { dir: '07-tue-leon', plate: 'vault', inner: hookSlide(leon, 'RESIDENT EVIL WEEK, PART TWO', 'Strength 18.<br>Suplexes anyway.', `Durability ${leon.stats.durability}. Survived every outbreak with perfect hair.`) },
       { dir: '08-wed-myers', plate: 'dusk', inner: hookSlide(myers, 'ONE MONTH TO HALLOWEEN', 'Horror\'s scariest mask<br>is Captain Kirk.', 'A cheap Shatner mask, spray-painted white in 1978.') },
+    ];
+  },
+  // Amazing Spider-Man #1000 on shelves 30 Sep 2026; Spider-Man at 2.8x.
+  async sep30(sb) {
+    const spidey = await hero(sb, 'Spider-Man');
+    const comics = Number(spidey.issue_count ?? 0).toLocaleString('en-US');
+    return [
+      { dir: '01-spidey-1000', plate: 'sky', inner: hookSlide(spidey, 'AMAZING SPIDER-MAN #1000 · OUT NOW', 'Issue one thousand.<br>Still broke.', `${comics} comics in his file. Rent is still due.`) },
     ];
   },
 };
