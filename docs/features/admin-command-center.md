@@ -117,6 +117,25 @@ job it belongs to.
   in the feed), `20260915144738` + `20260915144839` (per-visit minutes). The
   first three each shipped a bug the admin-context smoke test caught; run the
   RPC as an admin (`set_config('request.jwt.claims', …)`) after applying.
+  `20261021203000` made the breakdown fit authenticated's **8s
+  statement_timeout** (it had grown to ~18s after the 2026-09-15 crawl, so the
+  tab never loaded): first-referrer and landing-page lookups are now one
+  `DISTINCT ON` pass each instead of per-session correlated subqueries. Both
+  audience RPCs also now **exclude `is_bot` rows** (flagged by
+  `20260915152115`'s classifier); the breakdown reports the excluded count as
+  `totals.botSessions`. Traffic and activity RPCs still count bots. Time new
+  aggregates as the `authenticated` role with `statement_timeout = '8s'` —
+  the CLI's default role has a 2-minute limit and hides this.
+- **Audience atlas.** Visitors opens with `AudienceGlobe` — a three.js
+  dot-matrix globe (`domains/audience/globeScene.ts`) where each land dot
+  carries its country, so the countries breakdown colours land directly
+  (log-scaled heat, spike per active country). Beacons pulse for sessions
+  active in the last 5 minutes (an `['audienceLive']` sessions query polled
+  every 30s). Hover shows a country's numbers; click (globe or list) sets the
+  same `country` session filter as the Countries panel. The land field is
+  generated, not hand-edited: `node scripts/admin/build-globe-dots.mjs`
+  rewrites `globeDots.ts` from world-atlas 50m (~5.7k dots, 1.4° grid). On
+  phones the globe stacks above the readout with fewer labels/rows.
 - **Loading.** Per-lane skeletons (`src/components/admin/health/skeletons/`)
   driven by `useSkeletonTransition`, so a warm cache never flashes skeleton;
   errors render `LoadFailed` (`src/components/admin/health/ui/`) with a retry.

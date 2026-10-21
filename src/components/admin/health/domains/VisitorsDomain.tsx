@@ -4,7 +4,9 @@
 // hour-of-day / weekday) and admin_audience_sessions() for the per-visitor
 // drill-down. Every breakdown row is a filter: tap "Germany" and the sessions
 // list below becomes the people behind that bar. Desktop lays the groups out
-// in bento rows; mobile stacks them, sessions last.
+// in bento rows; mobile stacks them, sessions last. The atlas (AudienceGlobe)
+// heads the page: the countries breakdown drawn on a globe, with live beacons
+// from a short-window sessions poll.
 import { useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
@@ -18,6 +20,7 @@ import { TrafficSkeleton } from '../skeletons';
 import { BreakdownList, type BreakdownRow } from './audience/BreakdownList';
 import { HourBars } from './audience/HourBars';
 import { SessionCard } from './audience/SessionCard';
+import { AudienceGlobe } from './audience/AudienceGlobe';
 import {
   fetchAudienceBreakdown,
   fetchAudienceSessions,
@@ -34,7 +37,11 @@ const RANGES = [
 const HOUR_LABELS = Array.from({ length: 24 }, (_, h) => `${h}`);
 const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SESSIONS_PAGE = 25;
+const LIVE_WINDOW_MS = 5 * 60_000;
+const LIVE_POLL_MS = 30_000;
 
+const isLive = (sess: { lastAt: string }) =>
+  Date.now() - new Date(sess.lastAt).getTime() <= LIVE_WINDOW_MS;
 const pct = (n: number, d: number) => (d > 0 ? `${Math.round((n / d) * 100)}%` : '—');
 
 /** Breakdown rows → tappable list rows. Pure; exported for tests. */
@@ -85,6 +92,15 @@ export function VisitorsDomain({
     getNextPageParam: (last) => last?.nextBefore ?? undefined,
     staleTime: 60_000,
   });
+  // "Reading now" for the atlas: today's most recent sessions, kept if their
+  // last view is inside the live window. Polls while the tab is open.
+  const liveQ = useQuery({
+    queryKey: ['audienceLive'],
+    queryFn: () => fetchAudienceSessions({ days: 1, limit: 40 }),
+    refetchInterval: LIVE_POLL_MS,
+    staleTime: LIVE_POLL_MS,
+  });
+  const live = useMemo(() => (liveQ.data?.sessions ?? []).filter(isLive), [liveQ.data]);
   const sessions = useMemo(
     () => (sessionsQ.data?.pages ?? []).flatMap((p) => p?.sessions ?? []),
     [sessionsQ.data],
@@ -223,7 +239,17 @@ export function VisitorsDomain({
         ) : null}
       </Panel>
 
-      {/* Where from */}
+      {/* Where from — on the globe, then as lists */}
+      <AudienceGlobe
+        countries={data.countries}
+        live={live}
+        botSessions={totals.botSessions}
+        rangeDays={data.rangeDays}
+        selected={filters.country ?? null}
+        onSelect={setFilter('country')}
+        narrow={narrow}
+      />
+
       <Bento.Row narrow={narrow}>
         <Panel title="Countries" hint="Tap to filter sessions" style={s.flex1}>
           <BreakdownList

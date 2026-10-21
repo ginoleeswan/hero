@@ -68,6 +68,8 @@ export interface AudienceBreakdown {
     avgViews: number;
     avgMinutes: number;
     countries: number;
+    /** Sessions classify_bot_traffic() flagged in the window — excluded from every figure. */
+    botSessions: number;
   };
   newVsReturning: { new: number; returning: number };
   countries: CountryRow[];
@@ -145,6 +147,7 @@ const EMPTY_TOTALS: AudienceBreakdown['totals'] = {
   avgViews: 0,
   avgMinutes: 0,
   countries: 0,
+  botSessions: 0,
 };
 
 /** Breakdown for the last `days` calendar days; null when not admin / not deployed. */
