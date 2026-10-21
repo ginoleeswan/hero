@@ -123,9 +123,23 @@ job it belongs to.
   `DISTINCT ON` pass each instead of per-session correlated subqueries. Both
   audience RPCs also now **exclude `is_bot` rows** (flagged by
   `20260915152115`'s classifier); the breakdown reports the excluded count as
-  `totals.botSessions`. Traffic and activity RPCs still count bots. Time new
+  `totals.botSessions`. A follow-up migration applies the same rule to
+  `admin_traffic_overview` (every figure, including active-now and
+  acquisition, which also drops sessions with no human views) and
+  `admin_activity_feed`; the overview reports `bots.{views, sessions}` and
+  Traffic's trend hint shows the count. Bot rows are only ever marked, never
+  deleted — see "Bot traffic" below. Time new
   aggregates as the `authenticated` role with `statement_timeout = '8s'` —
   the CLI's default role has a 2-minute limit and hides this.
+- **Bot traffic.** `page_views` rows are classified, never deleted. A BEFORE
+  INSERT trigger stamps the request IP + user agent and flags declared bots,
+  headless browsers and raw HTTP clients (`classify_user_agent`); the hourly
+  `classify-bot-traffic` cron flags IPs that rotate sessions or request too
+  fast; `purge-page-view-ips` clears IPs after 30 days. Every admin read path
+  that counts page views filters `not is_bot`. Two gaps: a crawler only the
+  hourly pass catches counts for up to an hour, and rows from before the
+  2026-09-15 classifier have no user agent, so period-over-period deltas that
+  reach back that far still include that crawl.
 - **Audience atlas.** Visitors opens with `AudienceGlobe` — a three.js
   dot-matrix globe (`domains/audience/globeScene.ts`) where each land dot
   carries its country, so the countries breakdown colours land directly

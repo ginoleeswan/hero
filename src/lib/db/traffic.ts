@@ -52,6 +52,8 @@ export interface LiveHit {
 
 export interface TrafficOverview {
   rangeDays: number;
+  /** Bot rows (classify_bot_traffic) left out of every figure below. */
+  bots: { views: number; sessions: number };
   totals: { pageViews: number; visitors: number };
   /** Same-length previous window — for period-over-period growth deltas. */
   prev: { pageViews: number; visitors: number };
@@ -90,6 +92,9 @@ export async function fetchTrafficOverview(days = 28): Promise<TrafficOverview |
   if (!json || json.authorized !== true) return null;
   return {
     rangeDays: json.rangeDays,
+    // Absent until the bot-filtering overview is deployed — then it's 0/0 and
+    // every figure still includes bots.
+    bots: json.bots ?? { views: 0, sessions: 0 },
     totals: json.totals,
     prev: json.prev ?? { pageViews: 0, visitors: 0 },
     audience: json.audience ?? { signedIn: 0, anon: 0 },

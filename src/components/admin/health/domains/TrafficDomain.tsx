@@ -2,7 +2,8 @@
 // Reads admin_traffic_overview(): headline KPIs with period-over-period growth
 // deltas + sparklines, a readable views/visitors trend with a range toggle, what's
 // hot (top heroes resolved to names), a live activity feed, and supporting
-// breakdowns (pages / referrers / devices).
+// breakdowns (pages / referrers / devices). Bot views are excluded server-side;
+// the trend hint says how many.
 import { View, Pressable, StyleSheet } from 'react-native';
 import { Text } from '../../../ui/Text';
 import { Ionicons } from '@expo/vector-icons';
@@ -187,7 +188,9 @@ export function TrafficDomain({
       {/* Trend — the readable dual-series chart + range toggle */}
       <Panel
         title="Traffic over time"
-        hint={`Views & visitors · last ${data.rangeDays} days`}
+        hint={`Views & visitors · last ${data.rangeDays} days${
+          data.bots.views > 0 ? ` · ${data.bots.views.toLocaleString()} bot views excluded` : ''
+        }`}
         action={<PillGroup options={RANGES} value={days} onChange={onDaysChange} />}
       >
         {totals.pageViews === 0 ? (

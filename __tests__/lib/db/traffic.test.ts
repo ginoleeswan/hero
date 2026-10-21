@@ -30,6 +30,16 @@ describe('fetchTrafficOverview', () => {
     expect((r as unknown as Record<string, unknown>).authorized).toBeUndefined();
   });
 
+  it('carries the excluded-bot counts, defaulting to zero before they deploy', async () => {
+    mockRpc.mockResolvedValue({
+      data: { ...overview, bots: { views: 6516, sessions: 6179 } },
+      error: null,
+    });
+    expect((await fetchTrafficOverview())!.bots).toEqual({ views: 6516, sessions: 6179 });
+    mockRpc.mockResolvedValue({ data: overview, error: null });
+    expect((await fetchTrafficOverview())!.bots).toEqual({ views: 0, sessions: 0 });
+  });
+
   it('returns null for a non-admin caller', async () => {
     mockRpc.mockResolvedValue({ data: { authorized: false }, error: null });
     expect(await fetchTrafficOverview()).toBeNull();
